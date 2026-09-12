@@ -13,13 +13,17 @@ import pytest
 from scrapling import Selector
 
 from app.ingestion.tier3_screener_scrapling.scraper import (
+    _compute_cagr,
+    _compute_debt_to_equity,
+    _compute_growth,
     _parse_about,
     _parse_annual_reports,
-    _parse_warehouse_id,
     _parse_financial_statement,
     _parse_peers,
     _parse_ratios,
+    _parse_sector_industry,
     _parse_shareholding,
+    _parse_warehouse_id,
 )
 from app.schemas import PeriodType, StatementType
 
@@ -129,3 +133,84 @@ def test_parse_annual_reports_finds_bse_hosted_pdf_links(newgen_page):
     assert latest["url"].endswith(".pdf")
     assert "Annual Report" in latest["title"]
     assert latest["period_end"].month == 3  # Indian fiscal year-end convention
+
+
+# --- Screener bulk-ingestion helpers (ADR 0025) --------------------------
+
+
+def test_parse_sector_industry_from_the_peers_section_breadcrumb(newgen_page):
+    sector, industry = _parse_sector_industry(newgen_page)
+    assert sector == "Information Technology"
+    assert industry == "Computers - Software & Consulting"
+
+
+def test_parse_sector_industry_returns_none_when_breadcrumb_is_absent():
+    empty_page = Selector("<html><body></body></html>")
+    assert _parse_sector_industry(empty_page) == (None, None)
+
+
+def test_compute_debt_to_equity_against_real_balance_sheet_labels(newgen_page):
+    bs = _parse_financial_statement(newgen_page, StatementType.BALANCE_SHEET)
+    # Confirms the real, scraped label is "Equity Capital" (not the
+    # initially-assumed "Equity Share Capital") and that the computation
+    # against it produces a sane, positive ratio.
+    de = _compute_debt_to_equity(bs)
+    assert de is not None
+    assert 0 < de < 1  # Newgen (IT services) is genuinely low-debt
+
+
+def test_compute_debt_to_equity_none_when_a_component_is_missing():
+    items = [
+        {"label": "Borrowings", "period_type": PeriodType.ANNUAL, "period_end": date(2026, 3, 31), "value": Decimal(100)},
+        # no "Equity Capital" / "Reserves" rows at all
+    ]
+    assert _compute_debt_to_equity(items) is None
+
+
+def test_compute_debt_to_equity_none_when_equity_is_zero():
+    items = [
+        {"label": "Borrowings", "period_type": PeriodType.ANNUAL, "period_end": date(2026, 3, 31), "value": Decimal(100)},
+        {"label": "Equity Capital", "period_type": PeriodType.ANNUAL, "period_end": date(2026, 3, 31), "value": Decimal(0)},
+        {"label": "Reserves", "period_type": PeriodType.ANNUAL, "period_end": date(2026, 3, 31), "value": Decimal(0)},
+    ]
+    assert _compute_debt_to_equity(items) is None
+
+
+def _pnl_row(label: str, year: int, value) -> dict:
+    return {
+        "label": label,
+        "period_type": PeriodType.ANNUAL,
+        "period_end": date(year, 3, 31),
+        "value": Decimal(value),
+    }
+
+
+def test_compute_cagr_over_three_years():
+    items = [_pnl_row("Sales", y, v) for y, v in [(2022, 100), (2023, 110), (2024, 121), (2025, 133.1)]]
+    cagr = _compute_cagr(items, "Sales")
+    assert cagr is not None
+    assert abs(cagr - Decimal("0.1")) < Decimal("0.001")  # steady 10%/yr growth
+
+
+def test_compute_cagr_none_with_insufficient_history():
+    items = [_pnl_row("Sales", y, 100) for y in [2024, 2025]]  # only 2 years, need 4
+    assert _compute_cagr(items, "Sales") is None
+
+
+def test_compute_cagr_none_on_a_loss_making_base_year():
+    items = [_pnl_row("Net Profit", y, v) for y, v in [(2022, -50), (2023, 10), (2024, 20), (2025, 30)]]
+    assert _compute_cagr(items, "Net Profit") is None
+
+
+def test_compute_growth_tries_revenue_label_when_sales_is_absent():
+    items = [_pnl_row("Revenue", y, v) for y, v in [(2022, 100), (2023, 110), (2024, 121), (2025, 133.1)]]
+    sales_growth, profit_growth = _compute_growth(items)
+    assert sales_growth is not None
+    assert profit_growth is None  # no "Net Profit" rows in this fixture
+
+
+def test_compute_growth_real_fixture_produces_plausible_positive_values(newgen_page):
+    pnl = _parse_financial_statement(newgen_page, StatementType.PROFIT_AND_LOSS)
+    sales_growth, profit_growth = _compute_growth(pnl)
+    assert sales_growth is not None and sales_growth > 0
+    assert profit_growth is not None and profit_growth > 0

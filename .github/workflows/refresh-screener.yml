@@ -1,0 +1,74 @@
+# Out-of-band bulk screener-universe refresh for MarketMitra (ADR 0025).
+#
+# Every other table in fundamentals-api is populated lazily, one company at
+# a time, only when a user views that company's page. A screener needs
+# criteria data across most of the ~2,570-company NSE universe to be
+# useful — this job scrapes Screener.in directly (plain httpx, no headless
+# browser needed — see scraper.py's own docstring) and POSTs results to
+# POST /screener/ingest.
+#
+# ACTIVATION (one-time):
+#   1. GitHub runs `schedule:` only from the DEFAULT branch — until this
+#      repo's app branch is the default, only the manual "Run workflow"
+#      button fires.
+#   2. Repo secret:  gh secret set SCREENER_INGEST_TOKEN
+#      (same value as SCREENER_INGEST_TOKEN on the fundamentals-api Vercel project)
+#   3. Repo variable: FUNDAMENTALS_API_URL
+#      (e.g. https://marketmitra-fundamentals-api.vercel.app) — or the job
+#      falls back to the default below.
+
+name: refresh-screener
+
+on:
+  schedule:
+    # Once daily, 20:30 UTC (~02:00 IST, off-peak) — fundamentals (P/E, ROE,
+    # market cap) don't need same-day freshness the way IPO GMP does; the
+    # ratios table elsewhere in this service already uses a 24h TTL.
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Only refresh the first N symbols (leave empty for the full universe)"
+        required: false
+        default: ""
+
+concurrency:
+  group: refresh-screener
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    # ~2,570 symbols at the script's own 2 req/s rate limit =~ 21 minutes —
+    # generous headroom for retry backoff on top of that.
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: services/fundamentals-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps
+        run: |
+          pip install --quiet httpx "scrapling>=0.4.15" "lxml>=5.3"
+
+      - name: Scrape + ingest
+        env:
+          FUNDAMENTALS_API_URL: ${{ vars.FUNDAMENTALS_API_URL || 'https://marketmitra-fundamentals-api.vercel.app' }}
+          SCREENER_INGEST_TOKEN: ${{ secrets.SCREENER_INGEST_TOKEN }}
+        run: |
+          if [ -z "$SCREENER_INGEST_TOKEN" ]; then
+            echo "::error::SCREENER_INGEST_TOKEN secret is not set — see this workflow's ACTIVATION notes."
+            exit 1
+          fi
+          LIMIT="${{ github.event.inputs.limit }}"
+          if [ -n "$LIMIT" ]; then
+            python scripts/refresh_screener_universe.py --limit "$LIMIT"
+          else
+            python scripts/refresh_screener_universe.py
+          fi

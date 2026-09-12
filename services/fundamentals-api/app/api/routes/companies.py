@@ -2,12 +2,32 @@ from datetime import date
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, resolve_company
+from app.db.models import CompanyMasterORM
 from app.services import fundamentals_service as svc
+from app.services.search_service import ensure_company_master_populated
 
 router = APIRouter(prefix="/companies", tags=["companies"])
+
+
+class CompanyMasterOut(BaseModel):
+    symbol: str
+    name: str
+
+
+@router.get("/master", response_model=list[CompanyMasterOut])
+async def get_company_master(session: AsyncSession = Depends(get_db)) -> list[CompanyMasterOut]:
+    """The full NSE-listed-equity symbol/name list (~2,570 rows) — used by
+    scripts/refresh_screener_universe.py (ADR 0025) as its universe source,
+    instead of that script re-fetching NSE's EQUITY_L.csv a second time
+    independently. Registered before GET /{symbol} below so "master" is
+    never swallowed as a symbol path param."""
+    await ensure_company_master_populated(session)
+    rows = (await session.execute(select(CompanyMasterORM).order_by(CompanyMasterORM.symbol))).scalars()
+    return [CompanyMasterOut(symbol=r.symbol, name=r.name) for r in rows]
 
 
 class CompanyOut(BaseModel):

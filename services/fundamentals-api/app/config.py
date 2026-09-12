@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     # and the other server-to-server routes (/documents/extract-text, /embed).
     ipo_ingest_token: str = ""
 
+    # Shared secret for POST /screener/ingest (scripts/refresh_screener_universe.py,
+    # ADR 0025) — same trust boundary as ipo_ingest_token above.
+    screener_ingest_token: str = ""
+
     # Retrieval embeddings for the main app's Phase 10 RAG (ADR 0020), served
     # from POST /embed via fastembed. Dimension MUST stay 384 (matches
     # EMBED_DIM on the Next side and the Atlas Vector Search index).

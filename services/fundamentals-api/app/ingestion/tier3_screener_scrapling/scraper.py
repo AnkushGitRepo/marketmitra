@@ -11,6 +11,11 @@ should import from this module):
 - fetch_about(symbol)
 - fetch_peers(symbol)
 - fetch_annual_reports(symbol)
+- fetch_screener_snapshot(symbol) — the Screener feature's bulk-ingestion
+  entry point (ADR 0025). One page fetch, reusing _parse_ratios and
+  _parse_financial_statement on the same page object rather than the
+  per-field-separate-fetch pattern the functions above use individually —
+  see its own docstring for why that distinction matters at bulk scale.
 
 Parsing is split from fetching (`_parse_*` vs `fetch_*`) specifically so
 tests can run the real parsing logic against a saved-to-disk Screener.in
@@ -182,6 +187,138 @@ def _parse_financial_statement(page, statement_type: StatementType) -> list[dict
                 }
             )
     return line_items
+
+
+def _parse_sector_industry(page) -> tuple[str | None, str | None]:
+    """(sector, industry) from the breadcrumb line in the #peers section
+    header (`a[title="Sector"]` / `a[title="Industry"]`) — this is the
+    narrower of the two breadcrumb levels Screener shows (it also has a
+    "Broad Sector"/"Broad Industry" pair; the narrower one is more useful
+    for filtering). This breadcrumb is part of the section's static header
+    markup, not the peer-comparison table itself (which fetch_peers's own
+    docstring notes is sometimes AJAX-loaded) — confirmed present in the
+    saved fixture regardless of whether the table rows below it are."""
+    sector_nodes = page.css('#peers a[title="Sector"]')
+    industry_nodes = page.css('#peers a[title="Industry"]')
+    sector = sector_nodes[0].get_all_text().strip() if sector_nodes else None
+    industry = industry_nodes[0].get_all_text().strip() if industry_nodes else None
+    return sector or None, industry or None
+
+
+def _compute_debt_to_equity(balance_sheet_items: list[dict]) -> Decimal | None:
+    """Borrowings ÷ (Equity Capital + Reserves) for the most recent annual
+    period. Labels confirmed against the real parser output on the test
+    fixture (tests/fixtures/screener_newgen_consolidated.html, an IT
+    company) — "Equity Capital", not the initially-assumed "Equity Share
+    Capital". **Still only verified against one sector.** Before trusting
+    this at scale, verify against 3-5 real companies spanning different
+    sectors (bank, NBFC, manufacturer, real estate — the sectors most
+    likely to label a balance sheet differently, e.g. banks often don't
+    use "Borrowings" the way a manufacturer does); see ADR 0025's known-risk
+    note. Returns None if any part is missing or equity is zero — never a
+    fabricated ratio."""
+    annual = [i for i in balance_sheet_items if i["period_type"] == PeriodType.ANNUAL and i["period_end"]]
+    if not annual:
+        return None
+    latest_period = max(i["period_end"] for i in annual)
+    latest = [i for i in annual if i["period_end"] == latest_period]
+
+    def _value(label: str) -> Decimal | None:
+        match = next((i["value"] for i in latest if i["label"] == label), None)
+        return match
+
+    borrowings = _value("Borrowings")
+    share_capital = _value("Equity Capital")
+    reserves = _value("Reserves")
+    if borrowings is None or share_capital is None or reserves is None:
+        return None
+    equity = share_capital + reserves
+    if equity == 0:
+        return None
+    return borrowings / equity
+
+
+def _compute_cagr(pnl_items: list[dict], label: str, years: int = 3) -> Decimal | None:
+    """CAGR of `label` (e.g. "Sales" or "Net Profit") over the last `years`
+    annual periods: (latest / oldest) ** (1/years) - 1. None if fewer than
+    `years`+1 annual data points exist, or the base (oldest) value isn't
+    positive (a loss-making or zero base year makes a CAGR meaningless,
+    not just arithmetically awkward — never fabricate one)."""
+    points = sorted(
+        (
+            (i["period_end"], i["value"])
+            for i in pnl_items
+            if i["period_type"] == PeriodType.ANNUAL and i["period_end"] and i["label"] == label
+        ),
+        key=lambda p: p[0],
+    )
+    if len(points) < years + 1:
+        return None
+    oldest_value = points[-(years + 1)][1]
+    latest_value = points[-1][1]
+    if oldest_value <= 0:
+        return None
+    ratio = latest_value / oldest_value
+    if ratio < 0:
+        return None
+    return ratio ** (Decimal(1) / Decimal(years)) - 1
+
+
+def _compute_growth(pnl_items: list[dict]) -> tuple[Decimal | None, Decimal | None]:
+    """(sales_growth_3y_cagr, profit_growth_3y_cagr). Screener's P&L label
+    for revenue varies (\"Sales\" is the common case; some pages use
+    \"Revenue\") — try both."""
+    sales = _compute_cagr(pnl_items, "Sales") or _compute_cagr(pnl_items, "Revenue")
+    profit = _compute_cagr(pnl_items, "Net Profit")
+    return sales, profit
+
+
+async def fetch_screener_snapshot(symbol: str) -> dict | None:
+    """One page fetch → every field the Screener bulk-ingestion job needs
+    (ADR 0025), reusing _parse_ratios/_parse_financial_statement on the
+    SAME page object — deliberately not the per-field-separate-fetch
+    pattern fetch_ratios/fetch_financial_statement use individually today
+    (each of those re-fetches the page from scratch; fine for one company
+    at a time, wasteful ×2,570 for the bulk job). Returns None only if the
+    page fetch itself failed; a dict with some fields None (and
+    fetch_status="partial") if the page loaded but a section didn't parse.
+    """
+    page = await _fetch_with_retry(symbol)
+    if page is None:
+        return None
+
+    ratios = {r["name"]: r["value"] for r in _parse_ratios(page)}
+    pnl = _parse_financial_statement(page, StatementType.PROFIT_AND_LOSS)
+    balance_sheet = _parse_financial_statement(page, StatementType.BALANCE_SHEET)
+    sector, industry = _parse_sector_industry(page)
+
+    current_price = ratios.get("Current Price")
+    book_value = ratios.get("Book Value")
+    pb = (current_price / book_value) if current_price and book_value else None
+
+    debt_to_equity = _compute_debt_to_equity(balance_sheet)
+    sales_growth, profit_growth = _compute_growth(pnl)
+
+    return {
+        "sector": sector,
+        "industry": industry,
+        "market_cap": ratios.get("Market Cap"),
+        "current_price": current_price,
+        "pe": ratios.get("Stock P/E"),
+        "book_value": book_value,
+        "pb": pb,
+        "dividend_yield": ratios.get("Dividend Yield"),
+        "roce": ratios.get("ROCE"),
+        "roe": ratios.get("ROE"),
+        "face_value": ratios.get("Face Value"),
+        "debt_to_equity": debt_to_equity,
+        "sales_growth_3y_cagr": sales_growth,
+        "profit_growth_3y_cagr": profit_growth,
+        # "partial" whenever the balance sheet didn't yield a D/E, since
+        # that's the field most likely to be missing/mislabeled per-sector —
+        # not a blanket "everything parsed" claim.
+        "fetch_status": "ok" if debt_to_equity is not None else "partial",
+    }
 
 
 def _parse_shareholding(page) -> list[dict]:

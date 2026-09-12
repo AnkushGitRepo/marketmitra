@@ -14,6 +14,7 @@ from app.api.routes import (
     pdf_text,
     prices,
     quote,
+    screener,
     search,
 )
 from app.config import get_settings
@@ -43,6 +44,7 @@ app.include_router(embed.router)
 app.include_router(ipos.router)
 app.include_router(quote.router)
 app.include_router(search.router)
+app.include_router(screener.router)
 
 
 @app.middleware("http")

@@ -297,3 +297,50 @@ class DocumentReferenceORM(Base):
     )
 
     company: Mapped[CompanyORM] = relationship(back_populates="documents")
+
+
+class ScreenerMetricsORM(Base):
+    """One row per NSE-listed company, refreshed wholesale by the bulk
+    screener-universe job (scripts/refresh_screener_universe.py, via
+    POST /screener/ingest) — see ADR 0025. Deliberately NOT the same shape
+    as RatioORM (EAV: one row per named ratio per company per date, right
+    for "whatever Screener's per-company widget happened to show," wrong
+    for "filter/sort across the whole universe"). This table exists
+    specifically to be filtered and indexed across ~2,570 companies at
+    once; RatioORM/PeerComparisonORM are untouched and keep serving the
+    per-company lazy stock-detail-page path exactly as before.
+
+    Keyed by `symbol` like CompanyMasterORM (a standalone reference table,
+    not a child of `companies` via FK) since this table is refreshed
+    independently of the lazy `companies`/`ratios` population path."""
+
+    __tablename__ = "screener_metrics"
+
+    symbol: Mapped[str] = mapped_column(String(32), primary_key=True)
+    name: Mapped[str] = mapped_column(String(256))
+    sector: Mapped[str | None] = mapped_column(String(128), index=True)
+    industry: Mapped[str | None] = mapped_column(String(128), index=True)
+
+    market_cap: Mapped[float | None] = mapped_column(Numeric(20, 4), index=True)
+    current_price: Mapped[float | None] = mapped_column(Numeric(16, 4))
+    pe: Mapped[float | None] = mapped_column(Numeric(12, 4), index=True)
+    book_value: Mapped[float | None] = mapped_column(Numeric(16, 4))
+    pb: Mapped[float | None] = mapped_column(Numeric(12, 4), index=True)
+    dividend_yield: Mapped[float | None] = mapped_column(Numeric(8, 4), index=True)
+    roce: Mapped[float | None] = mapped_column(Numeric(8, 4), index=True)
+    roe: Mapped[float | None] = mapped_column(Numeric(8, 4), index=True)
+    face_value: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    debt_to_equity: Mapped[float | None] = mapped_column(Numeric(10, 4), index=True)
+    sales_growth_3y_cagr: Mapped[float | None] = mapped_column(Numeric(8, 4), index=True)
+    profit_growth_3y_cagr: Mapped[float | None] = mapped_column(Numeric(8, 4), index=True)
+
+    # ok = fully parsed; partial = page fetched but a section (e.g. balance
+    # sheet) didn't parse, so some derived fields are null; failed = the
+    # page fetch itself failed, this row was NOT updated this run (fetched_at
+    # still reflects the last successful scrape). Callers should treat
+    # 'failed' rows as stale, not as "confirmed no data."
+    fetch_status: Mapped[str] = mapped_column(String(16), default="ok")
+    source_tier: Mapped[str] = mapped_column(String(32), default="tier3_screener_bulk")
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
