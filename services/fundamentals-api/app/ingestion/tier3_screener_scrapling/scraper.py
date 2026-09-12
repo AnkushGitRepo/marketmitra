@@ -240,10 +240,15 @@ def _compute_debt_to_equity(balance_sheet_items: list[dict]) -> Decimal | None:
 
 def _compute_cagr(pnl_items: list[dict], label: str, years: int = 3) -> Decimal | None:
     """CAGR of `label` (e.g. "Sales" or "Net Profit") over the last `years`
-    annual periods: (latest / oldest) ** (1/years) - 1. None if fewer than
-    `years`+1 annual data points exist, or the base (oldest) value isn't
-    positive (a loss-making or zero base year makes a CAGR meaningless,
-    not just arithmetically awkward — never fabricate one)."""
+    annual periods, **as a percentage** (e.g. 17.35 meaning 17.35%/yr) —
+    matching the convention every other percentage field in this table
+    already uses (ROE/ROCE/Dividend Yield are all raw percentage numbers,
+    not fractions, straight from Screener's own ratio box), so callers
+    never need to special-case which fields are "already ×100" and which
+    aren't. None if fewer than `years`+1 annual data points exist, or the
+    base (oldest) value isn't positive (a loss-making or zero base year
+    makes a CAGR meaningless, not just arithmetically awkward — never
+    fabricate one)."""
     points = sorted(
         (
             (i["period_end"], i["value"])
@@ -261,7 +266,7 @@ def _compute_cagr(pnl_items: list[dict], label: str, years: int = 3) -> Decimal 
     ratio = latest_value / oldest_value
     if ratio < 0:
         return None
-    return ratio ** (Decimal(1) / Decimal(years)) - 1
+    return (ratio ** (Decimal(1) / Decimal(years)) - 1) * 100
 
 
 def _compute_growth(pnl_items: list[dict]) -> tuple[Decimal | None, Decimal | None]:

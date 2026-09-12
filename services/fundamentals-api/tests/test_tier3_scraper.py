@@ -189,7 +189,9 @@ def test_compute_cagr_over_three_years():
     items = [_pnl_row("Sales", y, v) for y, v in [(2022, 100), (2023, 110), (2024, 121), (2025, 133.1)]]
     cagr = _compute_cagr(items, "Sales")
     assert cagr is not None
-    assert abs(cagr - Decimal("0.1")) < Decimal("0.001")  # steady 10%/yr growth
+    # As a percentage (10, not 0.1) — matches ROE/ROCE/Dividend Yield's
+    # existing convention of raw percentage numbers, not fractions.
+    assert abs(cagr - Decimal(10)) < Decimal("0.1")  # steady 10%/yr growth
 
 
 def test_compute_cagr_none_with_insufficient_history():
