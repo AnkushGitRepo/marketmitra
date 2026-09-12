@@ -152,7 +152,9 @@ async def test_extract_from_xbrl_attaches_the_discovered_period(monkeypatch):
     assert all(i["period_end"] == date(2026, 6, 30) for i in items)
     assert all(i["period_type"] == PeriodType.QUARTERLY for i in items)
     revenue = next(i for i in items if i["label"] == "Revenue from Operations")
-    assert revenue["value"] == Decimal(2385000000)
+    # Raw XBRL fact is in absolute rupees; scaled to crore (ADR — matches
+    # every other source feeding this table).
+    assert revenue["value"] == Decimal("238.5")
     # balance-sheet statement asked for a different type -> only its own items
     bs_items = await fd.extract_tier1_line_items(filing, StatementType.BALANCE_SHEET)
     assert all(i["label"] != "Revenue from Operations" for i in bs_items)

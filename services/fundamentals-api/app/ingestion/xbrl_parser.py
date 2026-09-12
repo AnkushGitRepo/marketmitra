@@ -37,7 +37,12 @@ TAXONOMY_TAG_MAP: dict[str, tuple[StatementType, str]] = {
     "ProfitBeforeExceptionalItemsAndTax": (
         StatementType.PROFIT_AND_LOSS, "Profit Before Exceptional Items and Tax",
     ),
-    "ProfitBeforeTax": (StatementType.PROFIT_AND_LOSS, "Profit Before Tax"),
+    # Sentence-case to match Screener.in's own scraped label exactly — the
+    # line-item table groups rows by an exact label string match, and this
+    # is unambiguously the same figure Screener already reports, just under
+    # a differently-cased row (unlike e.g. Tax Expense/Total Income below,
+    # which have no confirmed Screener equivalent and are left distinct).
+    "ProfitBeforeTax": (StatementType.PROFIT_AND_LOSS, "Profit before tax"),
     "TaxExpense": (StatementType.PROFIT_AND_LOSS, "Tax Expense"),
     "ProfitLossForPeriod": (StatementType.PROFIT_AND_LOSS, "Net Profit"),
     "EarningsPerShareBasic": (StatementType.PROFIT_AND_LOSS, "EPS (Basic)"),
@@ -100,11 +105,25 @@ def extract_facts(xml_bytes: bytes) -> dict[str, Decimal]:
     return facts
 
 
+_CRORE = Decimal(10_000_000)
+
+# Per-share figures, not monetary aggregates — never divided into crore.
+_UNSCALED_LABELS = {"EPS (Basic)", "EPS (Diluted)"}
+
+
 def map_facts_to_line_items(
     facts: dict[str, Decimal],
 ) -> tuple[list[dict], dict[str, Decimal]]:
     """Split extracted facts into recognized line items (statement_type +
-    label + value) and everything else (raw_tags, untouched)."""
+    label + value) and everything else (raw_tags, untouched).
+
+    Ind-AS/XBRL instance documents report monetary facts in absolute rupees
+    (the `decimals` attribute is a rounding precision, not a scale factor) —
+    but every other source feeding this table (Tier 3's Screener.in scrape)
+    already reports in crore, and the UI formats every stored value as if
+    it already were. Left unconverted, a Tier 1 XBRL-sourced quarter shows
+    values ~1 crore too large next to the surrounding Tier 3 annual columns.
+    """
     line_items: list[dict] = []
     raw_tags = dict(facts)
 
@@ -113,7 +132,8 @@ def map_facts_to_line_items(
         if mapping is None:
             continue
         statement_type, label = mapping
-        line_items.append({"statement_type": statement_type, "label": label, "value": value})
+        scaled = value if label in _UNSCALED_LABELS else value / _CRORE
+        line_items.append({"statement_type": statement_type, "label": label, "value": scaled})
         raw_tags.pop(tag, None)
 
     return line_items, raw_tags
