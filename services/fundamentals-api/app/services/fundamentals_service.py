@@ -32,8 +32,9 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -70,6 +71,22 @@ async def get_or_create_company(
     if existing:
         return existing
 
+    return await _create_company(session, stmt, nse_symbol, bse_code)
+
+
+async def _create_company(
+    session: AsyncSession,
+    select_stmt: Select[tuple[CompanyORM]],
+    nse_symbol: str | None,
+    bse_code: str | None,
+) -> CompanyORM:
+    """A brand-new company's page fires ~10 concurrent requests (company,
+    ratios, shareholding, peers, documents, financials x3, prices x4),
+    every one of which reaches here at once when nothing exists yet — only
+    one INSERT can win the unique nse_symbol/bse_code constraint, so every
+    other concurrent caller must not treat the resulting IntegrityError as a
+    real failure. On conflict, roll back and re-select: the row now exists,
+    created by whichever request won the race."""
     resolvers = [
         TieredResolver(
             SourceTier.TIER1_NSE_BSE, lambda: _resolve_tier1_quote(nse_symbol, bse_code), "quote",
@@ -97,7 +114,17 @@ async def get_or_create_company(
         source_tier=name_tier.value if name_tier else None,
     )
     session.add(company)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        # Lost the race — another concurrent request already created this
+        # company. Not an error: roll back this session's failed insert and
+        # hand back the row that won.
+        await session.rollback()
+        existing = (await session.execute(select_stmt)).scalar_one_or_none()
+        if existing:
+            return existing
+        raise  # genuinely a different conflict (e.g. a stale unique index) — surface it
     await session.refresh(company)
     return company
 
@@ -299,15 +326,27 @@ async def get_financial_statement(
         return existing
 
     # Tier 1: the actual NSE/BSE results filing for the latest period. If it
-    # yields anything, store it and skip the Screener scrape for this call —
-    # older periods still come from Tier 3 on a later refresh.
+    # yields enough to be useful, store it and skip the Screener scrape for
+    # this call — older periods still come from Tier 3 on a later refresh.
+    #
+    # "Enough" is a real gate, not a formality: our XBRL tag map is tuned to
+    # a general commercial Ind-AS taxonomy (see xbrl_parser.py) and banks in
+    # particular report P&L under a different tag set — a bank filing
+    # typically maps to only 2 of our ~12 known labels (e.g. Other Income,
+    # Tax Expense), which would otherwise show up as a column that's
+    # entirely "—" apart from those two rows, sitting next to Tier 3's fully
+    # populated annual columns. Below this threshold, Tier 3 alone (which
+    # always reports a consistent field set) is strictly more useful than a
+    # mostly-empty "extra" column.
+    _MIN_USEFUL_TIER1_ITEMS = 4
+
     filing = await filing_discovery.discover_latest_financial_filing(
         company.nse_symbol, company.bse_code
     )
     tier1_items = (
         await filing_discovery.extract_tier1_line_items(filing, statement_type) if filing else []
     )
-    if tier1_items:
+    if len(tier1_items) >= _MIN_USEFUL_TIER1_ITEMS:
         await _upsert_financial_items(
             session, company, statement_type, tier1_items, SourceTier.TIER1_NSE_BSE
         )
