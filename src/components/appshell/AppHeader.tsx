@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/dashboard/portfolio', label: 'Portfolio' },
   { href: '/dashboard/markets', label: 'Markets' },
+  { href: '/dashboard/screener', label: 'Screener' },
   { href: '/dashboard/alerts', label: 'Alerts' },
   { href: '/dashboard/news', label: 'News' },
   { href: '/dashboard/ipos', label: 'IPOs' },

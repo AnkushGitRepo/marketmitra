@@ -34,7 +34,10 @@ export interface ScreenerFacets {
   industries: string[];
 }
 
-function buildQuery(filters: ScreenerFilters): string {
+/** Exported so the Screener page's client component can build the same
+ * query string for its own `/api/screener` fetch, without duplicating
+ * this logic. */
+export function buildScreenerQuery(filters: ScreenerFilters): string {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) {
     if (value !== undefined && value !== null && value !== '') {
@@ -50,7 +53,7 @@ function buildQuery(filters: ScreenerFilters): string {
  * follows. Cached for an hour: this table is refreshed at most once a day
  * by the bulk job, so a tighter revalidate window buys nothing. */
 export async function runScreener(filters: ScreenerFilters): Promise<ScreenerResultRow[]> {
-  const query = buildQuery(filters);
+  const query = buildScreenerQuery(filters);
   const path = query ? `/screener?${query}` : '/screener';
   const result = await getJson<ScreenerResultRow[]>(path, 3600);
   return result ?? [];
