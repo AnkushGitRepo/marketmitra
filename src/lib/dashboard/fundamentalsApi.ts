@@ -87,7 +87,7 @@ export interface IndexQuoteOut {
 export type StatementType = 'profit_and_loss' | 'balance_sheet' | 'cash_flow';
 export type PricePeriod = '1mo' | '6mo' | '1y' | '5y';
 
-async function getJson<T>(path: string, revalidateSeconds: number): Promise<T | null> {
+export async function getJson<T>(path: string, revalidateSeconds: number): Promise<T | null> {
   try {
     const response = await fetch(`${BASE_URL}${path}`, { next: { revalidate: revalidateSeconds } });
     if (!response.ok) return null;

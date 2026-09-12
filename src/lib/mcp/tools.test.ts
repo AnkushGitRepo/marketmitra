@@ -14,10 +14,12 @@ const fApi = {
 };
 const newsApi = { getNews: vi.fn() };
 const iposApi = { getIpos: vi.fn() };
+const screenerApi = { runScreener: vi.fn() };
 
 vi.mock('@/lib/dashboard/fundamentalsApi', () => fApi);
 vi.mock('@/lib/dashboard/newsApi', () => newsApi);
 vi.mock('@/lib/dashboard/iposApi', () => iposApi);
+vi.mock('@/lib/dashboard/screener', () => screenerApi);
 
 const { tools, toolNames } = await import('./tools');
 
@@ -28,12 +30,13 @@ const tool = (name: string) => {
 };
 
 beforeEach(() => {
-  for (const m of [...Object.values(fApi), newsApi.getNews, iposApi.getIpos]) m.mockReset();
+  for (const m of [...Object.values(fApi), newsApi.getNews, iposApi.getIpos, screenerApi.runScreener])
+    m.mockReset();
 });
 afterEach(() => vi.clearAllMocks());
 
 describe('tool registry', () => {
-  it('exposes exactly the 7 v1 public-data tools', () => {
+  it('exposes exactly the 8 v1 public-data tools', () => {
     expect(toolNames.sort()).toEqual(
       [
         'get_company_fundamentals',
@@ -42,6 +45,7 @@ describe('tool registry', () => {
         'get_price_history',
         'get_quote',
         'list_ipos',
+        'run_screener',
         'search_symbols',
       ].sort()
     );
@@ -198,5 +202,42 @@ describe('get_market_indices', () => {
     const out = (await tool('get_market_indices').run({})) as { count: number; indices: unknown[] };
     expect(out.count).toBe(0);
     expect(out.indices).toEqual([]);
+  });
+});
+
+describe('run_screener', () => {
+  it('rejects a non-numeric value for a range filter at the boundary', () => {
+    expect(
+      tool('run_screener').config.inputSchema.safeParse({ pe_min: 'cheap' }).success
+    ).toBe(false);
+  });
+
+  it('accepts an empty filter set (no criteria = default preset)', () => {
+    expect(tool('run_screener').config.inputSchema.safeParse({}).success).toBe(true);
+  });
+
+  it('passes parsed filters straight through to runScreener', async () => {
+    screenerApi.runScreener.mockResolvedValue([{ symbol: 'TCS' }]);
+    await tool('run_screener').run({ pe_max: 20, roe_min: 15 });
+    expect(screenerApi.runScreener).toHaveBeenCalledWith({ pe_max: 20, roe_min: 15 });
+  });
+
+  it('caps results at 20 and flags truncation, but reports the true count', async () => {
+    const rows = Array.from({ length: 30 }, (_, i) => ({ symbol: `S${i}` }));
+    screenerApi.runScreener.mockResolvedValue(rows);
+    const out = (await tool('run_screener').run({})) as {
+      count: number;
+      results: unknown[];
+      truncated: boolean;
+    };
+    expect(out.count).toBe(30);
+    expect(out.results).toHaveLength(20);
+    expect(out.truncated).toBe(true);
+  });
+
+  it('does not flag truncation when everything fits', async () => {
+    screenerApi.runScreener.mockResolvedValue([{ symbol: 'TCS' }]);
+    const out = (await tool('run_screener').run({})) as { truncated: boolean };
+    expect(out.truncated).toBe(false);
   });
 });

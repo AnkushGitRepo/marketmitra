@@ -29,6 +29,8 @@ import {
 } from '@/lib/dashboard/fundamentalsApi';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { getIpos, type IpoStatus } from '@/lib/dashboard/iposApi';
+import { runScreener } from '@/lib/dashboard/screener';
+import { screenerFiltersSchema } from '@/lib/dashboard/screenerSchema';
 
 /** Framing appended to any tool touching AI-adjacent / market-sentiment data. */
 const NOT_ADVICE = 'This is public reference data, not investment advice.';
@@ -252,6 +254,26 @@ const getMarketIndicesTool = defineTool({
   },
 });
 
+const runScreenerTool = defineTool({
+  name: 'run_screener',
+  config: {
+    title: 'Screen stocks by financial criteria',
+    description:
+      'Filter the NSE stock universe by financial criteria — market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, sales/profit growth (3y CAGR), and sector. Same fixed-field min/max + sector-equality schema as the dashboard\'s Screener page (no free-form query expressions). Translate a natural-language screening question (e.g. "P/E under 15 and ROE over 20%") into `<field>_min`/`<field>_max` filters. Data is refreshed at most once daily from a bulk scrape, and excludes companies whose last scrape failed. Returns up to `limit` matches (default 100, capped 500), sorted by market cap descending — mention the Screener page for a fuller/adjustable view of a large result set.',
+    inputSchema: screenerFiltersSchema,
+  },
+  run: async (filters) => {
+    const results = await runScreener(filters);
+    const capped = results.slice(0, 20);
+    return {
+      count: results.length,
+      results: capped,
+      truncated: results.length > capped.length,
+      note: NOT_ADVICE,
+    };
+  },
+});
+
 export const tools: readonly McpToolDef[] = [
   searchSymbolsTool,
   getQuoteTool,
@@ -260,6 +282,7 @@ export const tools: readonly McpToolDef[] = [
   getNewsTool,
   listIposTool,
   getMarketIndicesTool,
+  runScreenerTool,
 ];
 
 export const toolNames = tools.map((t) => t.name);

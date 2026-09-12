@@ -197,6 +197,165 @@
         }
       }
     },
+    "/api/screener": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Screen stocks by financial criteria",
+        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope).",
+        "security": [],
+        "parameters": [
+          {
+            "name": "market_cap_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "market_cap_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "pe_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "pe_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "pb_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "pb_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "roe_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" },
+            "description": "Percent, e.g. 15 for 15%."
+          },
+          {
+            "name": "roe_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "roce_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "roce_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "dividend_yield_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "dividend_yield_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "debt_to_equity_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "debt_to_equity_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "sales_growth_3y_cagr_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" },
+            "description": "Percent CAGR, e.g. 10 for 10%."
+          },
+          {
+            "name": "sales_growth_3y_cagr_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "profit_growth_3y_cagr_min",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "profit_growth_3y_cagr_max",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "example": "Information Technology"
+          },
+          {
+            "name": "industry",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 500, "default": 100 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching companies.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A `_min`/`_max`/`limit` value wasn't a valid number."
+          }
+        }
+      }
+    },
     "/api/holdings": {
       "get": {
         "tags": [
