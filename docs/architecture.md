@@ -11,7 +11,8 @@ Every feature phase through **Phase 11 (multi-agent analysis)** is built, deploy
 production, and signed off. `v2` is kept identical to `main` so the GitHub Actions cron
 schedulers can fire from the default branch. A Mitra navigation + file-import build
 (ADR 0022) is also live — merged, deployed, and awaiting review before its own
-archiving pass (see below).
+archiving pass (see below). A Screener build (ADR 0025) is built and live-verified
+locally, on its own `screener-feature` branch, not yet merged/deployed.
 
 - **Phase 2–3:** scaffold + deployment-mode gate, landing page, on-brand auth pages,
   dashboard shell. ([archive: landing-page, auth-pages, dashboard-shell](./archive/))
@@ -218,6 +219,28 @@ allotment+listing / GMP threshold), pure logic in `src/lib/alerts/ipoAlerts.ts`.
 `/dashboard/ipos` (`IposPageClient` + `IpoRow`) + an `IpoOpenCard` on the dashboard home.
 Prod seeded with 39 real IPOs; the GH Actions refresh is inert until its secret + default
 branch are set.
+
+## Screener (`/dashboard/screener`)
+
+Full detail + the bulk-ingestion pipeline: [ADR 0025](./decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md).
+
+Filter the ~2,570-company NSE universe by market cap, P/E, P/B, ROE, ROCE, dividend yield,
+debt/equity, and 3y sales/profit growth CAGR, plus sector/industry — the first bulk,
+out-of-band ingestion pipeline in `fundamentals-api` (every other table there is populated
+lazily, per company, on read). A new `screener_metrics` Postgres table (every numeric column
+individually btree-indexed) is refreshed by `scripts/refresh_screener_universe.py` →
+`POST /screener/ingest`, mirroring `refresh_ipos.py`'s shape exactly; a daily GitHub Actions
+cron (`.github/workflows/refresh-screener.yml`) exists but the full-universe run hasn't been
+reviewed yet, so it isn't activated (see the ADR's verification-status note). **Shared filter
+schema**: one `RANGE_FIELD_DEFS` array (`src/lib/dashboard/screenerSchema.ts`) derives both the
+UI's field list and its Zod schema, and `runScreener()` (`src/lib/dashboard/screener.ts`) is the
+one function three callers share — the Screener page, `GET /api/screener`, and Mitra's
+`run_screener` MCP tool — so Mitra structurally cannot express a filter the UI can't. v1 is
+fixed-field min/max + sector-equality only, no custom query/expression builder (deliberately
+deferred). UI: `/dashboard/screener` — paired min/max range inputs + a sector dropdown
+(defaulting to ROE ≥ 15% / Debt-Equity ≤ 1 on first load), a sortable results table linking
+each row to the existing stock detail page, an empty state with reset. `run_screener` is a data
+tool, not a navigation tool — returns up to 20 matching rows inline, flags truncation.
 
 ## AI Insights + Mitra chat (`/dashboard/settings`, insight cards, chat)
 

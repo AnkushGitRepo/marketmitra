@@ -49,13 +49,14 @@ For each source, record: what it is, the endpoint(s) used, auth/key requirements
 - **ToS notes:** unofficial API with no SLA — accepted trade-off per ADR 0011. Verified working live during development.
 
 ### Screener.in
-- **Type:** scraper (Tier 3, last resort)
-- **Used for:** named/computed ratios (P/E, ROCE, ROE, etc.) not available as raw data from Tiers 1–2; also a fallback for shareholding pattern and financial statement line items
-- **Endpoint(s):** `https://www.screener.in/company/<symbol>/consolidated/`, via `scrapling`'s static `Fetcher`
+- **Type:** scraper (Tier 3, last resort) **and**, separately, the Screener feature's bulk universe source (ADR 0025)
+- **Used for:** named/computed ratios (P/E, ROCE, ROE, etc.) not available as raw data from Tiers 1–2; also a fallback for shareholding pattern and financial statement line items — **and**, via a second, independent access pattern, the entire NSE universe's screener_metrics table (market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, 3y sales/profit growth CAGR, sector/industry)
+- **Endpoint(s):** `https://www.screener.in/company/<symbol>/consolidated/`, via `scrapling`'s static `Fetcher` — same URL pattern for both access patterns, just at very different scale and cadence (one page per user request vs. ~2,570 pages once daily)
 - **Auth:** none
-- **Rate limits:** none published; retries with backoff on failure, see `app/ingestion/tier3_screener_scrapling/scraper.py`
+- **Rate limits:** none published. The per-company lazy path retries with backoff on failure (`app/ingestion/tier3_screener_scrapling/scraper.py`); the bulk path (`scripts/refresh_screener_universe.py`) self-imposes 2 req/s — deliberately more conservative than NSE's own ~3 req/s community rate, since this is a much larger sustained burst than any single lazy fetch generates.
 - **Cost:** free
-- **ToS notes:** Screener.in is a community/personal site, not a documented API, and its terms don't contemplate automated scraping. Reviewed and accepted as a known trade-off in [ADR 0011](./decisions/0011-three-tier-fundamentals-data-sourcing.md) — kept in an isolated, swappable module specifically because of this risk. Selectors verified against two independent real companies' pages (Reliance via live fetch, Newgen Software via a maintainer-saved page used as a permanent test fixture).
+- **ToS notes:** Screener.in is a community/personal site, not a documented API, and its terms don't contemplate automated scraping. Reviewed and accepted as a known trade-off in [ADR 0011](./decisions/0011-three-tier-fundamentals-data-sourcing.md) — kept in an isolated, swappable module specifically because of this risk. Selectors verified against two independent real companies' pages (Reliance via live fetch, Newgen Software via a maintainer-saved page used as a permanent test fixture). The bulk path was live-tested against 5 real companies (see ADR 0025) — a full ~2,570-company run has not yet happened, so its behavior under that sustained load is a tracked, not assumed-solid, risk.
+- **Universe list for the bulk path:** `GET /companies/master` (a new fundamentals-api endpoint) reuses the existing `company_master` table populated from NSE's own `EQUITY_L.csv`, rather than the bulk script re-fetching NSE independently — see ADR 0025.
 
 ### Indian markets RSS feeds (news)
 - **Type:** public RSS feeds (offered for syndication)

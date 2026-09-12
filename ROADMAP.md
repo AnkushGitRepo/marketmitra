@@ -379,6 +379,58 @@ Run 2026-09-12 against a 20-item checklist (legal, security, SEO, performance, a
 
 ---
 
+## Phase 12 — Screener ✅ built, not yet deployed
+
+Scoped and built 2026-09-13, on `screener-feature` (off `main`) →
+[ADR 0025](./docs/decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md). A
+Screener page (filter the NSE universe by financial criteria) plus a Mitra `run_screener`
+tool sharing the exact same preset filter schema. (Mobile app development, previously
+reserved as "Phase 12," is dropped — not on the roadmap — freeing this number.)
+
+- [x] **Step 1 investigation** — found every table in `fundamentals-api` except
+  `company_master` is populated lazily, one company at a time; no bulk/universe-wide data
+  existed for a screener to filter across. Surfaced directly; user chose to build the
+  bulk-ingestion pipeline now, plus compute P/B/Debt-Equity/growth from data the existing
+  scraper already extracts per company.
+- [x] **Part A** — new `screener_metrics` Postgres table (every numeric column
+  individually btree-indexed); scraper extended (`fetch_screener_snapshot` +
+  debt/equity + 3y CAGR growth helpers, one page fetch, not 3-5×); `POST /screener/ingest`
+  + `GET /screener` + `GET /screener/facets` + `GET /companies/master`;
+  `scripts/refresh_screener_universe.py` + a daily GH Actions cron (not yet activated —
+  see below). Two real bugs caught live against actual Screener.in pages (a wrong
+  balance-sheet label, a `Decimal` JSON-serialization crash); a CAGR
+  fraction-vs-percentage inconsistency caught and fixed before it could leak upstream.
+- [x] **Part B** — `screenerSchema.ts` (one field-defs array derives both the UI's field
+  list and its Zod schema), `runScreener()`, `GET /api/screener`, and the `run_screener`
+  MCP tool — wired into Mitra's chat tools with **zero changes to `chatTools.ts`** (its
+  existing generic MCP-tool-wrapping loop picks up any new tool automatically). Data tool,
+  not a navigation tool: returns up to 20 rows inline, flags truncation.
+- [x] **Part C** — `/dashboard/screener`: default preset (ROE ≥ 15%, Debt/Equity ≤ 1),
+  paired min/max filter inputs + a sector dropdown, sortable results table linking to the
+  existing stock detail page, empty state with reset. Added to `AppHeader`'s nav.
+- [x] **Part D** — confirmed (not assumed) `run_screener` needed no `chatTools.ts`
+  changes; added unit tests for the schema boundary, pass-through, and the truncation cap.
+- [x] Full suite (typecheck/lint/test/build; Python pytest/ruff) green throughout.
+  **Verified live in the browser**, not just unit-tested: default preset, full-universe
+  view, column sorting, stock-detail navigation, and the empty state, all against 5 real
+  companies ingested during Part A testing. Mitra's live LLM tool-call loop itself wasn't
+  exercised end-to-end (no BYO AI key configured in this local environment) — `run_screener`'s
+  wiring is proven by its unit tests plus the unchanged, already-proven `chatTools.ts` loop.
+- [ ] **Not yet done, tracked honestly (see the ADR):** the real full-universe (~2,570
+  company) ingestion run — only a `--limit 5` local test has happened. The daily cron
+  should not be activated until that run has been reviewed for wall-clock time and
+  failure rate.
+- [ ] **Not yet pushed, merged, or deployed** — sits on `screener-feature` pending
+  explicit go-ahead, alongside the still-pending `live-quote-fix` and
+  production-readiness-pass branches.
+
+_Explicitly deferred, not forgotten: a custom query/expression builder (v1 is fixed-field
+min/max + sector-equality only, on both the UI and Mitra's side); an `open_screener(filters)`
+navigation-tool counterpart to `run_screener`; exposing `industry` as a UI filter field
+(already supported by the schema/API, just not surfaced in the panel yet)._
+
+---
+
 ## Deferred / Held Separately
 
 - **Company legal issues / litigation tracking** — deferred, no data source decided, no ETA. Revisit only when explicitly raised again.

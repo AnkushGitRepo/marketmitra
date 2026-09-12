@@ -72,6 +72,14 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Errors:** empty `q` returns `[]`.
 - **Note:** this is a thin proxy to fundamentals-api's own `GET /search` (see ADR 0012's amendment) — a deliberate, narrow exception to the "consume fundamentals-api directly from Server Components" rule below, needed only because live-as-you-type search must run client-side and the browser needs a same-origin endpoint. It intentionally doesn't follow this file's usual response envelope convention since it's a pass-through of the Python service's own response shape.
 
+### `GET /api/screener`
+- **Purpose:** Filter the NSE stock universe by financial criteria (market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, 3y sales/profit growth CAGR, sector/industry) for `/dashboard/screener`. See [ADR 0025](./decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md).
+- **Auth:** public — no session required.
+- **Request:** query params `<field>_min`/`<field>_max` for each numeric field above, plus `sector`, `industry` (equality), and `limit` (default 100, max 500). Fixed-field min/max + equality only — no free-form query expressions (deliberately deferred, see the ADR).
+- **Response:** `data`-less shape (returns the array directly): `ScreenerMetric[]` — one row per matching company, sorted by market cap descending. Excludes companies whose last bulk scrape failed.
+- **Errors:** `400` if any `_min`/`_max`/`limit` value isn't a valid number.
+- **Note:** a thin proxy to fundamentals-api's `GET /screener`, backed by a table that's bulk-refreshed at most once daily — not the same freshness as this stock's live detail page. Same shared filter schema (`src/lib/dashboard/screenerSchema.ts`) as Mitra's `run_screener` MCP tool below, so the two can never drift apart.
+
 ### `GET /api/alerts`
 - **Purpose:** List the current user's alerts (all statuses), newest first. See [ADR 0014](./decisions/0014-alerts-engine-scope.md).
 - **Auth:** required — Clerk session in hosted mode, fixed `"local"` user in self-host (`src/lib/currentUserId.ts`).
@@ -245,6 +253,7 @@ stateless Streamable HTTP MCP server mounted in the Next app
 | `get_news` | `{ symbols?: string[≤20], limit?: 1..50, cursor?: string }` (default limit 20) | `{ count, items: NewsItem[], next_cursor, note }` — omit `symbols` for the broad stream; `sentiment` = headline tone only |
 | `list_ipos` | `{ status?: "upcoming"\|"open"\|"closed"\|"listed" }` | `{ count, ipos: Ipo[], note }` — GMP fields are an unofficial third-party estimate |
 | `get_market_indices` | `{}` | `{ count, indices: IndexQuoteOut[], note }` — NIFTY 50, SENSEX, NIFTY BANK, INDIA VIX |
+| `run_screener` | `ScreenerFilters` (see [ADR 0025](./decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md)) — `<field>_min`/`<field>_max` for market cap/P-E/P-B/ROE/ROCE/dividend yield/debt-equity/sales & profit growth CAGR, plus `sector`/`industry`/`limit` | `{ count, results: ScreenerMetric[≤20], truncated, note }` — same filter schema the Screener page's UI uses; `truncated:true` + the true `count` when more than 20 match |
 
 Field shapes (`QuoteOut`, `PricePointOut`, `NewsItem`, `Ipo`, `IndexQuoteOut`, …) are defined in `src/lib/dashboard/{fundamentalsApi,newsApi,iposApi}.ts` and documented in `services/fundamentals-api/README.md`. Any field can be null/empty when the free source chain came up short; every record carries `source_tier`.
 
