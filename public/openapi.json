@@ -130,6 +130,48 @@
         }
       }
     },
+    "/api/stock/{ticker}": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Get everything about a ticker",
+        "description": "Screener.in-style aggregate for one NSE company in a single call: company profile, a live quote (ADR 0024: yahoo-finance2, falling back to NSE/BSE), ratios, shareholding pattern, peer comparison, document links, and financial statements. Pick `sections` to narrow the response. Returns the object directly (not the standard envelope) \u2014 same deliberate exception as GET /api/search and GET /api/news. Shares its aggregation logic with the MCP `get_company_fundamentals` tool.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "RELIANCE"
+          },
+          {
+            "name": "sections",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated subset of: company, quote, ratios, shareholding, peers, documents, financials. Omit for all.",
+            "example": "company,quote,ratios"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ symbol, found: true, company?, quote?, ratios?, shareholding?, peers?, documents?, financials? } \u2014 fields present per `sections`."
+          },
+          "400": {
+            "description": "Unknown value in `sections`."
+          },
+          "404": {
+            "description": "{ symbol, found: false, message } \u2014 not a symbol the fundamentals service recognises, or every source came up short."
+          }
+        }
+      }
+    },
     "/api/news": {
       "get": {
         "tags": [

@@ -6,6 +6,8 @@
 // chain can come up short (e.g. NSE blocked, Screener markup changed), and
 // callers must handle that rather than assume data always arrives.
 
+import { fetchYahooQuotes } from './yahooQuote';
+
 const BASE_URL = process.env.FUNDAMENTALS_API_URL ?? 'http://localhost:8420';
 
 export interface CompanyOut {
@@ -142,16 +144,16 @@ export interface QuoteOut {
   source_tier: string;
 }
 
-/** Batched live quote for the alerts engine (ADR 0014). `cache: 'no-store'`
- * — the whole point is a fresh price each evaluation cycle; the Python
- * service already holds its own short in-process cache so this doesn't
- * hammer the upstream. Returns [] (never a fabricated price) on failure. */
-export async function getQuotes(symbols: string[]): Promise<QuoteOut[]> {
-  const wanted = symbols.map((s) => s.trim()).filter(Boolean);
-  if (wanted.length === 0) return [];
+/** The fundamentals-api's own quote endpoint (NSE -> BSE, ADR 0024) —
+ * `cache: 'no-store'` since the whole point is a fresh price each call; the
+ * Python service already holds its own short in-process cache so this
+ * doesn't hammer the upstream. Returns [] (never a fabricated price) on
+ * failure. Kept as a private fallback behind yahoo-finance2 in getQuotes(). */
+async function fetchFundamentalsApiQuotes(symbols: string[]): Promise<QuoteOut[]> {
+  if (symbols.length === 0) return [];
   try {
     const response = await fetch(
-      `${BASE_URL}/quote?symbols=${encodeURIComponent(wanted.join(','))}`,
+      `${BASE_URL}/quote?symbols=${encodeURIComponent(symbols.join(','))}`,
       { cache: 'no-store' }
     );
     if (!response.ok) return [];
@@ -159,6 +161,29 @@ export async function getQuotes(symbols: string[]): Promise<QuoteOut[]> {
   } catch {
     return [];
   }
+}
+
+/** Batched live "price right now" quote — used by the dashboard/portfolio UI
+ * and the alerts engine (ADR 0014) alike. yahoo-finance2 is tried first
+ * (ADR 0024); the fundamentals-api's own NSE -> BSE chain is the fallback
+ * for whatever symbols it couldn't resolve. Never a fabricated price: a
+ * symbol both sources come up short on is simply absent from the result. */
+export async function getQuotes(symbols: string[]): Promise<QuoteOut[]> {
+  const wanted = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))];
+  if (wanted.length === 0) return [];
+
+  const fromYahoo = await fetchYahooQuotes(wanted);
+  const missing = wanted.filter((s) => !fromYahoo.has(s));
+
+  const fromFundamentalsApi = missing.length ? await fetchFundamentalsApiQuotes(missing) : [];
+  const bySymbol = new Map(fromFundamentalsApi.map((q) => [q.symbol.toUpperCase(), q]));
+
+  const result: QuoteOut[] = [];
+  for (const symbol of wanted) {
+    const quote = fromYahoo.get(symbol) ?? bySymbol.get(symbol);
+    if (quote) result.push(quote);
+  }
+  return result;
 }
 
 export interface SearchResultOut {

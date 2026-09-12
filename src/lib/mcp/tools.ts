@@ -14,19 +14,17 @@
 
 import { z } from 'zod';
 import {
-  getCompany,
-  getRatios,
-  getShareholding,
-  getPeers,
-  getDocuments,
-  getFinancials,
   getPrices,
   getIndices,
   getQuotes,
   searchSymbols,
-  type StatementType,
   type PricePeriod,
 } from '@/lib/dashboard/fundamentalsApi';
+import {
+  getStockAggregate,
+  STOCK_AGGREGATE_SECTIONS,
+  type StockAggregateSection,
+} from '@/lib/dashboard/stockAggregate';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { getIpos, type IpoStatus } from '@/lib/dashboard/iposApi';
 
@@ -42,14 +40,6 @@ const SYMBOL = z
 
 const PRICE_PERIODS = ['1mo', '6mo', '1y', '5y'] as const;
 const IPO_STATUSES = ['upcoming', 'open', 'closed', 'listed'] as const;
-const FUNDAMENTAL_SECTIONS = [
-  'company',
-  'ratios',
-  'shareholding',
-  'peers',
-  'documents',
-  'financials',
-] as const;
 
 export interface McpToolDef<S extends z.ZodTypeAny = z.ZodTypeAny> {
   name: string;
@@ -105,60 +95,20 @@ const getCompanyFundamentalsTool = defineTool({
   config: {
     title: 'Get company fundamentals',
     description:
-      'Screener.in-style fundamentals for one NSE company: business description ("about"), named ratios, historical shareholding pattern (~12 quarters), peer comparison, annual-report document links, and historical financial statements (P&L, balance sheet, cash flow). Pick `sections` to narrow the response. Data comes from a free three-tier fallback chain; `source_tier` is on every record and some fields may be null when a source came up short.',
+      'Screener.in-style fundamentals for one NSE company: live quote, business description ("about"), named ratios, historical shareholding pattern (~12 quarters), peer comparison, annual-report document links, and historical financial statements (P&L, balance sheet, cash flow). Pick `sections` to narrow the response. Data comes from a free fallback chain; `source_tier` is on every record and some fields may be null when a source came up short. Also available as a plain REST call: GET /api/stock/{ticker}.',
     inputSchema: z.object({
       symbol: SYMBOL,
       sections: z
-        .array(z.enum(FUNDAMENTAL_SECTIONS))
+        .array(z.enum(STOCK_AGGREGATE_SECTIONS))
         .optional()
         .describe(
-          'Subset of: company, ratios, shareholding, peers, documents, financials. Omit for all.'
+          'Subset of: company, quote, ratios, shareholding, peers, documents, financials. Omit for all.'
         ),
     }),
   },
   run: async ({ symbol, sections }) => {
-    const want = (s: (typeof FUNDAMENTAL_SECTIONS)[number]) => !sections || sections.includes(s);
-    const company = await getCompany(symbol);
-    if (!company) {
-      return {
-        symbol: symbol.toUpperCase(),
-        found: false,
-        message:
-          "No data for that symbol — it may not be a symbol the fundamentals service recognises, or every source came up short. Try search_symbols first.",
-      };
-    }
-
-    const [ratios, shareholding, peers, documents, pnl, bs, cf] = await Promise.all([
-      want('ratios') ? getRatios(symbol) : Promise.resolve(null),
-      want('shareholding') ? getShareholding(symbol) : Promise.resolve(null),
-      want('peers') ? getPeers(symbol) : Promise.resolve(null),
-      want('documents') ? getDocuments(symbol) : Promise.resolve(null),
-      want('financials')
-        ? getFinancials(symbol, 'profit_and_loss' as StatementType)
-        : Promise.resolve(null),
-      want('financials')
-        ? getFinancials(symbol, 'balance_sheet' as StatementType)
-        : Promise.resolve(null),
-      want('financials') ? getFinancials(symbol, 'cash_flow' as StatementType) : Promise.resolve(null),
-    ]);
-
-    return {
-      symbol: company.symbol,
-      found: true,
-      company: want('company') ? company : undefined,
-      ratios: want('ratios') ? (ratios ?? []) : undefined,
-      shareholding: want('shareholding') ? (shareholding ?? []) : undefined,
-      peers: want('peers') ? (peers ?? []) : undefined,
-      documents: want('documents') ? (documents ?? []) : undefined,
-      financials: want('financials')
-        ? {
-            profit_and_loss: pnl ?? [],
-            balance_sheet: bs ?? [],
-            cash_flow: cf ?? [],
-          }
-        : undefined,
-      note: NOT_ADVICE,
-    };
+    const result = await getStockAggregate(symbol, sections as StockAggregateSection[] | undefined);
+    return { ...result, note: NOT_ADVICE };
   },
 });
 

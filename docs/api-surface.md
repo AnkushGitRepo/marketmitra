@@ -72,6 +72,14 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Errors:** empty `q` returns `[]`.
 - **Note:** this is a thin proxy to fundamentals-api's own `GET /search` (see ADR 0012's amendment) — a deliberate, narrow exception to the "consume fundamentals-api directly from Server Components" rule below, needed only because live-as-you-type search must run client-side and the browser needs a same-origin endpoint. It intentionally doesn't follow this file's usual response envelope convention since it's a pass-through of the Python service's own response shape.
 
+### `GET /api/stock/{ticker}`  _(ADR 0024)_
+- **Purpose:** Screener.in-style "everything about this ticker" in one call — company profile, a live quote, ratios, shareholding pattern, peer comparison, document links, and financial statements. Replaces having to stitch together `GET /api/search` (name/symbol only) plus several separate fundamentals-api calls.
+- **Auth:** public — no session required (same as `GET /api/search`/`GET /api/news`).
+- **Request:** path param `ticker` (NSE symbol, case-insensitive). Optional query param `sections` — comma-separated subset of `company,quote,ratios,shareholding,peers,documents,financials`; omit for all.
+- **Response:** `data`-less shape (bare JSON, same deliberate exception as `GET /api/search`/`GET /api/news`): `{ symbol, found: true, company?, quote?, ratios?, shareholding?, peers?, documents?, financials? }` — only the requested `sections` are present. `quote` is `{ symbol, price, prev_close, change_pct, week52_high, week52_low, as_of, source_tier }` or `null` if a live price wasn't available; `source_tier` is `"yahoo_finance2"` or `"tier1_nse_bse"` (see ADR 0024 — yfinance is no longer part of this path at all).
+- **Errors:** `400` on an unrecognized `sections` value; `404` with `{ symbol, found: false, message }` when the symbol isn't recognized or every source came up short.
+- **Note:** shares its aggregation logic (`src/lib/dashboard/stockAggregate.ts`) with the MCP `get_company_fundamentals` tool below, so a plain `curl`/browser call and an MCP client get the identical picture.
+
 ### `GET /api/alerts`
 - **Purpose:** List the current user's alerts (all statuses), newest first. See [ADR 0014](./decisions/0014-alerts-engine-scope.md).
 - **Auth:** required — Clerk session in hosted mode, fixed `"local"` user in self-host (`src/lib/currentUserId.ts`).
@@ -240,7 +248,7 @@ stateless Streamable HTTP MCP server mounted in the Next app
 | --- | --- | --- |
 | `search_symbols` | `{ query: string }` | `{ query, count, results: [{type,symbol,name}] }` — ≤15 matches across ~2,570 NSE equities + indices |
 | `get_quote` | `{ symbols: string[1..50] }` | `{ count, quotes: QuoteOut[], missing: string[], note }` — unknown symbols reported in `missing`, never faked |
-| `get_company_fundamentals` | `{ symbol: string, sections?: ("company"\|"ratios"\|"shareholding"\|"peers"\|"documents"\|"financials")[] }` | `{ symbol, found, company?, ratios?, shareholding?, peers?, documents?, financials?: {profit_and_loss,balance_sheet,cash_flow} }` — `found:false` with a hint when the symbol is unknown |
+| `get_company_fundamentals` | `{ symbol: string, sections?: ("company"\|"quote"\|"ratios"\|"shareholding"\|"peers"\|"documents"\|"financials")[] }` | `{ symbol, found, company?, quote?, ratios?, shareholding?, peers?, documents?, financials?: {profit_and_loss,balance_sheet,cash_flow} }` — `found:false` with a hint when the symbol is unknown. As of ADR 0024 this also includes a live `quote`, and the same aggregation backs the plain REST `GET /api/stock/{ticker}` above |
 | `get_price_history` | `{ symbol: string, period?: "1mo"\|"6mo"\|"1y"\|"5y" }` (default `1y`) | `{ symbol, period, count, points: PricePointOut[] }` — newest first |
 | `get_news` | `{ symbols?: string[≤20], limit?: 1..50, cursor?: string }` (default limit 20) | `{ count, items: NewsItem[], next_cursor, note }` — omit `symbols` for the broad stream; `sentiment` = headline tone only |
 | `list_ipos` | `{ status?: "upcoming"\|"open"\|"closed"\|"listed" }` | `{ count, ipos: Ipo[], note }` — GMP fields are an unofficial third-party estimate |

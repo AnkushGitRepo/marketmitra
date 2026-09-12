@@ -132,20 +132,23 @@ closed → listed.
 
 ## Live quote (`GET /quote?symbols=A,B,C`)
 
-`app/ingestion/quotes.py` + `app/api/routes/quote.py`. The read path the
-MarketMitra alerts engine polls (ADR 0014): a lightweight, DB-free "price
-right now, for these N symbols" call so an alert-evaluation cycle fetches
-every symbol it needs in one request. Backed by yfinance's `fast_info`
-(Tier 2 — a single quote-summary fetch carrying last price, previous
-close, and the 52-week range together); NSE/BSE are blocked from this
-environment and Screener.in is fundamentals-only, so yfinance is the only
-viable source here. Response per symbol: `{ symbol, price, prev_close,
-change_pct, week52_high, week52_low, as_of, source_tier }`. A tracked
-index name (e.g. `NIFTY 50`) also resolves. Symbols whose upstream fetch
-fails are omitted from the response, never returned with a fabricated
-price. Results are held in a short in-process TTL cache
-(`quote_cache_ttl_seconds`, default 60) so the alert cron and any
-dashboard caller share one upstream hit. Capped at 100 symbols/request.
+`app/ingestion/quotes.py` + `app/api/routes/quote.py`. Called both directly
+(by MarketMitra's alerts engine, ADR 0014) and as the fallback behind the
+main Next.js app's own `yahoo-finance2` primary source (ADR 0024) — a
+lightweight "price right now, for these N symbols" call so a caller fetches
+every symbol it needs in one request. As of ADR 0024, this endpoint tries
+NSE (`app/ingestion/tier1_nse_bse.py`'s `get_nse_quote`) first, then BSE
+(`get_bse_quote`, needs a `bse_code` looked up in Postgres — currently a
+stub, since nothing populates `bse_code` yet), and returns nothing if both
+come up short. **yfinance has been removed from this path entirely** — a
+caller gets a real exchange-sourced price or none at all. Response per
+symbol: `{ symbol, price, prev_close, change_pct, week52_high, week52_low,
+as_of, source_tier }` (`source_tier` is `tier1_nse_bse` here — always Tier 1,
+since yfinance is gone). A tracked index name (e.g. `NIFTY 50`) also
+resolves. Symbols whose upstream fetch fails are omitted from the response,
+never returned with a fabricated price. Results are held in a short
+in-process TTL cache (`quote_cache_ttl_seconds`, default 60) so callers
+share one upstream hit. Capped at 100 symbols/request.
 
 ## Testing
 
@@ -153,7 +156,7 @@ dashboard caller share one upstream hit. Capped at 100 symbols/request.
 pytest
 ```
 
-All 86 tests run offline — no network, no database. They use saved
+All 102 tests run offline — no network, no database. They use saved
 fixtures (a real Screener.in page a maintainer saved to disk, a synthetic
 but taxonomy-accurate XBRL instance document, a generated PDF with a ruled
 table, and JSON shapes for the NSE/BSE filing-list responses) rather than
@@ -178,7 +181,7 @@ package.
 |---|---|---|---|
 | Quote / company info | Tier 1 (BSE via `bsedata`; NSE via `nsepython`) | Tier 2 (`yfinance`) | Both wired and tested. NSE itself is frequently blocked at Akamai's edge (see `app/ingestion/tier1_nse_bse.py`) — this is exactly why Tier 2 exists. |
 | Price history | Tier 2 (`yfinance`) | — | Wired and tested. |
-| Live quote (`GET /quote`) | Tier 2 (`yfinance` `fast_info`) | — | Batched, DB-free, 60s in-process cache. Last price / prev close / intraday % / 52-week range. Feeds MarketMitra's alerts engine (ADR 0014). Verified live for RELIANCE, TCS, NIFTY 50; a bad symbol is dropped, not faked. |
+| Live quote (`GET /quote`) | Tier 1 NSE (`nsepython`) | Tier 1 BSE (`bsedata`, needs a `bse_code` — currently a stub, nothing populates one yet) | ADR 0024. Batched, 60s in-process cache. Last price / prev close / intraday % / 52-week range. Feeds MarketMitra's alerts engine (ADR 0014) and, as a fallback behind `yahoo-finance2`, the main app's dashboard. yfinance removed from this path entirely — never a `fast_info` guess. |
 | IPO tracker (`GET /ipos`) | Tier 3 (aggregator scrape) | Tier 1 NSE/BSE IPO endpoints (attempt) | ADR 0017. IPO calendar + subscription + **GMP** (no free official source for GMP). Parser verified against a maintainer-saved page (23 real IPOs); live ingestion is an out-of-band headless-browser job (SPA page). GMP labelled everywhere as an unofficial grey-market estimate; degrades to "unavailable". |
 | News feed (`GET /news`) | Free RSS — broad markets feeds + Google News RSS per symbol | — | ADR 0015. Postgres-backed, lazy TTL refresh, 30-day retention. Verified live: 4 broad feeds return real items (Business Standard 403s; NDTV Profit's feed carries too much non-markets content — both dropped), Google-News-per-symbol returns real publisher-attributed items. VADER headline-tone label per item (skews optimistic on financial text — labelled as tone, not a signal). Title + summary + link only, no scraped bodies. |
 | Ratios | Tier 3 (Screener.in) | — | Tiers 1/2 don't expose comparable named/computed ratios as raw data. |
