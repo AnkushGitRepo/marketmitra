@@ -1,0 +1,96 @@
+.pageRoot {
+  padding-bottom: 0;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--app-border-softer);
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.headRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.identity {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+}
+
+.title {
+  width: 220px;
+  height: 26px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  width: 140px;
+  height: 16px;
+}
+
+.price {
+  width: 120px;
+  height: 26px;
+  margin-left: auto;
+  margin-bottom: 8px;
+}
+
+.change {
+  width: 90px;
+  height: 16px;
+  margin-left: auto;
+}
+
+.card {
+  height: 140px;
+  margin-bottom: 20px;
+}
+
+.splitGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 760px) {
+  .splitGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cardTall {
+  height: 280px;
+}
