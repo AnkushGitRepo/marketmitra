@@ -120,9 +120,27 @@ def _is_stale(fetched_at: datetime | None, ttl_hours: int) -> bool:
     return datetime.now(UTC) - fetched_at > timedelta(hours=ttl_hours)
 
 
+async def _latest_snapshot(session: AsyncSession, model: type, company_id: int, *order_by):
+    """Ratios and peer comparisons are re-scraped daily, keyed into their
+    upsert conflict target by (..., as_of) — so every calendar day this ran
+    on adds a *new* row rather than replacing the previous one (as_of
+    differs). Without narrowing to the most recent as_of, a caller gets
+    every historical daily snapshot ever taken, not just the latest —
+    surfaced as visibly duplicated rows on the stock page. Always call
+    through this rather than a bare `WHERE company_id = ...` select."""
+    latest_as_of = (
+        select(func.max(model.as_of)).where(model.company_id == company_id).scalar_subquery()
+    )
+    stmt = (
+        select(model)
+        .where(model.company_id == company_id, model.as_of == latest_as_of)
+        .order_by(*order_by)
+    )
+    return list((await session.execute(stmt)).scalars())
+
+
 async def get_ratios(session: AsyncSession, company: CompanyORM) -> list[RatioORM]:
-    stmt = select(RatioORM).where(RatioORM.company_id == company.id).order_by(RatioORM.as_of.desc())
-    existing = list((await session.execute(stmt)).scalars())
+    existing = await _latest_snapshot(session, RatioORM, company.id, RatioORM.name)
     most_recent_fetch = existing[0].fetched_at if existing else None
 
     if existing and not _is_stale(most_recent_fetch, _settings.ratios_cache_ttl_hours):
@@ -152,8 +170,7 @@ async def get_ratios(session: AsyncSession, company: CompanyORM) -> list[RatioOR
         await session.execute(stmt)
     await session.commit()
 
-    stmt = select(RatioORM).where(RatioORM.company_id == company.id).order_by(RatioORM.as_of.desc())
-    return list((await session.execute(stmt)).scalars())
+    return await _latest_snapshot(session, RatioORM, company.id, RatioORM.name)
 
 
 async def get_shareholding(session: AsyncSession, company: CompanyORM) -> list[ShareholdingEntryORM]:
@@ -375,12 +392,9 @@ async def get_about(session: AsyncSession, company: CompanyORM) -> str | None:
 
 
 async def get_peers(session: AsyncSession, company: CompanyORM) -> list[PeerComparisonORM]:
-    stmt = (
-        select(PeerComparisonORM)
-        .where(PeerComparisonORM.company_id == company.id)
-        .order_by(PeerComparisonORM.market_cap.desc().nullslast())
+    existing = await _latest_snapshot(
+        session, PeerComparisonORM, company.id, PeerComparisonORM.market_cap.desc().nullslast()
     )
-    existing = list((await session.execute(stmt)).scalars())
     most_recent_fetch = existing[0].fetched_at if existing else None
     if existing and not _is_stale(most_recent_fetch, _settings.ratios_cache_ttl_hours):
         return existing
@@ -429,12 +443,9 @@ async def get_peers(session: AsyncSession, company: CompanyORM) -> list[PeerComp
         await session.execute(stmt)
     await session.commit()
 
-    stmt = (
-        select(PeerComparisonORM)
-        .where(PeerComparisonORM.company_id == company.id)
-        .order_by(PeerComparisonORM.market_cap.desc().nullslast())
+    return await _latest_snapshot(
+        session, PeerComparisonORM, company.id, PeerComparisonORM.market_cap.desc().nullslast()
     )
-    return list((await session.execute(stmt)).scalars())
 
 
 async def get_documents(session: AsyncSession, company: CompanyORM) -> list[DocumentReferenceORM]:

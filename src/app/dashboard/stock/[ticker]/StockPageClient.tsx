@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { LineChart } from '@/components/dashboard-charts/LineChart';
 import { PillTabs } from '@/components/dashboard-charts/PillTabs';
@@ -269,7 +270,13 @@ export function StockPageClient({
                     style={p.is_target ? { fontWeight: 600 } : undefined}
                   >
                     <td className={styles.rowLabel} style={{ textAlign: 'left' }}>
-                      {p.name}
+                      {p.is_target ? (
+                        p.name
+                      ) : (
+                        <Link href={`/dashboard/stock/${p.symbol}`} className={styles.peerLink}>
+                          {p.name}
+                        </Link>
+                      )}
                       {p.is_target && <span className={styles.docMeta}> · this stock</span>}
                     </td>
                     <td className={styles.rowCell}>{formatPeerValue(p.cmp, 'inr')}</td>
