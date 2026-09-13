@@ -379,7 +379,7 @@ Run 2026-09-12 against a 20-item checklist (legal, security, SEO, performance, a
 
 ---
 
-## Live-quote fix (yahoo-finance2 + NSE/BSE) + stock aggregate endpoint ✅ built, not yet deployed
+## Live-quote fix (yahoo-finance2 + NSE/BSE) + stock aggregate endpoint ✅ deployed
 
 Built 2026-09-12 → [ADR 0024](./docs/decisions/0024-live-quote-yahoo-finance2-and-stock-aggregate-endpoint.md). Two problems: dashboard/portfolio prices were stale, and the public API had no single "everything about this ticker" endpoint.
 
@@ -389,12 +389,12 @@ Built 2026-09-12 → [ADR 0024](./docs/decisions/0024-live-quote-yahoo-finance2-
 - [x] New `GET /api/stock/{ticker}` — screener.in-style aggregate (company, live quote, ratios, shareholding, peers, documents, financials), shared with the MCP `get_company_fundamentals` tool (which gains a `quote` field it never had). Documented in `public/openapi.json` + `docs/api-surface.md`, verified against the repo's own openapi↔routes CI check.
 - [x] **Known, accepted limitation:** BSE fallback is a wired-in stub — no NSE-symbol→BSE-code mapping exists anywhere in this codebase yet, so it can't actually fire for any company today. Tracked here as separate future work, not silently assumed solved.
 - [x] Verified live: a real `yahoo-finance2` call against the actual Yahoo Finance API returned accurate current prices for RELIANCE/TCS/NIFTY 50. Full suite green (TS: typecheck/lint/368 tests/build; Python: 102 tests + ruff).
-- [ ] **Not yet pushed or deployed** — built on branch `live-quote-fix`, awaiting explicit go-ahead.
-- [ ] **Future work, not blocking:** a real NSE-symbol→BSE-code mapping to make the BSE fallback stub actually fire; confirming live post-deploy whether NSE responds from the real Vercel environment (ADR 0011 only confirmed it's blocked in dev/CI).
+- [x] Merged into `screener-feature` → `main`/`v2`, pushed, and **deployed to production 2026-09-13**. Post-deploy check: `GET /api/stock/TCS` on the live domain returns a real `yahoo_finance2` quote.
+- [ ] **Future work, not blocking:** a real NSE-symbol→BSE-code mapping to make the BSE fallback stub actually fire; confirming whether NSE responds from the real Vercel environment turned out moot in practice — `GET /quote` from the deployed fundamentals-api still returns `[]` for equities post-deploy, but this no longer matters for the dashboard since yahoo-finance2 is the primary path (ADR 0011 only confirmed NSE is blocked in dev/CI; the deployed behavior is now observed, not just inferred).
 
 ---
 
-## Phase 12 — Screener ✅ built, not yet deployed
+## Phase 12 — Screener ✅ deployed (bulk-ingestion cron not yet activated)
 
 Scoped and built 2026-09-13, on `screener-feature` (off `main`) →
 [ADR 0025](./docs/decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md). A
@@ -431,18 +431,44 @@ reserved as "Phase 12," is dropped — not on the roadmap — freeing this numbe
   companies ingested during Part A testing. Mitra's live LLM tool-call loop itself wasn't
   exercised end-to-end (no BYO AI key configured in this local environment) — `run_screener`'s
   wiring is proven by its unit tests plus the unchanged, already-proven `chatTools.ts` loop.
+- [x] Merged into `main`/`v2`, pushed, and **deployed to production 2026-09-13**. The prod
+  Neon migration (`15d9b474e4fe`, adding `screener_metrics`) was applied by hand first —
+  caught and removed a stray duplicate migration file (`... 2.py`, an IDE file-sync
+  artifact, gitignored, never committed) that was making Alembic see two conflicting heads
+  before the real migration could run. Post-deploy check: `GET /screener` and
+  `GET /screener/facets` return clean (empty) results, not errors.
 - [ ] **Not yet done, tracked honestly (see the ADR):** the real full-universe (~2,570
-  company) ingestion run — only a `--limit 5` local test has happened. The daily cron
-  should not be activated until that run has been reviewed for wall-clock time and
-  failure rate.
-- [ ] **Not yet pushed, merged, or deployed** — sits on `screener-feature` pending
-  explicit go-ahead, alongside the still-pending `live-quote-fix` and
-  production-readiness-pass branches.
+  company) ingestion run — only a `--limit 5` local test has happened, so production's
+  `screener_metrics` table is currently empty. The daily cron should not be activated
+  until that run has been reviewed for wall-clock time and failure rate.
 
 _Explicitly deferred, not forgotten: a custom query/expression builder (v1 is fixed-field
 min/max + sector-equality only, on both the UI and Mitra's side); an `open_screener(filters)`
 navigation-tool counterpart to `run_screener`; exposing `industry` as a UI filter field
 (already supported by the schema/API, just not surfaced in the panel yet)._
+
+---
+
+## Index detail pages (`/dashboard/index/[name]`) ✅ deployed
+
+Built 2026-09-13. Clicking an index card or searching an index previously led nowhere
+useful (cards weren't links; search routed to the generic `/dashboard/markets` page).
+
+- [x] `fetchIndexHistory()` (`yahooQuote.ts`) — index price history via `yahoo-finance2`'s
+  `chart()`, since indices have no Postgres-backed history (fundamentals-api serves index
+  quotes live-only, never cached) and aren't company-resolvable. Mapped to the same
+  `PricePointOut` shape the stock page's price history uses, so the existing chart
+  machinery works unmodified.
+- [x] `/dashboard/index/[name]` — live quote, 52-week hi/lo, period-switchable price
+  chart, general market news (captioned as not index-specific). `IndexCard` (dashboard
+  home + `/dashboard/markets`) and the header search both route here now.
+- [x] `PageContextValue`/`formatPageContext` gained an `'index'` page type so Mitra can
+  reference "this index" — no new chat tool added (out of scope for a navigation fix).
+- [x] Deliberately **not** added to `AppHeader`'s nav, per instruction — reachable only
+  via search and the existing index cards.
+- [x] Full suite green (386 tests, +6 new). Merged, pushed, and **deployed to production
+  2026-09-13** — NIFTY 50, INDIA VIX, and NIFTY BANK all verified live in production with
+  real quotes/52w ranges/charts.
 
 ---
 

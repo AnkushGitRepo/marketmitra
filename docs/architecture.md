@@ -11,8 +11,12 @@ Every feature phase through **Phase 11 (multi-agent analysis)** is built, deploy
 production, and signed off. `v2` is kept identical to `main` so the GitHub Actions cron
 schedulers can fire from the default branch. A Mitra navigation + file-import build
 (ADR 0022) is also live — merged, deployed, and awaiting review before its own
-archiving pass (see below). A Screener build (ADR 0025) is built and live-verified
-locally, on its own `screener-feature` branch, not yet merged/deployed.
+archiving pass (see below). A Screener build (ADR 0025), the live-quote fix (ADR 0024),
+new index detail pages, and a production-readiness pass (ADR 0023) are also merged,
+pushed, and **deployed to production 2026-09-13** — the prod Neon migration for
+`screener_metrics` is applied, but the daily bulk-ingestion cron is not yet activated
+(only a `--limit 5` local test run has happened; the full ~2,570-company universe run
+still needs to happen and be reviewed first).
 
 - **Phase 2–3:** scaffold + deployment-mode gate, landing page, on-brand auth pages,
   dashboard shell. ([archive: landing-page, auth-pages, dashboard-shell](./archive/))
