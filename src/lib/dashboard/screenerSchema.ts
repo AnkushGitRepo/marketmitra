@@ -80,3 +80,47 @@ export const screenerFiltersSchema = z.object({
 });
 
 export type ScreenerFilters = z.infer<typeof screenerFiltersSchema>;
+
+// Result/facet shapes + the query-string builder live here, not in
+// screener.ts, specifically so the Screener page's 'use client' component
+// can import them without dragging in screener.ts's `getJson` import of
+// fundamentalsApi.ts — which (since the live-quote fix) pulls in
+// yahoo-finance2, a Node-only package that breaks the client bundle.
+// This file has zero I/O and no such dependency, so it's safe for either side.
+
+export interface ScreenerResultRow {
+  symbol: string;
+  name: string;
+  sector: string | null;
+  industry: string | null;
+  market_cap: number | null;
+  current_price: number | null;
+  pe: number | null;
+  book_value: number | null;
+  pb: number | null;
+  dividend_yield: number | null;
+  roce: number | null;
+  roe: number | null;
+  face_value: number | null;
+  debt_to_equity: number | null;
+  sales_growth_3y_cagr: number | null;
+  profit_growth_3y_cagr: number | null;
+  fetch_status: string;
+  source_tier: string;
+  fetched_at: string;
+}
+
+export interface ScreenerFacets {
+  sectors: string[];
+  industries: string[];
+}
+
+export function buildScreenerQuery(filters: ScreenerFilters): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && value !== '') {
+      qs.set(key, String(value));
+    }
+  }
+  return qs.toString();
+}

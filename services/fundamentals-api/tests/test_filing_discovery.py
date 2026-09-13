@@ -152,7 +152,9 @@ async def test_extract_from_xbrl_attaches_the_discovered_period(monkeypatch):
     assert all(i["period_end"] == date(2026, 6, 30) for i in items)
     assert all(i["period_type"] == PeriodType.QUARTERLY for i in items)
     revenue = next(i for i in items if i["label"] == "Revenue from Operations")
-    assert revenue["value"] == Decimal(2385000000)
+    # Raw XBRL fact is in absolute rupees; scaled to crore (ADR — matches
+    # every other source feeding this table).
+    assert revenue["value"] == Decimal("238.5")
     # balance-sheet statement asked for a different type -> only its own items
     bs_items = await fd.extract_tier1_line_items(filing, StatementType.BALANCE_SHEET)
     assert all(i["label"] != "Revenue from Operations" for i in bs_items)
@@ -205,13 +207,21 @@ async def test_get_financial_statement_prefers_tier1_and_skips_tier3(monkeypatch
         )
 
     async def fake_extract(filing, statement_type):
+        # >= the completeness gate (_MIN_USEFUL_TIER1_ITEMS) — a real filing
+        # for a non-bank company maps to about this many of our known labels.
         return [
             {
-                "label": "Revenue from Operations",
+                "label": label,
                 "value": Decimal(100),
                 "period_end": date(2026, 6, 30),
                 "period_type": PeriodType.QUARTERLY,
             }
+            for label in [
+                "Revenue from Operations",
+                "Other Income",
+                "Profit before tax",
+                "Tax Expense",
+            ]
         ]
 
     tier3_called = False
@@ -246,6 +256,48 @@ async def test_get_financial_statement_falls_back_to_tier3(monkeypatch):
         return []
 
     monkeypatch.setattr(svc.filing_discovery, "discover_latest_financial_filing", fake_discover)
+    monkeypatch.setattr(svc.tier3, "fetch_financial_statement", fake_tier3)
+
+    await svc.get_financial_statement(_FakeSession(), company, StatementType.PROFIT_AND_LOSS)
+    assert tier3_called is True
+
+
+@pytest.mark.asyncio
+async def test_get_financial_statement_falls_back_to_tier3_when_tier1_too_sparse(monkeypatch):
+    """A bank filing typically maps to only ~2 of our known labels (our tag
+    map is tuned to a general commercial taxonomy, not the banking one) --
+    that's not enough to be useful next to Tier 3's fully populated annual
+    columns, so it should be treated the same as "Tier 1 had nothing"."""
+    from app.db.models import CompanyORM
+    from app.services import fundamentals_service as svc
+
+    company = CompanyORM(id=1, nse_symbol="CANBK", bse_code="532483")
+
+    async def fake_discover(nse, bse):
+        return fd.FilingRef(
+            "NSE", date(2026, 6, 30), PeriodType.QUARTERLY, True, "https://x/a.xml", None, None
+        )
+
+    async def fake_extract(filing, statement_type):
+        return [
+            {
+                "label": label,
+                "value": Decimal(100),
+                "period_end": date(2026, 6, 30),
+                "period_type": PeriodType.QUARTERLY,
+            }
+            for label in ["Other Income", "Tax Expense"]
+        ]
+
+    tier3_called = False
+
+    async def fake_tier3(symbol, statement_type):
+        nonlocal tier3_called
+        tier3_called = True
+        return []
+
+    monkeypatch.setattr(svc.filing_discovery, "discover_latest_financial_filing", fake_discover)
+    monkeypatch.setattr(svc.filing_discovery, "extract_tier1_line_items", fake_extract)
     monkeypatch.setattr(svc.tier3, "fetch_financial_statement", fake_tier3)
 
     await svc.get_financial_statement(_FakeSession(), company, StatementType.PROFIT_AND_LOSS)

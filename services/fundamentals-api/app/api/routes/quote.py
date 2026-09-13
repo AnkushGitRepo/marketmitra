@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_db
 from app.ingestion.quotes import get_quotes
 
 router = APIRouter(prefix="/quote", tags=["quote"])
@@ -28,11 +30,12 @@ async def get_quote_batch(
         min_length=1,
         description="Comma-separated NSE symbols (a tracked index name also works), e.g. RELIANCE,TCS,NIFTY 50",
     ),
+    session: AsyncSession = Depends(get_db),
 ) -> list[QuoteOut]:
     requested = [part for part in symbols.split(",") if part.strip()]
     if not requested:
         return []
-    quotes = await get_quotes(requested)
+    quotes = await get_quotes(requested, session)
     return [
         QuoteOut(
             symbol=q["symbol"],

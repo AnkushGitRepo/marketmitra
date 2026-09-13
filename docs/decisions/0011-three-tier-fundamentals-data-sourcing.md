@@ -125,6 +125,8 @@ app's MongoDB usage is unaffected.
 
 ## Consequences
 
+- **See [ADR 0024](./0024-live-quote-yahoo-finance2-and-stock-aggregate-endpoint.md)** for a later, narrowly-scoped change to the live "price right now" read path specifically (`GET /quote`) — yahoo-finance2 (new, in the main Next app) is now tried first, NSE → BSE second, and yfinance was removed from that one path. This three-tier chain, for ratios/financials/shareholding/peers, is unaffected.
+
 - **Tracked follow-up, not done as part of this change:** the landing
   page's pricing cards/FAQ billing content and the `isHosted()` gate's
   billing-UI purpose ([ADR 0010](./0010-deployment-mode-gate.md)) are now

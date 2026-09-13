@@ -84,13 +84,17 @@ async def get_nse_quote(symbol: str) -> dict:
         return {}
 
     price_info = data.get("priceInfo", {})
+    week_range = price_info.get("weekHighLow", {})
     return {
         "name": data.get("info", {}).get("companyName"),
         "isin": data.get("info", {}).get("isin"),
         "industry": data.get("industryInfo", {}).get("industry"),
         "last_price": _to_decimal(price_info.get("lastPrice")),
+        "prev_close": _to_decimal(price_info.get("previousClose")),
         "day_high": _to_decimal(price_info.get("intraDayHighLow", {}).get("max")),
         "day_low": _to_decimal(price_info.get("intraDayHighLow", {}).get("min")),
+        "week52_high": _to_decimal(week_range.get("max")),
+        "week52_low": _to_decimal(week_range.get("min")),
     }
 
 
@@ -106,8 +110,11 @@ async def get_bse_quote(bse_code: str) -> dict:
     return {
         "name": data.get("companyName"),
         "last_price": _to_decimal(data.get("currentValue")),
+        "prev_close": _to_decimal(data.get("previousClose")),
         "day_high": _to_decimal(data.get("dayHigh")),
         "day_low": _to_decimal(data.get("dayLow")),
+        "week52_high": _to_decimal(data.get("52weekHigh")),
+        "week52_low": _to_decimal(data.get("52weekLow")),
         "industry": data.get("industry"),
     }
 

@@ -1,5 +1,5 @@
 import { listHoldings, type Holding } from '@/lib/holdings';
-import { getQuote } from './quotes';
+import { getCompany, getQuotes } from './fundamentalsApi';
 
 export interface EnrichedHolding extends Holding {
   name: string;
@@ -9,10 +9,11 @@ export interface EnrichedHolding extends Holding {
   dayChangePct: number | null;
 }
 
-/** Merges MongoDB-stored holdings with live quotes from the fundamentals
- * service. `ltp`/`dayChange*` are null when a live quote couldn't be
- * fetched (service offline, unrecognized symbol) — UI must show that
- * honestly rather than fall back to a stale or fabricated price. */
+/** Merges MongoDB-stored holdings with a real live quote (ADR 0024:
+ * yahoo-finance2, falling back to the fundamentals-api's NSE/BSE chain).
+ * `ltp`/`dayChange*` are null when a live quote couldn't be fetched (both
+ * sources offline, unrecognized symbol) — UI must show that honestly rather
+ * than fall back to a stale end-of-day close or a fabricated price. */
 export async function getEnrichedHoldings(userId: string): Promise<EnrichedHolding[]> {
   let holdings: Holding[];
   try {
@@ -21,17 +22,24 @@ export async function getEnrichedHoldings(userId: string): Promise<EnrichedHoldi
     return [];
   }
 
-  const quotes = await Promise.all(holdings.map((h) => getQuote(h.symbol)));
+  const [companies, quotes] = await Promise.all([
+    Promise.all(holdings.map((h) => getCompany(h.symbol))),
+    getQuotes(holdings.map((h) => h.symbol)),
+  ]);
+  const quoteBySymbol = new Map(quotes.map((q) => [q.symbol.toUpperCase(), q]));
 
   return holdings.map((h, i) => {
-    const quote = quotes[i];
+    const company = companies[i];
+    const quote = quoteBySymbol.get(h.symbol.toUpperCase());
+    const price = quote?.price != null ? Number(quote.price) : null;
+    const prevClose = quote?.prev_close != null ? Number(quote.prev_close) : null;
     return {
       ...h,
-      name: quote?.name ?? h.symbol,
-      sector: quote?.sector ?? null,
-      ltp: quote?.price ?? null,
-      dayChange: quote?.change ?? null,
-      dayChangePct: quote?.changePct ?? null,
+      name: company?.name ?? h.symbol,
+      sector: company?.sector ?? null,
+      ltp: price,
+      dayChange: price != null && prevClose != null ? price - prevClose : null,
+      dayChangePct: quote?.change_pct != null ? Number(quote.change_pct) : null,
     };
   });
 }

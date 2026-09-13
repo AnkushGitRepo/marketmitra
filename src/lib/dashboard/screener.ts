@@ -5,47 +5,18 @@
 // drift onto a different filter shape than the others.
 
 import { getJson } from './fundamentalsApi';
-import type { ScreenerFilters } from './screenerSchema';
+import {
+  buildScreenerQuery,
+  type ScreenerFacets,
+  type ScreenerFilters,
+  type ScreenerResultRow,
+} from './screenerSchema';
 
-export interface ScreenerResultRow {
-  symbol: string;
-  name: string;
-  sector: string | null;
-  industry: string | null;
-  market_cap: number | null;
-  current_price: number | null;
-  pe: number | null;
-  book_value: number | null;
-  pb: number | null;
-  dividend_yield: number | null;
-  roce: number | null;
-  roe: number | null;
-  face_value: number | null;
-  debt_to_equity: number | null;
-  sales_growth_3y_cagr: number | null;
-  profit_growth_3y_cagr: number | null;
-  fetch_status: string;
-  source_tier: string;
-  fetched_at: string;
-}
-
-export interface ScreenerFacets {
-  sectors: string[];
-  industries: string[];
-}
-
-/** Exported so the Screener page's client component can build the same
- * query string for its own `/api/screener` fetch, without duplicating
- * this logic. */
-export function buildScreenerQuery(filters: ScreenerFilters): string {
-  const qs = new URLSearchParams();
-  for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && value !== null && value !== '') {
-      qs.set(key, String(value));
-    }
-  }
-  return qs.toString();
-}
+// Result/facet types and buildScreenerQuery now live in screenerSchema.ts
+// (see its own comment) — re-exported here so existing server-side callers
+// of this module don't need to change their import path.
+export { buildScreenerQuery };
+export type { ScreenerFacets, ScreenerResultRow };
 
 /** Filters the bulk-refreshed screener_metrics table. Never throws — an
  * unreachable fundamentals-api or a bad query returns [], same "no data

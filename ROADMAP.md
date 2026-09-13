@@ -363,7 +363,7 @@ _Standing rule from this ADR: any future Mitra-driven portfolio edit must go thr
 
 ---
 
-## Production-readiness pass (launch checklist) ✅ built, not yet deployed
+## Production-readiness pass (launch checklist) ✅ deployed
 
 Run 2026-09-12 against a 20-item checklist (legal, security, SEO, performance, accessibility, reliability/UX) → [ADR 0023](./docs/decisions/0023-analytics-and-cookie-consent.md) for the analytics/cookie-consent decision.
 
@@ -375,7 +375,22 @@ Run 2026-09-12 against a 20-item checklist (legal, security, SEO, performance, a
 - [x] **Mobile pass** — landing, dashboard, portfolio, markets, stock, privacy, terms, 404 checked at 375px: no horizontal overflow anywhere. Found and fixed a real bug: Mitra's chat panel defaulted to open on every page load, covering dashboard content on narrow viewports.
 - [x] **Reliability/UX** — custom `not-found.tsx`, footer link audit (removed every fabricated/`href="#"` link), form validation + spam-protection reviewed and concluded (both existing forms have real Zod server-side validation; no public form exists that needs Turnstile).
 - [x] Full suite (typecheck/lint/test/build) green after all changes.
-- [ ] **Not yet pushed or deployed** — awaiting explicit go-ahead, same as the Mitra build above.
+- [x] Pushed to `main`/`v2` and deployed to production 2026-09-12.
+
+---
+
+## Live-quote fix (yahoo-finance2 + NSE/BSE) + stock aggregate endpoint ✅ built, not yet deployed
+
+Built 2026-09-12 → [ADR 0024](./docs/decisions/0024-live-quote-yahoo-finance2-and-stock-aggregate-endpoint.md). Two problems: dashboard/portfolio prices were stale, and the public API had no single "everything about this ticker" endpoint.
+
+- [x] **Root cause found beyond the literal ask:** the dashboard UI never called the one real live-quote path at all — it derived "current price" from the latest end-of-day close. Fixing the quote source alone would not have fixed what the user was seeing.
+- [x] `yahoo-finance2` (new, `src/lib/dashboard/yahooQuote.ts`) is now the primary live-quote source; NSE → BSE (fundamentals-api) is the fallback; yfinance removed entirely from this one path (ADR 0011's three-tier fundamentals-ingestion chain is unaffected).
+- [x] Dashboard UI rewired to the real live quote: portfolio (`enrichedHoldings.ts`), home/markets movers (`dashboard/quotes.ts`), and the stock detail page header.
+- [x] New `GET /api/stock/{ticker}` — screener.in-style aggregate (company, live quote, ratios, shareholding, peers, documents, financials), shared with the MCP `get_company_fundamentals` tool (which gains a `quote` field it never had). Documented in `public/openapi.json` + `docs/api-surface.md`, verified against the repo's own openapi↔routes CI check.
+- [x] **Known, accepted limitation:** BSE fallback is a wired-in stub — no NSE-symbol→BSE-code mapping exists anywhere in this codebase yet, so it can't actually fire for any company today. Tracked here as separate future work, not silently assumed solved.
+- [x] Verified live: a real `yahoo-finance2` call against the actual Yahoo Finance API returned accurate current prices for RELIANCE/TCS/NIFTY 50. Full suite green (TS: typecheck/lint/368 tests/build; Python: 102 tests + ruff).
+- [ ] **Not yet pushed or deployed** — built on branch `live-quote-fix`, awaiting explicit go-ahead.
+- [ ] **Future work, not blocking:** a real NSE-symbol→BSE-code mapping to make the BSE fallback stub actually fire; confirming live post-deploy whether NSE responds from the real Vercel environment (ADR 0011 only confirmed it's blocked in dev/CI).
 
 ---
 

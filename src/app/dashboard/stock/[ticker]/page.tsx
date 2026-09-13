@@ -5,6 +5,7 @@ import {
   getFinancials,
   getPeers,
   getPrices,
+  getQuotes,
   getRatios,
   getShareholding,
   type PricePeriod,
@@ -40,7 +41,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const { ticker } = await params;
   const symbol = ticker.toUpperCase();
 
-  const [company, ratios, shareholding, peers, documents, news, pl, bs, cf, ...priceSets] =
+  const [company, ratios, shareholding, peers, documents, news, pl, bs, cf, quotes, ...priceSets] =
     await Promise.all([
       getCompany(symbol),
       getRatios(symbol),
@@ -51,6 +52,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       getFinancials(symbol, 'profit_and_loss'),
       getFinancials(symbol, 'balance_sheet'),
       getFinancials(symbol, 'cash_flow'),
+      getQuotes([symbol]),
       ...PRICE_PERIODS.map((p) => getPrices(symbol, p)),
     ]);
 
@@ -86,6 +88,13 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const latestPrice = recentCloses[0] ?? null;
   const previousPrice = recentCloses[1] ?? null;
 
+  // A live quote (ADR 0024) takes priority over yesterday's close — falling
+  // back to the EOD close only when a live price wasn't available at all,
+  // so the header never shows nothing.
+  const liveQuote = quotes[0] ?? null;
+  const displayClose = liveQuote?.price ?? latestPrice?.close ?? null;
+  const displayPreviousClose = liveQuote?.prev_close ?? previousPrice?.close ?? null;
+
   return (
     <StockPageClient
       symbol={symbol}
@@ -102,8 +111,8 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
         cash_flow: pivotFinancials(cf ?? [], 'cash_flow'),
       }}
       priceSeries={priceSeries}
-      latestClose={latestPrice?.close ?? null}
-      previousClose={previousPrice?.close ?? null}
+      latestClose={displayClose}
+      previousClose={displayPreviousClose}
     />
   );
 }

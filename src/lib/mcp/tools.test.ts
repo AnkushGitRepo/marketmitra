@@ -113,8 +113,9 @@ describe('get_company_fundamentals', () => {
     expect(fApi.getRatios).not.toHaveBeenCalled();
   });
 
-  it('fetches all sections by default and coalesces nulls to []', async () => {
+  it('fetches all sections by default (including a live quote) and coalesces nulls to []', async () => {
     fApi.getCompany.mockResolvedValue({ symbol: 'RELIANCE', name: 'Reliance', about: 'oil' });
+    fApi.getQuotes.mockResolvedValue([{ symbol: 'RELIANCE', price: '1400', source_tier: 'yahoo_finance2' }]);
     fApi.getRatios.mockResolvedValue(null);
     fApi.getShareholding.mockResolvedValue([{ category: 'Promoters', percentage: '50' }]);
     fApi.getPeers.mockResolvedValue(null);
@@ -122,11 +123,13 @@ describe('get_company_fundamentals', () => {
     fApi.getFinancials.mockResolvedValue(null);
     const out = (await tool('get_company_fundamentals').run({ symbol: 'reliance' })) as {
       found: boolean;
+      quote: { price: string } | null;
       ratios: unknown[];
       shareholding: unknown[];
       financials: { profit_and_loss: unknown[] };
     };
     expect(out.found).toBe(true);
+    expect(out.quote?.price).toBe('1400');
     expect(out.ratios).toEqual([]);
     expect(out.shareholding).toHaveLength(1);
     expect(out.financials.profit_and_loss).toEqual([]);
@@ -141,8 +144,10 @@ describe('get_company_fundamentals', () => {
       sections: ['company', 'ratios'],
     })) as Record<string, unknown>;
     expect(fApi.getRatios).toHaveBeenCalled();
+    expect(fApi.getQuotes).not.toHaveBeenCalled();
     expect(fApi.getShareholding).not.toHaveBeenCalled();
     expect(fApi.getFinancials).not.toHaveBeenCalled();
+    expect(out.quote).toBeUndefined();
     expect(out.shareholding).toBeUndefined();
     expect(out.financials).toBeUndefined();
   });

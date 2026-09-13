@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import {
   SCREENER_RANGE_FIELDS,
+  buildScreenerQuery,
   type RangeFieldKey,
   type ScreenerFilters,
+  type ScreenerResultRow,
 } from '@/lib/dashboard/screenerSchema';
-import { buildScreenerQuery, type ScreenerResultRow } from '@/lib/dashboard/screener';
 import styles from './page.module.css';
 
 interface ScreenerPageClientProps {

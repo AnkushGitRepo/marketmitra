@@ -32,8 +32,9 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -70,6 +71,22 @@ async def get_or_create_company(
     if existing:
         return existing
 
+    return await _create_company(session, stmt, nse_symbol, bse_code)
+
+
+async def _create_company(
+    session: AsyncSession,
+    select_stmt: Select[tuple[CompanyORM]],
+    nse_symbol: str | None,
+    bse_code: str | None,
+) -> CompanyORM:
+    """A brand-new company's page fires ~10 concurrent requests (company,
+    ratios, shareholding, peers, documents, financials x3, prices x4),
+    every one of which reaches here at once when nothing exists yet — only
+    one INSERT can win the unique nse_symbol/bse_code constraint, so every
+    other concurrent caller must not treat the resulting IntegrityError as a
+    real failure. On conflict, roll back and re-select: the row now exists,
+    created by whichever request won the race."""
     resolvers = [
         TieredResolver(
             SourceTier.TIER1_NSE_BSE, lambda: _resolve_tier1_quote(nse_symbol, bse_code), "quote",
@@ -97,7 +114,17 @@ async def get_or_create_company(
         source_tier=name_tier.value if name_tier else None,
     )
     session.add(company)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        # Lost the race — another concurrent request already created this
+        # company. Not an error: roll back this session's failed insert and
+        # hand back the row that won.
+        await session.rollback()
+        existing = (await session.execute(select_stmt)).scalar_one_or_none()
+        if existing:
+            return existing
+        raise  # genuinely a different conflict (e.g. a stale unique index) — surface it
     await session.refresh(company)
     return company
 
@@ -120,9 +147,27 @@ def _is_stale(fetched_at: datetime | None, ttl_hours: int) -> bool:
     return datetime.now(UTC) - fetched_at > timedelta(hours=ttl_hours)
 
 
+async def _latest_snapshot(session: AsyncSession, model: type, company_id: int, *order_by):
+    """Ratios and peer comparisons are re-scraped daily, keyed into their
+    upsert conflict target by (..., as_of) — so every calendar day this ran
+    on adds a *new* row rather than replacing the previous one (as_of
+    differs). Without narrowing to the most recent as_of, a caller gets
+    every historical daily snapshot ever taken, not just the latest —
+    surfaced as visibly duplicated rows on the stock page. Always call
+    through this rather than a bare `WHERE company_id = ...` select."""
+    latest_as_of = (
+        select(func.max(model.as_of)).where(model.company_id == company_id).scalar_subquery()
+    )
+    stmt = (
+        select(model)
+        .where(model.company_id == company_id, model.as_of == latest_as_of)
+        .order_by(*order_by)
+    )
+    return list((await session.execute(stmt)).scalars())
+
+
 async def get_ratios(session: AsyncSession, company: CompanyORM) -> list[RatioORM]:
-    stmt = select(RatioORM).where(RatioORM.company_id == company.id).order_by(RatioORM.as_of.desc())
-    existing = list((await session.execute(stmt)).scalars())
+    existing = await _latest_snapshot(session, RatioORM, company.id, RatioORM.name)
     most_recent_fetch = existing[0].fetched_at if existing else None
 
     if existing and not _is_stale(most_recent_fetch, _settings.ratios_cache_ttl_hours):
@@ -152,8 +197,7 @@ async def get_ratios(session: AsyncSession, company: CompanyORM) -> list[RatioOR
         await session.execute(stmt)
     await session.commit()
 
-    stmt = select(RatioORM).where(RatioORM.company_id == company.id).order_by(RatioORM.as_of.desc())
-    return list((await session.execute(stmt)).scalars())
+    return await _latest_snapshot(session, RatioORM, company.id, RatioORM.name)
 
 
 async def get_shareholding(session: AsyncSession, company: CompanyORM) -> list[ShareholdingEntryORM]:
@@ -282,15 +326,27 @@ async def get_financial_statement(
         return existing
 
     # Tier 1: the actual NSE/BSE results filing for the latest period. If it
-    # yields anything, store it and skip the Screener scrape for this call —
-    # older periods still come from Tier 3 on a later refresh.
+    # yields enough to be useful, store it and skip the Screener scrape for
+    # this call — older periods still come from Tier 3 on a later refresh.
+    #
+    # "Enough" is a real gate, not a formality: our XBRL tag map is tuned to
+    # a general commercial Ind-AS taxonomy (see xbrl_parser.py) and banks in
+    # particular report P&L under a different tag set — a bank filing
+    # typically maps to only 2 of our ~12 known labels (e.g. Other Income,
+    # Tax Expense), which would otherwise show up as a column that's
+    # entirely "—" apart from those two rows, sitting next to Tier 3's fully
+    # populated annual columns. Below this threshold, Tier 3 alone (which
+    # always reports a consistent field set) is strictly more useful than a
+    # mostly-empty "extra" column.
+    _MIN_USEFUL_TIER1_ITEMS = 4
+
     filing = await filing_discovery.discover_latest_financial_filing(
         company.nse_symbol, company.bse_code
     )
     tier1_items = (
         await filing_discovery.extract_tier1_line_items(filing, statement_type) if filing else []
     )
-    if tier1_items:
+    if len(tier1_items) >= _MIN_USEFUL_TIER1_ITEMS:
         await _upsert_financial_items(
             session, company, statement_type, tier1_items, SourceTier.TIER1_NSE_BSE
         )
@@ -375,12 +431,9 @@ async def get_about(session: AsyncSession, company: CompanyORM) -> str | None:
 
 
 async def get_peers(session: AsyncSession, company: CompanyORM) -> list[PeerComparisonORM]:
-    stmt = (
-        select(PeerComparisonORM)
-        .where(PeerComparisonORM.company_id == company.id)
-        .order_by(PeerComparisonORM.market_cap.desc().nullslast())
+    existing = await _latest_snapshot(
+        session, PeerComparisonORM, company.id, PeerComparisonORM.market_cap.desc().nullslast()
     )
-    existing = list((await session.execute(stmt)).scalars())
     most_recent_fetch = existing[0].fetched_at if existing else None
     if existing and not _is_stale(most_recent_fetch, _settings.ratios_cache_ttl_hours):
         return existing
@@ -429,12 +482,9 @@ async def get_peers(session: AsyncSession, company: CompanyORM) -> list[PeerComp
         await session.execute(stmt)
     await session.commit()
 
-    stmt = (
-        select(PeerComparisonORM)
-        .where(PeerComparisonORM.company_id == company.id)
-        .order_by(PeerComparisonORM.market_cap.desc().nullslast())
+    return await _latest_snapshot(
+        session, PeerComparisonORM, company.id, PeerComparisonORM.market_cap.desc().nullslast()
     )
-    return list((await session.execute(stmt)).scalars())
 
 
 async def get_documents(session: AsyncSession, company: CompanyORM) -> list[DocumentReferenceORM]:
