@@ -46,7 +46,9 @@ export function useSymbolSearch() {
     if (result.type === 'company') {
       router.push(`/dashboard/stock/${result.symbol.toLowerCase()}`);
     } else {
-      router.push('/dashboard/markets');
+      // Indices are identified by display name (e.g. "NIFTY 50"), not the
+      // Yahoo ticker in result.symbol — matches /dashboard/index/[name].
+      router.push(`/dashboard/index/${encodeURIComponent(result.name)}`);
     }
   };
 

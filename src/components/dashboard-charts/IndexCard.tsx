@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { buildSparkline } from '@/lib/dashboard/chartMath';
 import type { IndexQuoteOut } from '@/lib/dashboard/fundamentalsApi';
 import styles from './IndexCard.module.css';
@@ -13,7 +14,7 @@ export function IndexCard({ index }: { index: IndexQuoteOut }) {
   const decimals = value >= 1000 ? 2 : 2;
 
   return (
-    <div className={styles.card}>
+    <Link href={`/dashboard/index/${encodeURIComponent(index.name)}`} className={styles.card}>
       <p className={styles.name}>{index.name}</p>
       <p className={styles.value}>{value.toLocaleString('en-IN', { maximumFractionDigits: decimals })}</p>
       <div className={styles.footer}>
@@ -34,6 +35,6 @@ export function IndexCard({ index }: { index: IndexQuoteOut }) {
           />
         </svg>
       </div>
-    </div>
+    </Link>
   );
 }

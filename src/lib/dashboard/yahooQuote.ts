@@ -5,7 +5,7 @@
 // server-only module — never a client component.
 
 import YahooFinance from 'yahoo-finance2';
-import type { QuoteOut } from './fundamentalsApi';
+import type { PricePeriod, PricePointOut, QuoteOut } from './fundamentalsApi';
 
 // One client instance reused across warm invocations so the library's
 // internal cookie/crumb handshake against Yahoo isn't repeated on every
@@ -33,6 +33,14 @@ const TRACKED_INDICES: Record<string, string> = {
 function toYahooSymbol(symbol: string): string {
   const key = symbol.trim().toUpperCase();
   return TRACKED_INDICES[key] ?? `${key}.NS`;
+}
+
+/** The 4 index names the app tracks (dashboard/markets cards, search,
+ * `/dashboard/index/[name]`) — the display name, not the Yahoo ticker. */
+export const TRACKED_INDEX_NAMES = Object.keys(TRACKED_INDICES);
+
+export function isTrackedIndexName(name: string): boolean {
+  return name.trim().toUpperCase() in TRACKED_INDICES;
 }
 
 // yahoo-finance2's Quote is a union across instrument types (equity, ECN,
@@ -78,4 +86,42 @@ export async function fetchYahooQuotes(symbols: string[]): Promise<Map<string, Q
   }
 
   return result;
+}
+
+const PERIOD_DAYS: Record<PricePeriod, number> = {
+  '1mo': 31,
+  '6mo': 186,
+  '1y': 366,
+  '5y': 1831,
+};
+
+/** Historical OHLCV for a tracked index, via yahoo-finance2's `chart()`.
+ * Indices have no Postgres-backed price history — fundamentals-api's own
+ * /indices route serves live quotes only, never caching to Postgres (see
+ * its docstring) — so this fetches directly from Yahoo instead of proxying
+ * through fundamentals-api. Shaped identically to `PricePointOut`, newest
+ * first (matching /companies/{symbol}/prices' contract), so the existing
+ * toRangeSeries()/LineChart machinery works unmodified. Returns [] (never
+ * throws) on any failure — same "no data, not a crash" contract as the rest
+ * of this module. */
+export async function fetchIndexHistory(name: string, period: PricePeriod): Promise<PricePointOut[]> {
+  const symbol = toYahooSymbol(name);
+  const period1 = new Date(Date.now() - PERIOD_DAYS[period] * 24 * 60 * 60 * 1000);
+  try {
+    const result = await yahooFinance.chart(symbol, { period1, interval: '1d' });
+    return result.quotes
+      .filter((q) => q.close !== null)
+      .map((q) => ({
+        trade_date: q.date.toISOString().slice(0, 10),
+        open: q.open == null ? null : String(q.open),
+        high: q.high == null ? null : String(q.high),
+        low: q.low == null ? null : String(q.low),
+        close: q.close == null ? null : String(q.close),
+        volume: q.volume,
+        source_tier: 'yahoo_finance2',
+      }))
+      .reverse();
+  } catch {
+    return [];
+  }
 }

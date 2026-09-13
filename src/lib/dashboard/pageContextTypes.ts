@@ -6,7 +6,9 @@
 // type without pulling in a client component.
 
 export interface PageContextValue {
-  page: 'dashboard' | 'portfolio' | 'markets' | 'stock';
+  page: 'dashboard' | 'portfolio' | 'markets' | 'stock' | 'index';
   ticker?: string;
+  /** Index display name (e.g. "NIFTY 50") when page === 'index'. */
+  name?: string;
   range?: string;
 }

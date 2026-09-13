@@ -14,6 +14,7 @@ const PAGE_LABELS: Record<PageContextValue['page'], string> = {
   portfolio: 'the portfolio page',
   markets: 'the markets page',
   stock: 'a stock detail page',
+  index: 'an index detail page',
 };
 
 /** One line describing where the user currently is, for the system prompt
@@ -24,6 +25,10 @@ export function formatPageContext(ctx: PageContextValue | null): string {
   let line = `The user is currently on ${PAGE_LABELS[ctx.page]}`;
   if (ctx.page === 'stock' && ctx.ticker) {
     line += ` for ${ctx.ticker}`;
+    if (ctx.range) line += `, viewing the ${ctx.range} price chart`;
+  }
+  if (ctx.page === 'index' && ctx.name) {
+    line += ` for ${ctx.name}`;
     if (ctx.range) line += `, viewing the ${ctx.range} price chart`;
   }
   return `${line}.`;

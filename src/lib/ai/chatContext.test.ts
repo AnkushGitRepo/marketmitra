@@ -92,4 +92,10 @@ describe('formatPageContext', () => {
   it('handles a stock page with no ticker gracefully', () => {
     expect(formatPageContext({ page: 'stock' })).toBe('The user is currently on a stock detail page.');
   });
+
+  it('includes name and range for an index page', () => {
+    expect(formatPageContext({ page: 'index', name: 'NIFTY 50', range: '1y' })).toBe(
+      'The user is currently on an index detail page for NIFTY 50, viewing the 1y price chart.'
+    );
+  });
 });

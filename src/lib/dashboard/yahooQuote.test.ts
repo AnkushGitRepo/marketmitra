@@ -1,19 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const quoteMock = vi.fn();
+const chartMock = vi.fn();
 
 vi.mock('yahoo-finance2', () => ({
   default: class {
     quote(symbol: string) {
       return quoteMock(symbol);
     }
+    chart(symbol: string, options: unknown) {
+      return chartMock(symbol, options);
+    }
   },
 }));
 
-const { fetchYahooQuotes } = await import('./yahooQuote');
+const { fetchYahooQuotes, fetchIndexHistory, isTrackedIndexName, TRACKED_INDEX_NAMES } = await import(
+  './yahooQuote'
+);
 
 beforeEach(() => {
   quoteMock.mockReset();
+  chartMock.mockReset();
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -72,5 +79,66 @@ describe('fetchYahooQuotes', () => {
     const result = await fetchYahooQuotes(['BOOM', 'OK']);
     expect(result.has('BOOM')).toBe(false);
     expect(result.get('OK')?.price).toBe('500');
+  });
+});
+
+describe('isTrackedIndexName / TRACKED_INDEX_NAMES', () => {
+  it('recognizes all 4 tracked index names, case-insensitively', () => {
+    expect(TRACKED_INDEX_NAMES.sort()).toEqual(
+      ['INDIA VIX', 'NIFTY 50', 'NIFTY BANK', 'SENSEX'].sort()
+    );
+    expect(isTrackedIndexName('nifty 50')).toBe(true);
+    expect(isTrackedIndexName('Sensex')).toBe(true);
+  });
+
+  it('rejects a name that is not a tracked index', () => {
+    expect(isTrackedIndexName('RELIANCE')).toBe(false);
+    expect(isTrackedIndexName('NIFTY NEXT 50')).toBe(false);
+  });
+});
+
+describe('fetchIndexHistory', () => {
+  it('maps chart() quotes to PricePointOut, newest first', async () => {
+    chartMock.mockResolvedValue({
+      quotes: [
+        { date: new Date('2026-09-10'), open: 100, high: 105, low: 99, close: 104, volume: 1000 },
+        { date: new Date('2026-09-11'), open: 104, high: 108, low: 103, close: 107, volume: 1200 },
+      ],
+    });
+
+    const points = await fetchIndexHistory('NIFTY 50', '1mo');
+    expect(chartMock).toHaveBeenCalledWith('^NSEI', expect.objectContaining({ interval: '1d' }));
+    expect(points).toEqual([
+      {
+        trade_date: '2026-09-11',
+        open: '104',
+        high: '108',
+        low: '103',
+        close: '107',
+        volume: 1200,
+        source_tier: 'yahoo_finance2',
+      },
+      {
+        trade_date: '2026-09-10',
+        open: '100',
+        high: '105',
+        low: '99',
+        close: '104',
+        volume: 1000,
+        source_tier: 'yahoo_finance2',
+      },
+    ]);
+  });
+
+  it('drops quotes with no close', async () => {
+    chartMock.mockResolvedValue({
+      quotes: [{ date: new Date('2026-09-10'), open: 100, high: 105, low: 99, close: null, volume: 1000 }],
+    });
+    expect(await fetchIndexHistory('SENSEX', '1mo')).toEqual([]);
+  });
+
+  it('returns [] (never throws) when chart() fails', async () => {
+    chartMock.mockRejectedValue(new Error('upstream 503'));
+    expect(await fetchIndexHistory('NIFTY 50', '1y')).toEqual([]);
   });
 });
