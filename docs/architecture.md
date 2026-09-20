@@ -123,13 +123,23 @@ no provider). Fully restart `npm run dev` after changing it.
 ## Dashboard app shell (`/dashboard*`)
 
 Visual design imported from an approved Claude Design project ("MarketMitra App", 2026-09-05),
-implemented natively with fonts swapped to Manrope / JetBrains Mono. Replaced the Phase 3
-sidebar-based empty-state shell entirely (`Sidebar.tsx` deleted).
+implemented natively with fonts swapped to Manrope / JetBrains Mono.
 
 - **Shell:** `src/components/appshell/AppShell.tsx` wraps every `/dashboard*` route with
-  `AppHeader` (desktop top nav + mobile compact header, search, ₹-mask toggle, user badge),
-  `AiWidget` (floating "Mitra" assistant), and `MobileTabBar`. Real Next.js routes per page
-  — not the design's client-state single-page switcher — so back/bookmarks work.
+  `Sidebar` (collapsible left nav, see below), `AppHeader` (slim top bar spanning the content
+  column: search, notification bell, settings gear, ₹-mask toggle, user badge — mobile keeps
+  its own compact header with brand mark), `AiWidget` (floating "Mitra" assistant), and
+  `MobileTabBar`. Real Next.js routes per page — not the design's client-state single-page
+  switcher — so back/bookmarks work.
+- **Sidebar navigation** ([ADR 0026](./decisions/0026-collapsible-sidebar-navigation.md)) —
+  `Sidebar.tsx` holds all 11 nav items (icon + label, shared `NAV_ITEMS`/`isNavActive` from
+  `navItems.ts`, icons from `NavIcons.tsx`), replacing the old top-bar tab row once it ran out
+  of horizontal room. Expanded (240px) / collapsed (76px, icon-only) toggled by a chevron,
+  persisted to `localStorage` via `useSyncExternalStore` (avoids a hydration-mismatch flash —
+  same pattern as `CookieNotice.tsx`). Active route gets the same dark-pill treatment the old
+  top nav used. Hidden below 760px, where `MobileTabBar`'s existing 5-item bottom bar
+  (Dashboard/Portfolio/Markets/Alerts/News) continues to serve navigation, unchanged — the
+  sidebar is tablet/desktop-only by design.
 - **Shared pieces:** `src/components/dashboard-charts/` (`LineChart`, `PillTabs`, `IndexCard`,
   `MoverPanel`, `CompanyLogo`, `NewsList`, `InsightCard`, `IpoOpenCard`) and
   `src/lib/dashboard/` (`fundamentalsApi.ts`, `newsApi.ts`, `iposApi.ts`, `transforms.ts`,

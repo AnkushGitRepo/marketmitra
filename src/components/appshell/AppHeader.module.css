@@ -13,64 +13,9 @@
   padding: 14px 24px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-right: 4px;
-}
-
-.brandMark {
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
-  background: linear-gradient(145deg, var(--app-teal), var(--app-teal-strong));
-  box-shadow: 0 4px 12px rgba(12, 138, 108, 0.32);
-}
-
-.brandName {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 19px;
-  letter-spacing: -0.02em;
-  color: var(--app-ink);
-}
-
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--color-surface);
-  border: 1px solid var(--app-border);
-  border-radius: var(--radius-pill);
-  padding: 4px;
-  box-shadow: 0 2px 8px rgba(22, 25, 28, 0.04);
-}
-
-.navItem {
-  border: none;
-  background: transparent;
-  color: var(--app-text-muted);
-  padding: 9px 18px;
-  border-radius: var(--radius-pill);
-  font-size: 14px;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: background var(--duration-base) ease, color var(--duration-base) ease;
-}
-
-.navItemActive {
-  background: var(--app-ink);
-  color: var(--app-cream);
-}
-
-.spacer {
-  flex: 1;
-  min-width: 12px;
 }
 
 .actions {
@@ -81,6 +26,8 @@
 
 .searchWrap {
   position: relative;
+  flex: 1;
+  max-width: 420px;
 }
 
 .search {
@@ -91,6 +38,7 @@
   border: 1px solid var(--app-border);
   border-radius: var(--radius-pill);
   padding: 9px 16px;
+  width: 100%;
   min-width: 210px;
   transition: box-shadow var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }

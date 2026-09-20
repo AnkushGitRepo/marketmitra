@@ -15,14 +15,28 @@ export function HostedUserBadge() {
         showName
         appearance={{
           elements: {
-            userButtonBox: { flexDirection: 'row-reverse', gap: '9px' },
+            // `minWidth: 0` is required for the identifier text below to
+            // actually truncate inside this flex row instead of overflowing
+            // past the pill and visually spilling onto the avatar image.
+            userButtonBox: { flexDirection: 'row-reverse', gap: '9px', minWidth: 0 },
             userButtonOuterIdentifier: {
               fontSize: '13.5px',
               fontWeight: 500,
               color: 'var(--app-ink)',
               fontFamily: 'var(--font-sans)',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             },
-            avatarBox: { width: '30px', height: '30px' },
+            avatarBox: {
+              width: '30px',
+              height: '30px',
+              flexShrink: 0,
+              borderRadius: '50%',
+              overflow: 'hidden',
+            },
+            avatarImage: { width: '100%', height: '100%', objectFit: 'cover' },
           },
         }}
       />

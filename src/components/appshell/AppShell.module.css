@@ -1,12 +1,22 @@
 .shell {
+  display: flex;
+  align-items: stretch;
   min-height: 100vh;
   background: linear-gradient(180deg, var(--app-bg-top) 0%, var(--app-bg-mid) 38%, var(--app-bg-bottom) 100%);
   color: var(--app-ink);
-  padding: 0 0 120px;
+}
+
+.contentArea {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 120px;
 }
 
 .main {
   max-width: 1240px;
+  width: 100%;
   margin: 0 auto;
   padding: 32px 24px 0;
 }
