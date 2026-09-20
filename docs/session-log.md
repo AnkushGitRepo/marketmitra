@@ -170,3 +170,10 @@ Rolling log of work sessions, most recent first is NOT required — append chron
 - Full suite green: `tsc --noEmit`, `eslint` (clean after the `useSyncExternalStore` fix), 386 vitest tests, production build (`next build`, all 19 dashboard routes compiled).
 - **Deliberately not done:** pushing/merging/deploying this branch; expanding `MobileTabBar` beyond its existing 5 items (out of scope — sidebar was speced as tablet/desktop-only, mobile keeps its existing bottom bar as-is).
 - **Next:** user review; then push/deploy. The Clerk avatar fix should get one real look in a hosted session before being called fully confirmed.
+
+## 2026-09-20 — Pushed + deployed: collapsible sidebar navigation
+
+- User asked to commit, push, and deploy. Committed to `main` (`3dcfc56`), fast-forwarded `v2` to match (clean, no conflicts), pushed both to GitHub.
+- Deployed `marketmitra-v2` (`vercel deploy --prod --yes`) — 19s build, aliased cleanly to `https://marketmitra-v2.vercel.app`. Smoke-tested: `/` → 200; `/dashboard` → 404 on bare `curl` (expected, pre-existing — prod's Clerk dev instance only completes its handshake for a real browser).
+- **Verified live in a real browser with an actual signed-in Clerk session** (not just curl) — this closes out the one open item from the build session: the profile-avatar fix (`HostedUserBadge.tsx`) couldn't be checked locally since self-hosted dev mode renders the plain "LU" badge, not the Clerk `UserButton`. In production, the avatar now renders a clean circular fallback icon with "Ankush Gupta" fully visible and properly truncated/clipped — no more overflow. Also re-confirmed the sidebar collapse/expand toggle and active-route highlighting work correctly in production, at both expanded and collapsed widths.
+- **fundamentals-api was not touched by this change and was not redeployed.**
