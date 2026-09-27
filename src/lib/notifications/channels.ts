@@ -45,6 +45,72 @@ export async function sendWebhook(
   }
 }
 
+/** Slack incoming-webhook format — a plain `{text}` payload renders as a
+ * message in the channel the webhook was created for. Real Slack markdown
+ * (`*bold*`, `<url|label>` links), not the generic JSON `sendWebhook` posts. */
+export async function sendSlack(webhookUrl: string, payload: NotificationPayload): Promise<ChannelResult> {
+  const link = payload.href ? `${APP_URL}${payload.href}` : APP_URL;
+  const text = `*${payload.title}*\n${payload.body}\n<${link}|Open in MarketMitra>`;
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => `HTTP ${response.status}`);
+      return { channel: 'slack', status: 'error', detail: detail.slice(0, 200) };
+    }
+    return { channel: 'slack', status: 'sent' };
+  } catch (err) {
+    return { channel: 'slack', status: 'error', detail: err instanceof Error ? err.message : 'unknown error' };
+  }
+}
+
+/** Escapes Telegram's Markdown v1 special characters in plain body text
+ * (not in the link we build ourselves). */
+function escapeTelegramMarkdown(s: string): string {
+  return s.replace(/([_*[\]])/g, '\\$1');
+}
+
+/** Real Telegram Bot API `sendMessage` — the user's own bot token + the
+ * chat id it should post to (get one by messaging the bot, then hitting
+ * `https://api.telegram.org/bot<token>/getUpdates`). */
+export async function sendTelegram(
+  botToken: string,
+  chatId: string,
+  payload: NotificationPayload
+): Promise<ChannelResult> {
+  const link = payload.href ? `${APP_URL}${payload.href}` : APP_URL;
+  const text = `*${escapeTelegramMarkdown(payload.title)}*\n${escapeTelegramMarkdown(payload.body)}\n[Open in MarketMitra](${link})`;
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown', disable_web_page_preview: true }),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => `HTTP ${response.status}`);
+      return { channel: 'telegram', status: 'error', detail: detail.slice(0, 200) };
+    }
+    return { channel: 'telegram', status: 'sent' };
+  } catch (err) {
+    return { channel: 'telegram', status: 'error', detail: err instanceof Error ? err.message : 'unknown error' };
+  }
+}
+
+/** There is no free, keyless WhatsApp send API — real delivery needs a
+ * provisioned WhatsApp Business/Twilio number. This posts the same generic
+ * JSON body as `sendWebhook` to a URL the user supplies: a Twilio Function,
+ * a CallMeBot-style relay, or a Zapier/Make webhook that forwards to their
+ * WhatsApp number. Not a built-in WhatsApp integration — the UI says so. */
+export async function sendWhatsapp(webhookUrl: string, payload: NotificationPayload): Promise<ChannelResult> {
+  const result = await sendWebhook(webhookUrl, payload);
+  return { ...result, channel: 'whatsapp' };
+}
+
 /** True once an email provider has been provisioned (Vercel Marketplace —
  * see ADR 0014's open dependencies) and its key is in the environment. */
 export function emailConfigured(): boolean {

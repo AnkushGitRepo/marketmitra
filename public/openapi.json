@@ -29,6 +29,10 @@
       "description": "Session-scoped. Price / %-move / 52w / portfolio / IPO alerts."
     },
     {
+      "name": "Wishlists",
+      "description": "Session-scoped. The user's own named stock wishlists (Markets page)."
+    },
+    {
       "name": "Notifications",
       "description": "Session-scoped. In-app notification centre."
     },
@@ -245,137 +249,182 @@
           "Market data"
         ],
         "summary": "Screen stocks by financial criteria",
-        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope).",
+        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table \u2014 see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only \u2014 no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope).",
         "security": [],
         "parameters": [
           {
             "name": "market_cap_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "market_cap_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "pe_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "pe_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "pb_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "pb_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "roe_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" },
+            "schema": {
+              "type": "number"
+            },
             "description": "Percent, e.g. 15 for 15%."
           },
           {
             "name": "roe_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "roce_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "roce_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "dividend_yield_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "dividend_yield_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "debt_to_equity_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "debt_to_equity_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "sales_growth_3y_cagr_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" },
+            "schema": {
+              "type": "number"
+            },
             "description": "Percent CAGR, e.g. 10 for 10%."
           },
           {
             "name": "sales_growth_3y_cagr_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "profit_growth_3y_cagr_min",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "profit_growth_3y_cagr_max",
             "in": "query",
             "required": false,
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "sector",
             "in": "query",
             "required": false,
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "example": "Information Technology"
           },
           {
             "name": "industry",
             "in": "query",
             "required": false,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer", "minimum": 1, "maximum": 500, "default": 100 }
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
           }
         ],
         "responses": {
@@ -1797,6 +1846,591 @@
           },
           "429": {
             "description": "Rate limited."
+          }
+        }
+      }
+    },
+    "/api/wishlists": {
+      "get": {
+        "tags": [
+          "Wishlists"
+        ],
+        "summary": "List wishlists",
+        "description": "The user's wishlists, oldest-created first.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user's wishlists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "userId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "symbols": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Wishlists"
+        ],
+        "summary": "Create a wishlist",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  }
+                }
+              },
+              "example": {
+                "name": "IT majors"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Per-user wishlist limit (20) reached."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      }
+    },
+    "/api/wishlists/{id}": {
+      "patch": {
+        "tags": [
+          "Wishlists"
+        ],
+        "summary": "Rename a wishlist",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Renamed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Wishlists"
+        ],
+        "summary": "Delete a wishlist",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          }
+        }
+      }
+    },
+    "/api/wishlists/{id}/symbols": {
+      "post": {
+        "tags": [
+          "Wishlists"
+        ],
+        "summary": "Add a stock to a wishlist",
+        "description": "Adds an NSE symbol (deduped, capped at 50 per wishlist).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "maxLength": 30
+                  }
+                }
+              },
+              "example": {
+                "symbol": "RELIANCE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated wishlist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "symbols": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Wishlist not found, or already at the 50-symbol cap."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      }
+    },
+    "/api/wishlists/{id}/symbols/{symbol}": {
+      "delete": {
+        "tags": [
+          "Wishlists"
+        ],
+        "summary": "Remove a stock from a wishlist",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated wishlist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "symbols": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          }
+        }
+      }
+    },
+    "/api/settings/notifications": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get notification channel settings",
+        "description": "Whether the user has Slack/Telegram/WhatsApp/a custom webhook connected (ADR 0028) \u2014 never returns the stored secrets themselves.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user's channel settings view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slack": {
+                      "type": "object",
+                      "properties": {
+                        "configured": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "telegram": {
+                      "type": "object",
+                      "properties": {
+                        "configured": {
+                          "type": "boolean"
+                        },
+                        "chatId": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "whatsapp": {
+                      "type": "object",
+                      "properties": {
+                        "configured": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "webhook": {
+                      "type": "object",
+                      "properties": {
+                        "configured": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Save notification channel settings",
+        "description": "Partial update \u2014 an included field sets/replaces that channel, an included empty string clears it, an omitted field is left untouched. Values are encrypted at rest (same as the BYO AI key).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slackWebhookUrl": {
+                    "type": "string"
+                  },
+                  "telegramBotToken": {
+                    "type": "string"
+                  },
+                  "telegramChatId": {
+                    "type": "string"
+                  },
+                  "whatsappWebhookUrl": {
+                    "type": "string"
+                  },
+                  "customWebhookUrl": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated channel settings view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slack": {
+                      "type": "object",
+                      "properties": {
+                        "configured": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "telegram": {
+                      "type": "object",
+                      "properties": {
+                        "configured": {
+                          "type": "boolean"
+                        },
+                        "chatId": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "whatsapp": {
+                      "type": "object",
+                      "properties": {
+                        "configured": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "webhook": {
+                      "type": "object",
+                      "properties": {
+                        "configured": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "422": {
+            "description": "Invalid input (e.g. a malformed URL)."
+          },
+          "503": {
+            "description": "No SETTINGS_ENC_KEY configured on this deployment."
+          }
+        }
+      }
+    },
+    "/api/settings/notifications/test": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Send a test notification on one channel",
+        "description": "Sends a real test notification through one already-saved channel.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "channel"
+                ],
+                "properties": {
+                  "channel": {
+                    "type": "string",
+                    "enum": [
+                      "slack",
+                      "telegram",
+                      "whatsapp",
+                      "webhook"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery result for that one channel."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "That channel isn't configured yet."
+          },
+          "422": {
+            "description": "Invalid input."
           }
         }
       }

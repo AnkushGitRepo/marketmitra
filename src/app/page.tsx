@@ -15,9 +15,9 @@ export default function Home() {
 
   return (
     <div className={styles.page}>
-      <Navbar />
       <main>
         <div className={styles.heroBand}>
+          <Navbar />
           <Hero />
           <DashboardPreview />
         </div>

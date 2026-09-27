@@ -1,20 +1,38 @@
 import type { Metadata } from 'next';
 import { IndexCard } from '@/components/dashboard-charts/IndexCard';
-import { MoverPanel } from '@/components/dashboard-charts/MoverPanel';
+import { WishlistPanel } from '@/components/dashboard-charts/WishlistPanel';
+import { getCurrentUserId } from '@/lib/currentUserId';
 import { getIndices } from '@/lib/dashboard/fundamentalsApi';
-import { getTopMovers } from '@/lib/dashboard/quotes';
+import { getQuotes, type Quote } from '@/lib/dashboard/quotes';
+import { listWishlists, type UserWishlist } from '@/lib/wishlists/userWishlists';
 import { MarketsSearchBar } from './MarketsSearchBar';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
   title: 'Markets',
-  description: 'Live Indian market indices and today’s top movers.',
+  description: 'Live Indian market indices and your own stock wishlists.',
 };
 
 export const dynamic = 'force-dynamic';
 
 export default async function MarketsPage() {
-  const [indices, movers] = await Promise.all([getIndices(), getTopMovers()]);
+  const userId = await getCurrentUserId();
+
+  let wishlists: UserWishlist[] = [];
+  if (userId) {
+    try {
+      wishlists = await listWishlists(userId);
+    } catch {
+      // Mongo unreachable — render the shell with no wishlists rather than 500.
+    }
+  }
+
+  const allSymbols = Array.from(new Set(wishlists.flatMap((w) => w.symbols)));
+  const [indices, quoteList] = await Promise.all([
+    getIndices(),
+    allSymbols.length > 0 ? getQuotes(allSymbols) : Promise.resolve<Quote[]>([]),
+  ]);
+  const quotes = Object.fromEntries(quoteList.map((q) => [q.symbol, q]));
 
   return (
     <div className={styles.pageRoot}>
@@ -33,10 +51,11 @@ export default async function MarketsPage() {
         )}
       </div>
 
-      <div className={styles.moverGrid}>
-        <MoverPanel title="Top gainers (watchlist)" rows={movers.gainers} />
-        <MoverPanel title="Top losers (watchlist)" rows={movers.losers} />
-      </div>
+      {userId ? (
+        <WishlistPanel wishlists={wishlists} quotes={quotes} />
+      ) : (
+        <p className={styles.eyebrow}>Sign in to build your own stock wishlists.</p>
+      )}
     </div>
   );
 }

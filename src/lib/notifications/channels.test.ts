@@ -8,7 +8,7 @@ vi.mock('resend', () => ({
   },
 }));
 
-const { sendEmail } = await import('./channels');
+const { sendEmail, sendSlack, sendTelegram, sendWebhook, sendWhatsapp } = await import('./channels');
 
 const payload: NotificationPayload = {
   kind: 'alert',
@@ -21,7 +21,10 @@ beforeEach(() => {
   send.mockReset();
   vi.unstubAllEnvs();
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 describe('sendEmail', () => {
   it('is a no-op "skipped" when RESEND_API_KEY is unset', async () => {
@@ -76,5 +79,120 @@ describe('sendEmail', () => {
     const html = send.mock.calls[0][0].html as string;
     expect(html).toContain('&lt;script&gt;');
     expect(html).not.toContain('<script>x</script>');
+  });
+});
+
+describe('sendWebhook', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+  });
+
+  it('POSTs the generic payload shape and reports "sent"', async () => {
+    fetchMock.mockResolvedValue({ ok: true });
+    const r = await sendWebhook('https://example.com/hook', payload);
+    expect(r).toEqual({ channel: 'webhook', status: 'sent' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://example.com/hook');
+    const body = JSON.parse(init.body);
+    expect(body).toEqual({
+      kind: 'alert',
+      title: payload.title,
+      body: payload.body,
+      href: payload.href,
+      meta: {},
+    });
+  });
+
+  it('maps a non-2xx response to "error"', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    const r = await sendWebhook('https://example.com/hook', payload);
+    expect(r).toEqual({ channel: 'webhook', status: 'error', detail: 'HTTP 500' });
+  });
+
+  it('catches a network throw', async () => {
+    fetchMock.mockRejectedValue(new Error('timeout'));
+    const r = await sendWebhook('https://example.com/hook', payload);
+    expect(r).toEqual({ channel: 'webhook', status: 'error', detail: 'timeout' });
+  });
+});
+
+describe('sendSlack', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+  });
+
+  it('POSTs a Slack-shaped {text} payload and reports "sent"', async () => {
+    fetchMock.mockResolvedValue({ ok: true });
+    const r = await sendSlack('https://hooks.slack.com/services/x', payload);
+    expect(r).toEqual({ channel: 'slack', status: 'sent' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://hooks.slack.com/services/x');
+    const body = JSON.parse(init.body);
+    expect(body.text).toContain(payload.title);
+    expect(body.text).toContain(payload.body);
+    expect(body.text).toContain('/dashboard/stock/RELIANCE');
+  });
+
+  it('maps a non-2xx response to "error" with the response body as detail', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 404, text: async () => 'invalid_payload' });
+    const r = await sendSlack('https://hooks.slack.com/services/x', payload);
+    expect(r).toEqual({ channel: 'slack', status: 'error', detail: 'invalid_payload' });
+  });
+});
+
+describe('sendTelegram', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+  });
+
+  it('POSTs to the Bot API sendMessage endpoint with chat_id + text', async () => {
+    fetchMock.mockResolvedValue({ ok: true });
+    const r = await sendTelegram('123:abc', '456', payload);
+    expect(r).toEqual({ channel: 'telegram', status: 'sent' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.telegram.org/bot123:abc/sendMessage');
+    const body = JSON.parse(init.body);
+    expect(body.chat_id).toBe('456');
+    expect(body.parse_mode).toBe('Markdown');
+    expect(body.text).toContain('RELIANCE crossed');
+  });
+
+  it('escapes Telegram markdown special characters in title/body', async () => {
+    fetchMock.mockResolvedValue({ ok: true });
+    await sendTelegram('123:abc', '456', { ...payload, title: '[TCS] up_down*move' });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.text).toContain('\\[TCS\\] up\\_down\\*move');
+  });
+
+  it('maps a non-2xx response to "error"', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 401, text: async () => 'Unauthorized' });
+    const r = await sendTelegram('bad-token', '456', payload);
+    expect(r).toEqual({ channel: 'telegram', status: 'error', detail: 'Unauthorized' });
+  });
+});
+
+describe('sendWhatsapp', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+  });
+
+  it('relays through the generic webhook shape, tagged as the whatsapp channel', async () => {
+    fetchMock.mockResolvedValue({ ok: true });
+    const r = await sendWhatsapp('https://example.com/relay', payload);
+    expect(r).toEqual({ channel: 'whatsapp', status: 'sent' });
+  });
+
+  it('surfaces a relay failure as the whatsapp channel', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    const r = await sendWhatsapp('https://example.com/relay', payload);
+    expect(r).toEqual({ channel: 'whatsapp', status: 'error', detail: 'HTTP 500' });
   });
 });

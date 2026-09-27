@@ -4,7 +4,7 @@
 
 export type NotificationKind = 'alert' | 'ipo' | 'insight' | 'system';
 
-export type DeliveryChannel = 'in_app' | 'email' | 'webhook';
+export type DeliveryChannel = 'in_app' | 'email' | 'webhook' | 'slack' | 'telegram' | 'whatsapp';
 
 export interface NotificationPayload {
   kind: NotificationKind;
