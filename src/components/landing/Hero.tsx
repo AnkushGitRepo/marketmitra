@@ -17,9 +17,9 @@ export function Hero() {
         <Link href="/sign-up" className={styles.primary}>
           Get Started free
         </Link>
-        <a href="#dashboard" className={styles.secondary}>
+        <Link href="/dashboard" className={styles.secondary}>
           See the dashboard
-        </a>
+        </Link>
       </div>
     </header>
   );

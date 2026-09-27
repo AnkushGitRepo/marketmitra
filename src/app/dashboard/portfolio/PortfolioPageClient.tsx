@@ -1,15 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LineChart } from '@/components/dashboard-charts/LineChart';
 import { PillTabs } from '@/components/dashboard-charts/PillTabs';
 import { InsightCard } from '@/components/dashboard-charts/InsightCard';
+import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { useMask } from '@/lib/dashboard/MaskContext';
 import { formatInr } from '@/lib/dashboard/format';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
+import type { NewsItem } from '@/lib/dashboard/newsApi';
 import { AddHoldingForm } from './AddHoldingForm';
 import { HoldingRow } from './HoldingRow';
 import styles from './page.module.css';
@@ -25,6 +28,7 @@ interface PortfolioPageClientProps {
   holdings: EnrichedHolding[];
   history: Record<PricePeriod, RangeSeries>;
   aiInsight: { hasKey: boolean; initial: { content: string; generatedAt: string } | null };
+  news: NewsItem[];
 }
 
 function exportCsv(holdings: EnrichedHolding[]) {
@@ -44,7 +48,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, aiInsight }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, aiInsight, news }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [range, setRange] = useState<PricePeriod>('1y');
@@ -252,6 +256,20 @@ export function PortfolioPageClient({ holdings, history, aiInsight }: PortfolioP
             })}
           </div>
         </div>
+      </div>
+
+      <div className={styles.sectionHeadRow}>
+        <h2 className={styles.h2}>News for your holdings</h2>
+        <Link href="/dashboard/news" className={styles.btnSecondary}>
+          View all news
+        </Link>
+      </div>
+      <div className={styles.holdingsCard}>
+        <NewsList
+          items={news}
+          showSymbols
+          emptyText="No recent news for your current holdings."
+        />
       </div>
     </div>
   );

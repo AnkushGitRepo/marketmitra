@@ -17,7 +17,7 @@ const COLUMNS = [
   {
     label: 'Product',
     links: [
-      { href: '#dashboard', label: 'Dashboard' },
+      { href: '/dashboard', label: 'Dashboard' },
       { href: '#features', label: 'Features' },
       { href: '#pricing', label: 'Hosted or self-host' },
       { href: `${REPO}/commits/main`, label: 'Changelog', external: true },

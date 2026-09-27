@@ -326,3 +326,53 @@ fixed). 16 new tests for `channels.ts` (`sendWebhook`/`sendSlack`/`sendTelegram`
   `landing-wishlist-alerts-channels` locally pending review. `SETTINGS_ENC_KEY` must be set
   on any deployment for the new channel settings to be usable (already required for the AI
   key, so hosted/most self-hosts already have it).
+
+## 2026-09-27 — Navbar GitHub/Dashboard links fixed to navigate (not scroll); Portfolio page now shows holdings-scoped news
+
+Two real bug fixes on top of the previous (uncommitted-until-now) wishlists/alert-channels
+batch, both reported directly by the user with reproduction detail:
+
+**Navbar/Hero "scroll instead of navigate" bug.** `Navbar.tsx`'s GitHub icon-button and
+"Dashboard" link, and `Hero.tsx`'s "See the dashboard" CTA, were wired as in-page anchors
+(`#opensource`, `#dashboard`) left over from an earlier single-page-scroll version of the
+landing page — clicking GitHub scrolled to the open-source section instead of opening the
+repo, and clicking Dashboard (navbar or hero) just scrolled to a `#dashboard` anchor that
+doesn't correspond to any real section anymore. Fixed: GitHub now points at the real repo
+(`https://github.com/AnkushGitRepo/marketmitra`, `target="_blank" rel="noreferrer"`, updated
+aria-label); Dashboard is a real `next/link` `Link` to `/dashboard` in both the desktop and
+mobile nav, and in the hero CTA. `Footer.tsx`'s "Product → Dashboard" link had the identical
+`#dashboard` bug and got the same fix (`/dashboard`, using the footer's existing
+internal-vs-external link render logic). Left `PricingCards.tsx`'s `#opensource` scroll link
+alone — that one's a legitimate in-page CTA to the self-host pricing section, not a
+mislabeled GitHub link, and wasn't part of the reported bug.
+
+Verified live: started the production build, curl'd the landing page HTML, and confirmed
+every GitHub-labelled anchor resolves to the real repo URL (including the icon button's
+`aria-label`) and every Dashboard-labelled link resolves to `/dashboard` — zero `#dashboard`
+or `#opensource`-as-GitHub anchors remain.
+
+**Portfolio page: news for your holdings.** Portfolio previously had no news at all — News
+page's existing "My holdings" filter (`getNews({symbols, limit})` from `newsApi.ts`) was the
+only place to see holdings-relevant news, and it required navigating away and manually
+knowing to filter. Added a "News for your holdings" section to `/dashboard/portfolio`,
+directly below the concentration/unrealized-P&L row: `page.tsx` now derives the portfolio's
+unique uppercased symbol set and calls the same `getNews()` (capped at 8 items, only when
+holdings exist), passes it to `PortfolioPageClient`, which renders it with the existing
+`NewsList` component (`showSymbols`) plus a "View all news" link to `/dashboard/news`. Reused
+`.sectionHeadRow`/`.h2`/`.btnSecondary` from the existing page styles rather than introducing
+new CSS — added `justify-content: space-between` to `.sectionHeadRow` so the new link floats
+right of the heading (checked first: that class has exactly one other user on this page, a
+single-child heading row, so the added property doesn't affect it). Zero-holdings case is a
+pre-existing early return before this section, so no extra empty-state handling was needed.
+
+Not live-clickthrough-verified behind Clerk auth (bare curl can't complete the hosted dev
+instance's sign-in handshake, same constraint noted in earlier entries) — verified instead
+via `tsc`/build/lint/the full 410-test vitest suite all green, and by re-reading the
+rendered JSX/props wiring end to end.
+
+Full suite: lint clean, production build clean (`tsc --noEmit` via `next build`), 410/410
+vitest tests passing.
+
+- **Next:** none outstanding from this session. Not pushed/deployed; sitting locally on
+  `landing-wishlist-alerts-channels` alongside the wishlists/alert-channels batch, pending
+  review.

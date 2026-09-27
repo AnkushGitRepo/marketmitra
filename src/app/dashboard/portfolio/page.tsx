@@ -5,6 +5,7 @@ import { getPortfolioValueHistory } from '@/lib/dashboard/portfolioHistory';
 import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCachedInsight } from '@/lib/insights';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
+import { getNews } from '@/lib/dashboard/newsApi';
 import { PortfolioPageClient } from './PortfolioPageClient';
 import styles from './page.module.css';
 
@@ -46,5 +47,18 @@ export default async function PortfolioPage() {
       : null,
   };
 
-  return <PortfolioPageClient holdings={holdings} history={historyByPeriod} aiInsight={aiInsight} />;
+  // News scoped to the holdings actually in this portfolio — same
+  // `/api/news`-backing `getNews()` the News page's "My holdings" filter
+  // uses, just always on here since this whole page is holdings-scoped.
+  const holdingSymbols = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
+  const news = holdingSymbols.length > 0 ? await getNews({ symbols: holdingSymbols, limit: 8 }) : null;
+
+  return (
+    <PortfolioPageClient
+      holdings={holdings}
+      history={historyByPeriod}
+      aiInsight={aiInsight}
+      news={news?.items ?? []}
+    />
+  );
 }

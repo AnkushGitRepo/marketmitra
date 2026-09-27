@@ -7,12 +7,13 @@ import { isHosted } from '@/lib/deployment-mode';
 import { Logo } from './Logo';
 import styles from './Navbar.module.css';
 
-const ALL_NAV_LINKS = [
-  { href: '#dashboard', label: 'Dashboard' },
+const ALL_SCROLL_LINKS = [
   { href: '#features', label: 'Features' },
   { href: '#how', label: 'How it works' },
   { href: '#faq', label: 'FAQ' },
 ];
+
+const GITHUB_REPO_URL = 'https://github.com/AnkushGitRepo/marketmitra';
 
 function HostedNavCta() {
   return (
@@ -43,7 +44,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const hosted = isHosted();
-  const navLinks = hosted ? ALL_NAV_LINKS : ALL_NAV_LINKS.filter((link) => link.href !== '#faq');
+  const scrollLinks = hosted ? ALL_SCROLL_LINKS : ALL_SCROLL_LINKS.filter((link) => link.href !== '#faq');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -57,14 +58,21 @@ export function Navbar() {
       <nav className={`${styles.inner} ${scrolled ? styles.scrolled : ''}`}>
         <Logo size={28} animated />
         <div className={styles.links}>
-          {navLinks.map((link) => (
+          <Link href="/dashboard">Dashboard</Link>
+          {scrollLinks.map((link) => (
             <a key={link.href} href={link.href}>
               {link.label}
             </a>
           ))}
         </div>
         <div className={styles.actions}>
-          <a href="#opensource" className={styles.ghost} aria-label="GitHub">
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.ghost}
+            aria-label="GitHub repository (opens in a new tab)"
+          >
             <GitHubIcon />
             <span className={styles.ghostLabel} aria-hidden="true">
               GitHub
@@ -89,7 +97,10 @@ export function Navbar() {
         </div>
       </nav>
       <div className={`${styles.mobilePanel} ${menuOpen ? styles.open : ''}`}>
-        {navLinks.map((link) => (
+        <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
+          Dashboard
+        </Link>
+        {scrollLinks.map((link) => (
           <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>
             {link.label}
           </a>
