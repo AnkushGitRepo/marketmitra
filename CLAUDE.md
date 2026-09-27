@@ -45,7 +45,16 @@ MarketMitra is a financial dashboard (Indian markets: indices, stocks, IPOs, new
 
 ## Active focus
 
-**No build in flight.** Everything below (including the collapsible sidebar navigation,
+**In progress, on `landing-wishlist-alerts-channels`, built + verified locally, not yet
+pushed/deployed:** landing-page navbar/hero background blend fix (real seam, not a color
+tweak — see ADR-less session-log entry 2026-09-27), Markets page per-user stock wishlists
+(replacing the fixed watchlist gainers/losers panel, ADR 0028), and self-serve
+Slack/Telegram/WhatsApp/custom-webhook alert channels on `/dashboard/alerts` (ADR 0028).
+Full suite green (410 tests, lint, build); Slack/Telegram senders verified against the real
+APIs with fake credentials (real API error responses came back, proving correct wiring).
+Needs review, then push + deploy.
+
+Everything below (including the collapsible sidebar navigation,
 [ADR 0026](./docs/decisions/0026-collapsible-sidebar-navigation.md)) merged to `main`/`v2`,
 pushed, and **deployed to production** — most recently 2026-09-20 (sidebar nav + the
 Clerk profile-avatar clipping fix, verified live with a real signed-in session), before

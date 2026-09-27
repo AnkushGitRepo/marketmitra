@@ -3,8 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { Alert } from '@/lib/alerts/types';
+import type { NotificationChannelSettingsView } from '@/lib/userSettings';
 import { AlertForm } from './AlertForm';
 import { alertStatusView, alertTypeLabel, describeAlert, relativeTime } from './alertText';
+import { NotificationChannelsCard } from './NotificationChannelsCard';
 import styles from './page.module.css';
 
 interface AlertsPageClientProps {
@@ -12,9 +14,17 @@ interface AlertsPageClientProps {
   /** From `?new=1&symbol=…` on the stock page's "Set alert" button. */
   openNew: boolean;
   prefillSymbol?: string;
+  channelsView: NotificationChannelSettingsView | null;
+  encConfigured: boolean;
 }
 
-export function AlertsPageClient({ alerts, openNew, prefillSymbol }: AlertsPageClientProps) {
+export function AlertsPageClient({
+  alerts,
+  openNew,
+  prefillSymbol,
+  channelsView,
+  encConfigured,
+}: AlertsPageClientProps) {
   const router = useRouter();
   const [creating, setCreating] = useState(openNew);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -54,10 +64,12 @@ export function AlertsPageClient({ alerts, openNew, prefillSymbol }: AlertsPageC
       </div>
 
       <p className={styles.introNote}>
-        Checked about every 10 minutes during NSE market hours. Notifications show up
-        here in-app; set a webhook URL on your deployment to also forward them to
-        Telegram, Discord, or Slack.
+        Checked about every 10 minutes during NSE market hours. Notifications always
+        show up here in-app — connect Slack, Telegram, WhatsApp, or a custom webhook
+        below to also get them there.
       </p>
+
+      <NotificationChannelsCard initialView={channelsView} encConfigured={encConfigured} />
 
       {creating && (
         <div className={styles.formCard}>

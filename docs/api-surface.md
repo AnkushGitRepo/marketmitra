@@ -122,6 +122,45 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Response:** `data: null`.
 - **Errors:** `401` unauthenticated, `404` if not found/not owned.
 
+### `GET /api/wishlists`
+- **Purpose:** List the current user's stock wishlists (Markets page, ADR 0028), oldest-created first.
+- **Auth:** required (see above).
+- **Response:** `data`: `UserWishlist[]` — `{ id, userId, name, symbols: string[], createdAt, updatedAt }`.
+- **Errors:** `401` unauthenticated.
+
+### `POST /api/wishlists`
+- **Purpose:** Create a wishlist.
+- **Auth:** required.
+- **Request:** body `{ name: string(1–60) }`.
+- **Response:** `data`: the created wishlist, `201`.
+- **Errors:** `401` unauthenticated, `409` per-user cap (20) reached, `422` invalid input.
+
+### `PATCH /api/wishlists/[id]`
+- **Purpose:** Rename a wishlist.
+- **Auth:** required; scoped to the owning user.
+- **Request:** body `{ name: string(1–60) }`.
+- **Response:** `data`: the updated wishlist.
+- **Errors:** `401` unauthenticated, `404` not found/not owned, `422` invalid input.
+
+### `DELETE /api/wishlists/[id]`
+- **Purpose:** Delete a wishlist.
+- **Auth:** required; scoped to the owning user.
+- **Response:** `data: { id }`.
+- **Errors:** `401` unauthenticated, `404` not found/not owned.
+
+### `POST /api/wishlists/[id]/symbols`
+- **Purpose:** Add a stock to a wishlist. Deduped (adding an already-present symbol is a no-op success); capped at 50 symbols/wishlist.
+- **Auth:** required; scoped to the owning user.
+- **Request:** body `{ symbol: string(1–30) }` — upper-cased and trimmed server-side.
+- **Response:** `data`: the updated wishlist.
+- **Errors:** `401` unauthenticated, `409` wishlist not found or at the symbol cap, `422` invalid input.
+
+### `DELETE /api/wishlists/[id]/symbols/[symbol]`
+- **Purpose:** Remove a stock from a wishlist.
+- **Auth:** required; scoped to the owning user.
+- **Response:** `data`: the updated wishlist.
+- **Errors:** `401` unauthenticated, `404` not found/not owned.
+
 ### `GET /api/notifications`
 - **Purpose:** The in-app notification centre — the current user's notifications, newest first, plus an unread count. Alerts are the first producer; Phase 7/8 reuse this.
 - **Auth:** required.
@@ -157,6 +196,19 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **GET:** `data` = `{ provider, model, keyHint }` (last 4 chars of the key only) or `null` if none stored. `meta.encConfigured` reflects whether `SETTINGS_ENC_KEY` is set.
 - **PUT:** body `{ provider: 'gemini'|'anthropic'|'openrouter', apiKey: string(10–400), model?: string }`. Runs a live `validateAiKey` round-trip before storing — a rejected key is never saved. `503` when `SETTINGS_ENC_KEY` is unset, `400` on a provider-rejected key, `422` on a bad body.
 - **DELETE:** clears the stored key.
+
+### `GET|PUT /api/settings/notifications`
+- **Purpose:** Manage the signed-in user's notification delivery channels — Slack, Telegram, WhatsApp, and a custom webhook (ADR 0028). Values are stored **AES-256-GCM-encrypted** in the same `userSettings` collection/key as the BYO AI key above; never returned to the browser.
+- **Auth:** required.
+- **GET:** `data` = `{ slack: {configured}, telegram: {configured, chatId}, whatsapp: {configured}, webhook: {configured}, updatedAt }`. `meta.encConfigured` reflects whether `SETTINGS_ENC_KEY` is set.
+- **PUT:** body — any of `slackWebhookUrl`, `telegramBotToken`, `telegramChatId`, `whatsappWebhookUrl`, `customWebhookUrl` (all optional strings). A field present with a non-empty value sets/replaces that channel; present as an empty string clears it; omitted fields are left untouched. `503` when `SETTINGS_ENC_KEY` is unset, `422` on a malformed URL or bad body.
+
+### `POST /api/settings/notifications/test`
+- **Purpose:** Send one real test notification through a single already-saved channel, so the user can confirm delivery actually works before relying on it for a real alert.
+- **Auth:** required.
+- **Request:** body `{ channel: "slack"|"telegram"|"whatsapp"|"webhook" }`.
+- **Response:** `data`: the `ChannelResult` from that one send attempt — `{ channel, status: "sent"|"error", detail? }`.
+- **Errors:** `401` unauthenticated, `409` that channel isn't configured yet, `422` invalid input.
 
 ### `POST /api/insights/{stock|portfolio|ipo}`
 - **Purpose:** Generate (or return a cached) neutral AI synthesis for one surface (ADR 0018). Guardrailed in `src/lib/ai/prompts.ts` — no buy/sell/hold, no price target, every response ends "This is a synthesis of public data, not investment advice."

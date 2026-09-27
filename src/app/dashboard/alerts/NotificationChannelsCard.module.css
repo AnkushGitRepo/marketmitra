@@ -1,0 +1,198 @@
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 4px 24px;
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+  margin-bottom: 18px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 20px 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+
+.title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+  max-width: 60ch;
+}
+
+.chevron {
+  flex: none;
+  color: var(--app-text-subtle);
+  font-size: 14px;
+}
+
+.disabledNote {
+  margin: 0 0 20px;
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+}
+
+.body {
+  padding: 4px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-top: 1px solid var(--app-border-soft);
+}
+
+.error {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--app-loss);
+}
+
+.channelRow {
+  padding-top: 18px;
+}
+
+.channelRow:first-child {
+  padding-top: 4px;
+}
+
+.channelHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.channelName {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.status {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--app-border-softer);
+  color: var(--app-text-muted);
+}
+
+.statusOn {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+.channelHelp {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+  max-width: 68ch;
+}
+
+.channelHelp a {
+  color: var(--app-teal-strong);
+  text-decoration: underline;
+}
+
+.channelHelp code,
+.channelHelp code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--app-border-softer);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.channelMeta {
+  margin: 6px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--app-text-subtle);
+}
+
+.inlineForm {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.input {
+  flex: 1;
+  min-width: 200px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  color: var(--app-ink);
+  background: var(--color-surface);
+}
+
+.narrowInput {
+  flex: none;
+  min-width: 110px;
+  width: 120px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--app-teal-bg-strong);
+}
+
+.smallBtnPrimary {
+  border: none;
+  background: var(--app-ink);
+  color: var(--app-cream);
+  border-radius: var(--radius-pill);
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.smallBtnPrimary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.smallBtn {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  color: var(--app-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.smallBtnDanger {
+  border: 1px solid transparent;
+  background: none;
+  border-radius: var(--radius-pill);
+  padding: 9px 10px;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  color: var(--app-loss);
+  cursor: pointer;
+  white-space: nowrap;
+}

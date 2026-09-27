@@ -241,3 +241,138 @@ Rolling log of work sessions, most recent first is NOT required — append chron
 - Full suite green before every push: `tsc --noEmit`, lint, 392 vitest tests, production build (Next); the `vercel.json` change is config-only, validated as JSON, nothing Python to re-test.
 - **Lesson for next time, stated plainly:** `create_deployment` via this project's git source auto-aliases production the moment a build succeeds — there is no built-in "deploy to preview, verify, then promote" step in this path the way `vercel deploy` (without `--prod`) gives you. On a monorepo/subdirectory project, treat the first fresh build after a config change as unverified until a real smoke test confirms it, and know `assign_alias` (pointing the domain at a specific already-built, already-working deployment ID) is the fast rollback lever if a fresh build looks fine but serves errors.
 - **Next:** none outstanding from this session. Both projects live, both verified. If `vercel deploy` CLI access is restored later, it remains the simpler default path — this session's `create_deployment` route works but needs `rootDirectory` stated explicitly every time, which the CLI otherwise handles implicitly.
+
+## 2026-09-27 — Landing navbar blend fix, Markets wishlists, self-serve alert channels (ADR 0028)
+
+- Three independent asks in one session: (1) the landing page navbar had a visible seam of
+  flat white/cream space above it instead of blending into the hero band's gradient; (2)
+  replace the Markets page's fixed "Top gainers/losers (watchlist)" panel with user-created
+  wishlists; (3) let a user set up Slack/Telegram/WhatsApp/webhook delivery for their alerts
+  from the Alerts page itself, not just an operator env var.
+
+### Navbar blend — real root cause, not a color tweak
+
+`Navbar` was rendered as a sibling of `.heroBand` inside `.page`, so it sat on `.page`'s own
+background — four large radial gradients centered far down the (very tall) page, meaning
+near y=0 the color is effectively flat `#fdfbf7` — while `.heroBand` (Hero + DashboardPreview)
+carries its *own*, much stronger gradients positioned near *its* top edge. The seam was
+exactly where Navbar ended and heroBand began. Fix: moved `<Navbar />` inside
+`<div className={styles.heroBand}>`, ahead of `<Hero />` — no CSS values changed, the same
+`heroBand` gradients now simply extend to cover the navbar too. Verified structurally (not
+just by reasoning) by fetching the rendered landing-page HTML and confirming the Navbar's
+DOM node now nests inside the `heroBand` div. A live-browser screenshot wasn't taken this
+session — this environment's shell sandboxes each command in its own process namespace
+(`bwrap --unshare-pid --die-with-parent`), so a background `next dev` server doesn't survive
+between separate tool calls the way it would in a normal terminal; verification instead ran
+the dev server and every curl-based check within single, longer shell invocations.
+
+### Markets page — user wishlists (ADR 0028)
+
+New `userWishlists` Mongo collection + `src/lib/wishlists/userWishlists.ts` (mirrors
+`userNotes.ts`'s CRUD shape exactly — 8 new unit tests). 4 route files under
+`/api/wishlists` (list/create, rename/delete, add-symbol, remove-symbol). `WishlistPanel.tsx`
+(new, `dashboard-charts/`) — tabs per wishlist, inline create/rename, an add-stock search
+reusing the existing `SearchResultsDropdown`/`/api/search` (filtered to companies), and a
+per-row remove button; every mutation calls `router.refresh()` rather than keeping an
+optimistic local copy of the list, so `wishlists` (the server-refreshed prop) stays the one
+source of truth — a first attempt that mirrored the prop into local state via a `useEffect`
+was correctly rejected by `react-hooks/set-state-in-effect` and reworked to compute the
+active list at render time instead. `/dashboard/markets/page.tsx` now batches one
+`getQuotes(symbols)` call across every symbol in every wishlist, replacing the
+`getTopMovers()` call. **Deliberately scoped to the Markets page only** — the dashboard
+home's own gainers/losers panel still uses the old fixed `WATCHLIST`, untouched, since that
+wasn't part of the ask.
+
+### Alerts page — self-serve Slack/Telegram/WhatsApp/webhook channels (ADR 0028)
+
+Extended `userSettings.ts` (the same one-doc-per-user collection already holding the BYO AI
+key) with encrypted `slackWebhookUrl`/`telegramBotToken`+`telegramChatId`/
+`whatsappWebhookUrl`/`customWebhookUrl` fields, same AES-256-GCM helper and
+`SETTINGS_ENC_KEY` gate as the AI key. **Caught and fixed a real latent bug while doing
+this:** `clearAiSettings` previously `deleteOne`'d the whole `userSettings` document — fine
+when that doc held only AI settings, but now would have silently wiped a user's saved
+notification channels too the next time they cleared their AI key. Changed to `$unset` just
+the AI fields.
+
+`channels.ts` gained real senders, not a relabeled generic webhook: `sendSlack` posts the
+`{text}` shape Slack's incoming-webhook API actually expects; `sendTelegram` calls the real
+Bot API `sendMessage` (`chat_id`/`text`/`parse_mode: Markdown`, with Telegram markdown
+escaping). `sendWhatsapp` is honestly documented as a relay through the same generic JSON
+`sendWebhook` shape to a user-supplied URL — there is no free, keyless "send to a WhatsApp
+number" API, and the Alerts-page UI says so rather than implying native WhatsApp delivery.
+`resolveChannels()` now reads the user's own saved settings first, falling back to
+`ALERT_WEBHOOK_URL` for the generic webhook slot only (existing self-hosters' env var keeps
+working). New `NotificationChannelsCard.tsx` on `/dashboard/alerts` (collapsible, one row
+per channel, save/disconnect, and a real "Send test" button per channel hitting
+`POST /api/settings/notifications/test`).
+
+**Verified for real, not mocked, using a throwaway local `SETTINGS_ENC_KEY`:** saved a fake
+Slack webhook URL and a fake Telegram bot token/chat id, then hit the actual save→test round
+trip against the *real* Slack and Telegram APIs — Slack came back with its own real
+`no_team` error, Telegram with its own real `{"ok":false,"error_code":401,"description":
+"Unauthorized"}` — proof both requests are correctly shaped and reaching the real services,
+failing only on the fake credentials. Also exercised the full wishlist CRUD lifecycle
+end-to-end the same way (create → add TCS/INFY → rename → remove TCS → confirm on the
+rendered Markets page HTML → delete), and confirmed URL validation (`422` on a non-URL) and
+the `SETTINGS_ENC_KEY`-unset `503` gate.
+
+6 new API endpoints documented in `docs/api-surface.md` + `public/openapi.json` (the repo's
+own `openapi.test.ts` CI check enforces this — caught the omission on the first test run,
+fixed). 16 new tests for `channels.ts` (`sendWebhook`/`sendSlack`/`sendTelegram`/
+`sendWhatsapp`, mocked `fetch`), 8 new for `userWishlists.ts`. Full suite green: `tsc
+--noEmit` (via `next build`), lint, 410 vitest tests, production build.
+
+- **Next:** none outstanding from this session. Not pushed/deployed; sitting on
+  `landing-wishlist-alerts-channels` locally pending review. `SETTINGS_ENC_KEY` must be set
+  on any deployment for the new channel settings to be usable (already required for the AI
+  key, so hosted/most self-hosts already have it).
+
+## 2026-09-27 — Navbar GitHub/Dashboard links fixed to navigate (not scroll); Portfolio page now shows holdings-scoped news
+
+Two real bug fixes on top of the previous (uncommitted-until-now) wishlists/alert-channels
+batch, both reported directly by the user with reproduction detail:
+
+**Navbar/Hero "scroll instead of navigate" bug.** `Navbar.tsx`'s GitHub icon-button and
+"Dashboard" link, and `Hero.tsx`'s "See the dashboard" CTA, were wired as in-page anchors
+(`#opensource`, `#dashboard`) left over from an earlier single-page-scroll version of the
+landing page — clicking GitHub scrolled to the open-source section instead of opening the
+repo, and clicking Dashboard (navbar or hero) just scrolled to a `#dashboard` anchor that
+doesn't correspond to any real section anymore. Fixed: GitHub now points at the real repo
+(`https://github.com/AnkushGitRepo/marketmitra`, `target="_blank" rel="noreferrer"`, updated
+aria-label); Dashboard is a real `next/link` `Link` to `/dashboard` in both the desktop and
+mobile nav, and in the hero CTA. `Footer.tsx`'s "Product → Dashboard" link had the identical
+`#dashboard` bug and got the same fix (`/dashboard`, using the footer's existing
+internal-vs-external link render logic). Left `PricingCards.tsx`'s `#opensource` scroll link
+alone — that one's a legitimate in-page CTA to the self-host pricing section, not a
+mislabeled GitHub link, and wasn't part of the reported bug.
+
+Verified live: started the production build, curl'd the landing page HTML, and confirmed
+every GitHub-labelled anchor resolves to the real repo URL (including the icon button's
+`aria-label`) and every Dashboard-labelled link resolves to `/dashboard` — zero `#dashboard`
+or `#opensource`-as-GitHub anchors remain.
+
+**Portfolio page: news for your holdings.** Portfolio previously had no news at all — News
+page's existing "My holdings" filter (`getNews({symbols, limit})` from `newsApi.ts`) was the
+only place to see holdings-relevant news, and it required navigating away and manually
+knowing to filter. Added a "News for your holdings" section to `/dashboard/portfolio`,
+directly below the concentration/unrealized-P&L row: `page.tsx` now derives the portfolio's
+unique uppercased symbol set and calls the same `getNews()` (capped at 8 items, only when
+holdings exist), passes it to `PortfolioPageClient`, which renders it with the existing
+`NewsList` component (`showSymbols`) plus a "View all news" link to `/dashboard/news`. Reused
+`.sectionHeadRow`/`.h2`/`.btnSecondary` from the existing page styles rather than introducing
+new CSS — added `justify-content: space-between` to `.sectionHeadRow` so the new link floats
+right of the heading (checked first: that class has exactly one other user on this page, a
+single-child heading row, so the added property doesn't affect it). Zero-holdings case is a
+pre-existing early return before this section, so no extra empty-state handling was needed.
+
+Not live-clickthrough-verified behind Clerk auth (bare curl can't complete the hosted dev
+instance's sign-in handshake, same constraint noted in earlier entries) — verified instead
+via `tsc`/build/lint/the full 410-test vitest suite all green, and by re-reading the
+rendered JSX/props wiring end to end.
+
+Full suite: lint clean, production build clean (`tsc --noEmit` via `next build`), 410/410
+vitest tests passing.
+
+- **Next:** none outstanding from this session. Not pushed/deployed; sitting locally on
+  `landing-wishlist-alerts-channels` alongside the wishlists/alert-channels batch, pending
+  review.

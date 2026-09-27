@@ -64,7 +64,7 @@ un-blocked PDF host.
 | `/sign-up/[[...sign-up]]`    | Clerk hosted sign-up, on-brand split layout                  | public                                | redirects to `/dashboard`                  |
 | `/dashboard`                 | Dashboard home — stats, portfolio chart, indices, movers, open IPOs | protected in `src/proxy.ts`    | open directly, no login                    |
 | `/dashboard/portfolio`       | Holdings, allocation, concentration, per-holding P&L, AI insight | protected                          | open directly                              |
-| `/dashboard/markets`         | Index quotes, watchlist gainers/losers, search               | protected                              | open directly                              |
+| `/dashboard/markets`         | Index quotes, user-owned stock wishlists (`WishlistPanel.tsx`, ADR 0028 — replaced the old fixed-watchlist gainers/losers panel here), search | protected | open directly |
 | `/dashboard/stock/[ticker]`  | Stock detail — price chart, ratios, financials, shareholding (100% stacked bar, `ShareholdingBarChart.tsx`), peers, About, docs (capped 4 + "View all"), news, AI read | protected     | open directly                              |
 | `/dashboard/index/[name]`    | Index detail (NIFTY 50/SENSEX/NIFTY BANK/INDIA VIX) — live quote, 52w hi/lo, price chart, general market news. Reached by clicking an index card or searching one — deliberately **not** in the nav (only 4 indices exist; discovery is via search/cards) | protected | open directly |
 | `/dashboard/alerts`          | Price / %-move / 52w / portfolio-P&L alerts + IPO alerts     | protected                              | open directly                              |
@@ -192,15 +192,34 @@ Full detail: [archive/alerts-engine.md](./archive/alerts-engine.md); rationale i
 
 Four trigger types (price threshold, percent move, 52-week breach, portfolio P&L), evaluated
 on a schedule, delivered through a **generic notification subsystem** (`src/lib/notifications/`)
-— in-app always, email + webhook when configured, `resolveChannels()` gated on config env
-vars not `isHosted()`. `alerts` + `notifications` MongoDB collections. Pure evaluators +
-`decideAlertTransition` (one-shot vs re-arm, cooldown, hysteresis) in `src/lib/alerts/`,
-unit-tested with no I/O. The cycle (`evaluate.ts`) batches one `GET /quote`, degrades
-gracefully on missing data (`skippedNoData`, never fires). `GET|POST /api/cron/evaluate-alerts`
-is `CRON_SECRET`-guarded; `vercel.json` declares a once-daily cron (Hobby ceiling), real
-~10-min cadence needs an external scheduler. UI: `/dashboard/alerts` + a `NotificationBell`
-in `AppHeader`. The IPO tracker (Phase 7) reuses this engine — see below. **Email transport
-is a config-gated no-throw stub** pending Resend provisioning.
+— in-app always; email, Slack, Telegram, WhatsApp, and a custom webhook when configured.
+`resolveChannels()` reads each user's own saved channel settings first (ADR 0028 —
+`userSettings.ts`, encrypted at rest same as the BYO AI key), falling back to the
+deployment-wide `ALERT_WEBHOOK_URL` env var for the generic webhook slot only. `alerts` +
+`notifications` MongoDB collections. Pure evaluators + `decideAlertTransition` (one-shot vs
+re-arm, cooldown, hysteresis) in `src/lib/alerts/`, unit-tested with no I/O. The cycle
+(`evaluate.ts`) batches one `GET /quote`, degrades gracefully on missing data
+(`skippedNoData`, never fires). `GET|POST /api/cron/evaluate-alerts` is `CRON_SECRET`-guarded;
+`vercel.json` declares a once-daily cron (Hobby ceiling), real ~10-min cadence needs an
+external scheduler. UI: `/dashboard/alerts` (alert list + a collapsible
+`NotificationChannelsCard` for Slack/Telegram/WhatsApp/webhook setup, each with a real
+"send test" round-trip) + a `NotificationBell` in `AppHeader`. The IPO tracker (Phase 7)
+reuses this engine — see below. **Email transport is a config-gated no-throw stub** pending
+Resend provisioning; Slack/Telegram send through the real Slack/Telegram APIs (ADR 0028);
+WhatsApp relays through a user-supplied webhook — there's no built-in WhatsApp send path.
+
+## User wishlists (`/dashboard/markets`, ADR 0028)
+
+Replaced the old fixed-`WATCHLIST` gainers/losers panel on the Markets page with
+user-owned wishlists: `userWishlists` MongoDB collection (`{ userId, name, symbols[] }`,
+capped 20/user, 50 symbols/list), CRUD in `src/lib/wishlists/userWishlists.ts` (mirrors
+`userNotes.ts`'s shape exactly). `WishlistPanel.tsx` (client) owns tabs, the add-stock
+search (`/api/search`, filtered to companies), and every mutation via `router.refresh()`
+— no local optimistic copy of the list, `wishlists` prop is the single source of truth.
+The Markets page server component batches one `getQuotes(symbols)` call across every
+symbol in every wishlist. **Scoped to the Markets page only** — the dashboard home's own
+gainers/losers panel still uses the old fixed `WATCHLIST`/`getTopMovers`, deliberately
+untouched.
 
 ## News feed (`/dashboard/news`)
 

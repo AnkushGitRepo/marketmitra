@@ -1,5 +1,7 @@
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { listAlerts } from '@/lib/alerts/store';
+import { isEncKeyConfigured } from '@/lib/crypto';
+import { getNotificationChannelSettingsView } from '@/lib/userSettings';
 import { AlertsPageClient } from './AlertsPageClient';
 import styles from './page.module.css';
 
@@ -21,10 +23,16 @@ export default async function AlertsPage({
 
   const { new: newParam, symbol } = await searchParams;
   let alerts: Awaited<ReturnType<typeof listAlerts>> = [];
+  let channelsView: Awaited<ReturnType<typeof getNotificationChannelSettingsView>> | null = null;
   try {
     alerts = await listAlerts(userId);
   } catch {
     // Mongo unreachable — render the shell with an empty list rather than 500.
+  }
+  try {
+    channelsView = await getNotificationChannelSettingsView(userId);
+  } catch {
+    // Same fallback as above.
   }
 
   return (
@@ -32,6 +40,8 @@ export default async function AlertsPage({
       alerts={alerts}
       openNew={newParam === '1' || newParam === 'true'}
       prefillSymbol={symbol?.toUpperCase()}
+      channelsView={channelsView}
+      encConfigured={isEncKeyConfigured()}
     />
   );
 }
