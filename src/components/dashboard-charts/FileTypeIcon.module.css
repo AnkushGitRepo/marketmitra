@@ -1,0 +1,31 @@
+.tile {
+  position: relative;
+  flex: none;
+  border-radius: 10px;
+  background: var(--app-teal-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glyph {
+  width: 58%;
+  height: 58%;
+  color: var(--app-teal-strong);
+}
+
+.badge {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  font-family: var(--font-mono);
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--color-text-on-dark);
+  background: var(--app-teal-strong);
+  border-radius: 3px;
+}

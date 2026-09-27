@@ -65,7 +65,7 @@ un-blocked PDF host.
 | `/dashboard`                 | Dashboard home — stats, portfolio chart, indices, movers, open IPOs | protected in `src/proxy.ts`    | open directly, no login                    |
 | `/dashboard/portfolio`       | Holdings, allocation, concentration, per-holding P&L, AI insight | protected                          | open directly                              |
 | `/dashboard/markets`         | Index quotes, watchlist gainers/losers, search               | protected                              | open directly                              |
-| `/dashboard/stock/[ticker]`  | Stock detail — price chart, ratios, financials, shareholding, peers, About, docs, news, AI read | protected     | open directly                              |
+| `/dashboard/stock/[ticker]`  | Stock detail — price chart, ratios, financials, shareholding (100% stacked bar, `ShareholdingBarChart.tsx`), peers, About, docs (capped 4 + "View all"), news, AI read | protected     | open directly                              |
 | `/dashboard/index/[name]`    | Index detail (NIFTY 50/SENSEX/NIFTY BANK/INDIA VIX) — live quote, 52w hi/lo, price chart, general market news. Reached by clicking an index card or searching one — deliberately **not** in the nav (only 4 indices exist; discovery is via search/cards) | protected | open directly |
 | `/dashboard/alerts`          | Price / %-move / 52w / portfolio-P&L alerts + IPO alerts     | protected                              | open directly                              |
 | `/dashboard/news`            | News feed — global stream + "My holdings" toggle             | protected                              | open directly                              |

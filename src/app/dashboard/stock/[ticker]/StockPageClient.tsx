@@ -8,14 +8,24 @@ import { PillTabs } from '@/components/dashboard-charts/PillTabs';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { InsightCard } from '@/components/dashboard-charts/InsightCard';
+import { ShareholdingBarChart } from '@/components/dashboard-charts/ShareholdingBarChart';
+import { FileTypeIcon } from '@/components/dashboard-charts/FileTypeIcon';
 import { useMask } from '@/lib/dashboard/MaskContext';
 import { usePageContext } from '@/lib/dashboard/PageContext';
 import { formatInr } from '@/lib/dashboard/format';
 import type { CompanyOut, DocumentOut, PeerOut, PricePeriod, RatioOut } from '@/lib/dashboard/fundamentalsApi';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
-import { formatRatioValue, type FinTable, type ShareholdingSeries } from '@/lib/dashboard/transforms';
+import { formatRatioValue, stripCitationMarkers, type FinTable, type ShareholdingSeries } from '@/lib/dashboard/transforms';
 import styles from './page.module.css';
+
+const DOCS_COLLAPSED_COUNT = 4;
+
+const SOURCE_LABELS: Record<string, string> = {
+  tier1_nse_bse: 'NSE/BSE',
+  tier2_yfinance: 'Yahoo Finance',
+  tier3_screener: 'Screener.in',
+};
 
 type StatementKey = 'profit_and_loss' | 'balance_sheet' | 'cash_flow';
 
@@ -53,10 +63,6 @@ function formatPeerValue(value: string | null, kind: 'inr' | 'inr_cr' | 'pct' | 
   return `${num.toFixed(2)}%`;
 }
 
-const SH_TOP = 14;
-const SH_BOTTOM = 186;
-const SH_WIDTH = 600;
-
 export function StockPageClient({
   symbol,
   company,
@@ -76,6 +82,7 @@ export function StockPageClient({
   const { setPageContext } = usePageContext();
   const [range, setRange] = useState<PricePeriod>('1y');
   const [fin, setFin] = useState<StatementKey>('profit_and_loss');
+  const [showAllDocs, setShowAllDocs] = useState(false);
 
   // Publish what the user is looking at so Mitra (mounted as a shell
   // sibling, not a child of this page) can reference "this stock" /
@@ -93,14 +100,10 @@ export function StockPageClient({
 
   const finTable = financials[fin];
 
-  const quarters = [...new Set(shareholding.flatMap((s) => s.points.map((p) => p.quarterEnd)))].sort();
-  const shMin = 0;
-  const shMax = shareholding.length
-    ? Math.ceil(Math.max(...shareholding.flatMap((s) => s.points.map((p) => p.percentage))) / 10) * 10
-    : 50;
-  const shX = (i: number) => (quarters.length <= 1 ? SH_WIDTH / 2 : 6 + (i * (SH_WIDTH - 12)) / (quarters.length - 1));
-  const shY = (v: number) => SH_TOP + (1 - (v - shMin) / (shMax - shMin || 1)) * (SH_BOTTOM - SH_TOP);
-  const gridValues = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round((shMin + f * (shMax - shMin)) / 5) * 5);
+  const shQuarterCount = new Set(shareholding.flatMap((s) => s.points.map((p) => p.quarterEnd))).size;
+  const aboutText = company.about ? stripCitationMarkers(company.about) : null;
+  const sourceLabel = company.source_tier ? SOURCE_LABELS[company.source_tier] ?? null : null;
+  const visibleDocuments = showAllDocs ? documents : documents.slice(0, DOCS_COLLAPSED_COUNT);
 
   return (
     <div className={styles.pageRoot}>
@@ -139,51 +142,16 @@ export function StockPageClient({
         </div>
       </div>
 
-      {company.about && (
-        <div className={`${styles.cardPad} ${styles.aboutCard}`}>
-          <p className={styles.cardLabel} style={{ marginBottom: 10 }}>
-            About
-          </p>
-          <p className={styles.aboutText}>{company.about}</p>
-        </div>
-      )}
-
-      <div className={styles.aboutCard}>
-        <InsightCard
-          label="AI read"
-          endpoint="/api/insights/stock"
-          body={{ symbol }}
-          initial={aiInsight.initial}
-          hasKey={aiInsight.hasKey}
-        />
-      </div>
-
-      {news.length > 0 && (
-        <div className={`${styles.cardPad} ${styles.aboutCard}`}>
-          <p className={styles.cardLabel} style={{ marginBottom: 6 }}>
-            Recent news
-          </p>
-          <NewsList items={news} emptyText="No recent news for this stock." />
-        </div>
-      )}
-
       <div className={styles.splitGrid}>
-        <div className={styles.card}>
-          <div className={styles.cardHead}>
-            <p className={styles.cardLabel}>Price history</p>
-            <PillTabs options={RANGE_OPTIONS} value={range} onChange={setRange} labels={RANGE_LABELS} />
+        {aboutText && (
+          <div className={styles.cardPad}>
+            <p className={styles.cardLabel} style={{ marginBottom: 10 }}>
+              About
+            </p>
+            <p className={styles.aboutText}>{aboutText}</p>
+            {sourceLabel && <p className={styles.sourceLine}>Source: {sourceLabel}</p>}
           </div>
-          {priceSeries[range].v.length > 0 ? (
-            <LineChart
-              series={priceSeries[range]}
-              height={210}
-              formatValue={(v) => formatInr(v, 2, masked)}
-              ariaLabel={`${symbol} price chart, ${RANGE_LABELS[range]}`}
-            />
-          ) : (
-            <p className={styles.meta}>No price history available for this range.</p>
-          )}
-        </div>
+        )}
 
         <div className={styles.cardPad}>
           <p className={styles.cardLabel} style={{ marginBottom: 14 }}>
@@ -203,6 +171,42 @@ export function StockPageClient({
           )}
         </div>
       </div>
+
+      <div className={styles.splitGrid}>
+        <div className={styles.card}>
+          <div className={styles.cardHead}>
+            <p className={styles.cardLabel}>Price history</p>
+            <PillTabs options={RANGE_OPTIONS} value={range} onChange={setRange} labels={RANGE_LABELS} />
+          </div>
+          {priceSeries[range].v.length > 0 ? (
+            <LineChart
+              series={priceSeries[range]}
+              height={210}
+              formatValue={(v) => formatInr(v, 2, masked)}
+              ariaLabel={`${symbol} price chart, ${RANGE_LABELS[range]}`}
+            />
+          ) : (
+            <p className={styles.meta}>No price history available for this range.</p>
+          )}
+        </div>
+
+        <InsightCard
+          label="AI read"
+          endpoint="/api/insights/stock"
+          body={{ symbol }}
+          initial={aiInsight.initial}
+          hasKey={aiInsight.hasKey}
+        />
+      </div>
+
+      {news.length > 0 && (
+        <div className={`${styles.cardPad} ${styles.aboutCard}`}>
+          <p className={styles.cardLabel} style={{ marginBottom: 6 }}>
+            Recent news
+          </p>
+          <NewsList items={news} emptyText="No recent news for this stock." />
+        </div>
+      )}
 
       <div className={`${styles.cardPad} ${styles.finCard}`}>
         <div className={styles.finHead}>
@@ -302,96 +306,15 @@ export function StockPageClient({
             Shareholding pattern
           </p>
           <p className={styles.docMeta} style={{ marginBottom: 12 }}>
-            {quarters.length > 0 ? `Share of equity held, ${quarters.length} quarters` : 'No shareholding data available'}
+            {shQuarterCount > 0
+              ? `Share of equity held, ${shQuarterCount} quarters`
+              : 'No shareholding data available'}
           </p>
-          {quarters.length > 0 ? (
-            <>
-              <div className={styles.shCardRow}>
-                <div className={styles.shAxis}>
-                  {gridValues.map((v) => (
-                    <span key={v} className={styles.shAxisLabel} style={{ top: `${(shY(v) / 200) * 100}%` }}>
-                      {v}%
-                    </span>
-                  ))}
-                </div>
-                <div className={styles.shChartCol}>
-                  <div className={styles.shChartWrap}>
-                    <svg
-                      viewBox="0 0 600 200"
-                      preserveAspectRatio="none"
-                      className={styles.shSvg}
-                      role="img"
-                      aria-label={`${symbol} shareholding pattern over ${quarters.length} quarters`}
-                    >
-                      {gridValues.map((v) => (
-                        <line key={v} x1="0" x2="600" y1={shY(v)} y2={shY(v)} stroke="#F1EDE3" strokeWidth={1} />
-                      ))}
-                      {shareholding.map((series) => {
-                        const path = series.points
-                          .map((p, i) => `${i ? 'L' : 'M'}${shX(i).toFixed(1)} ${shY(p.percentage).toFixed(1)}`)
-                          .join(' ');
-                        return (
-                          <g key={series.category}>
-                            <path
-                              d={path}
-                              fill="none"
-                              stroke={series.color}
-                              strokeWidth={2.4}
-                              strokeLinejoin="round"
-                              strokeLinecap="round"
-                              vectorEffect="non-scaling-stroke"
-                              className={styles.shLinePath}
-                            />
-                            {series.points.map((p, i) => (
-                              <circle
-                                key={i}
-                                cx={shX(i)}
-                                cy={shY(p.percentage)}
-                                r={3.6}
-                                fill="var(--color-surface)"
-                                stroke={series.color}
-                                strokeWidth={2.2}
-                                vectorEffect="non-scaling-stroke"
-                              />
-                            ))}
-                          </g>
-                        );
-                      })}
-                    </svg>
-                  </div>
-                  <div className={styles.shTicks}>
-                    {quarters.map((q) => (
-                      <span key={q} className={styles.shTick}>
-                        {new Date(q).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className={styles.shLegend}>
-                {shareholding.map((series) => {
-                  const last = series.points[series.points.length - 1];
-                  const first = series.points[0];
-                  const delta = last.percentage - first.percentage;
-                  const deltaColor = delta > 0 ? 'var(--app-gain)' : delta < 0 ? 'var(--app-loss)' : 'var(--app-text-subtle)';
-                  return (
-                    <div key={series.category} className={styles.legendCard}>
-                      <span className={styles.legendDot} style={{ background: series.color }} />
-                      <div style={{ minWidth: 0 }}>
-                        <p className={styles.legendName}>{series.category}</p>
-                        <p className={styles.legendMeta}>
-                          {last.percentage.toFixed(1)}%{' '}
-                          <span style={{ color: deltaColor }}>
-                            {delta > 0 ? '+' : delta < 0 ? '' : '±'}
-                            {delta.toFixed(1)}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
+          {shQuarterCount > 0 ? (
+            <ShareholdingBarChart
+              series={shareholding}
+              ariaLabel={`${symbol} shareholding pattern over ${shQuarterCount} quarters`}
+            />
           ) : (
             <p className={styles.meta}>No shareholding data available for this company right now.</p>
           )}
@@ -402,24 +325,31 @@ export function StockPageClient({
             Documents
           </p>
           {documents.length > 0 ? (
-            <div className={styles.docList}>
-              {documents.map((doc) => (
-                <a
-                  key={doc.url}
-                  href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.docRow}
-                >
-                  <span className={styles.docIcon} />
-                  <div className={styles.docInfo}>
-                    <p className={styles.docName}>{doc.title}</p>
-                    <p className={styles.docMeta}>PDF, hosted on BSE</p>
-                  </div>
-                  <span className={styles.docOpen}>Open →</span>
-                </a>
-              ))}
-            </div>
+            <>
+              <div className={styles.docList}>
+                {visibleDocuments.map((doc) => (
+                  <a
+                    key={doc.url}
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.docRow}
+                  >
+                    <FileTypeIcon url={doc.url} />
+                    <div className={styles.docInfo}>
+                      <p className={styles.docName}>{doc.title}</p>
+                      <p className={styles.docMeta}>PDF, hosted on BSE</p>
+                    </div>
+                    <span className={styles.docOpen}>Open →</span>
+                  </a>
+                ))}
+              </div>
+              {documents.length > DOCS_COLLAPSED_COUNT && (
+                <button type="button" className={styles.viewAllButton} onClick={() => setShowAllDocs((v) => !v)}>
+                  {showAllDocs ? 'Show less' : `View all (${documents.length})`}
+                </button>
+              )}
+            </>
           ) : (
             <p className={styles.meta}>
               No annual reports found for this company yet — other document types (XBRL filings, credit

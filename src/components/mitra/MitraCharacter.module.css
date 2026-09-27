@@ -1,0 +1,134 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 30%;
+  transition: transform var(--duration-base) ease, filter var(--duration-base) ease;
+  filter: drop-shadow(0 0 0 rgba(23, 195, 154, 0));
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.ear {
+  fill: var(--app-teal-strong);
+  opacity: 0.5;
+}
+
+.visor {
+  fill: var(--app-ink);
+}
+
+.eye {
+  fill: var(--app-cream);
+}
+
+.ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 34%;
+  border: 1.5px solid var(--app-teal);
+  opacity: 0;
+}
+
+/* Idle: breathes gently at rest, never fully inert. */
+@media (prefers-reduced-motion: no-preference) {
+  .wrap {
+    animation: mitraBreathe 3.6s ease-in-out infinite;
+  }
+}
+
+@keyframes mitraBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* Hover/focus of the host — a stronger glow + a touch of extra scale,
+   layered on top of whatever phase animation is already running. */
+.active {
+  filter: drop-shadow(0 0 7px rgba(23, 195, 154, 0.45));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .active {
+    transform: scale(1.1);
+  }
+}
+
+/* Thinking: faster breathing, a pinging ring, and the eyes take turns
+   dimming — reads as "processing," distinct from idle at a glance. */
+.phase_thinking .ring {
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .phase_thinking {
+    animation: mitraBreatheFast 1.05s ease-in-out infinite;
+  }
+
+  .phase_thinking .ring {
+    animation: mitraPing 1.3s ease-out infinite;
+  }
+
+  .phase_thinking .eye {
+    animation: mitraEyeBlink 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes mitraBreatheFast {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.14);
+  }
+}
+
+@keyframes mitraPing {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes mitraEyeBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Writing: lighter and faster than thinking, ring settles to a steady
+   glow rather than pinging, eyes stay open and steady ("actively looking"
+   rather than "processing"). */
+.phase_writing .ring {
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .phase_writing {
+    animation: mitraBreatheFast 0.7s ease-in-out infinite;
+  }
+}
+
+/* Done settles back to the idle breathing default for free — nothing here
+   overrides it, so no separate "done" animation needs re-declaring. */

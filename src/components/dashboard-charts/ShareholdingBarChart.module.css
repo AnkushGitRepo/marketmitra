@@ -1,0 +1,124 @@
+.wrap {
+  position: relative;
+}
+
+.chartRow {
+  display: flex;
+  gap: 10px;
+}
+
+.axis {
+  position: relative;
+  width: 38px;
+  flex: none;
+  height: 200px;
+}
+
+.axisLabel {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #a9b2b8;
+}
+
+.chartCol {
+  flex: 1;
+  min-width: 0;
+}
+
+.chartWrap {
+  position: relative;
+  height: 200px;
+}
+
+.svg {
+  width: 100%;
+  height: 200px;
+  display: block;
+  overflow: visible;
+}
+
+.segment {
+  cursor: pointer;
+  transition: opacity var(--duration-fast) ease;
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .segment {
+    animation: barGrow 0.6s var(--ease-out) both;
+    animation-delay: calc(var(--bar-i, 0) * 60ms);
+  }
+}
+
+@keyframes barGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.ticks {
+  position: relative;
+  height: 14px;
+  margin-top: 8px;
+}
+
+.tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--app-text-subtle);
+  white-space: nowrap;
+}
+
+.tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 8px));
+  background: var(--app-ink);
+  color: var(--app-cream);
+  border-radius: 14px;
+  padding: 8px 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 26px rgba(22, 25, 28, 0.22);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  z-index: 1;
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.legendCard {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border-softer);
+  border-radius: 14px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.legendName {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--app-ink);
+}

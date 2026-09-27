@@ -125,6 +125,20 @@ export function formatPriceLabel(tradeDate: string, period: PricePeriod): string
   return d.toLocaleDateString('en-IN', { month: 'short' });
 }
 
+/** The "About" copy (Tier 3 / Screener.in, often lifted from a source like
+ * Wikipedia) frequently retains citation markers (e.g. "...in 1994[1][2]")
+ * that mean nothing without the footnotes they pointed to — and not only
+ * at the end of the paragraph; a real example (Federal Bank) has one
+ * stranded mid-sentence: "...foreign exchange business. [1] .It is...".
+ * Strips every "[n]" marker, wherever it falls, collapsing the resulting
+ * double space so removing a mid-sentence marker doesn't leave one. */
+export function stripCitationMarkers(text: string): string {
+  return text
+    .replace(/\s?\[\d+\]/g, '')
+    .replace(/ {2,}/g, ' ')
+    .trim();
+}
+
 export interface ShareholdingSeries {
   category: string;
   color: string;

@@ -30,7 +30,7 @@ and persist whatever the fallback chain returns with its source_tier intact.
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.dialects.postgresql import insert
@@ -368,45 +368,75 @@ async def get_financial_statement(
     return list((await session.execute(stmt)).scalars())
 
 
+_PRICE_PERIOD_LOOKBACK: dict[str, timedelta] = {
+    "1mo": timedelta(days=30),
+    "6mo": timedelta(days=182),
+    "1y": timedelta(days=365),
+    "5y": timedelta(days=365 * 5),
+}
+
+# Always ingest at this width from yfinance regardless of which period was
+# requested, so every supported UI range (1mo/6mo/1y/5y) can later be served
+# by slicing the same cached rows. Previously this ingested at whichever
+# period happened to trigger the *first* fetch for a company, and the read
+# path never filtered by period at all — every range read back the same
+# unfiltered rows, so the range tabs only relabeled the chart's x-axis
+# without changing the plotted series.
+_PRICE_INGEST_PERIOD = "5y"
+
+
+def price_period_cutoff(period: str, today: date) -> date:
+    """The oldest trade_date to include for a given UI period ('1mo' /
+    '6mo' / '1y' / '5y'). An unrecognized period falls back to '1y' rather
+    than raising, matching the API route's own default."""
+    return today - _PRICE_PERIOD_LOOKBACK.get(period, _PRICE_PERIOD_LOOKBACK["1y"])
+
+
 async def get_price_history(
     session: AsyncSession, company: CompanyORM, period: str = "1y"
 ) -> list[PriceHistoryPointORM]:
-    stmt = (
+    latest_stmt = (
         select(PriceHistoryPointORM)
         .where(PriceHistoryPointORM.company_id == company.id)
         .order_by(PriceHistoryPointORM.trade_date.desc())
+        .limit(1)
     )
-    existing = list((await session.execute(stmt)).scalars())
-    if existing and not _is_stale(existing[0].fetched_at, _settings.prices_cache_ttl_hours):
-        return existing
+    latest = (await session.execute(latest_stmt)).scalar_one_or_none()
 
-    points = await tier2_yfinance.get_price_history(company.nse_symbol, company.bse_code, period)
-    exchange = "NSE" if company.nse_symbol else "BSE"
-    for point in points:
-        stmt = (
-            insert(PriceHistoryPointORM)
-            .values(
-                company_id=company.id,
-                exchange=exchange,
-                trade_date=point["trade_date"],
-                open=point["open"],
-                high=point["high"],
-                low=point["low"],
-                close=point["close"],
-                volume=point["volume"],
-                source_tier=SourceTier.TIER2_YFINANCE.value,
-            )
-            .on_conflict_do_update(
-                index_elements=["company_id", "exchange", "trade_date"],
-                set_={"close": point["close"], "volume": point["volume"], "fetched_at": func.now()},
-            )
+    if latest is None or _is_stale(latest.fetched_at, _settings.prices_cache_ttl_hours):
+        points = await tier2_yfinance.get_price_history(
+            company.nse_symbol, company.bse_code, _PRICE_INGEST_PERIOD
         )
-        await session.execute(stmt)
-    await session.commit()
+        exchange = "NSE" if company.nse_symbol else "BSE"
+        for point in points:
+            stmt = (
+                insert(PriceHistoryPointORM)
+                .values(
+                    company_id=company.id,
+                    exchange=exchange,
+                    trade_date=point["trade_date"],
+                    open=point["open"],
+                    high=point["high"],
+                    low=point["low"],
+                    close=point["close"],
+                    volume=point["volume"],
+                    source_tier=SourceTier.TIER2_YFINANCE.value,
+                )
+                .on_conflict_do_update(
+                    index_elements=["company_id", "exchange", "trade_date"],
+                    set_={"close": point["close"], "volume": point["volume"], "fetched_at": func.now()},
+                )
+            )
+            await session.execute(stmt)
+        await session.commit()
 
+    cutoff = price_period_cutoff(period, datetime.now(UTC).date())
     stmt = (
         select(PriceHistoryPointORM)
-        .where(PriceHistoryPointORM.company_id == company.id)
+        .where(
+            PriceHistoryPointORM.company_id == company.id,
+            PriceHistoryPointORM.trade_date >= cutoff,
+        )
         .order_by(PriceHistoryPointORM.trade_date.desc())
     )
     return list((await session.execute(stmt)).scalars())

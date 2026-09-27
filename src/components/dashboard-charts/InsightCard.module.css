@@ -1,17 +1,101 @@
 .card {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(155deg, #f2f9f6, #ffffff 62%);
   border: 1px solid #e3f1ea;
   border-radius: var(--radius-xl);
   padding: 20px 22px;
-  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+  /* A little more depth than a flat card: a tight ambient shadow plus a
+     wider, teal-tinted one underneath — richness from layering/color-tint,
+     not a new hue (the tint is the app's own teal at low opacity). */
+  box-shadow:
+    0 1px 2px rgba(22, 25, 28, 0.04),
+    0 18px 36px -22px rgba(11, 126, 99, 0.22);
+  transition: box-shadow var(--duration-base) ease;
+}
+
+/* A soft, fixed glow anchored behind the character's corner — subtle
+   depth/atmosphere rather than another flat gradient wash over the card. */
+.card::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: -30px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(79, 224, 184, 0.16), transparent 70%);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover,
+  .card:focus-within {
+    box-shadow:
+      0 1px 2px rgba(22, 25, 28, 0.04),
+      0 22px 44px -22px rgba(11, 126, 99, 0.3);
+  }
+}
+
+/* A soft moving highlight while content is streaming in — richness from
+   motion/layering, not a new hue (a few % white over the card's own bg). */
+.card.phase_writing::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, 0.45) 50%, transparent 58%);
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card.phase_writing::after {
+    animation: shimmerSweep 1.7s linear infinite;
+  }
+}
+
+@keyframes shimmerSweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* The blank-slate state, before anything's been asked for — the
+   character is the hero here (big, centered), not a small corner icon. */
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 20px 8px 8px;
+}
+
+.heroLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--app-teal-strong);
 }
 
 .head {
+  position: relative;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .label {
@@ -20,9 +104,19 @@
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--app-teal-strong);
+  white-space: nowrap;
+}
+
+.phaseLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--app-text-subtle);
+  white-space: nowrap;
 }
 
 .refresh {
+  position: relative;
   border: none;
   background: none;
   padding: 0;
@@ -30,9 +124,11 @@
   color: var(--app-teal-strong);
   cursor: pointer;
   font-family: var(--font-sans);
+  flex: none;
 }
 
 .body {
+  position: relative;
   margin: 0;
   font-size: 13.5px;
   line-height: 1.6;
@@ -40,7 +136,29 @@
   white-space: pre-wrap;
 }
 
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--app-teal-strong);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .caret {
+    animation: caretBlink 0.9s steps(1) infinite;
+  }
+}
+
+@keyframes caretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
 .meta {
+  position: relative;
   margin: 10px 0 0;
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -48,6 +166,7 @@
 }
 
 .empty {
+  position: relative;
   margin: 0;
   font-size: 13px;
   color: var(--app-text-muted);
@@ -55,6 +174,7 @@
 }
 
 .error {
+  position: relative;
   margin: 0;
   font-size: 12.5px;
   color: var(--app-loss);
@@ -65,17 +185,29 @@
   font-weight: 500;
 }
 
+/* A real primary CTA (matches this app's existing filled-pill convention,
+   e.g. Portfolio's "Add position") instead of a thin outline button. */
 .generate {
-  border: 1px solid var(--app-teal-bg-strong);
-  background: var(--color-surface);
-  color: var(--app-teal-strong);
+  position: relative;
+  border: none;
+  background: var(--app-ink);
+  color: var(--app-cream);
   border-radius: var(--radius-pill);
-  padding: 9px 18px;
-  font-size: 13px;
+  padding: 10px 20px;
+  font-size: 13.5px;
   font-family: var(--font-sans);
   cursor: pointer;
+  transition: transform var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
 }
 
-.generate:hover {
-  background: var(--app-teal-bg);
+@media (hover: hover) and (pointer: fine) {
+  .generate:hover:not(:disabled) {
+    box-shadow: 0 8px 20px rgba(22, 25, 28, 0.18);
+    transform: translateY(-1px);
+  }
+}
+
+.generate:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
