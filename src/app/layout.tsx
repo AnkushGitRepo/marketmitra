@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Manrope, JetBrains_Mono } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { isHosted } from '@/lib/deployment-mode';
 import { CookieNotice } from '@/components/landing/CookieNotice';
 import './globals.css';
@@ -50,8 +51,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {hosted ? <ClerkProvider>{children}</ClerkProvider> : children}
         {/* Hosted-only (ADR 0023) — cookieless analytics + its disclosure
-            notice. Self-host phones home to nothing by default. */}
+            notice, plus Speed Insights (same phone-home profile as
+            Analytics). Self-host phones home to nothing by default. */}
         {hosted && <Analytics />}
+        {hosted && <SpeedInsights />}
         {hosted && <CookieNotice />}
       </body>
     </html>

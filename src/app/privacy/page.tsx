@@ -57,6 +57,15 @@ export default function PrivacyPage() {
         Vercel&apos;s Web Analytics privacy documentation
       </a>{' '}
       for detail.</p>
+      <p><strong>Performance monitoring.</strong> The hosted deployment also uses Vercel Speed
+      Insights to measure page load performance (Core Web Vitals). Like the analytics above, it
+      cannot reconstruct your browsing session or identify you — it records route, approximate
+      device/network type, country, and page-speed metrics, with no cookie and no cross-site
+      identifier. See{' '}
+      <a href="https://vercel.com/docs/speed-insights/privacy-policy" target="_blank" rel="noreferrer">
+        Vercel&apos;s Speed Insights privacy documentation
+      </a>{' '}
+      for detail.</p>
       <p><strong>Rate limiting.</strong> Requests are keyed transiently (by account or IP) against
       an Upstash Redis store purely to enforce fair-use limits; this isn&apos;t used for tracking
       and expires on its own short window.</p>

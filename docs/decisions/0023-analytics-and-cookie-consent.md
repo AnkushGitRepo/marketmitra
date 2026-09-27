@@ -80,3 +80,17 @@ failure mode the checklist called out by name.
 - Documented in `/docs/privacy` (Privacy Policy, hosted section) and
   `/docs/terms` in user-facing language; this ADR is the engineering
   record of why.
+
+## Amendment (2026-09-27): Vercel Speed Insights added, same gate
+
+`@vercel/speed-insights` (`<SpeedInsights />` from `@vercel/speed-insights/next`)
+mounted in `layout.tsx` right alongside `<Analytics />`, behind the same
+`isHosted()` gate — no separate decision needed since it has the identical
+profile this ADR already accepted: first-party (already deploying on
+Vercel), no new infrastructure, and per Vercel's own Speed Insights
+privacy documentation, anonymous with no cookie and no cross-page/session
+identifier (route, approximate device/network/OS, country, and Web Vitals
+timing only). `/docs/privacy`'s Analytics paragraph gained a matching
+"Performance monitoring" paragraph naming it explicitly, for the same
+reason the original Analytics paragraph exists — don't make a user go
+find this out from a network tab.
