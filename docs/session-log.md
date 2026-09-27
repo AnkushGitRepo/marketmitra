@@ -376,3 +376,17 @@ vitest tests passing.
 - **Next:** none outstanding from this session. Not pushed/deployed; sitting locally on
   `landing-wishlist-alerts-channels` alongside the wishlists/alert-channels batch, pending
   review.
+
+## 2026-09-27 — Pushed + deployed: landing-page link fixes, Markets wishlists, alert channels (via `DEPLOY_NOW.md` handoff)
+
+- A prior sandboxed session (no git/Vercel credentials available there) left a `DEPLOY_NOW.md` handoff note at the repo root with exact expected commits, a verification checklist, and instructions to delete itself once done. Confirmed the local repo matched it exactly before doing anything: `main`/`v2` both 3 commits ahead of `origin` at `30fbfeb`, `git status` clean apart from the untracked `reference_img.png` the note already called out as fine to leave.
+- Re-ran the full suite before pushing rather than trusting the note's "already green" claim at face value: `tsc --noEmit` and lint clean, 410 vitest tests passed. `next build` failed on the first attempt with a Turbopack persistence-directory error (`invalid digit found in string`) — a stale local `.next` cache, not a real regression; `rm -rf .next` and rebuilding succeeded cleanly.
+- Pushed `main` then fast-forwarded and pushed `v2` (already sitting on the identical commit locally). Deployed `marketmitra-v2` via `vercel deploy --prod --yes` — **the CLI worked this time**, unlike the previous session where the permission classifier blocked it outright; no `services/fundamentals-api` redeploy needed, confirmed via `git diff --stat` that none of the 3 commits touched that directory.
+- **Verified every item on the handoff's checklist, live, in a real browser:**
+  - Navbar GitHub icon opens `github.com/AnkushGitRepo/marketmitra` in a new tab (not a scroll) — confirmed the repo's own top commit matches `30fbfeb`.
+  - **The actual ask this round:** signed out of the live production account (real Clerk session, "Sign out" from the profile menu), clicked the navbar "Dashboard" link, and landed on `/sign-in?redirect_url=.../dashboard` — `auth.protect()` firing exactly as expected now that the Dashboard link navigates instead of scrolling. Signed back in via Google OAuth (account already authenticated in this Chrome profile, no password entry) and confirmed the round trip lands back on `/dashboard`.
+  - `/dashboard/markets` shows the new "Your wishlists" panel (empty state: "Create your first wishlist"), not the old fixed gainers/losers panel.
+  - `/dashboard/alerts` shows the new "Notification channels" card (Slack/Telegram/WhatsApp/custom webhook) above the existing alert list.
+  - `/dashboard/portfolio`'s holdings-news section **could not be verified** — the signed-in production account has no holdings, and adding a real position to add one felt like it needed the user's own go-ahead rather than doing it silently on their live account; flagged here rather than assumed passing.
+- Deleted `DEPLOY_NOW.md` per its own final instruction, once the above was confirmed. It was never git-tracked, so no commit needed for the removal.
+- **Next:** none outstanding except the one unverified checklist item above — worth a quick manual check next time a real holding exists on the hosted account, or the user can confirm it themselves.
