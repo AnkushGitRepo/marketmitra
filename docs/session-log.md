@@ -390,3 +390,10 @@ vitest tests passing.
   - `/dashboard/portfolio`'s holdings-news section **could not be verified** — the signed-in production account has no holdings, and adding a real position to add one felt like it needed the user's own go-ahead rather than doing it silently on their live account; flagged here rather than assumed passing.
 - Deleted `DEPLOY_NOW.md` per its own final instruction, once the above was confirmed. It was never git-tracked, so no commit needed for the removal.
 - **Next:** none outstanding except the one unverified checklist item above — worth a quick manual check next time a real holding exists on the hosted account, or the user can confirm it themselves.
+
+## 2026-09-27 — Pushed + deployed: Vercel Speed Insights added alongside Web Analytics
+
+- User asked to add `@vercel/speed-insights` and `@vercel/analytics` (the latter already installed). Installed both, mounted `<SpeedInsights />` in `layout.tsx` next to `<Analytics />` behind the same `isHosted()` gate (ADR 0023 amendment) — same profile already accepted there: first-party, no new infra, and confirmed cookieless per Vercel's own Speed Insights privacy docs (fetched directly, not assumed) before writing anything user-facing. Added a matching "Performance monitoring" paragraph to `/privacy`'s Analytics section.
+- Full suite green (`tsc`, lint, 410 tests, build — one stale `.next` Turbopack-cache error again, same `rm -rf .next` fix as the previous session). Committed, pushed `main`+`v2`, deployed `marketmitra-v2` only (`git diff --stat` confirmed this commit touches nothing under `services/fundamentals-api`).
+- **Verified live, not just by trusting the build:** bare curl can't show client-injected scripts, so checked in a real browser instead — `window.va` and `window.si` (the exact global hooks both packages define once initialized) are both live functions on the deployed production page. `/privacy` serves the new "Performance monitoring" paragraph.
+- **Next:** none outstanding from this session.
