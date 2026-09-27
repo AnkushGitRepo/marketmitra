@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { isHosted } from '@/lib/deployment-mode';
 import { SearchResultsDropdown } from '@/components/dashboard-charts/SearchResultsDropdown';
 import { useSymbolSearch } from '@/lib/dashboard/useSymbolSearch';
+import { Logo } from '@/components/landing/Logo';
 import { HostedUserBadge } from './HostedUserBadge';
 import { NotificationBell } from './NotificationBell';
 import styles from './AppHeader.module.css';
@@ -71,7 +72,7 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
 
       <header className={styles.headerMobile} data-app-mobile>
         <Link href="/dashboard" className={styles.brand}>
-          <span className={styles.brandMarkSmall} />
+          <Logo size={22} showWordmark={false} />
           <span className={styles.brandNameSmall}>MarketMitra</span>
         </Link>
         <div className={styles.mobileActions}>

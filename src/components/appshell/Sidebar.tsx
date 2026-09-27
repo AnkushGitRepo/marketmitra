@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSyncExternalStore } from 'react';
 import { NAV_ITEMS, isNavActive } from './navItems';
 import { NAV_ICONS } from './NavIcons';
+import { Logo } from '@/components/landing/Logo';
 import styles from './Sidebar.module.css';
 
 const COLLAPSE_KEY = 'mm-sidebar-collapsed';
@@ -56,7 +57,7 @@ export function Sidebar() {
     >
       <div className={styles.top}>
         <Link href="/dashboard" className={styles.brand}>
-          <span className={styles.brandMark} />
+          <Logo size={26} showWordmark={false} />
           {!collapsed && <span className={styles.brandName}>MarketMitra</span>}
         </Link>
         <button

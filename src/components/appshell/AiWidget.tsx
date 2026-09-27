@@ -6,6 +6,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { usePageContext } from '@/lib/dashboard/PageContext';
+import { MitraCharacter } from '@/components/mitra/MitraCharacter';
 import { ImportPreviewCard } from './ImportPreviewCard';
 import type { ProposedChange } from '@/lib/portfolio-import/types';
 import styles from './AiWidget.module.css';
@@ -93,8 +94,7 @@ export function AiWidget({ section }: { section: Section }) {
       {open && <AiPanelBody key={section} section={section} onClose={() => setOpen(false)} />}
 
       <button onClick={() => setOpen((o) => !o)} className={styles.launcher} type="button" aria-label="Toggle Mitra assistant">
-        <span className={styles.launcherBar} />
-        <span className={styles.launcherBar} />
+        <MitraCharacter phase="idle" size={44} />
       </button>
     </div>
   );
@@ -232,7 +232,7 @@ function AiPanelBody({ section, onClose }: { section: Section; onClose: () => vo
       <div className={styles.panelContent}>
         <div className={styles.panelHeader}>
           <div className={styles.mitraBrand}>
-            <span className={styles.mitraDot} />
+            <MitraCharacter phase={busy ? 'thinking' : 'idle'} size={26} />
             <span className={styles.mitraName}>Mitra</span>
           </div>
           <div className={styles.headerActions}>
