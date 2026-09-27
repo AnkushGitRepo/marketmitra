@@ -45,20 +45,21 @@ MarketMitra is a financial dashboard (Indian markets: indices, stocks, IPOs, new
 
 ## Active focus
 
-**In progress, on `landing-wishlist-alerts-channels`, built + verified locally, not yet
-pushed/deployed:** landing-page navbar/hero background blend fix (real seam, not a color
-tweak — see ADR-less session-log entry 2026-09-27), Markets page per-user stock wishlists
-(replacing the fixed watchlist gainers/losers panel, ADR 0028), and self-serve
-Slack/Telegram/WhatsApp/custom-webhook alert channels on `/dashboard/alerts` (ADR 0028).
-Full suite green (410 tests, lint, build); Slack/Telegram senders verified against the real
-APIs with fake credentials (real API error responses came back, proving correct wiring).
-Needs review, then push + deploy.
-
-Everything below (including the collapsible sidebar navigation,
-[ADR 0026](./docs/decisions/0026-collapsible-sidebar-navigation.md)) merged to `main`/`v2`,
-pushed, and **deployed to production** — most recently 2026-09-20 (sidebar nav + the
-Clerk profile-avatar clipping fix, verified live with a real signed-in session), before
-that 2026-09-13.
+**No build in flight.** Everything below — including the collapsible sidebar navigation
+([ADR 0026](./docs/decisions/0026-collapsible-sidebar-navigation.md)), the stock detail
+page restructure + shareholding 100%-stacked-bar chart ([ADR 0027](./docs/decisions/0027-shareholding-stacked-bar-chart.md)),
+the Mitra character redesign (`src/components/mitra/MitraCharacter.tsx`, now used by the AI
+insight card, the sidebar/mobile-header logo, and the floating chat widget alike), the
+Price History range-tab bug fix, and the landing-page navbar/hero blend fix + Markets page
+per-user wishlists + self-serve Slack/Telegram/WhatsApp/webhook alert channels
+([ADR 0028](./docs/decisions/0028-user-wishlists-and-notification-channels.md)) — is merged to
+`main`/`v2`, pushed, and **deployed to production**, most recently 2026-09-27 (wishlists +
+alert channels + navbar link fixes, verified live including the signed-out→sign-in→
+signed-back-in round trip; one checklist item — Portfolio's holdings-news section — wasn't
+verifiable live since the hosted account currently has no holdings), and before that the
+same day (Mitra character + price-history fix — that deploy also caused and then fixed a
+real production outage on `fundamentals-api`, root-caused to a `vercel.json` misconfiguration;
+full account in `session-log.md`), before that 2026-09-20.
 
 - **Screener** ([ADR 0025](./docs/decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md)) — `/dashboard/screener` filters the NSE universe by financial criteria; Mitra's `run_screener` tool shares the exact same preset filter schema (no custom query builder in v1 — deliberate, on both sides). New bulk, out-of-band ingestion pipeline (`screener_metrics` table, `scripts/refresh_screener_universe.py`, daily cron) since every other `fundamentals-api` table is populated lazily per-company. **The prod Neon migration (`15d9b474e4fe`) is applied and the endpoints are live** — but the daily cron is **not yet activated**: only a `--limit 5` local test run has happened, not the real full-universe (~2,570 company) run, so production's `screener_metrics` table is currently empty. Do that full run and review it before turning the cron on.
 - **Live-quote fix (yahoo-finance2 + NSE/BSE) + stock aggregate endpoint** ([ADR 0024](./docs/decisions/0024-live-quote-yahoo-finance2-and-stock-aggregate-endpoint.md)) — dashboard/portfolio prices were stale (the UI never called a real live-quote path, deriving price from the latest end-of-day close); fixed by wiring yahoo-finance2 (primary) → NSE → BSE into the dashboard home, markets, portfolio, and stock page alike. Also `GET /api/stock/{ticker}`, a screener.in-style aggregate endpoint. Verified live in production (`/api/stock/TCS` returns a real yahoo_finance2 quote).
