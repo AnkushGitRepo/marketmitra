@@ -10,6 +10,7 @@ export const NAV_ITEMS = [
   { href: '/dashboard/agents', label: 'Agents' },
   { href: '/dashboard/notes', label: 'Notes' },
   { href: '/dashboard/api', label: 'API' },
+  { href: '/dashboard/system', label: 'System' },
 ] as const;
 
 export function isNavActive(pathname: string, href: string): boolean {

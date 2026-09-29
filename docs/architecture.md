@@ -367,6 +367,28 @@ in [`/docs/api-surface.md`](./api-surface.md). All live in production.
   original live form — fill params, send against the deployment with your session, copy-as-
   curl) tabs.
 
+## System status + event log (`/status`, `/dashboard/system`, ADR 0029)
+
+Rationale + scoping decisions: [ADR 0029](./decisions/0029-system-status-and-event-log.md).
+
+- **Live health checks** (`src/lib/system/health.ts`, `getSystemStatus()`) — run fresh on every
+  call, nothing cached: MongoDB `{ ping: 1 }`, `GET /health` on `services/fundamentals-api`,
+  a structural check that the MCP tool registry is populated, an Upstash Redis round trip
+  (`pingRedis()` in `src/lib/rateLimit.ts`), and a config-presence check for Clerk (never a
+  live call against an unfamiliar SDK surface). `overall` is the worst of MongoDB /
+  fundamentals-api / MCP only — the rate limiter and Clerk read `not_configured` in self-host
+  without affecting it.
+- **Event log** (`src/lib/system/eventLog.ts`, `systemEvents` Mongo collection, 30-day TTL) —
+  one `info`/`warn`/`error` row per run, written only by the 3 cron routes
+  (`evaluate-alerts`, `index-corpus`, `agents-reflect`); not a blanket audit log.
+- **`GET /api/status`** (public) — the live snapshot, `{ checkedAt, overall, components[],
+  crons[] }`. **`GET /api/system/logs`** (session-gated) — paginated event-log reads with
+  `level`/`source`/`limit`/`before` filters.
+- **`/status`** — public page (`Navbar`/`Footer`, `--color-*` palette), dot + badge per
+  component, cron run history, a client-side refresh button.
+- **`/dashboard/system`** — admin page inside the dashboard shell (`--app-*` palette),
+  component cards, a scheduled-jobs table, and a filterable/paginated event-log table.
+
 ## Retrieval (RAG) — chat + insights (Phase 10a)
 
 Full detail: [archive/rag-chat.md](./archive/rag-chat.md); scoping in

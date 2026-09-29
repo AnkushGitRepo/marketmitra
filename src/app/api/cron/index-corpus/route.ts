@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { ensureChunksIndexes } from '@/lib/rag/chunks';
 import { indexCorpus } from '@/lib/rag/indexer';
+import { logEvent } from '@/lib/system/eventLog';
+
+const SOURCE = 'cron:index-corpus';
 
 // Rebuilds the shared retrieval corpus for Phase 10 (ADR 0020): pulls
 // recent news, chunks + embeds it locally, upserts into `chunks` with
@@ -48,18 +51,24 @@ async function handle(request: Request) {
   const newsLimitRaw = Number(url.searchParams.get('newsLimit'));
   const newsLimit = Number.isFinite(newsLimitRaw) && newsLimitRaw > 0 ? newsLimitRaw : undefined;
 
+  const started = Date.now();
   try {
-    const started = Date.now();
     const result = await indexCorpus({ newsLimit });
+    const ms = Date.now() - started;
+    void logEvent({ level: 'info', source: SOURCE, message: 'Corpus index run completed', durationMs: ms, meta: { ...result } });
     return NextResponse.json({
       success: true,
-      data: { ...result, ms: Date.now() - started },
+      data: { ...result, ms },
     });
   } catch (err) {
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'indexing failed' },
-      { status: 500 }
-    );
+    const errorMessage = err instanceof Error ? err.message : 'indexing failed';
+    void logEvent({
+      level: 'error',
+      source: SOURCE,
+      message: `Corpus index run failed: ${errorMessage}`,
+      durationMs: Date.now() - started,
+    });
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 

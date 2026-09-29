@@ -36,6 +36,7 @@ const COLUMNS = [
       { href: `${REPO}#getting-started`, label: 'Getting started', external: true },
       { href: `${REPO}/tree/main/docs`, label: 'Docs', external: true },
       { href: '/dashboard/api', label: 'API reference' },
+      { href: '/status', label: 'System status' },
       { href: '#faq', label: 'FAQ' },
       { href: `${REPO}/issues`, label: 'Support', external: true },
     ],

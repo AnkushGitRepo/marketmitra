@@ -6,6 +6,7 @@ const { evaluateAlerts, isNseSession } = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/alerts/evaluate', () => ({ evaluateAlerts }));
 vi.mock('@/lib/alerts/marketHours', () => ({ isNseSession }));
+vi.mock('@/lib/system/eventLog', () => ({ logEvent: vi.fn(async () => undefined) }));
 
 import { GET } from './route';
 

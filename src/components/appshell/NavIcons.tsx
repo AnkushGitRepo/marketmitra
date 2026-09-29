@@ -134,6 +134,20 @@ export function ApiIcon() {
   );
 }
 
+export function SystemIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <circle cx="11" cy="11" r="3.4" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M11 3v2.4M11 16.6V19M19 11h-2.4M5.4 11H3M16.2 5.8l-1.7 1.7M7.5 14.5l-1.7 1.7M16.2 16.2l-1.7-1.7M7.5 7.5 5.8 5.8"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export const NAV_ICONS = {
   '/dashboard': DashboardIcon,
   '/dashboard/portfolio': PortfolioIcon,
@@ -146,4 +160,5 @@ export const NAV_ICONS = {
   '/dashboard/agents': AgentsIcon,
   '/dashboard/notes': NotesIcon,
   '/dashboard/api': ApiIcon,
+  '/dashboard/system': SystemIcon,
 } as const;

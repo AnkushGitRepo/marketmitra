@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { evaluateAlerts } from '@/lib/alerts/evaluate';
 import { isNseSession } from '@/lib/alerts/marketHours';
+import { logEvent } from '@/lib/system/eventLog';
+
+const SOURCE = 'cron:evaluate-alerts';
 
 // The alert-evaluation entry point (ADR 0014 §3). Invoked by Vercel Cron
 // (which issues a GET and, when CRON_SECRET is set, an
@@ -46,14 +49,26 @@ async function handle(request: Request) {
     });
   }
 
+  const started = Date.now();
   try {
     const summary = await evaluateAlerts(now);
+    void logEvent({
+      level: 'info',
+      source: SOURCE,
+      message: 'Alert evaluation completed',
+      durationMs: Date.now() - started,
+      meta: { ...summary },
+    });
     return NextResponse.json({ success: true, data: { ran: true, at: now.toISOString(), ...summary } });
   } catch (err) {
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'evaluation failed' },
-      { status: 500 }
-    );
+    const errorMessage = err instanceof Error ? err.message : 'evaluation failed';
+    void logEvent({
+      level: 'error',
+      source: SOURCE,
+      message: `Alert evaluation failed: ${errorMessage}`,
+      durationMs: Date.now() - started,
+    });
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 

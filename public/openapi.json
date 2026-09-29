@@ -2434,6 +2434,88 @@
           }
         }
       }
+    },
+    "/api/status": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Live system health snapshot",
+        "description": "Public. Checks MongoDB, the fundamentals API, the MCP tool registry, the Upstash rate limiter, and Clerk auth configuration in real time (no persisted history), plus the most recent event-log entry per cron job. Backs both the public /status page and the admin /dashboard/system page.",
+        "responses": {
+          "200": {
+            "description": "{ data: { checkedAt, overall, components[], crons[] } }"
+          }
+        }
+      }
+    },
+    "/api/system/logs": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "List recent system event-log entries",
+        "description": "Session-scoped (signed-in users only). Reads the systemEvents collection (30-day TTL), currently populated by the 3 cron routes (evaluate-alerts, index-corpus, agents-reflect).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warn",
+                "error"
+              ]
+            },
+            "description": "Filter by level."
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by source, e.g. cron:evaluate-alerts."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "description": "Max events to return (default 50, max 200)."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Only events strictly before this ISO timestamp (pagination cursor)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ data: SystemEvent[] }"
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      }
     }
   }
 }

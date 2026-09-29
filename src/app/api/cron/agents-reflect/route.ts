@@ -6,6 +6,9 @@ import {
   pruneOldRuns,
 } from '@/lib/agents/store';
 import { REFLECTION_HORIZON_DAYS } from '@/lib/agents/types';
+import { logEvent } from '@/lib/system/eventLog';
+
+const SOURCE = 'cron:agents-reflect';
 
 // Phase 11 Part C (ADR 0021). Writes a hindsight "lessons" reflection on
 // finished agent runs older than the horizon, and prunes very old runs.
@@ -37,6 +40,7 @@ async function handle(request: Request) {
   if (!auth.ok) {
     return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
   }
+  const started = Date.now();
 
   try {
     await ensureAgentRunsIndexes();
@@ -64,6 +68,14 @@ async function handle(request: Request) {
   } catch {
     /* non-fatal */
   }
+
+  void logEvent({
+    level: outcomes.error > 0 ? 'warn' : 'info',
+    source: SOURCE,
+    message: `Agent reflection run: ${outcomes.written} written, ${outcomes.error} errored, ${pruned} pruned`,
+    durationMs: Date.now() - started,
+    meta: { considered: due.length, ...outcomes, pruned },
+  });
 
   return NextResponse.json({
     success: true,

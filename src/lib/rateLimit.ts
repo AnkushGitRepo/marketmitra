@@ -56,16 +56,28 @@ const PASS: RateLimitResult = { ok: true, limit: 0, remaining: 0, reset: 0 };
 let redis: Redis | null = null;
 const limiters = new Map<string, Ratelimit>();
 
+function getRedis(): Redis {
+  redis ??= new Redis({ url: REST_URL!, token: REST_TOKEN! });
+  return redis;
+}
+
+/** Live connectivity check for the system status page — a cheap round trip
+ * against the same store the limiter uses. Throws if unreachable/misconfigured;
+ * callers (src/lib/system/health.ts) are responsible for catching. */
+export async function pingRedis(): Promise<void> {
+  if (!rateLimitEnabled) throw new Error('Rate limiting is not configured');
+  await getRedis().get('mm:health:ping');
+}
+
 function getLimiter(tier: RateLimitTier, authed: boolean): Ratelimit {
   const key = `${tier}:${authed ? 'authed' : 'anon'}`;
   const existing = limiters.get(key);
   if (existing) return existing;
 
-  redis ??= new Redis({ url: REST_URL!, token: REST_TOKEN! });
   const cfg = TIERS[tier];
   const limit = authed ? cfg.authed : cfg.anon;
   const rl = new Ratelimit({
-    redis,
+    redis: getRedis(),
     limiter: Ratelimit.slidingWindow(limit, cfg.window),
     prefix: `mm:rl:${key}`,
     analytics: false,

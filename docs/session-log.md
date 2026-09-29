@@ -451,3 +451,62 @@ caveat as prior rounds in this session.
   - Skipped the other-dashboard-pages spot-check per the note's own "skip this, just for your peace of mind" — this page owns its own CSS module, confirmed structurally unrelated to `/dashboard/markets`/`/dashboard/alerts`.
 - Deleted `DEPLOY_NOW.md` per its own final instruction. Never git-tracked, no commit needed.
 - **Next:** none outstanding from this session.
+
+## 2026-09-29 — System status page + event log (`/status`, `/dashboard/system`)
+
+Built in response to: "Build same kind of dashboard for backend and with status page of
+system as we have in most of system this days. And logs." — clarified first via three
+`AskUserQuestion` prompts (audience: both public + admin; log source: both persisted +
+live; components: everything). Full rationale and scoping decisions in
+[ADR 0029](./decisions/0029-system-status-and-event-log.md).
+
+- **`src/lib/system/health.ts`** — `getSystemStatus()`, 5 checks run in parallel on every
+  call (nothing cached): MongoDB `{ ping: 1 }`, `GET /health` on fundamentals-api (no Python
+  changes — it already existed), MCP tool-registry population (structural, not a
+  self-referential network call), an Upstash Redis round trip (new `pingRedis()` in
+  `src/lib/rateLimit.ts`, factored out alongside the existing lazy `getRedis()`), and a
+  config-presence check for Clerk (deliberately not a live call — CLAUDE.md flags this
+  project's Clerk/Next.js setup as one that "may differ from your training data", and a
+  status page is the wrong place for a speculative live call against an unfamiliar SDK
+  surface). `overall` = worst of MongoDB / fundamentals-api / MCP only.
+- **`src/lib/system/eventLog.ts`** — new `systemEvents` Mongo collection, 30-day TTL index,
+  `logEvent()`/`listEvents()`/`latestEventPerSource()`. Wired into exactly the 3 cron routes
+  (`evaluate-alerts`, `index-corpus`, `agents-reflect`) — one `info`/`warn`/`error` row per
+  run with `durationMs` + a `meta` summary from that job's own existing summary object.
+  Deliberately not retrofitted across the other ~30 API routes (wasn't asked for; scope
+  creep for a feature about infrastructure health).
+- **`GET /api/status`** (public) and **`GET /api/system/logs`** (session-gated,
+  `level`/`source`/`limit`/`before` filters) — both documented in `docs/api-surface.md` and
+  `public/openapi.json` (the `openapi.test.ts` CI check enforces this both directions).
+- **`/status`** — public page, `Navbar`/`Footer` shell, `--color-*` palette, a status dot +
+  badge per component, the cron run history, client-side refresh.
+- **`/dashboard/system`** — admin page inside the existing dashboard shell, `--app-*`
+  palette, component health cards, scheduled-jobs table, filterable/paginated event log
+  (level filter + "load more" via the `before` cursor).
+- Nav: added a "System" entry to the dashboard sidebar (`navItems.ts` + a new `SystemIcon`
+  in `NavIcons.tsx`) and a "System status" link to the landing footer's Resources column.
+- **A pre-existing test broke and was fixed along the way**: adding the `eventLog` import to
+  `cron/evaluate-alerts/route.ts` meant `cron.route.test.ts` (which only mocked
+  `@/lib/alerts/evaluate` + `@/lib/alerts/marketHours`) started pulling in the real
+  `eventLog.ts` → real `mongodb.ts`, which throws synchronously at module load in this
+  project's env-var-less test environment (`vitest.config.mts` sets no `MONGODB_URI`). Fixed
+  by adding `vi.mock('@/lib/system/eventLog', ...)` to that test file, mirroring its
+  existing mock pattern.
+- Also fixed two build-time TS errors surfaced along the way: `EvaluateSummary` /
+  `IndexCorpusResult` (the two cron summary types) don't have index signatures, so
+  `logEvent({ meta: summary })` failed `tsc`'s structural check — spread into a plain object
+  (`meta: { ...summary }`) at both call sites instead.
+
+Verified: `npm run lint` clean, `rm -rf .next && npm run build` clean (25 routes, including
+the 2 new ones + the 2 new pages), `npm run test -- --run` 425/425 green, and a structural
+curl check (all in one `device_bash` call, since the dev server doesn't survive past a
+single call in this sandbox) — `/status` → 200 with "System status"/"Scheduled jobs"/
+"Service disruption" present (correctly reporting `down` overall, since fundamentals-api
+isn't running in this sandbox — a real, honest signal, not a bug), `/api/status` → 200 with
+MongoDB genuinely pinging live and reporting `operational`, `/dashboard/system` → 200 with
+all four page sections present, `/api/system/logs` → 200 (self-host mode's fixed `local`
+user passes the session gate).
+
+- **Next:** not committed/pushed/deployed yet — pending review. Per the established pattern
+  in this session, push/deploy would go through a `DEPLOY_NOW.md` handoff (this sandbox has
+  no git/Vercel credentials) once the user asks for it.
