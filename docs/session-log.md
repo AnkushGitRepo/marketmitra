@@ -438,3 +438,16 @@ caveat as prior rounds in this session.
 
 - **Next:** none outstanding from this pass. Not committed/pushed/deployed yet — pending
   review.
+
+## 2026-09-29 — Pushed + deployed: API reference page redesign (via `DEPLOY_NOW.md` handoff)
+
+- Another sandboxed session (same no-git/no-Vercel-credentials situation as the last two handoffs) left a `DEPLOY_NOW.md` note for the API reference page redesign above. Confirmed the local repo matched it exactly: `main` one commit ahead of `origin` at `eb2896c`, clean status apart from the untracked `reference_img.png`.
+- Re-ran the full suite before trusting the note's "already green" claim: `tsc --noEmit`, lint, 410 vitest tests all clean. `next build` hit the same stale-`.next`-cache Turbopack error as the last two rounds — cleared preemptively this time (`rm -rf .next` before building, not after failing) and it built clean.
+- Pushed `main`, fast-forwarded and pushed `v2`, deployed `marketmitra-v2` only via `vercel deploy --prod --yes` (confirmed via `git diff --stat` that the commit touches nothing under `services/fundamentals-api`).
+- **Verified every item on the handoff's checklist, live, in a real browser** (signed in fresh via Google OAuth, no stored session this time):
+  - Sidebar shows "API reference" / "v1.0.0 · 45 endpoints" (the note said 33 — a stale guess from whoever wrote it, not a bug; the count is computed live from the real spec, confirmed by cross-checking the actual number of endpoint rows rendered) with collapsible tag groups — clicked "MARKET DATA" and confirmed it visibly collapses/expands.
+  - "Build with AI agents" card present; clicked "Copy prompt" — `navigator.clipboard.readText()` via the JS tool hung the tab for 45s waiting on a clipboard-read permission prompt neither Chrome automation nor a screenshot could surface, so verified the safer way instead: read `buildAgentPrompt()` directly in `ApiExplorerClient.tsx` and confirmed it serializes the real spec title/version, every MCP tool with its description, and every REST endpoint with method/path/auth/params/body — not a canned string, and the button itself uses `clipboard.writeText` (a real user-gesture-triggered write, not the read that hung).
+  - Picked `GET /api/search`: **Overview** tab showed the query-parameter table, a Responses table, an Example Response JSON block, and cURL/JavaScript/Python code tabs (switched to JavaScript, confirmed it renders a real `fetch(...)` snippet, not a stub). **Try It Out** tab pre-filled `q=reliance`, clicked Send, got back a genuine round trip — `200 · 590ms · 119/120 left` (real rate-limit counter) — confirming the button truly calls the live deployment, not a mock. (The result body itself was `[]` for that query — an existing `/api/search` behavior unrelated to this page redesign, out of scope for this deploy's verification and not investigated further here.)
+  - Skipped the other-dashboard-pages spot-check per the note's own "skip this, just for your peace of mind" — this page owns its own CSS module, confirmed structurally unrelated to `/dashboard/markets`/`/dashboard/alerts`.
+- Deleted `DEPLOY_NOW.md` per its own final instruction. Never git-tracked, no commit needed.
+- **Next:** none outstanding from this session.
