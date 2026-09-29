@@ -661,3 +661,38 @@ clean (all routes, including the new `/dashboard/mitra-activity` and
 `/api/mitra-activity`).
 
 - **Next:** not committed/pushed/deployed yet — pending review.
+
+## 2026-09-29 — Activity cards moved to bottom of Dashboard/Portfolio; Alerts page filters; fundamentals-api packaging fix
+
+- **Activity card placement** (`src/app/dashboard/DashboardPageClient.tsx`,
+  `src/app/dashboard/portfolio/PortfolioPageClient.tsx`) — the
+  `<ActivityCard>` added earlier today was up top, ahead of the actual
+  portfolio numbers; moved to the bottom of both pages (after
+  `IpoOpenCard` on Dashboard, after the holdings-news section on
+  Portfolio, and after the add-holding form in the empty-portfolio
+  state) per feedback that it was crowding out the primary content.
+- **Alerts page filters** (`src/app/dashboard/alerts/AlertsPageClient.tsx`,
+  `page.module.css`) — a filter bar above the alert list: status
+  (all/active/paused/triggered) as pill buttons, alert type as a
+  `<select>` populated only with types actually present in the user's
+  alerts (via `alertTypeLabel`), and a live symbol text filter. All
+  three combine (AND), with a "Clear filters" link when any is active
+  and a distinct "No alerts match these filters" empty state kept
+  separate from the existing "No alerts yet" one.
+- **`services/fundamentals-api/pyproject.toml`** — added the missing
+  `[build-system]`/`[tool.setuptools.packages.find]` config. Without it,
+  `pip install -e ".[dev]"` failed outright ("Multiple top-level
+  packages discovered in a flat-layout: ['app', 'migrations']") on a
+  fresh Python 3.11 venv — setuptools' auto-discovery found both `app/`
+  (the real package) and `migrations/` (Alembic's script directory,
+  never imported) and refused to guess. Scoped discovery to `app*` only.
+  Also added `*.egg-info/` to that service's `.gitignore` (the editable
+  install's build artifact).
+
+Verified: `npx tsc --noEmit` clean, `npm run lint` clean, `npm run test
+-- --run` → 473/473 passing (58 files), `rm -rf .next && npm run build`
+clean (all routes).
+
+- **Next:** not pushed/deployed yet — `DEPLOY_NOW.md` written for this
+  commit per the usual handoff (this sandbox has no push/deploy
+  credentials).

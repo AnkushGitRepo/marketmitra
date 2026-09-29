@@ -64,8 +64,6 @@ export function DashboardPageClient({
         </div>
       </div>
 
-      <ActivityCard items={activity} />
-
       {holdings.length === 0 ? (
         <div className={styles.emptyPortfolioCard}>
           <p className={styles.emptyTitle}>No holdings yet</p>
@@ -154,6 +152,8 @@ export function DashboardPageClient({
       </div>
 
       <IpoOpenCard openIpos={openIpos} />
+
+      <ActivityCard items={activity} />
     </div>
   );
 }

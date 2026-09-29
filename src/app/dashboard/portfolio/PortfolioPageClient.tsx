@@ -89,12 +89,13 @@ export function PortfolioPageClient({ holdings, history, aiInsight, news, activi
             <h1 className={styles.h1}>Portfolio</h1>
           </div>
         </div>
-        <ActivityCard items={activity} />
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No holdings yet</p>
           <p className={styles.chartSub}>Add your first position to see live value, allocation, and P&amp;L.</p>
           <AddHoldingForm onDone={() => router.refresh()} />
         </div>
+
+        <ActivityCard items={activity} />
       </div>
     );
   }
@@ -117,8 +118,6 @@ export function PortfolioPageClient({ holdings, history, aiInsight, news, activi
       </div>
 
       {showAddForm && <AddHoldingForm onDone={() => setShowAddForm(false)} />}
-
-      <ActivityCard items={activity} />
 
       <div className={styles.splitGrid}>
         <div className={styles.chartCard}>
@@ -277,6 +276,8 @@ export function PortfolioPageClient({ holdings, history, aiInsight, news, activi
           emptyText="No recent news for your current holdings."
         />
       </div>
+
+      <ActivityCard items={activity} />
     </div>
   );
 }

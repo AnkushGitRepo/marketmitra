@@ -1,14 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import type { Alert } from '@/lib/alerts/types';
+import { useMemo, useState } from 'react';
+import type { Alert, AlertStatus, AlertType } from '@/lib/alerts/types';
 import type { NotificationChannelSettingsView } from '@/lib/userSettings';
 import { AlertForm } from './AlertForm';
 import { alertStatusView, alertTypeLabel, describeAlert, relativeTime } from './alertText';
 import { GuardrailsToggle } from './GuardrailsToggle';
 import { NotificationChannelsCard } from './NotificationChannelsCard';
 import styles from './page.module.css';
+
+type StatusFilter = 'all' | AlertStatus;
 
 interface AlertsPageClientProps {
   alerts: Alert[];
@@ -32,6 +34,32 @@ export function AlertsPageClient({
   const [creating, setCreating] = useState(openNew);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | AlertType>('all');
+  const [symbolFilter, setSymbolFilter] = useState('');
+
+  const typesPresent = useMemo(() => {
+    const seen = new Set<AlertType>();
+    for (const a of alerts) seen.add(a.type);
+    return [...seen].sort((a, b) => alertTypeLabel(a).localeCompare(alertTypeLabel(b)));
+  }, [alerts]);
+
+  const filteredAlerts = useMemo(() => {
+    const symbolQuery = symbolFilter.trim().toUpperCase();
+    return alerts.filter((a) => {
+      if (statusFilter !== 'all' && a.status !== statusFilter) return false;
+      if (typeFilter !== 'all' && a.type !== typeFilter) return false;
+      if (symbolQuery && !(a.symbol ?? '').toUpperCase().includes(symbolQuery)) return false;
+      return true;
+    });
+  }, [alerts, statusFilter, typeFilter, symbolFilter]);
+
+  const filtersActive = statusFilter !== 'all' || typeFilter !== 'all' || symbolFilter.trim() !== '';
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setSymbolFilter('');
+  };
 
   const mutate = async (id: string, init: RequestInit) => {
     setBusyId(id);
@@ -91,8 +119,58 @@ export function AlertsPageClient({
           </p>
         </div>
       ) : (
-        <ul className={styles.list}>
-          {alerts.map((a) => {
+        <>
+          {alerts.length > 0 && (
+            <div className={styles.filterBar}>
+              <div className={styles.filterGroup}>
+                {(['all', 'active', 'paused', 'triggered'] as StatusFilter[]).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`${styles.filterPill} ${statusFilter === s ? styles.filterPillActive : ''}`}
+                    onClick={() => setStatusFilter(s)}
+                  >
+                    {s === 'all' ? 'All statuses' : s[0].toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <select
+                className={styles.select}
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as 'all' | AlertType)}
+                aria-label="Filter by alert type"
+              >
+                <option value="all">All types</option>
+                {typesPresent.map((t) => (
+                  <option key={t} value={t}>
+                    {alertTypeLabel(t)}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Filter by symbol…"
+                value={symbolFilter}
+                onChange={(e) => setSymbolFilter(e.target.value)}
+                aria-label="Filter by symbol"
+              />
+              {filtersActive && (
+                <button type="button" className={styles.linkButton} onClick={clearFilters}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+
+          {filteredAlerts.length === 0 ? (
+            <div className={styles.emptyCard}>
+              <p className={styles.emptyTitle}>No alerts match these filters</p>
+              <p className={styles.emptyText}>Try a different status, type, or symbol.</p>
+            </div>
+          ) : (
+            <ul className={styles.list}>
+              {filteredAlerts.map((a) => {
             const status = alertStatusView(a);
             const isEditing = editingId === a.id;
             return (
@@ -148,9 +226,11 @@ export function AlertsPageClient({
                   </div>
                 )}
               </li>
-            );
-          })}
-        </ul>
+                );
+              })}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );
