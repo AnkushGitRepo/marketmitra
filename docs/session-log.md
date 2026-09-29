@@ -510,3 +510,17 @@ user passes the session gate).
 - **Next:** not committed/pushed/deployed yet — pending review. Per the established pattern
   in this session, push/deploy would go through a `DEPLOY_NOW.md` handoff (this sandbox has
   no git/Vercel credentials) once the user asks for it.
+
+## 2026-09-29 — Pushed + deployed: system status page + event log (via `DEPLOY_NOW.md` handoff)
+
+- Fourth handoff in this recurring pattern. Confirmed local state matched the note exactly: `main` one commit ahead of `origin` at `ed2cb56`, clean apart from the untracked `reference_img.png`.
+- Re-verified before trusting the note's claims: `tsc --noEmit`, lint, 425 vitest tests all clean. `rm -rf .next` before building this time (now the standing move for this repo's Turbopack cache, three rounds running) — clean build, confirmed the two new routes (`/status`, `/dashboard/system`) in the route list.
+- Pushed `main` + `v2`, deployed `marketmitra-v2` only (`git diff --stat` confirmed nothing under `services/fundamentals-api` changed).
+- **Verified every item on the handoff's checklist, live:**
+  - First `GET /api/status` came back `overall: "down"` (`fundamentals-api: down, "The operation was aborted due to timeout"`) — matched the note's own troubleshooting section, but before assuming a real misconfiguration, checked whether `fundamentals-api` itself was actually healthy: direct curls to its `/health` and `/companies/HDFCBANK` both came back fast (200, <1.5s). Re-hit `/api/status` seconds later — `operational` across the board, `fundamentals-api` at 89ms. **Root cause: a cold Vercel Python lambda on the very first cross-service health check**, not a bad `FUNDAMENTALS_API_URL` or a real outage — self-resolved once warm, exactly the kind of thing worth checking before treating a status page's own first reading as ground truth.
+  - `/status` renders "All systems operational" with the 5-component list and a Scheduled jobs section (all three jobs correctly "No runs recorded yet" — the note's own anticipated fresh-deploy state, confirmed rather than assumed). Clicked **Refresh** — confirmed via network tab a real `GET /api/status` fires on click, not a no-op.
+  - Signed in, `/dashboard/system` shows a "System" sidebar entry, the same component cards, the scheduled-jobs table, and an event log with level filters. Clicked **Info** — confirmed a real `GET /api/system/logs?level=info&limit=50` (200) fires and the table correctly re-renders "No events recorded yet."
+  - Landing footer's Resources column has a "System status" link — confirmed via DOM query it points at `/status`.
+  - `/dashboard/api` spot-checked, unaffected — loads exactly as before this commit.
+- Deleted `DEPLOY_NOW.md` per its own instruction. Never git-tracked, no commit needed.
+- **Next:** none outstanding from this session. Worth keeping in mind for future health-check reads on this project: the very first cross-service check after a deploy or a quiet period can read "down" on a cold Python lambda alone — re-check once before treating it as a real incident.
