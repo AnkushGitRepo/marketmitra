@@ -136,8 +136,15 @@ export function normalizeAiError(err: unknown): string {
     base = 'That API key was rejected by the provider. Check the key and that it matches the selected provider.';
   } else if (/quota|rate.?limit|429|resource.?exhausted/i.test(msg)) {
     base = 'The provider returned a rate-limit / quota error. Try again shortly.';
+  } else if (/overloaded|high demand|503|unavailable|try again later/i.test(msg)) {
+    // Checked before the "model not found" bucket below — Google's overload
+    // message ("This model is currently experiencing high demand...")
+    // literally contains the word "model", so without this branch first it
+    // was misclassified as a missing-model error even though picking a
+    // different model wouldn't help; the provider is just temporarily busy.
+    base = 'The provider is temporarily overloaded. This usually clears up within a minute or two — try again shortly.';
   } else if (/\bmodel\b|not found|404/i.test(msg)) {
-    base = 'The provider could not find that model. Leave the model field blank to use the default, or pick another.';
+    base = 'The provider could not find that model. Pick a different one from the dropdown, or leave it on the default.';
   } else {
     base = 'The AI request failed.';
   }

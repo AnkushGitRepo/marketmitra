@@ -524,3 +524,77 @@ user passes the session gate).
   - `/dashboard/api` spot-checked, unaffected — loads exactly as before this commit.
 - Deleted `DEPLOY_NOW.md` per its own instruction. Never git-tracked, no commit needed.
 - **Next:** none outstanding from this session. Worth keeping in mind for future health-check reads on this project: the very first cross-service check after a deploy or a quiet period can read "down" on a cold Python lambda alone — re-check once before treating it as a real incident.
+
+## 2026-09-29 — AI model picker dropdown + fixed a misleading error message
+
+User hit a confusing error on the AI settings page: "The provider could not
+find that model" with a provider message underneath that actually said
+"This model is currently experiencing high demand... Please try again
+later." — i.e. Gemini was momentarily overloaded, not missing a model.
+Reported with a screenshot and two asks: give every user a model dropdown
+instead of a freeform text field, and set up a recurring habit of checking
+for new relevant models and updating the list.
+
+- **Bug fix — `src/lib/ai/generate.ts`, `normalizeAiError()`**: the
+  "model not found" classifier was a bare `/\bmodel\b|not found|404/i`
+  regex, so any provider error whose text happened to contain the word
+  "model" (like Google's overload message) got bucketed as "could not
+  find that model" — actively misleading, since switching models
+  wouldn't have fixed a transient overload. Added an
+  overloaded/high-demand/503/unavailable bucket, checked *before* the
+  model-not-found one, with its own accurate message ("The provider is
+  temporarily overloaded... try again shortly"). Test added
+  (`generate.test.ts`) asserting the overload message is never
+  misclassified as model-not-found.
+- **`src/lib/ai/providers.ts`** — added `MODEL_OPTIONS`, a curated
+  fast/balanced/capable pick-list per provider (Gemini, Anthropic,
+  OpenRouter), plus refreshed `DEFAULT_MODELS` (`gemini-3.6-flash` →
+  `gemini-3.8-flash`; Anthropic default now carries the dated snapshot
+  id `claude-haiku-4-5-20251001` instead of the bare `claude-haiku-4-5`)
+  based on each provider's own docs (linked in a comment, along with a
+  `MODELS_LAST_REVIEWED` marker and a written maintenance policy: review
+  every 8-12 weeks, bump the marker, re-run the ai tests, and actually
+  test the settings page against a real key before shipping — a wrong
+  model id here doesn't just look stale, it silently breaks BYO-key
+  users' "Test & save" flow). **Caveat for whoever reads this next:**
+  these exact model IDs were sourced from a live fetch of the providers'
+  docs on 2026-09-29, past this assistant's reliable knowledge cutoff —
+  re-verify them, don't just trust the comment.
+- **`src/app/dashboard/settings/SettingsClient.tsx`** — the "Model
+  (optional)" freeform text input is now a `<select>` populated from
+  `MODEL_OPTIONS[provider]`, defaulting to "Default (<current default>)",
+  with an "Other (enter a model ID manually)" option that reveals the
+  old text field for anyone who wants a model outside the curated list
+  (self-host operators especially). Switching provider now resets the
+  model choice back to that provider's default, so a stale model id from
+  a different provider can never get silently submitted. A stored model
+  that isn't one of the curated picks (e.g. a self-host operator's own
+  env-set choice) starts the dropdown on "Other" rather than discarding
+  it.
+- Also cleared out ~14 stray `<name> 2.<ext>` duplicate files under
+  `src/app/{api/status,api/system,dashboard/system,status}` and
+  `src/lib/system/` left over from an earlier session's file writes on
+  this device — already `.gitignore`'d and invisible to `git status`,
+  but they were confusing `tsc`'s `**/*.ts` include glob into treating
+  phantom/unreadable duplicates as real source files, breaking
+  `next build`'s type-check step. **Note for a future session:** this
+  repo has a much wider spread of the same `<name> N.<ext>` duplicate
+  pattern (82 files project-wide, including several `.env N.local`
+  files) — almost certainly a sync-conflict artifact from whatever
+  keeps this Desktop folder synced (iCloud Drive, most likely). Left
+  untouched outside today's own working set, especially the `.env`
+  duplicates, since those may hold real credentials and weren't part of
+  this task — worth the user's own look.
+
+Verified: `npm run lint` clean project-wide (after the stray-file
+cleanup above), `rm -rf .next && npm run build` clean (all 54 routes),
+`npm run test -- --run` → 427/427 passing, and a structural check against
+a production `next start` server (the sandbox's `next dev` can't reach
+Google Fonts to compile `layout.tsx`, an unrelated network-sandboxing
+quirk) — `/dashboard/settings` → 200 with the dropdown rendering all
+three curated Gemini options plus "Other (enter a model ID manually)".
+
+- **Next:** not committed/pushed/deployed yet — pending review. The
+  recurring "check for new models" ask is being set up as a scheduled
+  reminder outside this commit (scheduling tools aren't part of the
+  git-tracked codebase).

@@ -20,6 +20,16 @@ describe('normalizeAiError', () => {
     expect(normalizeAiError(new Error('429 RESOURCE_EXHAUSTED'))).toMatch(/rate-limit \/ quota/);
   });
 
+  it('buckets an overload error, not a model-not-found error, even though the message contains "model"', () => {
+    const out = normalizeAiError(
+      new Error(
+        'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.'
+      )
+    );
+    expect(out).toMatch(/temporarily overloaded/);
+    expect(out).not.toMatch(/could not find that model/);
+  });
+
   it('reads responseBody + statusCode off an APICallError-shaped object', () => {
     const out = normalizeAiError({
       message: 'Not Found',

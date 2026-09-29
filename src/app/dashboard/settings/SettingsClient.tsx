@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { PROVIDER_LABELS } from '@/lib/ai/providers';
+import { MODEL_OPTIONS, PROVIDER_LABELS } from '@/lib/ai/providers';
 import type { AiProvider, AiSettingsView } from '@/lib/userSettings';
 import styles from './page.module.css';
 
@@ -25,6 +25,14 @@ export function SettingsClient({ initialView, encConfigured }: SettingsClientPro
   const [provider, setProvider] = useState<AiProvider>(initialView?.provider ?? 'gemini');
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState(initialView?.model ?? '');
+  // The dropdown's own value: '' = default, '__custom__' = show the free-text
+  // field below, or one of MODEL_OPTIONS[provider]'s values. Starts on
+  // '__custom__' when the stored model isn't one of the curated picks (e.g.
+  // a self-host operator's own choice), so it's never silently discarded.
+  const initialKnown = MODEL_OPTIONS[provider].some((o) => o.value === (initialView?.model ?? ''));
+  const [modelChoice, setModelChoice] = useState(
+    initialView?.model ? (initialKnown ? initialView.model : '__custom__') : ''
+  );
   const [busy, setBusy] = useState<'save' | 'delete' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +69,7 @@ export function SettingsClient({ initialView, encConfigured }: SettingsClientPro
       setView(null);
       setApiKey('');
       setModel('');
+      setModelChoice('');
       router.refresh();
     } finally {
       setBusy(null);
@@ -90,7 +99,14 @@ export function SettingsClient({ initialView, encConfigured }: SettingsClientPro
         <select
           className={styles.select}
           value={provider}
-          onChange={(e) => setProvider(e.target.value as AiProvider)}
+          onChange={(e) => {
+            // A model ID from one provider is meaningless (or actively
+            // wrong) for another — reset to that provider's default rather
+            // than silently submitting a mismatched model on save.
+            setProvider(e.target.value as AiProvider);
+            setModelChoice('');
+            setModel('');
+          }}
         >
           {PROVIDERS.map((p) => (
             <option key={p} value={p}>
@@ -114,13 +130,31 @@ export function SettingsClient({ initialView, encConfigured }: SettingsClientPro
       </label>
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>Model (optional)</span>
-        <input
-          className={styles.input}
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          placeholder="Leave blank for the provider default"
-        />
+        <span className={styles.fieldLabel}>Model</span>
+        <select
+          className={styles.select}
+          value={modelChoice}
+          onChange={(e) => {
+            const next = e.target.value;
+            setModelChoice(next);
+            setModel(next === '__custom__' ? model : next);
+          }}
+        >
+          {MODEL_OPTIONS[provider].map((opt) => (
+            <option key={opt.value || 'default'} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+          <option value="__custom__">Other (enter a model ID manually)</option>
+        </select>
+        {modelChoice === '__custom__' && (
+          <input
+            className={styles.input}
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder="e.g. gemini-3.8-flash"
+          />
+        )}
       </label>
 
       {error && <p className={styles.error}>{error}</p>}
