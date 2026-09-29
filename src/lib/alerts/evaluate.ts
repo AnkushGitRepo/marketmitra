@@ -1,18 +1,21 @@
 // The alert-evaluation cycle (ADR 0014 §3). Pulled out of the cron route
 // handler so it can be invoked directly (tests, a manual admin trigger).
 
-import { getQuotes } from '@/lib/dashboard/fundamentalsApi';
+import { getPrices, getQuotes, type PricePointOut } from '@/lib/dashboard/fundamentalsApi';
 import { getIpos, type Ipo } from '@/lib/dashboard/iposApi';
 import { listHoldings, type Holding } from '@/lib/holdings';
 import { formatInr } from '@/lib/dashboard/format';
 import { deliverNotification, resolveChannels } from '@/lib/notifications/deliver';
 import type { NotificationPayload } from '@/lib/notifications/types';
 import {
+  closeNSessionsAgo,
   decideAlertTransition,
   evaluate52WeekBreach,
+  evaluateCumulativeDrawdown,
   evaluatePercentMove,
   evaluatePortfolioPnl,
   evaluatePriceThreshold,
+  evaluateTrailingStop,
   snapshotFromQuote,
 } from './evaluators';
 import {
@@ -26,12 +29,14 @@ import { computeHoldingMetrics, computePortfolioMetrics, type PriceLookup } from
 import { applyAlertTransition, listActiveAlerts } from './store';
 import type {
   Alert,
+  CumulativeDrawdownParams,
   EvalResult,
   IpoAlertParams,
   IpoWatchParams,
   PercentMoveParams,
   PortfolioPnlParams,
   PriceThresholdParams,
+  TrailingStopParams,
   Week52BreachParams,
 } from './types';
 
@@ -91,6 +96,23 @@ export async function evaluateAlerts(now: Date = new Date()): Promise<EvaluateSu
   const ipoBySlug = new Map(ipos.map((i) => [i.slug, i]));
   const today = istToday(now);
 
+  // cumulative_drawdown needs EOD history (not just today's quote) to look
+  // back N sessions — one /prices fetch per distinct symbol that needs it,
+  // shared across every alert on that symbol this cycle.
+  const drawdownSymbols = [
+    ...new Set(
+      alerts
+        .filter((a) => a.type === 'cumulative_drawdown' && a.symbol)
+        .map((a) => a.symbol!.toUpperCase())
+    ),
+  ];
+  const drawdownHistoryBySymbol = new Map<string, PricePointOut[] | null>();
+  await Promise.all(
+    drawdownSymbols.map(async (sym) => {
+      drawdownHistoryBySymbol.set(sym, await getPrices(sym, '1mo'));
+    })
+  );
+
   const summary: EvaluateSummary = {
     ...EMPTY,
     activeAlerts: alerts.length,
@@ -115,6 +137,21 @@ export async function evaluateAlerts(now: Date = new Date()): Promise<EvaluateSu
           await deliverNotification(alert.userId, buildIpoAlertPayload(p, ipoBySlug.get(p.ipoSlug)), channels);
           summary.notified += 1;
         }
+        continue;
+      }
+
+      if (alert.type === 'trailing_stop') {
+        summary.notified += await evaluateTrailingStopAlert(alert, quoteBySymbol, now, summary);
+        continue;
+      }
+      if (alert.type === 'cumulative_drawdown') {
+        summary.notified += await evaluateCumulativeDrawdownAlert(
+          alert,
+          quoteBySymbol,
+          drawdownHistoryBySymbol,
+          now,
+          summary
+        );
         continue;
       }
 
@@ -193,9 +230,79 @@ function buildIpoAlertPayload(params: IpoAlertParams, ipo: Ipo | undefined): Not
   };
 }
 
+type QuoteBySymbol = Map<
+  string,
+  { price: string | null; prev_close: string | null; change_pct: string | null; week52_high: string | null; week52_low: string | null }
+>;
+
+/** `trailing_stop` needs its own branch (not `evaluateOne`) because the peak
+ * price has to be persisted every cycle regardless of whether the alert
+ * fires — `decideAlertTransition`'s generic patch doesn't carry it. */
+async function evaluateTrailingStopAlert(
+  alert: Alert,
+  quoteBySymbol: QuoteBySymbol,
+  now: Date,
+  summary: EvaluateSummary
+): Promise<number> {
+  const quote = alert.symbol ? quoteBySymbol.get(alert.symbol.toUpperCase()) : undefined;
+  const snap = quote ? snapshotFromQuote(quote) : null;
+  if (!snap) {
+    summary.skippedNoData += 1;
+    await applyAlertTransition(alert.id, { lastEvaluatedAt: now, updatedAt: now });
+    return 0;
+  }
+
+  const { result, peakPrice } = evaluateTrailingStop(
+    alert.params as TrailingStopParams,
+    snap.price,
+    alert.peakPrice
+  );
+  const { notify, patch } = decideAlertTransition(alert, result, now);
+  patch.peakPrice = peakPrice;
+  await applyAlertTransition(alert.id, patch);
+
+  if (!notify) return 0;
+  const payload = buildPayload(alert, result);
+  const channels = await resolveChannels(alert.userId);
+  await deliverNotification(alert.userId, payload, channels);
+  return 1;
+}
+
+/** `cumulative_drawdown` needs its own branch because it evaluates against
+ * EOD price history (`drawdownHistoryBySymbol`, fetched once per symbol
+ * before the alert loop), not the live-quote snapshot `evaluateOne` uses. */
+async function evaluateCumulativeDrawdownAlert(
+  alert: Alert,
+  quoteBySymbol: QuoteBySymbol,
+  drawdownHistoryBySymbol: Map<string, PricePointOut[] | null>,
+  now: Date,
+  summary: EvaluateSummary
+): Promise<number> {
+  const sym = alert.symbol?.toUpperCase();
+  const quote = sym ? quoteBySymbol.get(sym) : undefined;
+  const snap = quote ? snapshotFromQuote(quote) : null;
+  const history = sym ? drawdownHistoryBySymbol.get(sym) : null;
+  const closeN = history
+    ? closeNSessionsAgo(history, (alert.params as CumulativeDrawdownParams).windowSessions)
+    : null;
+  const result = snap
+    ? evaluateCumulativeDrawdown(alert.params as CumulativeDrawdownParams, snap.price, closeN)
+    : null;
+  if (result === null) summary.skippedNoData += 1;
+
+  const { notify, patch } = decideAlertTransition(alert, result, now);
+  await applyAlertTransition(alert.id, patch);
+
+  if (!notify || !result) return 0;
+  const payload = buildPayload(alert, result);
+  const channels = await resolveChannels(alert.userId);
+  await deliverNotification(alert.userId, payload, channels);
+  return 1;
+}
+
 function evaluateOne(
   alert: Alert,
-  quoteBySymbol: Map<string, { price: string | null; prev_close: string | null; change_pct: string | null; week52_high: string | null; week52_low: string | null }>,
+  quoteBySymbol: QuoteBySymbol,
   prices: PriceLookup,
   holdingsByUser: Map<string, Holding[]>
 ): EvalResult | null {
@@ -232,7 +339,7 @@ function evaluateOne(
 }
 
 function buildPayload(alert: Alert, result: EvalResult): NotificationPayload {
-  const meta = { alertId: alert.id, alertType: alert.type, observedValue: result.observedValue };
+  const meta = { alertId: alert.id, alertType: alert.type, observedValue: result.observedValue, source: alert.source };
   const href = alert.symbol ? `/dashboard/stock/${alert.symbol}` : '/dashboard/portfolio';
   const sym = alert.symbol ?? '';
 
@@ -266,6 +373,28 @@ function buildPayload(alert: Alert, result: EvalResult): NotificationPayload {
         kind: 'alert',
         title: `${sym} near its 52-week ${p.edge}${near}`,
         body: `${sym} at ${formatInr(result.observedValue)} has reached its 52-week ${p.edge}${near}.`,
+        href,
+        meta,
+      };
+    }
+    case 'trailing_stop': {
+      const p = alert.params as TrailingStopParams;
+      const peak = alert.peakPrice ?? result.observedValue;
+      return {
+        kind: 'alert',
+        title: `${sym} hit its trailing stop`,
+        body: `${sym} fell to ${formatInr(result.observedValue)}, ${p.trailPct}% below its peak of ${formatInr(peak)} since this alert armed.`,
+        href,
+        meta,
+      };
+    }
+    case 'cumulative_drawdown': {
+      const p = alert.params as CumulativeDrawdownParams;
+      const move = result.observedValue;
+      return {
+        kind: 'alert',
+        title: `${sym} down ${Math.abs(move).toFixed(1)}% over ${p.windowSessions} sessions`,
+        body: `${sym} has fallen ${Math.abs(move).toFixed(2)}% over the last ${p.windowSessions} trading sessions — past your ${p.pct}% drawdown threshold. A single day's move can look tame while a slide like this adds up.`,
         href,
         meta,
       };

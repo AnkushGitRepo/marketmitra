@@ -6,6 +6,7 @@ import type { Alert } from '@/lib/alerts/types';
 import type { NotificationChannelSettingsView } from '@/lib/userSettings';
 import { AlertForm } from './AlertForm';
 import { alertStatusView, alertTypeLabel, describeAlert, relativeTime } from './alertText';
+import { GuardrailsToggle } from './GuardrailsToggle';
 import { NotificationChannelsCard } from './NotificationChannelsCard';
 import styles from './page.module.css';
 
@@ -16,6 +17,7 @@ interface AlertsPageClientProps {
   prefillSymbol?: string;
   channelsView: NotificationChannelSettingsView | null;
   encConfigured: boolean;
+  autoGuardrailsEnabled: boolean;
 }
 
 export function AlertsPageClient({
@@ -24,6 +26,7 @@ export function AlertsPageClient({
   prefillSymbol,
   channelsView,
   encConfigured,
+  autoGuardrailsEnabled,
 }: AlertsPageClientProps) {
   const router = useRouter();
   const [creating, setCreating] = useState(openNew);
@@ -69,6 +72,7 @@ export function AlertsPageClient({
         below to also get them there.
       </p>
 
+      <GuardrailsToggle initialEnabled={autoGuardrailsEnabled} />
       <NotificationChannelsCard initialView={channelsView} encConfigured={encConfigured} />
 
       {creating && (

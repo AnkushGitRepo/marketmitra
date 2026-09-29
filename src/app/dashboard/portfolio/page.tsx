@@ -6,6 +6,7 @@ import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCachedInsight } from '@/lib/insights';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import { getNews } from '@/lib/dashboard/newsApi';
+import { listNotifications } from '@/lib/notifications/store';
 import { PortfolioPageClient } from './PortfolioPageClient';
 import styles from './page.module.css';
 
@@ -53,12 +54,16 @@ export default async function PortfolioPage() {
   const holdingSymbols = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
   const news = holdingSymbols.length > 0 ? await getNews({ symbols: holdingSymbols, limit: 8 }) : null;
 
+  const { items: notificationItems } = await listNotifications(userId, 20);
+  const activity = notificationItems.filter((n) => n.kind === 'alert' || n.kind === 'system').slice(0, 6);
+
   return (
     <PortfolioPageClient
       holdings={holdings}
       history={historyByPeriod}
       aiInsight={aiInsight}
       news={news?.items ?? []}
+      activity={activity}
     />
   );
 }

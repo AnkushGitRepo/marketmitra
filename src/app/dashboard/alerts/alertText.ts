@@ -1,11 +1,13 @@
 import { formatInr } from '@/lib/dashboard/format';
 import type {
   Alert,
+  CumulativeDrawdownParams,
   IpoAlertParams,
   IpoWatchParams,
   PercentMoveParams,
   PortfolioPnlParams,
   PriceThresholdParams,
+  TrailingStopParams,
   Week52BreachParams,
 } from '@/lib/alerts/types';
 
@@ -14,6 +16,8 @@ const ALERT_TYPE_LABELS: Record<Alert['type'], string> = {
   percent_move: 'Percent move',
   week52_breach: '52-week',
   portfolio_pnl: 'Portfolio',
+  trailing_stop: 'Trailing stop',
+  cumulative_drawdown: 'Drawdown watch',
   ipo_watch: 'IPO watch',
   ipo: 'IPO',
 };
@@ -61,6 +65,15 @@ export function describeAlert(alert: Alert): string {
       const value =
         p.metric === 'unrealized_pnl_pct' ? `${p.threshold}%` : formatInr(p.threshold);
       return `${subject} ${p.direction} ${value}`;
+    }
+    case 'trailing_stop': {
+      const p = alert.params as TrailingStopParams;
+      const peak = alert.peakPrice !== null ? ` (peak so far ${formatInr(alert.peakPrice)})` : '';
+      return `${alert.symbol} falls ${p.trailPct}% below its peak${peak}`;
+    }
+    case 'cumulative_drawdown': {
+      const p = alert.params as CumulativeDrawdownParams;
+      return `${alert.symbol} down ${p.pct}%+ over ${p.windowSessions} sessions`;
     }
     case 'ipo_watch': {
       const p = alert.params as IpoWatchParams;

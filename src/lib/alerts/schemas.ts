@@ -26,6 +26,15 @@ export const portfolioPnlParamsSchema = z.object({
   threshold: z.number(),
 });
 
+export const trailingStopParamsSchema = z.object({
+  trailPct: z.number().positive().max(50),
+});
+
+export const cumulativeDrawdownParamsSchema = z.object({
+  windowSessions: z.number().int().min(2).max(20),
+  pct: z.number().positive().max(100),
+});
+
 export const ipoWatchParamsSchema = z.object({
   triggers: z.object({
     opens: z.boolean(),
@@ -56,6 +65,10 @@ export function paramsSchemaForType(type: AlertType) {
       return week52BreachParamsSchema;
     case 'portfolio_pnl':
       return portfolioPnlParamsSchema;
+    case 'trailing_stop':
+      return trailingStopParamsSchema;
+    case 'cumulative_drawdown':
+      return cumulativeDrawdownParamsSchema;
     case 'ipo_watch':
       return ipoWatchParamsSchema;
     case 'ipo':
@@ -68,6 +81,13 @@ const commonCreateFields = z.object({
   rearm: z.boolean().optional(),
   cooldownMinutes: z.number().int().min(5).max(1440).optional(),
 });
+
+// Deliberately NOT exposing `source` here: it must never come from a
+// client-supplied request body (a user's own fetch could otherwise claim
+// `source: 'mitra'` and slip past the Mitra-activity audit trail). The
+// public POST /api/alerts route always creates with the store's default
+// ('user'); the holding-add guardrail hook and Mitra's own tools call
+// createAlert() directly, server-side, with an explicit source.
 
 export const createAlertSchema = z
   .discriminatedUnion('type', [
@@ -91,6 +111,16 @@ export const createAlertSchema = z
       // Optional: present = scoped to that one holding's P&L; absent = whole book.
       symbol: symbolSchema.nullish(),
       params: portfolioPnlParamsSchema,
+    }),
+    z.object({
+      type: z.literal('trailing_stop'),
+      symbol: symbolSchema,
+      params: trailingStopParamsSchema,
+    }),
+    z.object({
+      type: z.literal('cumulative_drawdown'),
+      symbol: symbolSchema,
+      params: cumulativeDrawdownParamsSchema,
     }),
     z.object({
       type: z.literal('ipo_watch'),

@@ -54,6 +54,10 @@ interface UserSettingsDoc {
   whatsappWebhookEnc?: string | null;
   customWebhookEnc?: string | null;
   channelsUpdatedAt?: Date | null;
+  /** Default true (a fresh doc / missing field reads as enabled) — every
+   * newly added holding gets a default trailing-stop + drawdown-watch pair
+   * unless the user explicitly turns this off. */
+  autoGuardrailsEnabled?: boolean;
   updatedAt: Date;
 }
 
@@ -178,6 +182,27 @@ export async function setNotificationChannels(userId: string, input: Notificatio
   if (Object.keys(unset).length > 0) update.$unset = unset;
 
   await (await collection()).updateOne({ userId }, update, { upsert: true });
+}
+
+// --- Auto-guardrail alerts --------------------------------------------------
+
+/** Whether newly added holdings should get default guardrail alerts
+ * (trailing stop + cumulative drawdown watch) created automatically. On by
+ * default — a missing/absent field reads as enabled, not disabled, so
+ * existing users get the protection without having to opt in. */
+export async function getAutoGuardrailsEnabled(userId: string): Promise<boolean> {
+  const doc = await (await collection()).findOne({ userId });
+  return doc?.autoGuardrailsEnabled ?? true;
+}
+
+export async function setAutoGuardrailsEnabled(userId: string, enabled: boolean): Promise<void> {
+  await (
+    await collection()
+  ).updateOne(
+    { userId },
+    { $set: { autoGuardrailsEnabled: enabled, updatedAt: new Date() }, $setOnInsert: { userId } },
+    { upsert: true }
+  );
 }
 
 export async function clearNotificationChannel(

@@ -6,7 +6,14 @@ import type { Alert, AlertType } from '@/lib/alerts/types';
 import { alertTypeLabel } from './alertText';
 import styles from './page.module.css';
 
-const TYPES: AlertType[] = ['price_threshold', 'percent_move', 'week52_breach', 'portfolio_pnl'];
+const TYPES: AlertType[] = [
+  'price_threshold',
+  'percent_move',
+  'week52_breach',
+  'portfolio_pnl',
+  'trailing_stop',
+  'cumulative_drawdown',
+];
 
 interface AlertFormProps {
   /** Present = edit mode (type + symbol are fixed, only params/note/rearm change). */
@@ -31,6 +38,11 @@ interface Draft {
   pnlMetric: 'total_value' | 'unrealized_pnl' | 'unrealized_pnl_pct';
   pnlDirection: 'above' | 'below';
   pnlThreshold: string;
+  // trailing_stop
+  tsTrailPct: string;
+  // cumulative_drawdown
+  cdWindowSessions: string;
+  cdPct: string;
   // shared
   note: string;
   rearm: boolean;
@@ -50,6 +62,9 @@ function draftFromAlert(alert: Alert | undefined, initialSymbol: string | undefi
     pnlMetric: 'unrealized_pnl',
     pnlDirection: 'below',
     pnlThreshold: '',
+    tsTrailPct: '10',
+    cdWindowSessions: '4',
+    cdPct: '15',
     note: '',
     rearm: false,
     cooldownMinutes: '60',
@@ -70,6 +85,9 @@ function draftFromAlert(alert: Alert | undefined, initialSymbol: string | undefi
     pnlMetric: (p.metric as Draft['pnlMetric']) ?? 'unrealized_pnl',
     pnlDirection: alert.type === 'portfolio_pnl' ? ((p.direction as Draft['pnlDirection']) ?? 'below') : base.pnlDirection,
     pnlThreshold: alert.type === 'portfolio_pnl' ? String(p.threshold ?? '') : base.pnlThreshold,
+    tsTrailPct: alert.type === 'trailing_stop' ? String(p.trailPct ?? '10') : base.tsTrailPct,
+    cdWindowSessions: alert.type === 'cumulative_drawdown' ? String(p.windowSessions ?? '4') : base.cdWindowSessions,
+    cdPct: alert.type === 'cumulative_drawdown' ? String(p.pct ?? '15') : base.cdPct,
     note: alert.note ?? '',
     rearm: alert.rearm,
     cooldownMinutes: String(alert.cooldownMinutes ?? 60),
@@ -102,6 +120,20 @@ function buildParams(d: Draft): BuiltParams {
       if (Number.isNaN(threshold)) return { ok: false, error: 'Enter a threshold value.' };
       return { ok: true, params: { metric: d.pnlMetric, direction: d.pnlDirection, threshold } };
     }
+    case 'trailing_stop': {
+      const trailPct = Number(d.tsTrailPct);
+      if (!(trailPct > 0) || trailPct > 50) return { ok: false, error: 'Enter a trail % between 0 and 50.' };
+      return { ok: true, params: { trailPct } };
+    }
+    case 'cumulative_drawdown': {
+      const windowSessions = Number(d.cdWindowSessions);
+      const pct = Number(d.cdPct);
+      if (!Number.isInteger(windowSessions) || windowSessions < 2 || windowSessions > 20) {
+        return { ok: false, error: 'Session window must be a whole number between 2 and 20.' };
+      }
+      if (!(pct > 0) || pct > 100) return { ok: false, error: 'Enter a percentage between 0 and 100.' };
+      return { ok: true, params: { windowSessions, pct } };
+    }
     default:
       // IPO alerts are created from the IPO page, not this form.
       return { ok: false, error: 'Unsupported alert type.' };
@@ -119,6 +151,7 @@ export function AlertForm({ alert, initialSymbol, onClose }: AlertFormProps) {
 
   const needsSymbol = d.type !== 'portfolio_pnl';
   const symbolOptional = d.type === 'portfolio_pnl';
+
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -246,6 +279,26 @@ export function AlertForm({ alert, initialSymbol, onClose }: AlertFormProps) {
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Within margin (%, 0 = exact)</span>
               <input className={styles.input} type="number" min="0" max="50" step="any" value={d.wkWithinPct} onChange={(e) => set('wkWithinPct', e.target.value)} />
+            </label>
+          </>
+        )}
+
+        {d.type === 'trailing_stop' && (
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Trail (% below peak)</span>
+            <input className={styles.input} type="number" min="0" max="50" step="any" value={d.tsTrailPct} onChange={(e) => set('tsTrailPct', e.target.value)} placeholder="10" />
+          </label>
+        )}
+
+        {d.type === 'cumulative_drawdown' && (
+          <>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Session window</span>
+              <input className={styles.input} type="number" min="2" max="20" step="1" value={d.cdWindowSessions} onChange={(e) => set('cdWindowSessions', e.target.value)} />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Drawdown (%)</span>
+              <input className={styles.input} type="number" min="0" max="100" step="any" value={d.cdPct} onChange={(e) => set('cdPct', e.target.value)} placeholder="15" />
             </label>
           </>
         )}

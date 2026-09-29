@@ -3,12 +3,14 @@
 
 import type {
   Alert,
+  CumulativeDrawdownParams,
   EvalResult,
   MarketSnapshot,
   PercentMoveParams,
   PortfolioMetrics,
   PortfolioPnlParams,
   PriceThresholdParams,
+  TrailingStopParams,
   Week52BreachParams,
 } from './types';
 
@@ -58,6 +60,60 @@ export function evaluate52WeekBreach(
   return { triggered: snap.price <= trigger, observedValue: snap.price };
 }
 
+/**
+ * `priorPeak` is the alert's persisted `peakPrice` (null before the first
+ * cycle). The peak only ever ratchets up — it is not reset by a dip — so
+ * the trigger level rises with the stock instead of sitting at one static
+ * floor. Callers must persist the returned `peakPrice` every cycle
+ * regardless of whether `result.triggered`, since it has to keep tracking
+ * new highs even while the alert isn't firing.
+ */
+export function evaluateTrailingStop(
+  params: TrailingStopParams,
+  price: number,
+  priorPeak: number | null
+): { result: EvalResult; peakPrice: number } {
+  const peakPrice = priorPeak === null ? price : Math.max(priorPeak, price);
+  const triggerLevel = peakPrice * (1 - params.trailPct / 100);
+  return { result: { triggered: price <= triggerLevel, observedValue: price }, peakPrice };
+}
+
+/**
+ * `closeNSessionsAgo` is the EOD close from `windowSessions` trading
+ * sessions before the most recent one on record (see
+ * `closeNSessionsAgo()` below, which derives it from fundamentals-api's
+ * daily price history) — null when there isn't enough history yet, in
+ * which case the caller must skip, not treat it as "not triggered" (same
+ * convention as `evaluatePercentMove`/`evaluate52WeekBreach`).
+ */
+export function evaluateCumulativeDrawdown(
+  params: CumulativeDrawdownParams,
+  price: number,
+  closeNSessionsAgo: number | null
+): EvalResult | null {
+  if (closeNSessionsAgo === null || closeNSessionsAgo <= 0) return null;
+  const pctChange = ((price - closeNSessionsAgo) / closeNSessionsAgo) * 100;
+  return { triggered: pctChange <= -Math.abs(params.pct), observedValue: pctChange };
+}
+
+/** Picks the close price `windowSessions` trading sessions before the most
+ * recent bar in `prices` (fundamentals-api EOD history, any order — this
+ * sorts). Returns null if there isn't `windowSessions + 1` bars yet (e.g. a
+ * stock that just listed) or the picked bar has no usable close. */
+export function closeNSessionsAgo(
+  prices: { trade_date: string; close: string | null }[],
+  windowSessions: number
+): number | null {
+  if (windowSessions < 1) return null;
+  const sorted = [...prices].sort((a, b) => a.trade_date.localeCompare(b.trade_date));
+  const idx = sorted.length - 1 - windowSessions;
+  if (idx < 0) return null;
+  const raw = sorted[idx]!.close;
+  if (raw === null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export function evaluatePortfolioPnl(
   params: PortfolioPnlParams,
   metrics: PortfolioMetrics
@@ -75,7 +131,9 @@ export interface AlertTransition {
   /** Send a notification this cycle. */
   notify: boolean;
   /** Field updates to persist on the alert. Always includes
-   * `lastEvaluatedAt` and `lastObservedValue`. */
+   * `lastEvaluatedAt` and `lastObservedValue`. `peakPrice` isn't set here —
+   * `decideAlertTransition` doesn't know about trailing stops — callers
+   * merge it in separately for `trailing_stop` alerts (see evaluate.ts). */
   patch: Partial<
     Pick<
       Alert,
@@ -85,6 +143,7 @@ export interface AlertTransition {
       | 'triggeredAt'
       | 'lastEvaluatedAt'
       | 'lastObservedValue'
+      | 'peakPrice'
       | 'updatedAt'
     >
   >;

@@ -7,12 +7,14 @@ import { LineChart } from '@/components/dashboard-charts/LineChart';
 import { PillTabs } from '@/components/dashboard-charts/PillTabs';
 import { InsightCard } from '@/components/dashboard-charts/InsightCard';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
+import { ActivityCard } from '@/components/dashboard-charts/ActivityCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
 import { formatInr } from '@/lib/dashboard/format';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
+import type { Notification } from '@/lib/notifications/types';
 import { AddHoldingForm } from './AddHoldingForm';
 import { HoldingRow } from './HoldingRow';
 import styles from './page.module.css';
@@ -29,6 +31,7 @@ interface PortfolioPageClientProps {
   history: Record<PricePeriod, RangeSeries>;
   aiInsight: { hasKey: boolean; initial: { content: string; generatedAt: string } | null };
   news: NewsItem[];
+  activity: Notification[];
 }
 
 function exportCsv(holdings: EnrichedHolding[]) {
@@ -48,7 +51,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, aiInsight, news }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, aiInsight, news, activity }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [range, setRange] = useState<PricePeriod>('1y');
@@ -86,6 +89,7 @@ export function PortfolioPageClient({ holdings, history, aiInsight, news }: Port
             <h1 className={styles.h1}>Portfolio</h1>
           </div>
         </div>
+        <ActivityCard items={activity} />
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No holdings yet</p>
           <p className={styles.chartSub}>Add your first position to see live value, allocation, and P&amp;L.</p>
@@ -113,6 +117,8 @@ export function PortfolioPageClient({ holdings, history, aiInsight, news }: Port
       </div>
 
       {showAddForm && <AddHoldingForm onDone={() => setShowAddForm(false)} />}
+
+      <ActivityCard items={activity} />
 
       <div className={styles.splitGrid}>
         <div className={styles.chartCard}>

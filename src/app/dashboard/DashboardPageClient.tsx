@@ -7,6 +7,7 @@ import { PillTabs } from '@/components/dashboard-charts/PillTabs';
 import { IndexCard } from '@/components/dashboard-charts/IndexCard';
 import { MoverPanel } from '@/components/dashboard-charts/MoverPanel';
 import { IpoOpenCard } from '@/components/dashboard-charts/IpoOpenCard';
+import { ActivityCard } from '@/components/dashboard-charts/ActivityCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
 import { formatInr } from '@/lib/dashboard/format';
 import type { IndexQuoteOut, PricePeriod } from '@/lib/dashboard/fundamentalsApi';
@@ -14,6 +15,7 @@ import type { Ipo } from '@/lib/dashboard/iposApi';
 import type { Quote } from '@/lib/dashboard/quotes';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
+import type { Notification } from '@/lib/notifications/types';
 import styles from './page.module.css';
 
 const RANGE_OPTIONS: PricePeriod[] = ['1mo', '6mo', '1y', '5y'];
@@ -26,6 +28,7 @@ interface DashboardPageClientProps {
   gainers: Quote[];
   losers: Quote[];
   openIpos: Ipo[];
+  activity: Notification[];
 }
 
 export function DashboardPageClient({
@@ -35,6 +38,7 @@ export function DashboardPageClient({
   gainers,
   losers,
   openIpos,
+  activity,
 }: DashboardPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
@@ -59,6 +63,8 @@ export function DashboardPageClient({
           </button>
         </div>
       </div>
+
+      <ActivityCard items={activity} />
 
       {holdings.length === 0 ? (
         <div className={styles.emptyPortfolioCard}>

@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
-import type { Alert, AlertParams, AlertStatus } from './types';
+import type { Alert, AlertParams, AlertSource, AlertStatus } from './types';
 
 interface AlertDocument {
   _id: ObjectId;
@@ -18,6 +18,8 @@ interface AlertDocument {
   triggeredAt: Date | null;
   lastObservedValue: number | null;
   sentKeys: string[] | null;
+  peakPrice: number | null;
+  source: AlertSource;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +41,10 @@ function toAlert(doc: AlertDocument): Alert {
     triggeredAt: doc.triggeredAt,
     lastObservedValue: doc.lastObservedValue,
     sentKeys: doc.sentKeys ?? null,
+    peakPrice: doc.peakPrice ?? null,
+    // Docs written before this field existed have no `source` — treat them
+    // as user-created rather than crashing on a missing field.
+    source: doc.source ?? 'user',
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -56,6 +62,10 @@ export interface CreateAlertInput {
   note?: string | null;
   rearm?: boolean;
   cooldownMinutes?: number;
+  /** Defaults to 'user'. Pass 'auto_guardrail' from the holding-add hook,
+   * or 'mitra' from Mitra's own chat tools — both get logged to the
+   * mitraActions audit trail by their respective callers. */
+  source?: AlertSource;
 }
 
 export async function listAlerts(userId: string): Promise<Alert[]> {
@@ -98,6 +108,8 @@ export async function createAlert(userId: string, input: CreateAlertInput): Prom
     triggeredAt: null,
     lastObservedValue: null,
     sentKeys: input.type === 'ipo_watch' ? [] : null,
+    peakPrice: null,
+    source: input.source ?? 'user',
     createdAt: now,
     updatedAt: now,
   };
@@ -138,6 +150,8 @@ export async function upsertIpoWatch(
         lastEvaluatedAt: null,
         triggeredAt: null,
         lastObservedValue: null,
+        peakPrice: null,
+        source: 'user',
         createdAt: now,
       },
     },
@@ -195,6 +209,7 @@ export async function applyAlertTransition(
       | 'lastEvaluatedAt'
       | 'lastObservedValue'
       | 'sentKeys'
+      | 'peakPrice'
       | 'updatedAt'
     >
   >

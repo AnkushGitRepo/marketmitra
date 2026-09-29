@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  closeNSessionsAgo,
   decideAlertTransition,
   evaluate52WeekBreach,
+  evaluateCumulativeDrawdown,
   evaluatePercentMove,
   evaluatePortfolioPnl,
   evaluatePriceThreshold,
+  evaluateTrailingStop,
   snapshotFromQuote,
 } from './evaluators';
 import type { Alert, MarketSnapshot } from './types';
@@ -87,6 +90,81 @@ describe('evaluate52WeekBreach', () => {
     // within 5% of 50 => trigger at 52.5
     expect(breachTriggered({ edge: 'low', withinPct: 5 }, { price: 52, week52Low: 50 })).toBe(true);
     expect(breachTriggered({ edge: 'low', withinPct: 5 }, { price: 53, week52Low: 50 })).toBe(false);
+  });
+});
+
+describe('evaluateTrailingStop', () => {
+  it('seeds the peak from the current price on the first evaluation and does not trigger', () => {
+    const { result, peakPrice } = evaluateTrailingStop({ trailPct: 10 }, 100, null);
+    expect(peakPrice).toBe(100);
+    expect(result.triggered).toBe(false);
+  });
+
+  it('ratchets the peak up as the price rises, never down', () => {
+    expect(evaluateTrailingStop({ trailPct: 10 }, 120, 100).peakPrice).toBe(120);
+    expect(evaluateTrailingStop({ trailPct: 10 }, 90, 120).peakPrice).toBe(120);
+  });
+
+  it('triggers once price falls trailPct% below the peak, not below the original entry', () => {
+    // Peak ran up to 200; a 10% trail means the floor is 180, not the
+    // original purchase price this alert never even knows.
+    const atFloor = evaluateTrailingStop({ trailPct: 10 }, 180, 200);
+    expect(atFloor.result.triggered).toBe(true);
+    expect(atFloor.peakPrice).toBe(200);
+
+    const aboveFloor = evaluateTrailingStop({ trailPct: 10 }, 181, 200);
+    expect(aboveFloor.result.triggered).toBe(false);
+  });
+});
+
+describe('evaluateCumulativeDrawdown', () => {
+  it('returns null with no history to compare against', () => {
+    expect(evaluateCumulativeDrawdown({ windowSessions: 4, pct: 15 }, 100, null)).toBeNull();
+    expect(evaluateCumulativeDrawdown({ windowSessions: 4, pct: 15 }, 100, 0)).toBeNull();
+  });
+
+  it('triggers on a slow multi-session bleed even without one dramatic single day', () => {
+    // 100 -> 60 over the window is -40%, well past a 15% threshold, even
+    // though each individual session's move might look unremarkable.
+    const r = evaluateCumulativeDrawdown({ windowSessions: 4, pct: 15 }, 60, 100);
+    expect(r).not.toBeNull();
+    expect(r!.triggered).toBe(true);
+    expect(r!.observedValue).toBeCloseTo(-40, 5);
+  });
+
+  it('does not trigger on a rise, or a fall smaller than the threshold', () => {
+    expect(evaluateCumulativeDrawdown({ windowSessions: 4, pct: 15 }, 110, 100)!.triggered).toBe(false);
+    expect(evaluateCumulativeDrawdown({ windowSessions: 4, pct: 15 }, 90, 100)!.triggered).toBe(false);
+  });
+});
+
+describe('closeNSessionsAgo', () => {
+  const bars = (closes: number[]) =>
+    closes.map((close, i) => ({ trade_date: `2026-01-${String(i + 1).padStart(2, '0')}`, close: String(close) }));
+
+  it('picks the close windowSessions back from the most recent bar', () => {
+    // 5 bars, most recent (idx 4) is "today"; 4 sessions back is idx 0.
+    expect(closeNSessionsAgo(bars([100, 105, 95, 90, 60]), 4)).toBe(100);
+    expect(closeNSessionsAgo(bars([100, 105, 95, 90, 60]), 1)).toBe(90);
+  });
+
+  it('is order-independent (sorts by trade_date itself)', () => {
+    const shuffled = [
+      { trade_date: '2026-01-05', close: '60' },
+      { trade_date: '2026-01-01', close: '100' },
+      { trade_date: '2026-01-03', close: '95' },
+      { trade_date: '2026-01-02', close: '105' },
+      { trade_date: '2026-01-04', close: '90' },
+    ];
+    expect(closeNSessionsAgo(shuffled, 4)).toBe(100);
+  });
+
+  it('returns null when there is not enough history yet', () => {
+    expect(closeNSessionsAgo(bars([100, 105]), 4)).toBeNull();
+  });
+
+  it('returns null on a missing or non-positive close', () => {
+    expect(closeNSessionsAgo([{ trade_date: '2026-01-01', close: null }, { trade_date: '2026-01-02', close: '10' }], 1)).toBeNull();
   });
 });
 

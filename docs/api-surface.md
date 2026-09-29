@@ -92,7 +92,7 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Purpose:** List the current user's alerts (all statuses), newest first. See [ADR 0014](./decisions/0014-alerts-engine-scope.md).
 - **Auth:** required — Clerk session in hosted mode, fixed `"local"` user in self-host (`src/lib/currentUserId.ts`).
 - **Request:** none.
-- **Response:** `data`: `Alert[]` — `{ id, userId, type, symbol, params, note, status, rearm, cooldownMinutes, armed, cooldownUntil, lastEvaluatedAt, triggeredAt, lastObservedValue, createdAt, updatedAt }`. `type` ∈ `price_threshold | percent_move | week52_breach | portfolio_pnl`; `params` shape depends on `type`.
+- **Response:** `data`: `Alert[]` — `{ id, userId, type, symbol, params, note, status, rearm, cooldownMinutes, armed, cooldownUntil, lastEvaluatedAt, triggeredAt, lastObservedValue, peakPrice, source, createdAt, updatedAt }`. `type` ∈ `price_threshold | percent_move | week52_breach | portfolio_pnl | trailing_stop | cumulative_drawdown`; `params` shape depends on `type`. `peakPrice` is only meaningful for `trailing_stop` (null otherwise). `source` ∈ `user | auto_guardrail | mitra` (ADR 0030) — who created the alert.
 - **Errors:** `401` if not authenticated.
 
 ### `POST /api/alerts`
@@ -105,7 +105,10 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
   - `portfolio_pnl` — `{ type, symbol?: string|null, params: { metric: "total_value"|"unrealized_pnl"|"unrealized_pnl_pct", direction: "above"|"below", threshold: number } }` (`symbol` present = scoped to that one holding; absent = whole book)
   - `ipo_watch` — `{ type, params: { triggers: { opens: bool, lastDay: bool, allotmentListing: bool }, gmpThresholdPct?: number, ipoType: "all"|"mainboard" } }` (ADR 0017). **One per user** — POSTing this upserts the user's IPO-watch subscription (returns `200`, not `201`).
   - `ipo` — `{ type, params: { ipoSlug: string, trigger: "opens"|"last_day"|"allotment_listing"|"gmp_threshold", gmpThresholdPct?: number, gmpThresholdAbs?: number } }` — a per-IPO alert set from a row on `/dashboard/ipos`.
+  - `trailing_stop` — `{ type, symbol, params: { trailPct: number (0,50] } }` (ADR 0030). Fires when the price falls `trailPct`% below the highest price observed since the alert was created — the floor ratchets up with the stock, unlike `price_threshold`.
+  - `cumulative_drawdown` — `{ type, symbol, params: { windowSessions: int [2,20], pct: number (0,100] } }` (ADR 0030). Fires when the price is down `pct`%+ versus its close `windowSessions` trading sessions ago — catches a slow multi-day slide that a single day's `percent_move` can miss.
   - plus optional `note` (≤200 chars), `rearm` (boolean, default false), `cooldownMinutes` (int 5–1440, default 60)
+  - `source` is never accepted from the request body — it's always `'user'` for anything posted here; `'auto_guardrail'`/`'mitra'` alerts are created server-side only (`src/lib/alerts/guardrails.ts`, `src/lib/ai/chatTools.ts`).
 - **Response:** `data`: the created alert, `201`.
 - **Errors:** `401` unauthenticated, `422` on invalid input.
 
@@ -121,6 +124,12 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Auth:** required; scoped to the owning user.
 - **Response:** `data: null`.
 - **Errors:** `401` unauthenticated, `404` if not found/not owned.
+
+### `GET /api/mitra-activity`
+- **Purpose:** List every alert action Mitra has taken on its own — the default-guardrail hook on a new holding, or its own chat tools (ADR 0030) — most recent first, each with the `reason` it gave. A user's own edits made directly through the Alerts page are **not** logged here.
+- **Auth:** required; scoped to the current user.
+- **Response:** `data`: `MitraAction[]` — `{ id, userId, action, alertId, symbol, before, after, reason, source, createdAt }`. `action` ∈ `alert_created | alert_updated | alert_paused | alert_resumed`; `source` ∈ `auto_guardrail | mitra`; `before`/`after` are partial param/status snapshots for the diff shown on `/dashboard/mitra-activity`.
+- **Errors:** `401` unauthenticated.
 
 ### `GET /api/wishlists`
 - **Purpose:** List the current user's stock wishlists (Markets page, ADR 0028), oldest-created first.
@@ -209,6 +218,12 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Request:** body `{ channel: "slack"|"telegram"|"whatsapp"|"webhook" }`.
 - **Response:** `data`: the `ChannelResult` from that one send attempt — `{ channel, status: "sent"|"error", detail? }`.
 - **Errors:** `401` unauthenticated, `409` that channel isn't configured yet, `422` invalid input.
+
+### `GET|PUT /api/settings/guardrails`
+- **Purpose:** Turn the default guardrail alerts (ADR 0030) on or off — when enabled (the default), every newly added holding automatically gets a trailing-stop + cumulative-drawdown alert pair via `src/lib/alerts/guardrails.ts`. Does not touch alerts already created when turned off.
+- **Auth:** required.
+- **GET:** `data` = `{ enabled: boolean }`.
+- **PUT:** body `{ enabled: boolean }`. `422` on a malformed body.
 
 ### `POST /api/insights/{stock|portfolio|ipo}`
 - **Purpose:** Generate (or return a cached) neutral AI synthesis for one surface (ADR 0018). Guardrailed in `src/lib/ai/prompts.ts` — no buy/sell/hold, no price target, every response ends "This is a synthesis of public data, not investment advice."

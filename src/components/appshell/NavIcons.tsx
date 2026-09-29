@@ -148,6 +148,21 @@ export function SystemIcon() {
   );
 }
 
+export function MitraActivityIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path
+        d="M4 11.5h3.2l1.8-5 3 9 1.8-5H18"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.4" opacity="0.35" />
+    </svg>
+  );
+}
+
 export const NAV_ICONS = {
   '/dashboard': DashboardIcon,
   '/dashboard/portfolio': PortfolioIcon,
@@ -161,4 +176,5 @@ export const NAV_ICONS = {
   '/dashboard/notes': NotesIcon,
   '/dashboard/api': ApiIcon,
   '/dashboard/system': SystemIcon,
+  '/dashboard/mitra-activity': MitraActivityIcon,
 } as const;

@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   { href: '/dashboard/notes', label: 'Notes' },
   { href: '/dashboard/api', label: 'API' },
   { href: '/dashboard/system', label: 'System' },
+  { href: '/dashboard/mitra-activity', label: 'Mitra activity' },
 ] as const;
 
 export function isNavActive(pathname: string, href: string): boolean {

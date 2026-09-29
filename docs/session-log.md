@@ -598,3 +598,66 @@ three curated Gemini options plus "Other (enter a model ID manually)".
   recurring "check for new models" ask is being set up as a scheduled
   reminder outside this commit (scheduling tools aren't part of the
   git-tracked codebase).
+
+## 2026-09-29 — Intelligent stop-loss alerts + Mitra alert autonomy + activity cards (ADR 0030)
+
+Prompted by a real loss: a holding fell ~40% over 4 sessions and went
+unnoticed until the damage was done, because nothing watched it and no
+alert existed. Built end-to-end per the user's answers to a 4-question
+scoping discussion (auto guardrails: yes, with Mitra explaining the
+change; both trailing-stop and cumulative-drawdown as separate alert
+types; full Mitra autonomy to create/edit alerts with a logged reason and
+a page to review/override; delivery via existing in-app/email/Slack/
+Telegram/WhatsApp channels plus activity cards on Dashboard/Portfolio).
+One pushback proposed and accepted before building: Mitra may never
+delete an alert (pause only, always reversible) and its own writes are
+bounded to tighter numeric ranges than a human gets in the UI.
+
+- **New alert types** (`src/lib/alerts/{types,schemas,evaluators,store,evaluate}.ts`,
+  `evaluate.test.ts`, `evaluators.test.ts`) — `trailing_stop` (fires when
+  price falls `trailPct`% below the peak observed since the alert armed,
+  tracked via a new `peakPrice` field) and `cumulative_drawdown` (fires
+  when price has fallen `pct`% over the last `windowSessions` trading
+  sessions, using the existing `fundamentals-api` `/prices?period=1mo`
+  EOD history — no new upstream dependency). Both reuse the existing
+  evaluator/transition/cron/notification pipeline as-is.
+- **Auto-guardrails** (`src/lib/alerts/guardrails.ts`,
+  `src/lib/userSettings.ts`, `src/app/api/settings/guardrails/route.ts`,
+  `src/app/dashboard/alerts/GuardrailsToggle.tsx`) — every newly added
+  holding (manual add or portfolio-import confirm) gets a default 10%
+  trailing stop + 15%/4-session drawdown watch unless the user has
+  turned this off in a new Alerts-page toggle. Never silent: each
+  creation is logged to the Mitra activity trail with a plain-language
+  reason and announced through the user's configured notification
+  channels.
+- **Mitra alert-management tools** (`docs/decisions/0030-*.md`,
+  `src/lib/ai/chatTools.ts`, `src/lib/alerts/mitraBounds.ts`,
+  `src/lib/mitra/activityLog.ts`) — ADR 0030 explicitly amends ADR
+  0022's "Mitra is 100% read-only" boundary (documented there as
+  needing its own ADR, not a quiet addition), adding 4 write tools:
+  `list_alerts`, `create_alert`, `update_alert_params`,
+  `set_alert_status` (pause/resume only — no delete tool). Every write
+  requires a `reason` string (10-300 chars, enforced at the schema
+  level), is checked against `checkMitraBounds` (a second, tighter
+  numeric-range check than the human-facing UI allows), is tagged
+  `source: 'mitra'`, and is recorded to a new `mitraActions` audit
+  collection. A new `/dashboard/mitra-activity` page (+
+  `/api/mitra-activity`) lists everything Mitra has done with its stated
+  reason, so the user can review or override.
+- **Activity cards** (`src/components/dashboard-charts/ActivityCard.tsx`,
+  `ActivityCard.module.css`, `src/lib/dashboard/{activityTags,relativeTime}.ts`)
+  — a new card on both `/dashboard` and `/dashboard/portfolio` surfacing
+  the user's most recent alert/system notifications (via the existing
+  `listNotifications()`, no new collection) with tags derived from
+  `meta.alertType`/`meta.source` (STOP-LOSS, DRAWDOWN, PRICE TARGET, BIG
+  MOVE, 52-WEEK, PORTFOLIO, MITRA AUTO, SYSTEM). `buildPayload()` in
+  `evaluate.ts` now also carries `source` in an alert-fire notification's
+  `meta`, so a Mitra-created alert firing later still tags MITRA AUTO,
+  not just its creation notice.
+
+Verified: `npx tsc --noEmit` clean, `npm run lint` clean, `npm run test
+-- --run` → 473/473 passing (58 files), `rm -rf .next && npm run build`
+clean (all routes, including the new `/dashboard/mitra-activity` and
+`/api/mitra-activity`).
+
+- **Next:** not committed/pushed/deployed yet — pending review.

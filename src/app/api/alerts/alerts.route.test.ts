@@ -34,6 +34,8 @@ const sampleAlert = (over: Partial<Alert> = {}): Alert => ({
   triggeredAt: null,
   lastObservedValue: null,
   sentKeys: null,
+  peakPrice: null,
+  source: 'user',
   createdAt: new Date(),
   updatedAt: new Date(),
   ...over,

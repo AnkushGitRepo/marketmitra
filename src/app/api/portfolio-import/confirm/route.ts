@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { addHolding, updateHolding } from '@/lib/holdings';
+import { createGuardrailAlertsForHolding } from '@/lib/alerts/guardrails';
 
 // ADR 0022, part D — the only route that actually writes a Mitra-proposed
 // portfolio change. Reached only by an explicit "Add N holdings" click in
@@ -45,6 +46,9 @@ async function handlePOST(request: Request) {
       } else {
         await addHolding(userId, { symbol: change.matchedSymbol, ...change.after });
         succeeded++;
+        // New holding via bulk import — same default-guardrail treatment
+        // as adding one by hand (src/lib/alerts/guardrails.ts).
+        void createGuardrailAlertsForHolding(userId, change.matchedSymbol);
       }
     } catch {
       failedSymbols.push(change.matchedSymbol);

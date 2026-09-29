@@ -140,7 +140,7 @@
           "Market data"
         ],
         "summary": "Get everything about a ticker",
-        "description": "Screener.in-style aggregate for one NSE company in a single call: company profile, a live quote (ADR 0024: yahoo-finance2, falling back to NSE/BSE), ratios, shareholding pattern, peer comparison, document links, and financial statements. Pick `sections` to narrow the response. Returns the object directly (not the standard envelope) \u2014 same deliberate exception as GET /api/search and GET /api/news. Shares its aggregation logic with the MCP `get_company_fundamentals` tool.",
+        "description": "Screener.in-style aggregate for one NSE company in a single call: company profile, a live quote (ADR 0024: yahoo-finance2, falling back to NSE/BSE), ratios, shareholding pattern, peer comparison, document links, and financial statements. Pick `sections` to narrow the response. Returns the object directly (not the standard envelope) — same deliberate exception as GET /api/search and GET /api/news. Shares its aggregation logic with the MCP `get_company_fundamentals` tool.",
         "security": [],
         "parameters": [
           {
@@ -165,13 +165,13 @@
         ],
         "responses": {
           "200": {
-            "description": "{ symbol, found: true, company?, quote?, ratios?, shareholding?, peers?, documents?, financials? } \u2014 fields present per `sections`."
+            "description": "{ symbol, found: true, company?, quote?, ratios?, shareholding?, peers?, documents?, financials? } — fields present per `sections`."
           },
           "400": {
             "description": "Unknown value in `sections`."
           },
           "404": {
-            "description": "{ symbol, found: false, message } \u2014 not a symbol the fundamentals service recognises, or every source came up short."
+            "description": "{ symbol, found: false, message } — not a symbol the fundamentals service recognises, or every source came up short."
           }
         }
       }
@@ -249,7 +249,7 @@
           "Market data"
         ],
         "summary": "Screen stocks by financial criteria",
-        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table \u2014 see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only \u2014 no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope).",
+        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope).",
         "security": [],
         "parameters": [
           {
@@ -954,6 +954,82 @@
         }
       }
     },
+    "/api/mitra-activity": {
+      "get": {
+        "tags": [
+          "Alerts"
+        ],
+        "summary": "List Mitra's own alert actions",
+        "description": "Every alert Mitra created or changed on its own — the default-guardrail hook on a new holding, or its own chat tools (ADR 0030) — most recent first, each with the reason Mitra gave. Does not include a user's own edits made directly through the Alerts page.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user's Mitra-activity log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "alert_created",
+                          "alert_updated",
+                          "alert_paused",
+                          "alert_resumed"
+                        ]
+                      },
+                      "alertId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "symbol": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "before": {
+                        "type": "object",
+                        "nullable": true
+                      },
+                      "after": {
+                        "type": "object",
+                        "nullable": true
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "auto_guardrail",
+                          "mitra"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      }
+    },
     "/api/notifications": {
       "get": {
         "tags": [
@@ -1024,7 +1100,7 @@
           "Settings"
         ],
         "summary": "Get AI key status",
-        "description": "Never returns the key \u2014 only provider, model, and a last-4 hint.",
+        "description": "Never returns the key — only provider, model, and a last-4 hint.",
         "security": [
           {
             "cookieAuth": []
@@ -1357,7 +1433,7 @@
           "AI"
         ],
         "summary": "Start a multi-agent analysis run (Phase 11)",
-        "description": "Kicks off an async, checkpointed run over one stock: analyst team \u2192 bull/bear debate \u2192 synthesis (ADR 0021). ~15\u201320 LLM calls on the caller's own key over a few minutes. Returns immediately with a run id to poll. One run in flight per user. No trade decision is ever produced \u2014 the output is a debated analytical briefing.",
+        "description": "Kicks off an async, checkpointed run over one stock: analyst team → bull/bear debate → synthesis (ADR 0021). ~15–20 LLM calls on the caller's own key over a few minutes. Returns immediately with a run id to poll. One run in flight per user. No trade decision is ever produced — the output is a debated analytical briefing.",
         "security": [
           {
             "cookieAuth": []
@@ -1386,7 +1462,7 @@
         },
         "responses": {
           "202": {
-            "description": "{ id } \u2014 poll GET /api/agents/run/{id}."
+            "description": "{ id } — poll GET /api/agents/run/{id}."
           },
           "400": {
             "description": "no_ai_key."
@@ -1432,7 +1508,7 @@
         ],
         "responses": {
           "200": {
-            "description": "{ status, phase, briefing?, error?, ... } \u2014 owner-scoped."
+            "description": "{ status, phase, briefing?, error?, ... } — owner-scoped."
           },
           "401": {
             "description": "Not authenticated."
@@ -1724,7 +1800,7 @@
           "AI"
         ],
         "summary": "Extract proposed portfolio holdings from an uploaded file (ADR 0022)",
-        "description": "Upload a broker screenshot (image), XLSX/CSV export, DOCX, or PDF statement. CSV/XLSX are parsed deterministically (no AI call); image/PDF/DOCX go through the caller's own AI key via structured output. Matches each extracted holding against the company database and diffs against the caller's existing holdings. Writes nothing \u2014 returns a proposed change list for the caller to review and separately approve via POST /api/portfolio-import/confirm.",
+        "description": "Upload a broker screenshot (image), XLSX/CSV export, DOCX, or PDF statement. CSV/XLSX are parsed deterministically (no AI call); image/PDF/DOCX go through the caller's own AI key via structured output. Matches each extracted holding against the company database and diffs against the caller's existing holdings. Writes nothing — returns a proposed change list for the caller to review and separately approve via POST /api/portfolio-import/confirm.",
         "security": [
           {
             "cookieAuth": []
@@ -1774,7 +1850,7 @@
           "Portfolio"
         ],
         "summary": "Commit a reviewed portfolio import (ADR 0022)",
-        "description": "Writes the user's explicitly approved subset of a POST /api/portfolio-import/extract response \u2014 the only route that actually creates/updates holdings from a Mitra-driven import. No AI involvement; a plain create-or-update per item. Never called automatically \u2014 reached only by an explicit approve action in the UI.",
+        "description": "Writes the user's explicitly approved subset of a POST /api/portfolio-import/extract response — the only route that actually creates/updates holdings from a Mitra-driven import. No AI involvement; a plain create-or-update per item. Never called automatically — reached only by an explicit approve action in the UI.",
         "security": [
           {
             "cookieAuth": []
@@ -2214,7 +2290,7 @@
           "Settings"
         ],
         "summary": "Get notification channel settings",
-        "description": "Whether the user has Slack/Telegram/WhatsApp/a custom webhook connected (ADR 0028) \u2014 never returns the stored secrets themselves.",
+        "description": "Whether the user has Slack/Telegram/WhatsApp/a custom webhook connected (ADR 0028) — never returns the stored secrets themselves.",
         "security": [
           {
             "cookieAuth": []
@@ -2284,7 +2360,7 @@
           "Settings"
         ],
         "summary": "Save notification channel settings",
-        "description": "Partial update \u2014 an included field sets/replaces that channel, an included empty string clears it, an omitted field is left untouched. Values are encrypted at rest (same as the BYO AI key).",
+        "description": "Partial update — an included field sets/replaces that channel, an included empty string clears it, an omitted field is left untouched. Values are encrypted at rest (same as the BYO AI key).",
         "security": [
           {
             "cookieAuth": []
@@ -2431,6 +2507,93 @@
           },
           "422": {
             "description": "Invalid input."
+          }
+        }
+      }
+    },
+    "/api/settings/guardrails": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get the auto-guardrail alerts setting",
+        "description": "Whether adding a holding automatically creates a default trailing-stop + cumulative-drawdown alert pair for it (ADR 0030). Defaults to true.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current setting.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Turn auto-guardrail alerts on or off",
+        "description": "Controls whether newly added holdings get a default trailing-stop + cumulative-drawdown alert pair (ADR 0030). Does not touch alerts already created.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enabled"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated setting.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "422": {
+            "description": "Invalid request body."
           }
         }
       }

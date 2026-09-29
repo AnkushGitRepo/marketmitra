@@ -7,6 +7,7 @@ const {
   listActiveAlerts,
   applyAlertTransition,
   getQuotes,
+  getPrices,
   getIpos,
   listHoldings,
   deliverNotification,
@@ -15,6 +16,7 @@ const {
   listActiveAlerts: vi.fn<() => Promise<Alert[]>>(),
   applyAlertTransition: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
   getQuotes: vi.fn<(...args: unknown[]) => Promise<unknown[]>>(),
+  getPrices: vi.fn<(...args: unknown[]) => Promise<unknown[] | null>>(async () => null),
   getIpos: vi.fn<(...args: unknown[]) => Promise<unknown[]>>(async () => []),
   listHoldings: vi.fn<(...args: unknown[]) => Promise<unknown[]>>(),
   deliverNotification: vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({})),
@@ -22,7 +24,7 @@ const {
 }));
 
 vi.mock('./store', () => ({ listActiveAlerts, applyAlertTransition }));
-vi.mock('@/lib/dashboard/fundamentalsApi', () => ({ getQuotes }));
+vi.mock('@/lib/dashboard/fundamentalsApi', () => ({ getQuotes, getPrices }));
 vi.mock('@/lib/dashboard/iposApi', () => ({ getIpos }));
 vi.mock('@/lib/holdings', () => ({ listHoldings }));
 vi.mock('@/lib/notifications/deliver', () => ({ deliverNotification, resolveChannels }));
@@ -48,6 +50,8 @@ const alert = (over: Partial<Alert>): Alert => ({
   triggeredAt: null,
   lastObservedValue: null,
   sentKeys: null,
+  peakPrice: null,
+  source: 'user',
   createdAt: NOW,
   updatedAt: NOW,
   ...over,
@@ -67,6 +71,7 @@ const quote = (symbol: string, price: number) => ({
 beforeEach(() => {
   vi.clearAllMocks();
   listHoldings.mockResolvedValue([]);
+  getPrices.mockResolvedValue(null);
 });
 
 describe('evaluateAlerts', () => {
@@ -125,7 +130,64 @@ describe('evaluateAlerts', () => {
     expect(patch.status).toBeUndefined();
   });
 
-  it('evaluates a whole-portfolio P&L alert against the user\'s holdings + quotes', async () => {
+  it("fires a trailing_stop alert once price falls trailPct% below its ratcheted peak, and persists the peak every cycle", async () => {
+    listActiveAlerts.mockResolvedValue([
+      alert({ type: 'trailing_stop', params: { trailPct: 10 }, peakPrice: 200 }),
+    ]);
+    getQuotes.mockResolvedValue([quote('RELIANCE', 175)]); // 175 <= 200 * 0.9 = 180 -> triggers
+
+    const summary = await evaluateAlerts(NOW);
+
+    expect(summary.notified).toBe(1);
+    const [, patch] = applyAlertTransition.mock.calls[0] as [string, Record<string, unknown>];
+    expect(patch.peakPrice).toBe(200); // unchanged — price fell, didn't make a new high
+  });
+
+  it("does not fire a trailing_stop alert above its floor, but still ratchets the peak up", async () => {
+    listActiveAlerts.mockResolvedValue([
+      alert({ type: 'trailing_stop', params: { trailPct: 10 }, peakPrice: 200 }),
+    ]);
+    getQuotes.mockResolvedValue([quote('RELIANCE', 250)]); // new high, floor becomes 225
+
+    const summary = await evaluateAlerts(NOW);
+
+    expect(summary.notified).toBe(0);
+    const [, patch] = applyAlertTransition.mock.calls[0] as [string, Record<string, unknown>];
+    expect(patch.peakPrice).toBe(250);
+  });
+
+  it("fires a cumulative_drawdown alert on a multi-session slide even with a flat day today", async () => {
+    listActiveAlerts.mockResolvedValue([
+      alert({ type: 'cumulative_drawdown', params: { windowSessions: 4, pct: 15 } }),
+    ]);
+    getQuotes.mockResolvedValue([quote('RELIANCE', 60)]); // today's live price
+    getPrices.mockResolvedValue([
+      { trade_date: '2026-09-01', close: '100' },
+      { trade_date: '2026-09-02', close: '90' },
+      { trade_date: '2026-09-03', close: '80' },
+      { trade_date: '2026-09-04', close: '70' },
+      { trade_date: '2026-09-05', close: '65' },
+    ]); // 4 sessions before the most recent bar (idx 0) -> 100; (60-100)/100 = -40%
+
+    const summary = await evaluateAlerts(NOW);
+
+    expect(summary.notified).toBe(1);
+    expect(getPrices).toHaveBeenCalledWith('RELIANCE', '1mo');
+  });
+
+  it("skips (skippedNoData) a cumulative_drawdown alert when there isn't enough price history yet", async () => {
+    listActiveAlerts.mockResolvedValue([
+      alert({ type: 'cumulative_drawdown', params: { windowSessions: 4, pct: 15 } }),
+    ]);
+    getQuotes.mockResolvedValue([quote('RELIANCE', 60)]);
+    getPrices.mockResolvedValue([{ trade_date: '2026-09-05', close: '65' }]); // too few bars
+
+    const summary = await evaluateAlerts(NOW);
+
+    expect(summary).toMatchObject({ skippedNoData: 1, notified: 0 });
+  });
+
+    it('evaluates a whole-portfolio P&L alert against the user\'s holdings + quotes', async () => {
     listActiveAlerts.mockResolvedValue([
       alert({
         id: 'p1',

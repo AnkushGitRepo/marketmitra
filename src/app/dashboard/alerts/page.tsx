@@ -1,7 +1,7 @@
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { listAlerts } from '@/lib/alerts/store';
 import { isEncKeyConfigured } from '@/lib/crypto';
-import { getNotificationChannelSettingsView } from '@/lib/userSettings';
+import { getAutoGuardrailsEnabled, getNotificationChannelSettingsView } from '@/lib/userSettings';
 import { AlertsPageClient } from './AlertsPageClient';
 import styles from './page.module.css';
 
@@ -24,6 +24,7 @@ export default async function AlertsPage({
   const { new: newParam, symbol } = await searchParams;
   let alerts: Awaited<ReturnType<typeof listAlerts>> = [];
   let channelsView: Awaited<ReturnType<typeof getNotificationChannelSettingsView>> | null = null;
+  let autoGuardrailsEnabled = true;
   try {
     alerts = await listAlerts(userId);
   } catch {
@@ -34,6 +35,11 @@ export default async function AlertsPage({
   } catch {
     // Same fallback as above.
   }
+  try {
+    autoGuardrailsEnabled = await getAutoGuardrailsEnabled(userId);
+  } catch {
+    // Same fallback — default to the on state rather than 500.
+  }
 
   return (
     <AlertsPageClient
@@ -42,6 +48,7 @@ export default async function AlertsPage({
       prefillSymbol={symbol?.toUpperCase()}
       channelsView={channelsView}
       encConfigured={isEncKeyConfigured()}
+      autoGuardrailsEnabled={autoGuardrailsEnabled}
     />
   );
 }

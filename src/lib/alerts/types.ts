@@ -5,8 +5,17 @@ export type AlertType =
   | 'percent_move'
   | 'week52_breach'
   | 'portfolio_pnl'
+  | 'trailing_stop'
+  | 'cumulative_drawdown'
   | 'ipo_watch'
   | 'ipo';
+
+/** Who/what created an alert — drives the "Mitra activity" audit trail and
+ * lets the UI label auto-created guardrails differently from a user's own.
+ * `mitra` is an alert Mitra created or edited off its own judgment (always
+ * logged with a reason — see src/lib/mitra/activityLog.ts); `auto_guardrail`
+ * is the default pair created silently when a holding is added. */
+export type AlertSource = 'user' | 'auto_guardrail' | 'mitra';
 
 export type IpoTrigger = 'opens' | 'last_day' | 'allotment_listing' | 'gmp_threshold';
 
@@ -40,6 +49,26 @@ export interface PortfolioPnlParams {
   threshold: number;
 }
 
+/** A stop-loss that ratchets up with the stock's own peak instead of
+ * sitting at one static floor. `peakPrice` on the `Alert` doc tracks the
+ * highest price seen since the alert was created (or last un-paused) and
+ * only ever increases; this fires when the live price falls `trailPct`%
+ * below that peak. Locks in gains on the way up without needing to be
+ * manually re-priced. */
+export interface TrailingStopParams {
+  trailPct: number;
+}
+
+/** Notify on a slow bleed a single day's percent-move alert can miss —
+ * the price down `pct`% or more versus its close `windowSessions` trading
+ * sessions ago, not just versus yesterday. This is the type that would
+ * have caught a ~40%-over-4-sessions slide even if no single day looked
+ * dramatic on its own. */
+export interface CumulativeDrawdownParams {
+  windowSessions: number;
+  pct: number;
+}
+
 /** One per user (ADR 0017). Fires once per (IPO, trigger) pair — idempotency
  * via the alert doc's `sentKeys`. */
 export interface IpoWatchParams {
@@ -62,6 +91,8 @@ export type AlertParams =
   | ({ type: 'percent_move' } & PercentMoveParams)
   | ({ type: 'week52_breach' } & Week52BreachParams)
   | ({ type: 'portfolio_pnl' } & PortfolioPnlParams)
+  | ({ type: 'trailing_stop' } & TrailingStopParams)
+  | ({ type: 'cumulative_drawdown' } & CumulativeDrawdownParams)
   | ({ type: 'ipo_watch' } & IpoWatchParams)
   | ({ type: 'ipo' } & IpoAlertParams);
 
@@ -89,6 +120,11 @@ export interface Alert {
   /** `ipo_watch` only: `"<ipoSlug>:<trigger>"` keys already notified, so a
    * standing watch doesn't re-fire for the same IPO event. */
   sentKeys: string[] | null;
+  /** `trailing_stop` only: the highest price observed since this alert was
+   * created/re-armed. Null until the first evaluation cycle seeds it. */
+  peakPrice: number | null;
+  /** Who created this alert — see `AlertSource`. Defaults to 'user'. */
+  source: AlertSource;
   createdAt: Date;
   updatedAt: Date;
 }
