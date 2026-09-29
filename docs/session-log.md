@@ -397,3 +397,44 @@ vitest tests passing.
 - Full suite green (`tsc`, lint, 410 tests, build — one stale `.next` Turbopack-cache error again, same `rm -rf .next` fix as the previous session). Committed, pushed `main`+`v2`, deployed `marketmitra-v2` only (`git diff --stat` confirmed this commit touches nothing under `services/fundamentals-api`).
 - **Verified live, not just by trusting the build:** bare curl can't show client-injected scripts, so checked in a real browser instead — `window.va` and `window.si` (the exact global hooks both packages define once initialized) are both live functions on the deployed production page. `/privacy` serves the new "Performance monitoring" paragraph.
 - **Next:** none outstanding from this session.
+
+## 2026-09-29 — API reference page redesigned as a docs-site (Overview / Try It Out tabs)
+
+User shared a reference screenshot of another product's API docs page (dark sidebar, grouped
+endpoint tree, "Build with AI Agents" card, Overview/Try It Out tabs, query-parameter tables,
+example response, cURL/JS/Python code tabs) and asked to redesign `/dashboard/api` in that
+spirit. Kept MarketMitra's own `--app-*` palette throughout (per design-system.md — no new
+hues borrowed from the reference) and kept the page's real substance: it was already a live,
+functional API explorer (spec-driven sidebar, a working "send a real request with your
+session" form) — this was a restructuring + genuine-content-addition pass, not a reskin.
+
+- **Sidebar**: added an "API reference" eyebrow + `v{version} · N endpoints` line; each tag
+  group is now collapsible (chevron toggle), default-expanded.
+- **"Build with AI agents" card**: dismissible, top of page. "Copy prompt" serializes the
+  full spec (every endpoint's method/path/auth/summary/params/body shape) plus the MCP
+  server URL and tool list into one plaintext block via the clipboard — real content pulled
+  from the same `openapi.json` and `tools` the rest of the page already uses, not a canned
+  string.
+- **Endpoint panel split into two tabs**: **Overview** (new — static docs, no request sent)
+  renders Path/Query parameter tables, a Request Body field table + its spec example, a
+  Responses table (status → description), an **Example Response** JSON block (uses the
+  spec's literal example when present, otherwise synthesizes one by walking the response's
+  JSON Schema — type-correct placeholder values, never fabricated business data, and simply
+  omitted where the spec has no schema at all), and cURL/JavaScript/Python code samples
+  built from each endpoint's own path/query/body examples (a `https://your-deployment.example`
+  placeholder host, since this explorer runs identically in hosted and self-host). **Try It
+  Out** is the original live form, unchanged in behavior — real fetch against this
+  deployment with the current session, copy-as-curl, live result panel.
+
+Verified: `npm run lint` clean, `next build` clean (TS + the 22-route production build),
+`npm run test -- --run` 410/410 green (unrelated to this page, confirms nothing else broke),
+and a structural check — started the production build and curl'd `/dashboard/api` in one
+`device_bash` call (server doesn't survive past a single call in this sandbox, per the usual
+constraint), confirmed 200 and the new copy ("API reference", "Build with AI agents", "Copy
+prompt", "Overview", "Try it out") all present in the rendered HTML. Not click-through/
+screenshot-verified (the built-in browser tool can't reach this sandbox's `localhost`, and
+the dev server doesn't outlive one `device_bash` call to hand off to it) — same honest
+caveat as prior rounds in this session.
+
+- **Next:** none outstanding from this pass. Not committed/pushed/deployed yet — pending
+  review.

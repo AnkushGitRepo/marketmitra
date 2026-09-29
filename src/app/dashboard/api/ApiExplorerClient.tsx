@@ -3,15 +3,31 @@
 import { useEffect, useMemo, useState } from 'react';
 import styles from './page.module.css';
 
-// --- a deliberately small slice of OpenAPI, enough to drive the form ---
+// --- a deliberately small slice of OpenAPI, enough to drive the docs UI ---
+
+interface JsonSchema {
+  type?: string;
+  format?: string;
+  enum?: unknown[];
+  items?: JsonSchema;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  minLength?: number;
+  maxLength?: number;
+}
 
 interface Param {
   name: string;
   in: 'query' | 'path';
   required?: boolean;
   description?: string;
-  schema?: { type?: string; enum?: string[]; default?: unknown };
+  schema?: JsonSchema;
   example?: unknown;
+}
+
+interface ResponseObj {
+  description?: string;
+  content?: Record<string, { schema?: JsonSchema; example?: unknown }>;
 }
 
 interface Operation {
@@ -22,9 +38,9 @@ interface Operation {
   parameters?: Param[];
   requestBody?: {
     required?: boolean;
-    content?: Record<string, { schema?: unknown; example?: unknown }>;
+    content?: Record<string, { schema?: JsonSchema; example?: unknown }>;
   };
-  responses?: Record<string, { description?: string }>;
+  responses?: Record<string, ResponseObj>;
 }
 
 export interface OpenApiSpec {
@@ -53,11 +69,47 @@ function isPublic(op: Operation): boolean {
   return Array.isArray(op.security) && op.security.length === 0;
 }
 
+function paramType(schema: JsonSchema | undefined): string {
+  if (!schema) return 'string';
+  if (schema.enum) return schema.enum.map((v) => JSON.stringify(v)).join(' | ');
+  if (schema.type === 'array') return `${paramType(schema.items)}[]`;
+  return schema.type ?? 'string';
+}
+
 function jsonExample(op: Operation): string {
   const body = op.requestBody?.content?.['application/json'];
   if (!body) return '';
-  const ex = body.example ?? {};
+  const ex = body.example ?? exampleFromSchema(body.schema) ?? {};
   return JSON.stringify(ex, null, 2);
+}
+
+/** Synthesizes a plausible example value from a JSON Schema fragment — used
+ * only where the spec has no literal `example`, so "Example Response" has
+ * something concrete to show without inventing business data. */
+function exampleFromSchema(schema: JsonSchema | undefined, depth = 0): unknown {
+  if (!schema || depth > 4) return null;
+  if (schema.enum && schema.enum.length) return schema.enum[0];
+  switch (schema.type) {
+    case 'object': {
+      const out: Record<string, unknown> = {};
+      for (const [key, sub] of Object.entries(schema.properties ?? {})) {
+        out[key] = exampleFromSchema(sub, depth + 1);
+      }
+      return out;
+    }
+    case 'array':
+      return [exampleFromSchema(schema.items, depth + 1)];
+    case 'number':
+    case 'integer':
+      return 0;
+    case 'boolean':
+      return true;
+    case 'string':
+      if (schema.format === 'date-time') return '2026-09-29T00:00:00.000Z';
+      return 'string';
+    default:
+      return null;
+  }
 }
 
 function fmt(value: unknown): string {
@@ -79,6 +131,90 @@ function fmt(value: unknown): string {
     }
     return value;
   }
+}
+
+/** Best 2xx response entry to show as "Example Response". */
+function primaryResponse(op: Operation): [string, ResponseObj] | null {
+  const entries = Object.entries(op.responses ?? {});
+  const ok = entries.find(([code]) => code.startsWith('2'));
+  return ok ?? entries[0] ?? null;
+}
+
+// --- static example request builders (used by the Overview code samples —
+// deliberately independent of the Try It Out tab's live, editable state) ---
+
+const DOC_HOST = 'https://your-deployment.example';
+
+function exampleValueFor(p: Param): string {
+  if (p.example != null) return String(p.example);
+  if (p.schema?.enum?.length) return String(p.schema.enum[0]);
+  return p.name;
+}
+
+function exampleUrl(path: string, op: Operation, absolute: boolean): string {
+  let p = path;
+  for (const pp of (op.parameters ?? []).filter((x) => x.in === 'path')) {
+    p = p.replace(`{${pp.name}}`, encodeURIComponent(exampleValueFor(pp)));
+  }
+  const qp = (op.parameters ?? []).filter((x) => x.in === 'query' && (x.required || x.example != null));
+  const qs = new URLSearchParams();
+  for (const q of qp) qs.set(q.name, exampleValueFor(q));
+  const query = qs.toString();
+  const full = query ? `${p}?${query}` : p;
+  return absolute ? `${DOC_HOST}${full}` : full;
+}
+
+function curlSample(path: string, method: Method, op: Operation): string {
+  const url = exampleUrl(path, op, true);
+  const isMcp = path === '/api/mcp';
+  const parts = [`curl -X ${method.toUpperCase()} '${url}'`];
+  if (isMcp) parts.push(`-H 'Accept: application/json, text/event-stream'`);
+  const body = jsonExample(op);
+  if (body) {
+    parts.push(`-H 'Content-Type: application/json'`);
+    parts.push(`-d '${body.replace(/\n\s*/g, ' ')}'`);
+  }
+  if (!isPublic(op)) parts.push(`--cookie 'your Clerk session'`);
+  return parts.join(' \\\n  ');
+}
+
+function jsSample(path: string, method: Method, op: Operation): string {
+  const url = exampleUrl(path, op, true);
+  const body = jsonExample(op);
+  const lines = [`const res = await fetch('${url}', {`, `  method: '${method.toUpperCase()}',`];
+  if (!isPublic(op)) lines.push(`  credentials: 'include', // sends your Clerk session cookie`);
+  if (body) {
+    lines.push(`  headers: { 'Content-Type': 'application/json' },`);
+    lines.push(`  body: JSON.stringify(${body.replace(/\n/g, '\n  ')}),`);
+  }
+  lines.push(`});`, `const data = await res.json();`);
+  return lines.join('\n');
+}
+
+function pySample(path: string, method: Method, op: Operation): string {
+  const url = `${DOC_HOST}${path.replace(/\{[^}]+\}/g, (m) => {
+    const name = m.slice(1, -1);
+    const p = (op.parameters ?? []).find((x) => x.in === 'path' && x.name === name);
+    return p ? exampleValueFor(p) : name;
+  })}`;
+  const queryParams = (op.parameters ?? []).filter(
+    (x) => x.in === 'query' && (x.required || x.example != null)
+  );
+  const body = jsonExample(op);
+  const lines = ['import requests', ''];
+  const fn = method === 'get' ? 'requests.get' : `requests.${method}`;
+  lines.push(`res = ${fn}(`, `    '${url}',`);
+  if (queryParams.length) {
+    lines.push(
+      `    params={${queryParams.map((q) => `'${q.name}': '${exampleValueFor(q)}'`).join(', ')}},`
+    );
+  }
+  if (body) {
+    lines.push(`    json=${body.replace(/\n/g, '\n    ')},`);
+  }
+  if (!isPublic(op)) lines.push(`    cookies={'__session': 'your Clerk session'},`);
+  lines.push(')', 'data = res.json()');
+  return lines.join('\n');
 }
 
 interface RunResult {
@@ -115,35 +251,181 @@ export function ApiExplorerClient({ spec, mcp }: { spec: OpenApiSpec; mcp: McpIn
   const [selectedId, setSelectedId] = useState(endpoints[0]?.id ?? '');
   const selected = endpoints.find((e) => e.id === selectedId) ?? endpoints[0];
 
+  const [collapsedTags, setCollapsedTags] = useState<Record<string, boolean>>({});
+  const toggleTag = (tag: string) =>
+    setCollapsedTags((c) => ({ ...c, [tag]: !c[tag] }));
+
   return (
     <div className={styles.explorer}>
+      <AiAgentsCard spec={spec} mcp={mcp} endpoints={endpoints} />
       <McpCard mcp={mcp} />
 
       <div className={styles.cols}>
         <nav className={styles.sidebar} aria-label="Endpoints">
-          {groups.map(([tag, eps]) => (
-            <div key={tag} className={styles.navGroup}>
-              <p className={styles.navGroupTitle}>{tag}</p>
-              {eps.map((ep) => (
+          <div className={styles.sidebarHead}>
+            <p className={styles.sidebarEyebrow}>API reference</p>
+            <p className={styles.sidebarMeta}>
+              v{spec.info.version} &middot; {endpoints.length} endpoints
+            </p>
+          </div>
+          {groups.map(([tag, eps]) => {
+            const open = !collapsedTags[tag];
+            return (
+              <div key={tag} className={styles.navGroup}>
                 <button
-                  key={ep.id}
                   type="button"
-                  className={`${styles.navRow} ${ep.id === selectedId ? styles.navRowActive : ''}`}
-                  onClick={() => setSelectedId(ep.id)}
+                  className={styles.navGroupHead}
+                  onClick={() => toggleTag(tag)}
+                  aria-expanded={open}
                 >
-                  <span className={`${styles.method} ${styles[`m_${ep.method}`]}`}>
-                    {ep.method.toUpperCase()}
-                  </span>
-                  <span className={styles.navPath}>{ep.path.replace('/api', '')}</span>
+                  <span className={styles.navGroupTitle}>{tag}</span>
+                  <svg
+                    className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M7 10l5 5 5-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
-              ))}
-            </div>
-          ))}
+                {open &&
+                  eps.map((ep) => (
+                    <button
+                      key={ep.id}
+                      type="button"
+                      className={`${styles.navRow} ${ep.id === selectedId ? styles.navRowActive : ''}`}
+                      onClick={() => setSelectedId(ep.id)}
+                    >
+                      <span className={`${styles.method} ${styles[`m_${ep.method}`]}`}>
+                        {ep.method.toUpperCase()}
+                      </span>
+                      <span className={styles.navPath}>{ep.path.replace('/api', '')}</span>
+                    </button>
+                  ))}
+              </div>
+            );
+          })}
         </nav>
 
         {selected && <EndpointPanel key={selected.id} endpoint={selected} />}
       </div>
     </div>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.sparkleIcon} aria-hidden="true">
+      <path
+        d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function buildAgentPrompt(spec: OpenApiSpec, mcp: McpInfo, endpoints: Endpoint[], origin: string): string {
+  const lines: string[] = [];
+  lines.push(`You are working against the ${spec.info.title} (v${spec.info.version}).`);
+  lines.push(`Base URL: ${origin || DOC_HOST}`);
+  if (spec.info.description) lines.push(spec.info.description);
+  lines.push('');
+  lines.push(
+    `Prefer the MCP server for read-only public market data: ${origin || DOC_HOST}/api/mcp (streamable HTTP, no auth). Tools:`
+  );
+  for (const t of mcp.tools) lines.push(`  - ${t.name}: ${t.description}`);
+  lines.push('');
+  lines.push('For anything the MCP tools don’t cover, use the REST endpoints below.');
+  lines.push(
+    'Public endpoints need no auth; session endpoints require the Clerk session cookie (hosted) or run open in self-host mode.'
+  );
+  lines.push('');
+  lines.push('Endpoints:');
+  for (const ep of endpoints) {
+    const auth = isPublic(ep.op) ? 'public' : 'session';
+    lines.push(`- ${ep.method.toUpperCase()} ${ep.path} [${auth}] ${ep.op.summary ?? ''}`.trimEnd());
+    const params = (ep.op.parameters ?? [])
+      .map((p) => `${p.name}${p.required ? '' : '?'}: ${paramType(p.schema)}`)
+      .join(', ');
+    if (params) lines.push(`    params: ${params}`);
+    if (ep.op.requestBody) {
+      const body = ep.op.requestBody.content?.['application/json']?.schema;
+      const props = body?.properties
+        ? Object.entries(body.properties)
+            .map(([k, v]) => `${k}: ${paramType(v)}`)
+            .join(', ')
+        : 'json body';
+      lines.push(`    body: { ${props} }`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function AiAgentsCard({
+  spec,
+  mcp,
+  endpoints,
+}: {
+  spec: OpenApiSpec;
+  mcp: McpInfo;
+  endpoints: Endpoint[];
+}) {
+  const [dismissed, setDismissed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  if (dismissed) return null;
+
+  const copy = async () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const prompt = buildAgentPrompt(spec, mcp, endpoints, origin);
+    try {
+      await navigator.clipboard?.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable — silently ignore, button just won't confirm */
+    }
+  };
+
+  return (
+    <section className={styles.aiCard}>
+      <div className={styles.aiCardIcon}>
+        <SparkleIcon />
+      </div>
+      <div className={styles.aiCardBody}>
+        <p className={styles.aiCardTitle}>Build with AI agents</p>
+        <p className={styles.aiCardText}>
+          Copy the complete API context prompt &mdash; paste it into Claude, ChatGPT, or any AI
+          agent to give it full knowledge of every endpoint, schema, and usage pattern.
+        </p>
+      </div>
+      <button type="button" className={styles.aiCardBtn} onClick={copy}>
+        {copied ? 'Copied' : 'Copy prompt'}
+      </button>
+      <button
+        type="button"
+        className={styles.aiCardClose}
+        onClick={() => setDismissed(true)}
+        aria-label="Dismiss"
+      >
+        &times;
+      </button>
+    </section>
   );
 }
 
@@ -182,8 +464,161 @@ function McpCard({ mcp }: { mcp: McpInfo }) {
   );
 }
 
-function EndpointPanel({ endpoint }: { endpoint: Endpoint }) {
-  const { path, method, op } = endpoint;
+function ParamTable({ title, params }: { title: string; params: Param[] }) {
+  if (params.length === 0) return null;
+  return (
+    <div className={styles.docSection}>
+      <p className={styles.docSectionTitle}>{title}</p>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Required</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {params.map((p) => (
+              <tr key={p.name}>
+                <td>
+                  <code className={styles.paramName}>{p.name}</code>
+                </td>
+                <td className={styles.paramType}>{paramType(p.schema)}</td>
+                <td>{p.required ? 'Yes' : 'No'}</td>
+                <td className={styles.paramDesc}>{p.description ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+type CodeLang = 'curl' | 'js' | 'py';
+const CODE_LANGS: Array<{ id: CodeLang; label: string }> = [
+  { id: 'curl', label: 'cURL' },
+  { id: 'js', label: 'JavaScript' },
+  { id: 'py', label: 'Python' },
+];
+
+function OverviewTab({ path, method, op }: { path: string; method: Method; op: Operation }) {
+  const pathParams = (op.parameters ?? []).filter((p) => p.in === 'path');
+  const queryParams = (op.parameters ?? []).filter((p) => p.in === 'query');
+  const bodySchema = op.requestBody?.content?.['application/json']?.schema;
+  const bodyExample = jsonExample(op);
+  const responses = Object.entries(op.responses ?? {});
+  const primary = primaryResponse(op);
+  const primarySchema = primary?.[1]?.content?.['application/json']?.schema;
+  const responseExample = primarySchema
+    ? JSON.stringify(primary![1].content!['application/json']!.example ?? exampleFromSchema(primarySchema), null, 2)
+    : null;
+
+  const [lang, setLang] = useState<CodeLang>('curl');
+  const samples: Record<CodeLang, string> = {
+    curl: curlSample(path, method, op),
+    js: jsSample(path, method, op),
+    py: pySample(path, method, op),
+  };
+
+  return (
+    <div>
+      <ParamTable title="Path parameters" params={pathParams} />
+      <ParamTable title="Query parameters" params={queryParams} />
+
+      {bodySchema?.properties && (
+        <div className={styles.docSection}>
+          <p className={styles.docSectionTitle}>Request body</p>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Type</th>
+                  <th>Required</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(bodySchema.properties).map(([name, sub]) => (
+                  <tr key={name}>
+                    <td>
+                      <code className={styles.paramName}>{name}</code>
+                    </td>
+                    <td className={styles.paramType}>{paramType(sub)}</td>
+                    <td>{bodySchema.required?.includes(name) ? 'Yes' : 'No'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {bodyExample && (
+            <pre className={styles.pre}>
+              <code>{bodyExample}</code>
+            </pre>
+          )}
+        </div>
+      )}
+
+      {responses.length > 0 && (
+        <div className={styles.docSection}>
+          <p className={styles.docSectionTitle}>Responses</p>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {responses.map(([code, r]) => (
+                  <tr key={code}>
+                    <td>
+                      <code className={styles.paramName}>{code}</code>
+                    </td>
+                    <td className={styles.paramDesc}>{r.description ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {responseExample && (
+        <div className={styles.docSection}>
+          <p className={styles.docSectionTitle}>Example response</p>
+          <pre className={styles.pre}>
+            <code>{responseExample}</code>
+          </pre>
+        </div>
+      )}
+
+      <div className={styles.docSection}>
+        <p className={styles.docSectionTitle}>Code examples</p>
+        <div className={styles.codeTabs}>
+          {CODE_LANGS.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              className={`${styles.codeTab} ${lang === l.id ? styles.codeTabActive : ''}`}
+              onClick={() => setLang(l.id)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+        <pre className={styles.pre}>
+          <code>{samples[lang]}</code>
+        </pre>
+      </div>
+    </div>
+  );
+}
+
+function TryItOutTab({ path, method, op }: { path: string; method: Method; op: Operation }) {
   const pathParams = (op.parameters ?? []).filter((p) => p.in === 'path');
   const queryParams = (op.parameters ?? []).filter((p) => p.in === 'query');
   const hasBody = Boolean(op.requestBody);
@@ -270,16 +705,11 @@ function EndpointPanel({ endpoint }: { endpoint: Endpoint }) {
   };
 
   return (
-    <section className={styles.panel}>
-      <div className={styles.panelHead}>
-        <span className={`${styles.method} ${styles[`m_${method}`]}`}>{method.toUpperCase()}</span>
-        <code className={styles.panelPath}>{path}</code>
-        <span className={`${styles.authBadge} ${isPublic(op) ? styles.authPublic : ''}`}>
-          {isPublic(op) ? 'public' : 'session'}
-        </span>
-      </div>
-      {op.summary && <p className={styles.panelSummary}>{op.summary}</p>}
-      {op.description && <p className={styles.panelDesc}>{op.description}</p>}
+    <div>
+      <p className={styles.tryIntro}>
+        This sends a real request to the current deployment using your signed-in session &mdash;
+        no keys entered here.
+      </p>
 
       {pathParams.length > 0 && (
         <div className={styles.fieldGroup}>
@@ -309,7 +739,7 @@ function EndpointPanel({ endpoint }: { endpoint: Endpoint }) {
               <span className={styles.fieldLabel}>
                 {qp.name}
                 {qp.required && <em className={styles.req}> *</em>}
-                {qp.description && <span className={styles.fieldHint}> — {qp.description}</span>}
+                {qp.description && <span className={styles.fieldHint}> &mdash; {qp.description}</span>}
               </span>
               {qp.schema?.enum ? (
                 <select
@@ -319,8 +749,8 @@ function EndpointPanel({ endpoint }: { endpoint: Endpoint }) {
                 >
                   <option value="">(none)</option>
                   {qp.schema.enum.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
+                    <option key={String(o)} value={String(o)}>
+                      {String(o)}
                     </option>
                   ))}
                 </select>
@@ -380,6 +810,55 @@ function EndpointPanel({ endpoint }: { endpoint: Endpoint }) {
             <code>{result.body || '(empty response)'}</code>
           </pre>
         </div>
+      )}
+    </div>
+  );
+}
+
+function EndpointPanel({ endpoint }: { endpoint: Endpoint }) {
+  const { path, method, op } = endpoint;
+  const [tab, setTab] = useState<'overview' | 'try'>('overview');
+
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHead}>
+        <span className={`${styles.method} ${styles[`m_${method}`]}`}>{method.toUpperCase()}</span>
+        <code className={styles.panelPath}>{path}</code>
+        <span className={`${styles.authBadge} ${isPublic(op) ? styles.authPublic : ''}`}>
+          {isPublic(op) ? 'public' : 'session'}
+        </span>
+      </div>
+      {op.summary && <h2 className={styles.panelSummary}>{op.summary}</h2>}
+      {op.description && <p className={styles.panelDesc}>{op.description}</p>}
+
+      <div className={styles.tabBar} role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'overview'}
+          className={`${styles.tab} ${tab === 'overview' ? styles.tabActive : ''}`}
+          onClick={() => setTab('overview')}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'try'}
+          className={`${styles.tab} ${tab === 'try' ? styles.tabActive : ''}`}
+          onClick={() => setTab('try')}
+        >
+          <svg className={styles.tabPlay} viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5l11 7-11 7V5z" fill="currentColor" />
+          </svg>
+          Try it out
+        </button>
+      </div>
+
+      {tab === 'overview' ? (
+        <OverviewTab path={path} method={method} op={op} />
+      ) : (
+        <TryItOutTab path={path} method={method} op={op} />
       )}
     </section>
   );

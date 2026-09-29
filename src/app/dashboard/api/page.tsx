@@ -23,11 +23,11 @@ export default async function ApiExplorerPage() {
   return (
     <div className={styles.pageRoot}>
       <p className={styles.eyebrow}>Developers</p>
-      <h1 className={styles.h1}>API explorer</h1>
+      <h1 className={styles.h1}>API reference</h1>
       <p className={styles.introNote}>
-        Try MarketMitra&rsquo;s HTTP API against this deployment, using your current session.
-        Public endpoints work for anyone; the rest use your signed-in session &mdash; no keys are
-        entered here. For automated / agent access to public market data, prefer the{' '}
+        Browse and try MarketMitra&rsquo;s HTTP API against this deployment, using your current
+        session. Public endpoints work for anyone; the rest use your signed-in session &mdash; no
+        keys are entered here. For automated / agent access to public market data, prefer the{' '}
         <strong>MCP server</strong> below. Full reference:{' '}
         <a href="https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/api-surface.md">
           docs/api-surface.md

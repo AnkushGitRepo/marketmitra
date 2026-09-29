@@ -358,9 +358,14 @@ in [`/docs/api-surface.md`](./api-surface.md). All live in production.
   `userId` else client IP, fails open, no-op when no Upstash creds (self-host). Reads
   `KV_REST_API_*` (Vercel integration) or `UPSTASH_REDIS_REST_*`. Live against an Upstash
   store in `iad1` connected to both Vercel projects.
-- **API explorer — `/dashboard/api`** + `public/openapi.json` (CI-checked against the route
-  handlers). Pick an endpoint, fill params, send against the deployment with your session,
-  copy-as-curl.
+- **API reference — `/dashboard/api`** + `public/openapi.json` (CI-checked against the route
+  handlers). Docs-site layout (2026-09-29 redesign): collapsible sidebar grouped by tag,
+  "Build with AI agents" card (copies a full endpoint+MCP-tool context prompt to clipboard),
+  and per-endpoint Overview (query/path param tables, request-body schema, response table,
+  a schema-synthesized example response when the spec has no literal one, and cURL/
+  JavaScript/Python code samples built from the spec's own examples) vs. Try It Out (the
+  original live form — fill params, send against the deployment with your session, copy-as-
+  curl) tabs.
 
 ## Retrieval (RAG) — chat + insights (Phase 10a)
 
