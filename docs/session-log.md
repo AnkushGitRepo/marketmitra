@@ -696,3 +696,46 @@ clean (all routes).
 - **Next:** not pushed/deployed yet — `DEPLOY_NOW.md` written for this
   commit per the usual handoff (this sandbox has no push/deploy
   credentials).
+
+## 2026-10-01 — AI model picker refresh: added Claude Fable 5.1
+
+Routine `MODELS_LAST_REVIEWED` check (scheduled recurring task, see the
+maintenance policy comment in `src/lib/ai/providers.ts`), due since the
+last review was 2026-09-29.
+
+- Re-checked all three providers' docs: Gemini
+  (ai.google.dev/gemini-api/docs/models), Anthropic
+  (platform.claude.com/docs/en/about-claude/models/overview), and
+  OpenRouter (openrouter.ai/models, filtered to "claude"/"gemini").
+- **Gemini** and **OpenRouter** picklists: no changes. Every listed ID
+  (`gemini-3.5-flash-lite`, `gemini-3.8-flash`, `gemini-3.1-pro-preview`,
+  and the OpenRouter `google/...` / `anthropic/...` slugs) is still live
+  and current per each provider's own listing.
+- **Anthropic**: added `claude-fable-5-1` ("Claude Fable 5.1") to
+  `MODEL_OPTIONS.anthropic`. Anthropic's models-overview page lists
+  Claude Fable 5.1 as a tier above Opus 5.5 — "Anthropic's most capable
+  widely released model" — so the existing picklist's "most capable"
+  label was actually sitting on Opus 5.5 one rung too low. Relabeled
+  Opus 5.5 to "advanced agentic coding" and added Fable 5.1 as the new
+  top entry, bringing the Anthropic list to 4 options (Haiku 4.5 →
+  Sonnet 5.5 → Opus 5.5 → Fable 5.1), matching the fast→balanced→capable
+  →most-capable curation the file's comment asks for.
+  `DEFAULT_MODELS.anthropic` left on `claude-haiku-4-5-20251001` (still
+  the right cheap default; nothing suggests otherwise).
+  Deliberately did **not** add Fable 5.1 to the combined OpenRouter
+  picklist (confirmed available there too, as `anthropic/claude-fable-5.1`)
+  — kept that list at its existing 4 entries per the "keep it short"
+  policy; OpenRouter users who want Fable have the "Other (enter
+  manually)" escape hatch.
+- Bumped `MODELS_LAST_REVIEWED` to `2026-10-01` with an inline comment
+  summarizing this review (sources + what changed), per the file's own
+  maintenance policy.
+
+Verified: `npm run test -- --run src/lib/ai` → 7 files / 64 tests
+passing (no hardcoded model IDs in `providers.test.ts` to update —
+it only asserts shape, not exact values). `npx eslint
+src/lib/ai/providers.ts` and the full `npm run lint` both clean.
+
+- **Next:** not pushed/deployed yet — `DEPLOY_NOW.md` written for this
+  commit per the usual handoff (this sandbox has no push/deploy
+  credentials).

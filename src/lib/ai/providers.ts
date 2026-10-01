@@ -23,10 +23,20 @@ import type { AiProvider } from '@/lib/userSettings';
 //   the settings page against a real key for at least the gemini provider
 //   before shipping.
 //
-// LAST_REVIEWED: 2026-09-29 (sourced from the docs pages above on that
+// LAST_REVIEWED: 2026-10-01 (sourced from the docs pages above on that
 // date; exact model IDs past this date are not independently verified —
 // re-check them, don't just trust this comment).
-export const MODELS_LAST_REVIEWED = '2026-09-29';
+//
+// 2026-10-01 review: Gemini and OpenRouter picks unchanged (all IDs
+// still current per ai.google.dev/gemini-api/docs/models and
+// openrouter.ai/models). Anthropic: added Claude Fable 5.1
+// (claude-fable-5-1), which platform.claude.com/docs/.../models/overview
+// now shows as the actual flagship ("most capable") tier above Opus
+// 5.5 — the old picklist's "most capable" label belonged to Fable, not
+// Opus 5.5. OpenRouter's combined picklist left at 4 entries (no Fable
+// added there) to keep it short; "Other" covers it for OpenRouter users
+// who want it.
+export const MODELS_LAST_REVIEWED = '2026-10-01';
 
 // Defaults used when the user leaves the model field on "Default".
 export const DEFAULT_MODELS: Record<AiProvider, string> = {
@@ -63,7 +73,8 @@ export const MODEL_OPTIONS: Record<AiProvider, ModelOption[]> = {
     { value: '', label: `Default (${DEFAULT_MODELS.anthropic})` },
     { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 — fastest, cheapest' },
     { value: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5 — balanced' },
-    { value: 'claude-opus-5-5', label: 'Claude Opus 5.5 — most capable' },
+    { value: 'claude-opus-5-5', label: 'Claude Opus 5.5 — advanced agentic coding' },
+    { value: 'claude-fable-5-1', label: 'Claude Fable 5.1 — most capable, flagship reasoning' },
   ],
   openrouter: [
     { value: '', label: `Default (${DEFAULT_MODELS.openrouter})` },
