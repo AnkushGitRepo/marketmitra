@@ -23,25 +23,35 @@ import type { AiProvider } from '@/lib/userSettings';
 //   the settings page against a real key for at least the gemini provider
 //   before shipping.
 //
-// LAST_REVIEWED: 2026-10-01 (sourced from the docs pages above on that
+// LAST_REVIEWED: 2026-11-01 (sourced from the docs pages above on that
 // date; exact model IDs past this date are not independently verified —
 // re-check them, don't just trust this comment).
 //
-// 2026-10-01 review: Gemini and OpenRouter picks unchanged (all IDs
-// still current per ai.google.dev/gemini-api/docs/models and
-// openrouter.ai/models). Anthropic: added Claude Fable 5.1
-// (claude-fable-5-1), which platform.claude.com/docs/.../models/overview
-// now shows as the actual flagship ("most capable") tier above Opus
-// 5.5 — the old picklist's "most capable" label belonged to Fable, not
-// Opus 5.5. OpenRouter's combined picklist left at 4 entries (no Fable
-// added there) to keep it short; "Other" covers it for OpenRouter users
-// who want it.
-export const MODELS_LAST_REVIEWED = '2026-10-01';
+// 2026-11-01 review: Anthropic shipped a new Haiku generation — Claude
+// Haiku 5.5 (claude-haiku-5-5) supersedes Haiku 4.5
+// (claude-haiku-4-5-20251001) as the fastest/cheapest tier per
+// platform.claude.com/docs/en/about-claude/models/overview — so both
+// DEFAULT_MODELS.anthropic and the Haiku entry in MODEL_OPTIONS.anthropic
+// were bumped to it. Sonnet 5.5 / Opus 5.5 / Fable 5.1 unchanged (still
+// current per the same page). Google shipped a new flagship, Gemini 4
+// Argon (gemini-4-argon, stable/GA per ai.google.dev/gemini-api/docs/models),
+// which now sits above the 3.1 Pro preview tier; added it to
+// MODEL_OPTIONS.gemini as the new "most capable" option and relabeled
+// 3.1 Pro (preview) down to plain "deep reasoning" — same pattern as last
+// round's Fable 5.1 addition for Anthropic. DEFAULT_MODELS.gemini left on
+// gemini-3.8-flash (still listed "Stable, latest Flash"); Argon is newer
+// but unverified for the BYO-key flow by anyone here, so it's offered as a
+// pick, not forced as the default. OpenRouter combined picklist: updated
+// the Anthropic Haiku slug (anthropic/claude-haiku-4.5 ->
+// anthropic/claude-haiku-5.5, confirmed live on openrouter.ai); left Opus
+// 5.5 and Gemini 4 Argon off that list to keep it at 4 entries per the
+// "keep it short" policy — both are reachable via "Other".
+export const MODELS_LAST_REVIEWED = '2026-11-01';
 
 // Defaults used when the user leaves the model field on "Default".
 export const DEFAULT_MODELS: Record<AiProvider, string> = {
   gemini: 'gemini-3.8-flash',
-  anthropic: 'claude-haiku-4-5-20251001',
+  anthropic: 'claude-haiku-5-5',
   openrouter: 'google/gemini-3.8-flash',
 };
 
@@ -67,11 +77,12 @@ export const MODEL_OPTIONS: Record<AiProvider, ModelOption[]> = {
     { value: '', label: `Default (${DEFAULT_MODELS.gemini})` },
     { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite — fastest, cheapest' },
     { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash — flagship, agentic/coding' },
-    { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (preview) — deepest reasoning' },
+    { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (preview) — deep reasoning' },
+    { value: 'gemini-4-argon', label: 'Gemini 4 Argon — most capable, flagship reasoning' },
   ],
   anthropic: [
     { value: '', label: `Default (${DEFAULT_MODELS.anthropic})` },
-    { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 — fastest, cheapest' },
+    { value: 'claude-haiku-5-5', label: 'Claude Haiku 5.5 — fastest, cheapest' },
     { value: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5 — balanced' },
     { value: 'claude-opus-5-5', label: 'Claude Opus 5.5 — advanced agentic coding' },
     { value: 'claude-fable-5-1', label: 'Claude Fable 5.1 — most capable, flagship reasoning' },
@@ -80,7 +91,7 @@ export const MODEL_OPTIONS: Record<AiProvider, ModelOption[]> = {
     { value: '', label: `Default (${DEFAULT_MODELS.openrouter})` },
     { value: 'google/gemini-3.5-flash-lite', label: 'Google Gemini 3.5 Flash-Lite' },
     { value: 'google/gemini-3.8-flash', label: 'Google Gemini 3.8 Flash' },
-    { value: 'anthropic/claude-haiku-4.5', label: 'Anthropic Claude Haiku 4.5' },
+    { value: 'anthropic/claude-haiku-5.5', label: 'Anthropic Claude Haiku 5.5' },
     { value: 'anthropic/claude-sonnet-5.5', label: 'Anthropic Claude Sonnet 5.5' },
   ],
 };

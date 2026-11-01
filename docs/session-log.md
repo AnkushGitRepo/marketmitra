@@ -739,3 +739,60 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 - **Next:** not pushed/deployed yet — `DEPLOY_NOW.md` written for this
   commit per the usual handoff (this sandbox has no push/deploy
   credentials).
+
+## 2026-11-01 — AI model picker refresh: Claude Haiku 5.5, Gemini 4 Argon
+
+Routine `MODELS_LAST_REVIEWED` check (scheduled recurring task, see the
+maintenance policy comment in `src/lib/ai/providers.ts`), due since the
+last review was 2026-10-01.
+
+- First confirmed the 2026-10-01 commit (`66f885b`, Claude Fable 5.1 add)
+  had actually been pushed and deployed — `git fetch` + `git rev-list
+  --left-right --count origin/main...HEAD` showed 0 ahead / 0 behind, so
+  `main` already matched `origin/main`. The `DEPLOY_NOW.md` left over
+  from that round was stale (its own push never got recorded back into
+  this log); overwrote it with a fresh handoff for this round's commit
+  rather than leaving two conflicting sets of instructions around.
+- Re-checked all three providers' docs: Gemini
+  (ai.google.dev/gemini-api/docs/models), Anthropic
+  (platform.claude.com/docs/en/about-claude/models/overview), and
+  OpenRouter (openrouter.ai/models, filtered to "claude"/"gemini").
+- **Anthropic**: new model generation — **Claude Haiku 5.5**
+  (`claude-haiku-5-5`) supersedes Haiku 4.5
+  (`claude-haiku-4-5-20251001`) as the fastest/cheapest tier. Updated
+  both `DEFAULT_MODELS.anthropic` and the Haiku entry in
+  `MODEL_OPTIONS.anthropic` to the new ID. Sonnet 5.5, Opus 5.5, and
+  Fable 5.1 (added last round) are all still current per the same docs
+  page — no change needed there.
+- **Gemini**: Google shipped a new flagship, **Gemini 4 Argon**
+  (`gemini-4-argon`), now listed stable/GA and sitting above the 3.1 Pro
+  preview tier. Added it to `MODEL_OPTIONS.gemini` as the new
+  "most capable, flagship reasoning" option (4th entry, same pattern as
+  last round's Fable 5.1 addition for Anthropic) and relabeled 3.1 Pro
+  (preview) down from "deepest reasoning" to plain "deep reasoning" since
+  Argon now holds the top spot. Left `DEFAULT_MODELS.gemini` on
+  `gemini-3.8-flash` — still listed "Stable, latest Flash" and nobody
+  here has verified Argon end-to-end against the BYO-key "Test & save"
+  flow yet, so it's offered as a pick rather than forced as the default.
+  `gemini-3.5-flash-lite` unchanged (still stable/current).
+- **OpenRouter** combined picklist: updated the Anthropic Haiku slug
+  (`anthropic/claude-haiku-4.5` → `anthropic/claude-haiku-5.5`,
+  confirmed live on openrouter.ai). Deliberately left Opus 5.5 and
+  Gemini 4 Argon off this list to keep it at 4 entries per the existing
+  "keep it short" policy; both are reachable via "Other (enter
+  manually)".
+- Bumped `MODELS_LAST_REVIEWED` to `2026-11-01` with an inline comment
+  summarizing this review (sources + what changed), per the file's own
+  maintenance policy.
+
+Verified: `npm run test -- --run src/lib/ai` → 7 files / 64 tests
+passing (no hardcoded model IDs in `providers.test.ts` to update — it
+only asserts shape, not exact values). `npx eslint
+src/lib/ai/providers.ts` and the full `npm run lint` both clean.
+
+- **Next:** not pushed/deployed yet — `DEPLOY_NOW.md` rewritten for this
+  commit per the usual handoff (this sandbox has no push/deploy
+  credentials). This file's own "Before pushing, verify the repo
+  matches" section should be re-checked against `main`'s actual head
+  before pushing, since it's easy for it to go stale the way the last
+  round's did.
