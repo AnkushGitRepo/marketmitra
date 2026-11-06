@@ -69,7 +69,7 @@ full account in `session-log.md`), before that 2026-09-20.
 
 Mobile app development (formerly Phase 12) is dropped — not on the roadmap; that number is now Screener's.
 
-**Non-blocking follow-ups** (see ROADMAP.md): pre-bundle the `bge-small` embedding model into the fundamentals-api deployment; filings-in-corpus (blocked — BSE 403s Vercel); one real alert fire + one real IPO-alert fire in market hours.
+**Non-blocking follow-ups** (see docs/ROADMAP.md): pre-bundle the `bge-small` embedding model into the fundamentals-api deployment; filings-in-corpus (blocked — BSE 403s Vercel); one real alert fire + one real IPO-alert fire in market hours.
 
 **Standing facts that outlived the phase detail:**
 
@@ -88,7 +88,7 @@ Mobile app development (formerly Phase 12) is dropped — not on the roadmap; th
 - **No paid tier, ever.** The landing page's "Two ways to run it" framing is settled
   ([ADR 0016](./docs/decisions/0016-landing-page-no-paid-tier-reconciliation.md)); the
   hosted instance's fair-use rate limiting shipped in Phase 9 and is live (Upstash).
-- **Post-sign-off follow-ups** (small, non-blocking) are listed in ROADMAP.md after Phase 8:
+- **Post-sign-off follow-ups** (small, non-blocking) are listed in docs/ROADMAP.md after Phase 8:
   activating the alert-eval + IPO-refresh GitHub Actions schedulers, Resend email delivery,
   DRHP grounding for IPO briefs, one real alert fire + one real IPO-alert fire in
   market hours.

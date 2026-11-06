@@ -22,7 +22,7 @@ Closes #<!-- issue number, if any -->
 - [ ] Docs updated if this touches architecture, the API surface, data sources, or adds an
       environment variable
 - [ ] If this adds a feature: it ships a UI path *and* a documented API endpoint (see
-      [`CONTRIBUTING.md`](../CONTRIBUTING.md#project-constraints-non-negotiable))
+      [`CONTRIBUTING.md`](CONTRIBUTING.md#project-constraints-non-negotiable))
 - [ ] No secrets, keys, or `.env.local` values in the diff
 
 ## Screenshots / recording

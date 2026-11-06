@@ -27,7 +27,7 @@ dedicated scoping session.
 - **AI insights** — four cached surfaces (stock read, portfolio insight,
   IPO brief, chat). `src/lib/insights.ts` `getOrGenerate`. The IPO brief
   already has a `drhpExtract: null` seam; DRHP grounding was deferred
-  ([ROADMAP](../../ROADMAP.md) Phase 8 follow-ups).
+  ([ROADMAP](../ROADMAP.md) Phase 8 follow-ups).
 - **BYO-key, always** — no MarketMitra-supplied model access, for any phase.
   Generation uses the user's provider key (`src/lib/ai/userAiConfig.ts`
   `getAiConfig`); self-host may use an `AI_*` env key, hosted per-user

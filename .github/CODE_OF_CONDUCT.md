@@ -47,7 +47,7 @@ in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the
-project maintainer by opening a private [GitHub Security Advisory](../../security/advisories/new)
+project maintainer by opening a private [GitHub Security Advisory](../../../security/advisories/new)
 (the report itself is private even though the repo is public), or by contacting
 [@AnkushGitRepo](https://github.com/AnkushGitRepo) directly through GitHub. All complaints
 will be reviewed and investigated promptly and fairly.

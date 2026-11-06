@@ -111,7 +111,7 @@ lookup of its own — `resolve_company()`'s own docstring already flagged this
 as a tracked gap before this change. The BSE branch of the new NSE→BSE chain
 is wired in and will start working automatically once a symbol→BSE-code
 mapping exists, but until then it is inert for every company. Building that
-mapping is separate, tracked future work (ROADMAP.md), not solved here — NSE
+mapping is separate, tracked future work (docs/ROADMAP.md), not solved here — NSE
 alone (plus yahoo-finance2 as the true primary) is still a strict
 improvement over yfinance-only.
 

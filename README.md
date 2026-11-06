@@ -6,9 +6,9 @@ rather not run their own infrastructure.
 
 [![CI](https://github.com/AnkushGitRepo/marketmitra/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AnkushGitRepo/marketmitra/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/AnkushGitRepo/marketmitra)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](.github/CONTRIBUTING.md)
 
-**[Live demo](https://marketmitra-v2.vercel.app)** · [Documentation](#project-context-for-humans-and-agents) · [Contributing](CONTRIBUTING.md) · [Report a bug](../../issues/new/choose)
+**[Live demo](https://marketmitra-v2.vercel.app)** · [Documentation](#project-context-for-humans-and-agents) · [Contributing](.github/CONTRIBUTING.md) · [Report a bug](../../issues/new/choose)
 
 ---
 
@@ -53,7 +53,7 @@ a young rewrite — if a claim like that shows up somewhere, it's a bug, not a f
 ## Status
 
 All planned phases are built. Phase-by-phase history, decisions, and what's still open live
-in [`ROADMAP.md`](ROADMAP.md), [`/docs/architecture.md`](docs/architecture.md), and
+in [`ROADMAP.md`](docs/ROADMAP.md), [`/docs/architecture.md`](docs/architecture.md), and
 [`/docs/session-log.md`](docs/session-log.md) — this README won't try to keep up with that
 level of detail, since it goes stale faster than code does.
 
@@ -205,10 +205,10 @@ re-deriving context from scratch:
 ## Contributing
 
 Contributions are welcome — bug fixes, features, new data sources, docs. Please read
-[`CONTRIBUTING.md`](CONTRIBUTING.md) first: it covers the project's non-negotiable
+[`CONTRIBUTING.md`](.github/CONTRIBUTING.md) first: it covers the project's non-negotiable
 constraints (no paid tier, free data sources only, the stack choices above), how to set up
 locally, and what's expected of a pull request. This project also follows a
-[Code of Conduct](CODE_OF_CONDUCT.md). Found a security issue? See [`SECURITY.md`](SECURITY.md)
+[Code of Conduct](.github/CODE_OF_CONDUCT.md). Found a security issue? See [`SECURITY.md`](.github/SECURITY.md)
 instead of opening a public issue.
 
 ## License

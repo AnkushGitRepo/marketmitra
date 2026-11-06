@@ -4,11 +4,11 @@ Thanks for considering a contribution. MarketMitra is free, open-source, and sel
 by design — outside contributions are genuinely welcome, not just tolerated.
 
 This guide covers how to propose a change. For what the project *is* and how it's built,
-start with [`README.md`](README.md) and [`CLAUDE.md`](CLAUDE.md).
+start with [`README.md`](../README.md) and [`CLAUDE.md`](../CLAUDE.md).
 
 ## Before you start
 
-- **Search first.** Check open [issues](../../issues) and [pull requests](../../pulls) for
+- **Search first.** Check open [issues](../../../issues) and [pull requests](../../../pulls) for
   related work before starting something new.
 - **Open an issue for anything non-trivial.** Bug fixes and small doc corrections can go
   straight to a PR. Anything larger — a new feature, a data source, a schema change — should
@@ -18,7 +18,7 @@ start with [`README.md`](README.md) and [`CLAUDE.md`](CLAUDE.md).
 
 ## Project constraints (non-negotiable)
 
-These come from this project's own architecture decisions ([`/docs/decisions/`](docs/decisions/))
+These come from this project's own architecture decisions ([`/docs/decisions/`](../docs/decisions/))
 and apply to every contribution:
 
 - **Stack:** Next.js (App Router, TypeScript) for the app; CSS Modules only — no Tailwind,
@@ -30,9 +30,9 @@ and apply to every contribution:
 - **No paid tier, ever.** No billing, no trial limits, no feature gating behind payment.
   Self-hosted and hosted run the same code and the same features.
 - **Free data sources only.** No paid market-data vendors. See
-  [`/docs/data-sources.md`](docs/data-sources.md) before adding a new one.
+  [`/docs/data-sources.md`](../docs/data-sources.md) before adding a new one.
 - **Every feature ships a UI path and a documented API endpoint together** — see
-  [`/docs/api-surface.md`](docs/api-surface.md). Not a UI with no API, and not an API with
+  [`/docs/api-surface.md`](../docs/api-surface.md). Not a UI with no API, and not an API with
   no UI.
 - **No invented numbers.** No fabricated user counts, adoption stats, or "battle-tested"
   language anywhere in the app or docs.
@@ -44,7 +44,7 @@ code — it may need an ADR of its own.
 
 ## Development setup
 
-See [README.md → Getting started](README.md#getting-started) for the full local setup
+See [README.md → Getting started](../README.md#getting-started) for the full local setup
 (Node.js, MongoDB Atlas, environment variables). In short:
 
 ```bash
@@ -65,7 +65,7 @@ npm run build        # production build
 ```
 
 All four must pass. If you touched `services/fundamentals-api/`, also run its own test
-suite (see [`services/fundamentals-api/README.md`](services/fundamentals-api/README.md)).
+suite (see [`services/fundamentals-api/README.md`](../services/fundamentals-api/README.md)).
 
 - **Tests:** new pure logic (alert evaluators, market-hours math, portfolio calculations,
   prompt builders, and similar) should come with unit tests under `src/lib/**/*.test.ts`.
@@ -92,7 +92,7 @@ focused PRs get reviewed faster than large ones.
 
 ## Reporting bugs and requesting features
 
-Use the [issue templates](.github/ISSUE_TEMPLATE/) — they ask for the information needed to
+Use the [issue templates](ISSUE_TEMPLATE/) — they ask for the information needed to
 act on a report quickly (repro steps, environment, expected vs. actual behavior). New issues
 land as `needs-triage`; a maintainer replaces that with the right priority/area labels.
 
@@ -104,7 +104,7 @@ generally a **priority** (`priority: high|medium|low`) and an **area** (`area: d
 `area: fundamentals-api`, `area: self-hosting`, `area: docs`) once triaged. `status:
 in-progress` / `status: blocked` track active work; `good first issue` / `help wanted` flag
 issues that are open for anyone to pick up. See the full list on the
-[Labels page](../../labels).
+[Labels page](../../../labels).
 
 ## Security issues
 
@@ -119,4 +119,4 @@ and discussions is expected to stay within it.
 ## License
 
 By contributing, you agree that your contributions will be licensed under the project's
-[MIT License](LICENSE).
+[MIT License](../LICENSE).
