@@ -13,6 +13,7 @@ import pytest
 from scrapling import Selector
 
 from app.ingestion.tier3_screener_scrapling.scraper import (
+    _clean_label,
     _compute_cagr,
     _compute_debt_to_equity,
     _compute_growth,
@@ -216,3 +217,24 @@ def test_compute_growth_real_fixture_produces_plausible_positive_values(newgen_p
     sales_growth, profit_growth = _compute_growth(pnl)
     assert sales_growth is not None and sales_growth > 0
     assert profit_growth is not None and profit_growth > 0
+
+
+def test_clean_label_drops_hidden_tooltip_text():
+    # Real regression: Screener's cash-flow "CFO/EBITDA" row carries a tooltip
+    # in the same cell. get_all_text() returned all of it (>128 chars), which
+    # overflowed financial_line_items.label (varchar(128)) and 500'd the endpoint.
+    raw = (
+        "CFO/EBITDA\n                \n                \n                  \n"
+        "                    \nShare of operating profit converting into cash: "
+        "CFO (before tax) / Operating Profit"
+    )
+    assert _clean_label(raw) == "CFO/EBITDA"
+
+
+def test_clean_label_strips_nbsp_and_expander_plus():
+    assert _clean_label("Sales\xa0+") == "Sales"
+    assert _clean_label("  Equity Capital ") == "Equity Capital"
+
+
+def test_clean_label_caps_length_to_the_column_width():
+    assert len(_clean_label("x" * 500)) == 128

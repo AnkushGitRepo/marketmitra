@@ -100,6 +100,23 @@ async def _fetch_with_retry(symbol: str) -> Selector | None:
     return None
 
 
+# financial_line_items.label is varchar(128).
+_MAX_LABEL_LENGTH = 128
+
+
+def _clean_label(raw: str) -> str:
+    """The visible row label from a statement row's first cell.
+
+    `get_all_text()` also returns hidden tooltip copy that Screener nests in the
+    same cell (e.g. "CFO/EBITDA" + a paragraph explaining it), which overflowed
+    the label column and made every cash-flow request fail with a 500. The label
+    is the first non-empty line; trailing "+" is the row-expander marker.
+    """
+    lines = [line.strip() for line in raw.replace("\xa0", " ").splitlines()]
+    first = next((line for line in lines if line), "")
+    return first.rstrip("+").strip()[:_MAX_LABEL_LENGTH]
+
+
 def _parse_number(raw: str | None) -> Decimal | None:
     if raw is None:
         return None
@@ -173,7 +190,7 @@ def _parse_financial_statement(page, statement_type: StatementType) -> list[dict
         cells = row.css("td")
         if not cells:
             continue
-        label = cells[0].get_all_text().replace("\xa0", " ").strip().rstrip("+").strip()
+        label = _clean_label(cells[0].get_all_text())
         for (period_type, period_end), cell in zip(periods, cells[1:], strict=False):
             value = _parse_number(cell.get_all_text().strip())
             if value is None:
