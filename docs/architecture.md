@@ -34,7 +34,7 @@ still needs to happen and be reviewed first).
 The repo is a small monorepo: the Next.js app at the root (`src/`) plus a standalone Python
 service under `services/fundamentals-api/`.
 
-**Open follow-ups** (tracked in ROADMAP.md, none a blocker): one real alert fire + one real
+**Open follow-ups** (tracked in docs/ROADMAP.md, none a blocker): one real alert fire + one real
 IPO-alert fire in market hours; pre-bundle the embedding model; filings-in-corpus needs an
 un-blocked PDF host.
 
@@ -450,3 +450,5 @@ live run, and deployed to production. Full detail: [archive/multi-agent-analysis
 - **IPO tracker + GMP (Phase 7)** — [archive/ipo-tracker.md](./archive/ipo-tracker.md)
 - **AI insights + Mitra chat (Phase 8)** — [archive/ai-insights.md](./archive/ai-insights.md)
 - **API surface: MCP server + rate limiting + explorer (Phase 9)** — [archive/api-surface.md](./archive/api-surface.md)
+
+- **Stock chart workspace** ([ADR 0031](./decisions/0031-stock-chart-workspace-lightweight-charts.md)) — `src/components/pro-chart/` (lightweight-charts engine, indicator panes, SVG drawing overlay) with pure logic in `src/lib/chart/`; used on `/dashboard/stock/[ticker]`.

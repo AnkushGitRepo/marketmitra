@@ -355,3 +355,22 @@
     box-shadow: 0 4px 14px rgba(12, 138, 108, 0.1);
   }
 }
+
+.chartControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chartRow,
+.insightRow {
+  margin-bottom: 16px;
+}
+
+.chartPlaceholder {
+  height: 560px;
+  border-radius: 18px;
+  border: 1px solid var(--border-hairline);
+  background: var(--color-surface);
+}

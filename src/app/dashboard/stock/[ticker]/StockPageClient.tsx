@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { LineChart } from '@/components/dashboard-charts/LineChart';
+import dynamic from 'next/dynamic';
 import { PillTabs } from '@/components/dashboard-charts/PillTabs';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
@@ -15,7 +15,7 @@ import { usePageContext } from '@/lib/dashboard/PageContext';
 import { formatInr } from '@/lib/dashboard/format';
 import type { CompanyOut, DocumentOut, PeerOut, PricePeriod, RatioOut } from '@/lib/dashboard/fundamentalsApi';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
-import type { RangeSeries } from '@/lib/dashboard/chartMath';
+import type { Bar, RangeKey } from '@/lib/chart/bars';
 import { formatRatioValue, stripCitationMarkers, type FinTable, type ShareholdingSeries } from '@/lib/dashboard/transforms';
 import styles from './page.module.css';
 
@@ -29,8 +29,22 @@ const SOURCE_LABELS: Record<string, string> = {
 
 type StatementKey = 'profit_and_loss' | 'balance_sheet' | 'cash_flow';
 
-const RANGE_OPTIONS: PricePeriod[] = ['1mo', '6mo', '1y', '5y'];
-const RANGE_LABELS: Record<PricePeriod, string> = { '1mo': '1M', '6mo': '6M', '1y': '1Y', '5y': '5Y' };
+/** The chart's range tabs, mapped to the periods Mitra's page context knows. */
+// Canvas chart: browser-only, so it's kept out of the server render + bundle.
+const ProChart = dynamic(() => import('@/components/pro-chart/ProChart').then((m) => m.ProChart), {
+  ssr: false,
+  loading: () => <div className={styles.chartPlaceholder} aria-hidden="true" />,
+});
+
+const CONTEXT_PERIOD: Record<RangeKey, PricePeriod> = {
+  '1M': '1mo',
+  '3M': '6mo',
+  '6M': '6mo',
+  YTD: '1y',
+  '1Y': '1y',
+  '5Y': '5y',
+  ALL: '5y',
+};
 const FIN_TABS: StatementKey[] = ['profit_and_loss', 'balance_sheet', 'cash_flow'];
 const FIN_LABELS: Record<StatementKey, string> = {
   profit_and_loss: 'P&L',
@@ -48,7 +62,7 @@ interface StockPageClientProps {
   aiInsight: { hasKey: boolean; initial: { content: string; generatedAt: string } | null };
   shareholding: ShareholdingSeries[];
   financials: Record<StatementKey, FinTable>;
-  priceSeries: Record<PricePeriod, RangeSeries>;
+  bars: Bar[];
   latestClose: string | null;
   previousClose: string | null;
 }
@@ -73,7 +87,7 @@ export function StockPageClient({
   aiInsight,
   shareholding,
   financials,
-  priceSeries,
+  bars,
   latestClose,
   previousClose,
 }: StockPageClientProps) {
@@ -172,24 +186,17 @@ export function StockPageClient({
         </div>
       </div>
 
-      <div className={styles.splitGrid}>
-        <div className={styles.card}>
-          <div className={styles.cardHead}>
-            <p className={styles.cardLabel}>Price history</p>
-            <PillTabs options={RANGE_OPTIONS} value={range} onChange={setRange} labels={RANGE_LABELS} />
-          </div>
-          {priceSeries[range].v.length > 0 ? (
-            <LineChart
-              series={priceSeries[range]}
-              height={210}
-              formatValue={(v) => formatInr(v, 2, masked)}
-              ariaLabel={`${symbol} price chart, ${RANGE_LABELS[range]}`}
-            />
-          ) : (
-            <p className={styles.meta}>No price history available for this range.</p>
-          )}
-        </div>
+      <div className={styles.chartRow}>
+        <ProChart
+          key={symbol}
+          symbol={symbol}
+          bars={bars}
+          alertHref={`/dashboard/alerts?new=1&symbol=${encodeURIComponent(symbol)}`}
+          onRangeChange={(r) => setRange(CONTEXT_PERIOD[r])}
+        />
+      </div>
 
+      <div className={styles.insightRow}>
         <InsightCard
           label="AI read"
           endpoint="/api/insights/stock"

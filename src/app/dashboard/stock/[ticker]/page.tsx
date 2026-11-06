@@ -14,7 +14,8 @@ import { getNews } from '@/lib/dashboard/newsApi';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCachedInsight } from '@/lib/insights';
-import { pivotFinancials, toRangeSeries, groupShareholding } from '@/lib/dashboard/transforms';
+import { pivotFinancials, groupShareholding } from '@/lib/dashboard/transforms';
+import { toBars } from '@/lib/chart/bars';
 import { StockPageClient } from './StockPageClient';
 import styles from './page.module.css';
 
@@ -79,9 +80,8 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       : null,
   };
 
-  const priceSeries = Object.fromEntries(
-    PRICE_PERIODS.map((period, i) => [period, toRangeSeries(priceSets[i] ?? [], period)])
-  ) as Record<PricePeriod, ReturnType<typeof toRangeSeries>>;
+  // The 5-year daily set backs every range tab; the chart windows into it.
+  const bars = toBars(priceSets[PRICE_PERIODS.indexOf('5y')] ?? []);
 
   // /prices returns newest-first (see fundamentals-api's get_price_history).
   const recentCloses = (priceSets[0] ?? []).filter((p) => p.close !== null);
@@ -110,7 +110,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
         balance_sheet: pivotFinancials(bs ?? [], 'balance_sheet'),
         cash_flow: pivotFinancials(cf ?? [], 'cash_flow'),
       }}
-      priceSeries={priceSeries}
+      bars={bars}
       latestClose={displayClose}
       previousClose={displayPreviousClose}
     />

@@ -1,0 +1,355 @@
+/* TradingView-style workspace: top toolbar, left drawing tools, chart with a
+   right-hand price axis, bottom range tabs. Candle colours come from the
+   landing page tokens (--color-mint-strong / --color-danger-soft). */
+.workspace {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--border-hairline);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* ---- top toolbar ---- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-hairline);
+  flex-wrap: wrap;
+}
+.symbolChip {
+  font-weight: 700;
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--app-cream, #f4f1ea);
+}
+.interval {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--app-text-subtle);
+  padding: 0 6px;
+}
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-hairline);
+}
+.segment {
+  display: inline-flex;
+  background: var(--app-cream, #f4f1ea);
+  border-radius: 999px;
+  padding: 2px;
+}
+.segBtn,
+.topBtn,
+.rangeBtn,
+.toolBtn {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.segBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: var(--app-text-subtle);
+}
+.segBtnActive {
+  background: var(--color-surface, #fff);
+  color: var(--app-ink);
+  box-shadow: 0 1px 4px rgba(22, 25, 28, 0.12);
+}
+.topBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--app-ink);
+}
+.topBtn:hover,
+.topBtnActive {
+  background: var(--app-cream, #f4f1ea);
+}
+.badge {
+  font-size: 10.5px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+}
+
+/* ---- indicator menu ---- */
+.menuWrap {
+  position: relative;
+}
+.menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--border-hairline-strong, var(--border-hairline));
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(22, 25, 28, 0.16);
+  padding: 8px;
+}
+.menuGroup {
+  margin: 8px 8px 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+.menuItem {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.menuItem:hover {
+  background: var(--app-cream, #f4f1ea);
+}
+.menuItem input {
+  grid-row: 1 / span 2;
+  accent-color: var(--app-teal);
+}
+.menuLabel {
+  font-size: 13px;
+  font-weight: 600;
+}
+.menuHint {
+  font-size: 11.5px;
+  color: var(--app-text-subtle);
+}
+
+/* ---- body: tools | chart ---- */
+.body {
+  display: flex;
+  min-height: 0;
+}
+.tools {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-right: 1px solid var(--border-hairline);
+}
+.toolBtn {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--app-text-subtle);
+}
+.toolBtn:hover:not(:disabled) {
+  background: var(--app-cream, #f4f1ea);
+  color: var(--app-ink);
+}
+.toolBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.toolBtnActive {
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+}
+.toolBtnActive:hover {
+  background: var(--app-ink) !important;
+  color: var(--app-cream, #fff) !important;
+}
+.toolSpacer {
+  flex: 1;
+  min-height: 12px;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: clamp(440px, 64vh, 640px);
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+.legend {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  left: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.legendKey {
+  color: var(--app-text-subtle);
+  margin-right: -3px;
+}
+.up {
+  color: var(--color-mint-strong, #34c17c);
+}
+.down {
+  color: var(--color-danger-soft, #f0836b);
+}
+.empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--app-text-subtle);
+  font-size: 14px;
+}
+
+/* ---- drawings overlay (covers the price pane, minus the price axis) ---- */
+.overlay {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.overlayActive {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+.overlaySvg {
+  display: block;
+  overflow: hidden;
+}
+.drawLine {
+  stroke: var(--app-teal, #0c8a6c);
+  stroke-width: 1.6;
+}
+.drawDot {
+  fill: var(--color-surface, #fff);
+  stroke: var(--app-teal, #0c8a6c);
+  stroke-width: 1.6;
+}
+.drawFib {
+  stroke: var(--app-teal, #0c8a6c);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+.drawFibGuide {
+  stroke: var(--app-text-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+.drawLabel {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--app-text-subtle);
+}
+.drawText {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--app-ink);
+  paint-order: stroke;
+  stroke: var(--color-surface, #fff);
+  stroke-width: 4px;
+}
+.measureUp {
+  fill: var(--color-mint-strong, #34c17c);
+  fill-opacity: 0.14;
+  stroke: var(--color-mint-strong, #34c17c);
+}
+.measureDown {
+  fill: var(--color-danger-soft, #f0836b);
+  fill-opacity: 0.14;
+  stroke: var(--color-danger-soft, #f0836b);
+}
+.measureTag {
+  fill: var(--app-ink);
+}
+.measureText {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--app-cream, #fff);
+}
+.textInput {
+  position: absolute;
+  z-index: 4;
+  transform: translateY(-50%);
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 10px;
+  width: 210px;
+  border: 1px solid var(--app-teal, #0c8a6c);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  color: var(--app-ink);
+  outline: none;
+}
+
+/* ---- footer ---- */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--border-hairline);
+  flex-wrap: wrap;
+}
+.rangeBtn {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 8px;
+  color: var(--app-text-subtle);
+}
+.rangeBtn:hover {
+  background: var(--app-cream, #f4f1ea);
+  color: var(--app-ink);
+}
+.rangeBtnActive {
+  background: var(--app-cream, #f4f1ea);
+  color: var(--app-teal, #0c8a6c);
+}
+.footerNote {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--app-text-subtle);
+}
+
+@media (max-width: 640px) {
+  .body {
+    flex-direction: column;
+  }
+  .tools {
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-hairline);
+    overflow-x: auto;
+  }
+  .toolSpacer {
+    display: none;
+  }
+  .stage {
+    height: 420px;
+  }
+}
