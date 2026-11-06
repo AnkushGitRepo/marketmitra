@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 
-// Real company logos, sourced from a community-maintained open logo
-// directory keyed by NSE ticker (github.com/dharunashokkumar/indian-listed-
-// company-logos). Not every listed company has a logo there, so this falls
-// back to initials on load failure rather than showing a broken image.
+// Real company logos from api.dharun.dev (no key, 600 req/min/client), which
+// serves the community-maintained indian-listed-company-logos dataset. A bare
+// ticker prefers NSE. Unknown symbols 404 (we deliberately don't pass
+// fallback=monogram), so this falls back to our own initials on load failure
+// rather than showing a broken image.
 const LOGO_URL = (symbol: string) =>
-  `https://dharunashokkumar.github.io/indian-listed-company-logos/nse/NSE_${symbol}.svg`;
+  `https://api.dharun.dev/v1/logos/${encodeURIComponent(symbol)}`;
 
 export function CompanyLogo({ symbol, size }: { symbol: string; size: number }) {
   const [errored, setErrored] = useState(false);
