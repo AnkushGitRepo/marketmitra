@@ -1,22 +1,23 @@
 import type { Metadata } from 'next';
 import { Manrope, JetBrains_Mono } from 'next/font/google';
-import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { isHosted } from '@/lib/deployment-mode';
 import { CookieNotice } from '@/components/landing/CookieNotice';
 import './globals.css';
 
+// Both are variable fonts: omitting `weight` ships one file covering every
+// weight instead of one file per weight.
 const manrope = Manrope({
   variable: '--font-manrope',
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
 });
 
 const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
   subsets: ['latin'],
-  weight: ['400', '500'],
+  // Mono is only used for small labels — don't preload it ahead of the hero.
+  preload: false,
 });
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://marketmitra-v2.vercel.app';
@@ -49,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${manrope.variable} ${jetbrainsMono.variable}`}>
       <body>
-        {hosted ? <ClerkProvider>{children}</ClerkProvider> : children}
+        {children}
         {/* Hosted-only (ADR 0023) — cookieless analytics + its disclosure
             notice, plus Speed Insights (same phone-home profile as
             Analytics). Self-host phones home to nothing by default. */}

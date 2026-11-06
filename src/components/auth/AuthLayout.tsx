@@ -18,7 +18,7 @@ export function AuthLayout({ children, switchPrompt, switchLabel, switchHref }: 
   const reduceMotion = useReducedMotion();
 
   return (
-    <div className={styles.pageBg}>
+    <main className={styles.pageBg}>
       <motion.div
         className={styles.container}
         initial={reduceMotion ? false : { opacity: 0, y: 18 }}
@@ -51,6 +51,6 @@ export function AuthLayout({ children, switchPrompt, switchLabel, switchHref }: 
           <FeatureCarousel />
         </div>
       </motion.div>
-    </div>
+    </main>
   );
 }

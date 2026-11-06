@@ -19,7 +19,11 @@ export default function SignInPage() {
         <h1>Welcome back</h1>
         <p>Sign in to see your whole portfolio again.</p>
       </div>
-      <SignIn appearance={clerkAppearance} />
+      {/* Reserve the widget's height: Clerk mounts async, and without this the
+          card grows from empty and shoves the layout (CLS ~0.3). */}
+      <div className={styles.clerkSlot}>
+        <SignIn appearance={clerkAppearance} />
+      </div>
     </AuthLayout>
   );
 }

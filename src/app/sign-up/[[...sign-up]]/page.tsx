@@ -19,7 +19,11 @@ export default function SignUpPage() {
         <h1>Create your account</h1>
         <p>Free to start — see every holding in one place.</p>
       </div>
-      <SignUp appearance={clerkAppearance} />
+      {/* Reserve the widget's height: Clerk mounts async, and without this the
+          card grows from empty and shoves the layout (CLS ~0.3). */}
+      <div className={styles.clerkSlot}>
+        <SignUp appearance={clerkAppearance} />
+      </div>
     </AuthLayout>
   );
 }

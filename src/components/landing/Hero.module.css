@@ -113,13 +113,13 @@
   transform: scale(0.97);
 }
 
+/* Transform-only on purpose: starting at opacity 0 keeps the hero text
+   (the page's LCP element) invisible until the animation runs. */
 @keyframes fadeUp {
   from {
-    opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(10px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }

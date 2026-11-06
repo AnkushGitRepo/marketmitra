@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { Show } from '@clerk/nextjs';
+import { hasClerkSession } from '@/lib/auth/clientSession';
 import { isHosted } from '@/lib/deployment-mode';
 import { Logo } from './Logo';
 import styles from './Navbar.module.css';
@@ -15,20 +15,26 @@ const ALL_SCROLL_LINKS = [
 
 const GITHUB_REPO_URL = 'https://github.com/AnkushGitRepo/marketmitra';
 
+const noopSubscribe = () => () => {};
+
+// Reads Clerk's readable session cookie instead of loading Clerk's JS on the
+// marketing page. The server snapshot is signed-out, so signed-in visitors see
+// "Get Started" swap to "Dashboard" after hydration (/sign-up also redirects
+// them on). Purely a UI hint — /dashboard is protected server-side.
 function HostedNavCta() {
-  return (
-    <>
-      <Show when="signed-out">
-        <Link href="/sign-up" className={styles.cta}>
-          Get Started
-        </Link>
-      </Show>
-      <Show when="signed-in">
-        <Link href="/dashboard" className={styles.cta}>
-          Dashboard
-        </Link>
-      </Show>
-    </>
+  const signedIn = useSyncExternalStore(
+    noopSubscribe,
+    () => hasClerkSession(document.cookie),
+    () => false
+  );
+  return signedIn ? (
+    <Link href="/dashboard" className={styles.cta}>
+      Dashboard
+    </Link>
+  ) : (
+    <Link href="/sign-up" className={styles.cta}>
+      Get Started
+    </Link>
   );
 }
 

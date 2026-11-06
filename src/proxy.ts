@@ -43,6 +43,15 @@ export default function proxy(req: NextRequest, event: NextFetchEvent) {
   return hostedProxy(req, event);
 }
 
+// Clerk's middleware only runs where auth matters. Public marketing pages ('/',
+// /privacy, /terms, /status) are deliberately excluded: on a Clerk dev instance
+// the middleware bounces first-time visitors through a handshake redirect
+// (~1.6 s of wasted navigation), and those pages need no session.
 export const config = {
-  matcher: ['/((?!_next|.*\\..*).*)', '/(api|trpc)(.*)', '/__clerk/:path*'],
+  matcher: [
+    '/dashboard/:path*',
+    '/api/:path*',
+    '/trpc/:path*',
+    '/__clerk/:path*',
+  ],
 };

@@ -15,3 +15,7 @@
   font-size: var(--text-base);
   color: var(--color-text-muted);
 }
+
+.clerkSlot {
+  min-height: 280px;
+}
