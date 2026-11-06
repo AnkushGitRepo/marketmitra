@@ -190,6 +190,9 @@ export interface SearchResultOut {
   type: 'company' | 'index';
   symbol: string;
   name: string;
+  sector?: string | null;
+  series?: string | null;
+  is_sme?: boolean;
 }
 
 export async function searchSymbols(query: string): Promise<SearchResultOut[]> {

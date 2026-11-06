@@ -32,6 +32,8 @@ Usage:
   python scripts/refresh_screener_universe.py                # full run, POST results
   python scripts/refresh_screener_universe.py --dry-run       # fetch+parse+print, no POST
   python scripts/refresh_screener_universe.py --limit 20      # only the first 20 symbols
+  python scripts/refresh_screener_universe.py --stale-first --limit 400
+                                                              # incremental: stalest 400 only
 """
 
 from __future__ import annotations
@@ -61,6 +63,17 @@ async def _fetch_universe(base_url: str) -> list[dict]:
         return response.json()
 
 
+async def _fetch_stale(base_url: str, token: str, limit: int) -> list[dict]:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            f"{base_url}/screener/stale",
+            params={"limit": limit},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        response.raise_for_status()
+        return response.json()
+
+
 async def _ingest_batch(base_url: str, token: str, rows: list[dict]) -> None:
     # fetch_screener_snapshot's values are Decimal (from _parse_number) —
     # not JSON-serializable directly, same issue refresh_ipos.py already
@@ -76,7 +89,7 @@ async def _ingest_batch(base_url: str, token: str, rows: list[dict]) -> None:
         response.raise_for_status()
 
 
-async def run(limit: int | None, dry_run: bool) -> int:
+async def run(limit: int | None, dry_run: bool, stale_first: bool = False) -> int:
     base_url = os.environ.get("FUNDAMENTALS_API_URL", "").rstrip("/")
     token = os.environ.get("SCREENER_INGEST_TOKEN", "")
     if not dry_run and (not base_url or not token):
@@ -86,9 +99,15 @@ async def run(limit: int | None, dry_run: bool) -> int:
         base_url = "http://localhost:8420"
 
     print(f"fetching universe from {base_url}/companies/master ...", flush=True)
-    universe = await _fetch_universe(base_url)
-    if limit:
-        universe = universe[:limit]
+    if stale_first:
+        if not limit:
+            print("--stale-first needs --limit", file=sys.stderr)
+            return 1
+        universe = await _fetch_stale(base_url, token, limit)
+    else:
+        universe = await _fetch_universe(base_url)
+        if limit:
+            universe = universe[:limit]
     print(f"{len(universe)} symbols to refresh", flush=True)
 
     limiter = RateLimiter(_REQUESTS_PER_SECOND)
@@ -145,8 +164,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="fetch+parse+print, don't POST")
     parser.add_argument("--limit", type=int, default=None, help="only refresh the first N symbols")
+    parser.add_argument(
+        "--stale-first",
+        action="store_true",
+        help="refresh the --limit companies with the oldest/missing fundamentals (incremental mode)",
+    )
     args = parser.parse_args()
-    return asyncio.run(run(args.limit, args.dry_run))
+    return asyncio.run(run(args.limit, args.dry_run, args.stale_first))
 
 
 if __name__ == "__main__":

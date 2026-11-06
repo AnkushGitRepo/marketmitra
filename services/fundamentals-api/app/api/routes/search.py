@@ -12,6 +12,9 @@ class SearchResultOut(BaseModel):
     type: str  # "company" | "index"
     symbol: str
     name: str
+    sector: str | None = None
+    series: str | None = None
+    is_sme: bool = False
 
 
 @router.get("", response_model=list[SearchResultOut])

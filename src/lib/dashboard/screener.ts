@@ -10,13 +10,14 @@ import {
   type ScreenerFacets,
   type ScreenerFilters,
   type ScreenerResultRow,
+  type ScreenerStats,
 } from './screenerSchema';
 
 // Result/facet types and buildScreenerQuery now live in screenerSchema.ts
 // (see its own comment) — re-exported here so existing server-side callers
 // of this module don't need to change their import path.
 export { buildScreenerQuery };
-export type { ScreenerFacets, ScreenerResultRow };
+export type { ScreenerFacets, ScreenerResultRow, ScreenerStats };
 
 /** Filters the bulk-refreshed screener_metrics table. Never throws — an
  * unreachable fundamentals-api or a bad query returns [], same "no data
@@ -33,4 +34,10 @@ export async function runScreener(filters: ScreenerFilters): Promise<ScreenerRes
 export async function getScreenerFacets(): Promise<ScreenerFacets> {
   const result = await getJson<ScreenerFacets>('/screener/facets', 3600);
   return result ?? { sectors: [], industries: [] };
+}
+
+/** Coverage + freshness of the screener table; null if fundamentals-api is
+ * unreachable. Short cache — it changes only when the daily jobs run. */
+export function getScreenerStats(): Promise<ScreenerStats | null> {
+  return getJson<ScreenerStats>('/screener/stats', 600);
 }

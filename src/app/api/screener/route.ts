@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { runScreener } from '@/lib/dashboard/screener';
 import {
   SCREENER_RANGE_FIELDS,
+  screenerFiltersSchema,
   type RangeFieldKey,
   type ScreenerFilters,
 } from '@/lib/dashboard/screenerSchema';
@@ -35,6 +36,31 @@ export async function GET(request: Request) {
   if (sector) filters.sector = sector;
   const industry = searchParams.get('industry');
   if (industry) filters.industry = industry;
+
+  // Validated against the same schema Mitra's tool uses, so only a real
+  // range-field key (never an arbitrary column name) reaches the backend.
+  const sortBy = searchParams.get('sort_by');
+  if (sortBy) {
+    const parsed = screenerFiltersSchema.shape.sort_by.safeParse(sortBy);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'invalid_filter', message: `sort_by must be one of the filterable fields, got "${sortBy}"` },
+        { status: 400 }
+      );
+    }
+    filters.sort_by = parsed.data;
+  }
+  const order = searchParams.get('order');
+  if (order) {
+    const parsed = screenerFiltersSchema.shape.order.safeParse(order);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'invalid_filter', message: 'order must be "asc" or "desc"' },
+        { status: 400 }
+      );
+    }
+    filters.order = parsed.data;
+  }
 
   const limitRaw = searchParams.get('limit');
   if (limitRaw !== null) {

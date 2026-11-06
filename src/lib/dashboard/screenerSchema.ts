@@ -72,8 +72,13 @@ const rangeShape = Object.fromEntries(
   ])
 ) as RangeShape;
 
+const RANGE_FIELD_KEYS = RANGE_FIELD_DEFS.map((f) => f.key) as [RangeFieldKey, ...RangeFieldKey[]];
+
 export const screenerFiltersSchema = z.object({
   ...rangeShape,
+  /** Server-side sort column (any range field); omitted = market cap desc. */
+  sort_by: z.enum(RANGE_FIELD_KEYS).optional(),
+  order: z.enum(['asc', 'desc']).optional(),
   sector: z.string().trim().min(1).optional(),
   industry: z.string().trim().min(1).optional(),
   limit: z.number().int().min(1).max(500).optional(),
@@ -108,6 +113,16 @@ export interface ScreenerResultRow {
   fetch_status: string;
   source_tier: string;
   fetched_at: string;
+  quote_updated_at?: string | null;
+  fundamentals_updated_at?: string | null;
+}
+
+export interface ScreenerStats {
+  universe: number;
+  with_quotes: number;
+  with_fundamentals: number;
+  quotes_updated_at: string | null;
+  fundamentals_updated_at: string | null;
 }
 
 export interface ScreenerFacets {

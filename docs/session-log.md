@@ -796,3 +796,18 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   matches" section should be re-checked against `main`'s actual head
   before pushing, since it's easy for it to go stale the way the last
   round's did.
+
+## 2026-11-06 — Screener hybrid refresh + ranked search (ADR 0033)
+
+- Pushed + deployed the security hardening pass earlier today (`6924fa0`);
+  added `scripts/smoke-test.sh` + `post-deploy-smoke.yml`.
+- User supplied `EQUITY_L.csv` / `SME_EQUITY_L.csv`. They have no financials,
+  so they fix search/universe, not the empty screener. Built: enriched
+  `company_master` (bundled CSV fallback in `app/data/`), ranked in-memory
+  search (+ISIN, SME, typos, keyboard nav), daily Yahoo bulk-quote cron for
+  price-derived screener fields, incremental stalest-first Screener.in refresh,
+  server-side sort, coverage stats on the page. Tests: 575 vitest + 203 pytest.
+- Not yet deployed: migration `c7a91e3d5f02`, env vars, and the one-time
+  backfill — see ADR 0033 "Deploy needs". Medium article the user linked was
+  403 to WebFetch and not read.
+

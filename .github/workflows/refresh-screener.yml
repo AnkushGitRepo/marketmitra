@@ -7,6 +7,13 @@
 # browser needed — see scraper.py's own docstring) and POSTs results to
 # POST /screener/ingest.
 #
+# INCREMENTAL, not full: each scheduled run refreshes only the ~400 companies
+# whose Screener.in fundamentals are missing or oldest (`--stale-first`), so the
+# whole universe cycles roughly weekly instead of being re-scraped every day.
+# Fundamentals change quarterly. Price-derived fields (market cap, P/E, P/B,
+# dividend yield) come from refresh-screener-quotes.yml instead. For the
+# one-time backfill, run this workflow manually with `full` ticked.
+#
 # ACTIVATION (one-time):
 #   1. GitHub runs `schedule:` only from the DEFAULT branch — until this
 #      repo's app branch is the default, only the manual "Run workflow"
@@ -27,8 +34,12 @@ on:
     - cron: "30 20 * * *"
   workflow_dispatch:
     inputs:
+      full:
+        description: "Backfill: scrape the ENTIRE universe (~21 min) instead of the stalest 400"
+        type: boolean
+        default: false
       limit:
-        description: "Only refresh the first N symbols (leave empty for the full universe)"
+        description: "Override the number of companies to refresh (leave empty for the default)"
         required: false
         default: ""
 
@@ -39,8 +50,8 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    # ~2,570 symbols at the script's own 2 req/s rate limit =~ 21 minutes —
-    # generous headroom for retry backoff on top of that.
+    # A full backfill is ~2,570 symbols at 2 req/s =~ 21 minutes; the daily
+    # incremental run (400 symbols) takes ~4. Headroom covers retry backoff.
     timeout-minutes: 45
     defaults:
       run:
@@ -67,8 +78,9 @@ jobs:
             exit 1
           fi
           LIMIT="${{ github.event.inputs.limit }}"
-          if [ -n "$LIMIT" ]; then
-            python scripts/refresh_screener_universe.py --limit "$LIMIT"
-          else
+          FULL="${{ github.event.inputs.full }}"
+          if [ "$FULL" = "true" ]; then
             python scripts/refresh_screener_universe.py
+          else
+            python scripts/refresh_screener_universe.py --stale-first --limit "${LIMIT:-400}"
           fi

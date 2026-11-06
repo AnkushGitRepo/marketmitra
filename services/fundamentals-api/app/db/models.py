@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     Date,
     DateTime,
     ForeignKey,
@@ -17,6 +18,7 @@ from sqlalchemy import (
     Numeric,
     String,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -33,6 +35,11 @@ class CompanyMasterORM(Base):
 
     symbol: Mapped[str] = mapped_column(String(32), primary_key=True)
     name: Mapped[str] = mapped_column(String(256))
+    isin: Mapped[str | None] = mapped_column(String(16), index=True)
+    series: Mapped[str | None] = mapped_column(String(8))
+    listing_date: Mapped[date | None] = mapped_column(Date)
+    face_value: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    is_sme: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -344,3 +351,8 @@ class ScreenerMetricsORM(Base):
     fetched_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    # Per-source freshness. The daily quote job owns market_cap / current_price
+    # / pe / pb / dividend_yield (quote_updated_at); the stalest-first
+    # Screener.in job owns the rest (fundamentals_updated_at). NULL = never.
+    quote_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    fundamentals_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)

@@ -1,0 +1,42 @@
+# Daily bulk price refresh for the screener (ADR 0033): market cap, price,
+# P/E, P/B and dividend yield for the whole NSE main-board universe, from
+# Yahoo in 100-symbol chunks (~26 requests, well under a minute). Hits the same
+# CRON_SECRET-guarded route pattern as index-corpus.yml.
+#
+# ACTIVATION (one-time):
+#   1. `schedule:` only runs from the DEFAULT branch; "Run workflow" works anywhere.
+#   2. Repo secret:  gh secret set CRON_SECRET   (same as on marketmitra-v2)
+#   3. Vercel env on marketmitra-v2:  SCREENER_INGEST_TOKEN
+#      (same value as on the fundamentals-api project) + FUNDAMENTALS_API_URL.
+
+name: refresh-screener-quotes
+
+on:
+  schedule:
+    # Mon-Fri 11:00 UTC (16:30 IST) — after the NSE close, so the stored
+    # price/market cap/P-E are that day's closing figures.
+    - cron: "0 11 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-screener-quotes
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trigger quote refresh
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TARGET_URL: ${{ vars.REFRESH_SCREENER_QUOTES_URL || 'https://marketmitra-v2.vercel.app/api/cron/refresh-screener-quotes' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repo secret is not set — see this workflow's ACTIVATION notes."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --max-time 290 \
+            -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${TARGET_URL}"

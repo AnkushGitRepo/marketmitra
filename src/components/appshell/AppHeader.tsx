@@ -16,7 +16,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ onToggleMask }: AppHeaderProps) {
-  const { query, setQuery, results, loading, selectResult } = useSymbolSearch();
+  const { query, setQuery, results, loading, selectResult, activeIndex, handleKeyDown } = useSymbolSearch();
   const [focused, setFocused] = useState(false);
 
   const userBadge = isHosted() ? (
@@ -41,13 +41,24 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                aria-label="Search stocks or indices"
+                autoComplete="off"
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
-                placeholder="Search stocks or indices"
+                placeholder="Search stocks, ISIN or indices"
                 className={styles.searchInput}
               />
             </div>
-            {focused && <SearchResultsDropdown results={results} loading={loading} onSelect={selectResult} />}
+            {focused && (
+              <SearchResultsDropdown
+                results={results}
+                loading={loading}
+                onSelect={selectResult}
+                activeIndex={activeIndex}
+                query={query}
+              />
+            )}
           </div>
 
           <div className={styles.actions}>

@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,18 +16,31 @@ router = APIRouter(prefix="/companies", tags=["companies"])
 class CompanyMasterOut(BaseModel):
     symbol: str
     name: str
+    isin: str | None = None
+    series: str | None = None
+    is_sme: bool = False
 
 
 @router.get("/master", response_model=list[CompanyMasterOut])
-async def get_company_master(session: AsyncSession = Depends(get_db)) -> list[CompanyMasterOut]:
+async def get_company_master(
+    include_sme: bool = Query(default=False),
+    session: AsyncSession = Depends(get_db),
+) -> list[CompanyMasterOut]:
     """The full NSE-listed-equity symbol/name list (~2,570 rows) — used by
     scripts/refresh_screener_universe.py (ADR 0025) as its universe source,
     instead of that script re-fetching NSE's EQUITY_L.csv a second time
     independently. Registered before GET /{symbol} below so "master" is
     never swallowed as a symbol path param."""
     await ensure_company_master_populated(session)
-    rows = (await session.execute(select(CompanyMasterORM).order_by(CompanyMasterORM.symbol))).scalars()
-    return [CompanyMasterOut(symbol=r.symbol, name=r.name) for r in rows]
+    stmt = select(CompanyMasterORM).order_by(CompanyMasterORM.symbol)
+    if not include_sme:
+        # Main-board only by default: the screener universe excludes SME.
+        stmt = stmt.where(CompanyMasterORM.is_sme.is_(False))
+    rows = (await session.execute(stmt)).scalars()
+    return [
+        CompanyMasterOut(symbol=r.symbol, name=r.name, isin=r.isin, series=r.series, is_sme=r.is_sme)
+        for r in rows
+    ]
 
 
 class CompanyOut(BaseModel):

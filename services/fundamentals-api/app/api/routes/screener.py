@@ -33,6 +33,8 @@ class ScreenerMetricOut(BaseModel):
     fetch_status: str
     source_tier: str
     fetched_at: datetime
+    quote_updated_at: datetime | None = None
+    fundamentals_updated_at: datetime | None = None
 
 
 def _to_out(row) -> ScreenerMetricOut:
@@ -59,6 +61,8 @@ def _to_out(row) -> ScreenerMetricOut:
         fetch_status=row.fetch_status,
         source_tier=row.source_tier,
         fetched_at=row.fetched_at,
+        quote_updated_at=getattr(row, "quote_updated_at", None),
+        fundamentals_updated_at=getattr(row, "fundamentals_updated_at", None),
     )
 
 
@@ -68,6 +72,13 @@ async def get_screener_facets(session: AsyncSession = Depends(get_db)) -> dict:
     Screener page's sector dropdown from what's actually in the data,
     never a hand-maintained list."""
     return await svc.get_screener_facets(session)
+
+
+@router.get("/stats")
+async def get_screener_stats(session: AsyncSession = Depends(get_db)) -> dict:
+    """{ universe, with_quotes, with_fundamentals, quotes_updated_at,
+    fundamentals_updated_at } — coverage/freshness for the Screener page."""
+    return await svc.get_screener_stats(session)
 
 
 @router.get("", response_model=list[ScreenerMetricOut])
@@ -92,7 +103,9 @@ async def get_screener_metrics(
     sales_growth_3y_cagr_max: float | None = Query(default=None),
     profit_growth_3y_cagr_min: float | None = Query(default=None),
     profit_growth_3y_cagr_max: float | None = Query(default=None),
-    limit: int = Query(default=100, le=500),
+    sort_by: str | None = Query(default=None, pattern="^[a-z_0-9]+$", max_length=40),
+    order: str = Query(default="desc", pattern="^(asc|desc)$"),
+    limit: int = Query(default=100, ge=1, le=500),
     session: AsyncSession = Depends(get_db),
 ) -> list[ScreenerMetricOut]:
     """Filter the bulk-refreshed screener_metrics table (ADR 0025) — every
@@ -113,6 +126,8 @@ async def get_screener_metrics(
         "sales_growth_3y_cagr_max": sales_growth_3y_cagr_max,
         "profit_growth_3y_cagr_min": profit_growth_3y_cagr_min,
         "profit_growth_3y_cagr_max": profit_growth_3y_cagr_max,
+        "sort_by": sort_by,
+        "order": order,
         "limit": limit,
     }
     rows = await svc.query_screener_metrics(session, filters)
@@ -134,3 +149,32 @@ async def ingest_screener_metrics(
     shared-secret-bearer-token pattern as POST /ipos/ingest."""
     require_bearer(authorization, _settings.screener_ingest_token, name="screener_ingest_token")
     return await svc.ingest_screener_metrics(session, body.rows)
+
+
+class QuotesIn(BaseModel):
+    rows: list[dict]
+
+
+@router.post("/quotes")
+async def ingest_screener_quotes(
+    body: QuotesIn,
+    authorization: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """Daily bulk-quote feed (market cap in ₹ Cr, price, P/E, P/B, dividend
+    yield %), posted by the Next app's refresh-screener-quotes cron. Same
+    bearer token as /ingest."""
+    require_bearer(authorization, _settings.screener_ingest_token, name="screener_ingest_token")
+    return await svc.ingest_quotes(session, body.rows)
+
+
+@router.get("/stale")
+async def get_stale_symbols(
+    limit: int = Query(default=400, ge=1, le=3000),
+    authorization: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Symbols whose fundamentals most need a re-scrape — consumed by
+    scripts/refresh_screener_universe.py --stale-first."""
+    require_bearer(authorization, _settings.screener_ingest_token, name="screener_ingest_token")
+    return await svc.stale_symbols(session, limit)

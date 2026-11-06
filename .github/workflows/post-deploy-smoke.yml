@@ -1,0 +1,20 @@
+# Smoke-tests production after a deploy. Runs on Vercel's `deployment_status`
+# event (needs the Vercel GitHub integration) or manually from the Actions tab.
+# The project currently deploys via the Vercel CLI, so manual dispatch is the
+# reliable trigger until the repo is connected to the Vercel project.
+
+name: Post-deploy smoke test
+
+on:
+  deployment_status:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Smoke test production
+        run: scripts/smoke-test.sh

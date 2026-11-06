@@ -1,10 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import type { SearchResultOut } from './fundamentalsApi';
 
-const DEBOUNCE_MS = 250;
+// Search is served from an in-memory index, so a short debounce keeps the
+// dropdown feeling instant without a request per keystroke.
+const DEBOUNCE_MS = 120;
 
 export function useSymbolSearch() {
   const router = useRouter();
@@ -12,6 +14,7 @@ export function useSymbolSearch() {
   const [results, setResults] = useState<SearchResultOut[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
 
   const trimmedQuery = query.trim();
 
@@ -28,7 +31,10 @@ export function useSymbolSearch() {
       setLoading(true);
       fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`, { signal: controller.signal })
         .then((res) => (res.ok ? res.json() : []))
-        .then((data: SearchResultOut[]) => setResults(data))
+        .then((data: SearchResultOut[]) => {
+          setResults(data);
+          setActiveIndex(-1);
+        })
         .catch(() => {})
         .finally(() => setLoading(false));
     }, DEBOUNCE_MS);
@@ -52,10 +58,33 @@ export function useSymbolSearch() {
     }
   };
 
+  const visibleResults = trimmedQuery.length === 0 ? [] : results;
+
+  // Arrow keys move the highlight, Enter opens it (or the top hit when
+  // nothing is highlighted), Escape clears the box.
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (visibleResults.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((i) => (i + 1) % visibleResults.length);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((i) => (i <= 0 ? visibleResults.length - 1 : i - 1));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      selectResult(visibleResults[activeIndex >= 0 ? activeIndex : 0]);
+    } else if (event.key === 'Escape') {
+      setQuery('');
+      setResults([]);
+    }
+  };
+
   return {
+    activeIndex,
+    handleKeyDown,
     query,
     setQuery,
-    results: trimmedQuery.length === 0 ? [] : results,
+    results: visibleResults,
     loading: trimmedQuery.length === 0 ? false : loading,
     open,
     setOpen,

@@ -249,7 +249,7 @@
           "Market data"
         ],
         "summary": "Screen stocks by financial criteria",
-        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope).",
+        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending unless `sort_by`/`order` are given (server-side, over the whole matching set; NULLs last). Market cap, price, P/E, P/B and dividend yield refresh daily for the whole universe; ROE, ROCE, debt/equity and growth are scraped incrementally, so those filters only match companies that have been scraped yet. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope).",
         "security": [],
         "parameters": [
           {
@@ -424,6 +424,38 @@
               "minimum": 1,
               "maximum": 500,
               "default": 100
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "market_cap",
+                "pe",
+                "pb",
+                "roe",
+                "roce",
+                "dividend_yield",
+                "debt_to_equity",
+                "sales_growth_3y_cagr",
+                "profit_growth_3y_cagr"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
             }
           }
         ],
@@ -2676,6 +2708,34 @@
           },
           "401": {
             "description": "Not authenticated."
+          }
+        }
+      }
+    },
+    "/api/cron/refresh-screener-quotes": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Refresh the screener's price-derived fields for the whole NSE universe",
+        "description": "Machine-to-machine (ADR 0033). Bearer CRON_SECRET (dev-open, prod-503 when unset). Quotes every main-board NSE symbol from Yahoo in 100-symbol chunks and posts market cap (₹ Cr), price, P/E, P/B and dividend yield to fundamentals-api POST /screener/quotes (needs SCREENER_INGEST_TOKEN). GET and POST both accepted.",
+        "security": [
+          {
+            "cronBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ universe, quoted, ingested, skipped, ms }"
+          },
+          "401": {
+            "description": "Bad / missing bearer."
+          },
+          "500": {
+            "description": "Quote fetch or ingest failed."
+          },
+          "503": {
+            "description": "CRON_SECRET or SCREENER_INGEST_TOKEN not set."
           }
         }
       }

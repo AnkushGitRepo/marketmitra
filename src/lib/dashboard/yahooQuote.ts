@@ -88,6 +88,21 @@ export async function fetchYahooQuotes(symbols: string[]): Promise<Map<string, Q
   return result;
 }
 
+/** Raw Yahoo quotes for many NSE symbols in one request per chunk — used by
+ * the bulk screener-quote job (src/lib/screener/bulkQuotes.ts). Unlike
+ * fetchYahooQuotes this keeps the whole payload (market cap, P/E, P/B,
+ * dividend yield) and skips response validation, so one schema-drifted
+ * ticker can't fail an entire 100-symbol chunk. A failed chunk yields [] —
+ * those symbols just keep their previous values until the next run. */
+export async function fetchYahooQuoteChunk(symbols: string[]): Promise<Record<string, unknown>[]> {
+  try {
+    const result = await yahooFinance.quote(symbols.map(toYahooSymbol), {}, { validateResult: false });
+    return Array.isArray(result) ? (result as Record<string, unknown>[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 const PERIOD_DAYS: Record<PricePeriod, number> = {
   '1mo': 31,
   '6mo': 186,

@@ -114,3 +114,65 @@ class TestRowToValues:
     def test_ignores_unknown_keys(self):
         values = svc._row_to_values({"symbol": "TESTA", "name": "Test Alpha", "made_up_field": 1})
         assert "made_up_field" not in values
+
+
+def test_quotes_and_stale_require_token(client):
+    assert client.post("/screener/quotes", json={"rows": []}).status_code == 503
+    assert client.get("/screener/stale").status_code == 503
+
+
+def test_quotes_and_stale_token_matrix(client, monkeypatch):
+    monkeypatch.setattr("app.api.routes.screener._settings.screener_ingest_token", "s3cret")
+    seen = {}
+
+    async def fake_quotes(session, rows):
+        seen["rows"] = rows
+        return {"ingested": len(rows), "skipped": 0}
+
+    async def fake_stale(session, limit):
+        seen["limit"] = limit
+        return [{"symbol": "TCS", "name": "Tata Consultancy Services Limited"}]
+
+    monkeypatch.setattr("app.api.routes.screener.svc.ingest_quotes", fake_quotes)
+    monkeypatch.setattr("app.api.routes.screener.svc.stale_symbols", fake_stale)
+    auth = {"Authorization": "Bearer s3cret"}
+
+    assert client.post("/screener/quotes", json={"rows": []}).status_code == 401
+    assert client.get("/screener/stale", headers={"Authorization": "Bearer nope"}).status_code == 401
+
+    ok = client.post("/screener/quotes", json={"rows": [{"symbol": "TCS", "pe": 25}]}, headers=auth)
+    assert ok.status_code == 200 and ok.json()["ingested"] == 1
+    stale = client.get("/screener/stale?limit=50", headers=auth)
+    assert stale.json()[0]["symbol"] == "TCS" and seen["limit"] == 50
+
+
+def test_stale_limit_is_bounded(client, monkeypatch):
+    monkeypatch.setattr("app.api.routes.screener._settings.screener_ingest_token", "s3cret")
+    response = client.get("/screener/stale?limit=999999", headers={"Authorization": "Bearer s3cret"})
+    assert response.status_code == 422
+
+
+def test_fundamentals_ingest_stamps_freshness():
+    values = svc._row_to_values({"symbol": "tcs", "name": "TCS", "roe": 50})
+    assert values["symbol"] == "TCS"
+    assert values["fundamentals_updated_at"] == values["fetched_at"]
+
+
+def test_sort_by_is_allow_listed():
+    from app.db.models import ScreenerMetricsORM
+
+    clause = svc._order_by({"sort_by": "roe", "order": "asc"})[0]
+    assert "roe" in str(clause) and "ASC" in str(clause) and "NULLS LAST" in str(clause)
+    # Unknown / injected column names fall back to the market-cap default.
+    fallback = svc._order_by({"sort_by": "symbol; DROP TABLE x"})
+    assert str(fallback[0]) == str(ScreenerMetricsORM.market_cap.desc().nullslast())
+
+
+def test_stats_route_shape(client, monkeypatch):
+    async def fake_stats(session):
+        return {"universe": 2400, "with_quotes": 2300, "with_fundamentals": 400,
+                "quotes_updated_at": None, "fundamentals_updated_at": None}
+
+    monkeypatch.setattr("app.api.routes.screener.svc.get_screener_stats", fake_stats)
+    body = client.get("/screener/stats").json()
+    assert body["with_fundamentals"] == 400

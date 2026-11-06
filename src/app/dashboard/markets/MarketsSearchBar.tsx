@@ -6,7 +6,7 @@ import { useSymbolSearch } from '@/lib/dashboard/useSymbolSearch';
 import styles from './page.module.css';
 
 export function MarketsSearchBar() {
-  const { query, setQuery, results, loading, selectResult } = useSymbolSearch();
+  const { query, setQuery, results, loading, selectResult, activeIndex, handleKeyDown } = useSymbolSearch();
   const [focused, setFocused] = useState(false);
 
   return (
@@ -19,13 +19,22 @@ export function MarketsSearchBar() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          aria-label="Search NSE stocks and indices"
+          autoComplete="off"
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder="Search any NSE stock or index — try RELIANCE or NIFTY"
+          placeholder="Search any NSE stock — name, symbol or ISIN — or an index"
           className={styles.searchInput}
         />
       </div>
-      {focused && <SearchResultsDropdown results={results} loading={loading} onSelect={selectResult} />}
+      {focused && <SearchResultsDropdown
+          results={results}
+          loading={loading}
+          onSelect={selectResult}
+          activeIndex={activeIndex}
+          query={query}
+        />}
     </div>
   );
 }

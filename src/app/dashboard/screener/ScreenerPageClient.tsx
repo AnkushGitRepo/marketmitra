@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   SCREENER_RANGE_FIELDS,
   buildScreenerQuery,
@@ -48,11 +48,13 @@ function buildFilters(draft: Draft): BuiltFilters {
     let max: number | undefined;
     if (minRaw) {
       min = Number(minRaw);
-      if (!Number.isFinite(min)) return { ok: false, error: `${field.label}: enter a valid minimum.` };
+      if (!Number.isFinite(min))
+        return { ok: false, error: `${field.label}: enter a valid minimum.` };
     }
     if (maxRaw) {
       max = Number(maxRaw);
-      if (!Number.isFinite(max)) return { ok: false, error: `${field.label}: enter a valid maximum.` };
+      if (!Number.isFinite(max))
+        return { ok: false, error: `${field.label}: enter a valid maximum.` };
     }
     if (min !== undefined && max !== undefined && min > max) {
       return { ok: false, error: `${field.label}: minimum can't exceed maximum.` };
@@ -87,13 +89,25 @@ const COLUMNS: Column[] = [
     label: 'Market cap',
     format: (r) => (r.market_cap === null ? '—' : `₹${formatNum(r.market_cap, { digits: 0 })} Cr`),
   },
-  { key: 'current_price', label: 'Price', format: (r) => (r.current_price === null ? '—' : `₹${formatNum(r.current_price)}`) },
+  {
+    key: 'current_price',
+    label: 'Price',
+    format: (r) => (r.current_price === null ? '—' : `₹${formatNum(r.current_price)}`),
+  },
   { key: 'pe', label: 'P/E', format: (r) => formatNum(r.pe, { suffix: 'x' }) },
   { key: 'pb', label: 'P/B', format: (r) => formatNum(r.pb, { suffix: 'x' }) },
   { key: 'roe', label: 'ROE', format: (r) => formatNum(r.roe, { suffix: '%' }) },
   { key: 'roce', label: 'ROCE', format: (r) => formatNum(r.roce, { suffix: '%' }) },
-  { key: 'dividend_yield', label: 'Div yield', format: (r) => formatNum(r.dividend_yield, { suffix: '%' }) },
-  { key: 'debt_to_equity', label: 'Debt/Equity', format: (r) => formatNum(r.debt_to_equity, { suffix: 'x' }) },
+  {
+    key: 'dividend_yield',
+    label: 'Div yield',
+    format: (r) => formatNum(r.dividend_yield, { suffix: '%' }),
+  },
+  {
+    key: 'debt_to_equity',
+    label: 'Debt/Equity',
+    format: (r) => formatNum(r.debt_to_equity, { suffix: 'x' }),
+  },
   {
     key: 'sales_growth_3y_cagr',
     label: 'Sales growth (3y)',
@@ -107,15 +121,29 @@ const COLUMNS: Column[] = [
 ];
 
 type SortDir = 'asc' | 'desc';
+type SortableKey = RangeFieldKey;
+const SORTABLE = new Set<string>(SCREENER_RANGE_FIELDS.map((f) => f.key));
+// The API returns at most this many rows per request.
+const RESULT_LIMIT = 100;
 
-export function ScreenerPageClient({ initialResults, initialFilters, sectors }: ScreenerPageClientProps) {
+export function ScreenerPageClient({
+  initialResults,
+  initialFilters,
+  sectors,
+}: ScreenerPageClientProps) {
   const [draft, setDraft] = useState<Draft>(() => draftFromFilters(initialFilters));
   const [results, setResults] = useState<ScreenerResultRow[]>(initialResults);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [sort, setSort] = useState<{ key: keyof ScreenerResultRow; dir: SortDir } | null>(null);
+  const [sort, setSort] = useState<{ key: SortableKey; dir: SortDir } | null>(() =>
+    initialFilters.sort_by
+      ? { key: initialFilters.sort_by, dir: initialFilters.order ?? 'desc' }
+      : null,
+  );
+  const [appliedFilters, setAppliedFilters] = useState<ScreenerFilters>(initialFilters);
 
-  const set = (key: RangeKey | 'sector', value: string) => setDraft((prev) => ({ ...prev, [key]: value }));
+  const set = (key: RangeKey | 'sector', value: string) =>
+    setDraft((prev) => ({ ...prev, [key]: value }));
 
   const applyFilters = async (filters: ScreenerFilters) => {
     setLoading(true);
@@ -129,7 +157,8 @@ export function ScreenerPageClient({ initialResults, initialFilters, sectors }: 
         return;
       }
       setResults(await response.json());
-      setSort(null);
+      setAppliedFilters(filters);
+      setSort(filters.sort_by ? { key: filters.sort_by, dir: filters.order ?? 'desc' } : null);
     } catch {
       setError('Could not reach the screener — try again in a moment.');
     } finally {
@@ -144,7 +173,10 @@ export function ScreenerPageClient({ initialResults, initialFilters, sectors }: 
       setError(built.error);
       return;
     }
-    await applyFilters(built.filters);
+    await applyFilters({
+      ...built.filters,
+      ...(sort ? { sort_by: sort.key, order: sort.dir } : {}),
+    });
   };
 
   const handleReset = async () => {
@@ -152,28 +184,16 @@ export function ScreenerPageClient({ initialResults, initialFilters, sectors }: 
     await applyFilters(initialFilters);
   };
 
-  const sortedResults = useMemo(() => {
-    if (!sort) return results;
-    const { key, dir } = sort;
-    const copy = [...results];
-    copy.sort((a, b) => {
-      const av = a[key];
-      const bv = b[key];
-      if (av === null && bv === null) return 0;
-      if (av === null) return 1;
-      if (bv === null) return -1;
-      const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv));
-      return dir === 'asc' ? cmp : -cmp;
-    });
-    return copy;
-  }, [results, sort]);
-
+  // Sorting is done by the API over the whole matching set (not just the
+  // rows on screen), so a click re-runs the applied filters with a new order.
   const toggleSort = (key: keyof ScreenerResultRow) => {
-    setSort((prev) => {
-      if (!prev || prev.key !== key) return { key, dir: 'desc' };
-      return { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' };
-    });
+    if (!SORTABLE.has(key)) return;
+    const sortKey = key as SortableKey;
+    const dir: SortDir = sort?.key === sortKey && sort.dir === 'desc' ? 'asc' : 'desc';
+    void applyFilters({ ...appliedFilters, sort_by: sortKey, order: dir });
   };
+
+  const sortedResults = results;
 
   return (
     <>
@@ -210,7 +230,11 @@ export function ScreenerPageClient({ initialResults, initialFilters, sectors }: 
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Sector</span>
-            <select className={styles.select} value={draft.sector} onChange={(e) => set('sector', e.target.value)}>
+            <select
+              className={styles.select}
+              value={draft.sector}
+              onChange={(e) => set('sector', e.target.value)}
+            >
               <option value="">All sectors</option>
               {sectors.map((s) => (
                 <option key={s} value={s}>
@@ -224,7 +248,12 @@ export function ScreenerPageClient({ initialResults, initialFilters, sectors }: 
         {error && <p className={styles.formError}>{error}</p>}
 
         <div className={styles.formActions}>
-          <button type="button" className={styles.btnSecondary} onClick={handleReset} disabled={loading}>
+          <button
+            type="button"
+            className={styles.btnSecondary}
+            onClick={handleReset}
+            disabled={loading}
+          >
             Reset
           </button>
           <button type="submit" className={styles.btnPrimary} disabled={loading}>
@@ -236,50 +265,70 @@ export function ScreenerPageClient({ initialResults, initialFilters, sectors }: 
       {sortedResults.length === 0 ? (
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No companies match these filters</p>
-          <p className={styles.emptyText}>
-            Try widening a range or clearing the sector filter.
-          </p>
-          <button type="button" className={styles.btnSecondary} onClick={handleReset} style={{ marginTop: 16 }}>
+          <p className={styles.emptyText}>Try widening a range or clearing the sector filter.</p>
+          <button
+            type="button"
+            className={styles.btnSecondary}
+            onClick={handleReset}
+            style={{ marginTop: 16 }}
+          >
             Reset filters
           </button>
         </div>
       ) : (
-        <div className={styles.tableScroll}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={`${styles.th} ${styles.thLeft}`}>Company</th>
-                {COLUMNS.map((col) => (
-                  <th
-                    key={col.key}
-                    className={`${styles.th} ${styles.thRight} ${styles.thSortable}`}
-                    onClick={() => toggleSort(col.key)}
-                  >
-                    {col.label}
-                    {sort?.key === col.key ? (sort.dir === 'desc' ? ' ↓' : ' ↑') : ''}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedResults.map((row) => (
-                <tr key={row.symbol} className={styles.row}>
-                  <td className={styles.rowLabel} style={{ textAlign: 'left' }}>
-                    <Link href={`/dashboard/stock/${encodeURIComponent(row.symbol)}`} className={styles.rowLink}>
-                      {row.name}
-                      <span className={styles.rowSymbol}> · {row.symbol}</span>
-                    </Link>
-                  </td>
+        <>
+          <p className={styles.introNote} data-testid="screener-count">
+            {sortedResults.length >= RESULT_LIMIT
+              ? `Showing the top ${RESULT_LIMIT} matches — narrow the filters to see others.`
+              : `${sortedResults.length} ${sortedResults.length === 1 ? 'company matches' : 'companies match'}.`}
+          </p>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={`${styles.th} ${styles.thLeft}`}>Company</th>
                   {COLUMNS.map((col) => (
-                    <td key={col.key} className={styles.rowCell}>
-                      {col.format(row)}
-                    </td>
+                    <th
+                      key={col.key}
+                      className={`${styles.th} ${styles.thRight} ${SORTABLE.has(col.key) ? styles.thSortable : ''}`}
+                      aria-sort={
+                        sort?.key === col.key
+                          ? sort.dir === 'desc'
+                            ? 'descending'
+                            : 'ascending'
+                          : undefined
+                      }
+                      onClick={() => toggleSort(col.key)}
+                    >
+                      {col.label}
+                      {sort?.key === col.key ? (sort.dir === 'desc' ? ' ↓' : ' ↑') : ''}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {sortedResults.map((row) => (
+                  <tr key={row.symbol} className={styles.row}>
+                    <td className={styles.rowLabel} style={{ textAlign: 'left' }}>
+                      <Link
+                        href={`/dashboard/stock/${encodeURIComponent(row.symbol)}`}
+                        className={styles.rowLink}
+                      >
+                        {row.name}
+                        <span className={styles.rowSymbol}> · {row.symbol}</span>
+                      </Link>
+                    </td>
+                    {COLUMNS.map((col) => (
+                      <td key={col.key} className={styles.rowCell}>
+                        {col.format(row)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </>
   );
