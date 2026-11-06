@@ -3,6 +3,17 @@ export interface RangeSeries {
   l: string[];
 }
 
+/** One OHLC bar. `date` is the first trade date the bar covers (ISO),
+ * `label` the short axis label derived from it. */
+export interface CandlePoint {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  date: string;
+  label: string;
+}
+
 export interface ChartPoint {
   x: number;
   y: number;

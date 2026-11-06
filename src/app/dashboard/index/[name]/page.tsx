@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { getQuotes, type PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { fetchIndexHistory, isTrackedIndexName } from '@/lib/dashboard/yahooQuote';
-import { toRangeSeries } from '@/lib/dashboard/transforms';
+import { toCandleSeries, toRangeSeries } from '@/lib/dashboard/transforms';
+import type { CandlePoint } from '@/lib/dashboard/chartMath';
 import { IndexPageClient } from './IndexPageClient';
 import styles from './page.module.css';
 
@@ -50,6 +51,10 @@ export default async function IndexPage({ params }: { params: Promise<{ name: st
     PRICE_PERIODS.map((period, i) => [period, toRangeSeries(priceSets[i] ?? [], period)])
   ) as Record<PricePeriod, ReturnType<typeof toRangeSeries>>;
 
+  const candleSeries = Object.fromEntries(
+    PRICE_PERIODS.map((period, i) => [period, toCandleSeries(priceSets[i] ?? [], period)])
+  ) as Record<PricePeriod, CandlePoint[]>;
+
   return (
     <IndexPageClient
       name={name}
@@ -60,6 +65,7 @@ export default async function IndexPage({ params }: { params: Promise<{ name: st
       week52Low={quote?.week52_low ?? null}
       asOf={quote?.as_of ?? null}
       priceSeries={priceSeries}
+      candleSeries={candleSeries}
       news={news.items}
     />
   );

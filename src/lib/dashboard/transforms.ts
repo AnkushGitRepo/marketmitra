@@ -1,5 +1,5 @@
 import type { LineItemOut, PricePeriod, PricePointOut, ShareholdingOut } from './fundamentalsApi';
-import type { RangeSeries } from './chartMath';
+import type { CandlePoint, RangeSeries } from './chartMath';
 
 export interface FinTable {
   cols: string[];
@@ -116,6 +116,42 @@ export function toRangeSeries(points: PricePointOut[], period: PricePeriod): Ran
     v: sampled.map((p) => Number(p.close)),
     l: sampled.map((p) => formatPriceLabel(p.trade_date, period)),
   };
+}
+
+/** Max candles drawn per range — a candle needs far more horizontal room
+ * than a line vertex, but a raw 5-year daily series (1000+ bars) is unreadable. */
+export const MAX_CANDLES = 60;
+
+/** Builds OHLC candles from the API's newest-first price rows. Rows missing
+ * any of open/high/low/close are skipped. A dense series is aggregated into
+ * at most `maxCandles` consecutive buckets (open of the first row, close of
+ * the last, extreme high/low across the bucket), so no price action is lost
+ * to sampling the way `downsample` would. */
+export function toCandleSeries(
+  points: PricePointOut[],
+  period: PricePeriod,
+  maxCandles: number = MAX_CANDLES
+): CandlePoint[] {
+  const rows = points
+    .filter((p) => p.open !== null && p.high !== null && p.low !== null && p.close !== null)
+    .slice()
+    .reverse();
+  if (rows.length === 0) return [];
+
+  const bucketSize = Math.max(1, Math.ceil(rows.length / maxCandles));
+  const candles: CandlePoint[] = [];
+  for (let i = 0; i < rows.length; i += bucketSize) {
+    const bucket = rows.slice(i, i + bucketSize);
+    candles.push({
+      open: Number(bucket[0].open),
+      high: Math.max(...bucket.map((p) => Number(p.high))),
+      low: Math.min(...bucket.map((p) => Number(p.low))),
+      close: Number(bucket[bucket.length - 1].close),
+      date: bucket[0].trade_date,
+      label: formatPriceLabel(bucket[0].trade_date, period),
+    });
+  }
+  return candles;
 }
 
 export function formatPriceLabel(tradeDate: string, period: PricePeriod): string {

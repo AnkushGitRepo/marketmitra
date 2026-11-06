@@ -2,13 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LineChart } from '@/components/dashboard-charts/LineChart';
+import { CHART_KINDS, CHART_KIND_LABELS, PriceChart, type ChartKind } from '@/components/dashboard-charts/PriceChart';
 import { PillTabs } from '@/components/dashboard-charts/PillTabs';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { usePageContext } from '@/lib/dashboard/PageContext';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
-import type { RangeSeries } from '@/lib/dashboard/chartMath';
+import type { CandlePoint, RangeSeries } from '@/lib/dashboard/chartMath';
 import styles from './page.module.css';
 
 const RANGE_OPTIONS: PricePeriod[] = ['1mo', '6mo', '1y', '5y'];
@@ -23,6 +23,7 @@ interface IndexPageClientProps {
   week52Low: string | null;
   asOf: string | null;
   priceSeries: Record<PricePeriod, RangeSeries>;
+  candleSeries: Record<PricePeriod, CandlePoint[]>;
   news: NewsItem[];
 }
 
@@ -39,11 +40,13 @@ export function IndexPageClient({
   week52Low,
   asOf,
   priceSeries,
+  candleSeries,
   news,
 }: IndexPageClientProps) {
   const router = useRouter();
   const { setPageContext } = usePageContext();
   const [range, setRange] = useState<PricePeriod>('1y');
+  const [chartKind, setChartKind] = useState<ChartKind>('line');
 
   useEffect(() => {
     setPageContext({ page: 'index', name, range });
@@ -98,18 +101,21 @@ export function IndexPageClient({
       <div className={styles.card}>
         <div className={styles.cardHead}>
           <p className={styles.cardLabel}>Price history</p>
-          <PillTabs options={RANGE_OPTIONS} value={range} onChange={setRange} labels={RANGE_LABELS} />
+          <div className={styles.chartControls}>
+            <PillTabs options={CHART_KINDS} value={chartKind} onChange={setChartKind} labels={CHART_KIND_LABELS} />
+            <PillTabs options={RANGE_OPTIONS} value={range} onChange={setRange} labels={RANGE_LABELS} />
+          </div>
         </div>
-        {priceSeries[range].v.length > 0 ? (
-          <LineChart
-            series={priceSeries[range]}
-            height={210}
-            formatValue={formatValue}
-            ariaLabel={`${name} price chart, ${RANGE_LABELS[range]}`}
-          />
-        ) : (
-          <p className={styles.meta}>No price history available for this range.</p>
-        )}
+        <PriceChart
+          kind={chartKind}
+          series={priceSeries[range]}
+          candles={candleSeries[range]}
+          height={210}
+          formatValue={formatValue}
+          subject={`${name}, ${RANGE_LABELS[range]}`}
+          emptyText="No price history available for this range."
+          emptyClassName={styles.meta}
+        />
       </div>
 
       {news.length > 0 && (
