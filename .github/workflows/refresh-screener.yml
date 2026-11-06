@@ -66,7 +66,8 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install --quiet httpx "scrapling>=0.4.15" "lxml>=5.3"
+          # pydantic: the scraper imports app.schemas.
+          pip install --quiet httpx "scrapling>=0.4.15" "lxml>=5.3" pydantic
 
       - name: Scrape + ingest
         env:
