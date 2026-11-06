@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.ingestion.embeddings import EMBED_DIM, EmbeddingError, embed_texts
+from app.security import require_bearer
 
 router = APIRouter(tags=["embeddings"])
 _settings = get_settings()
@@ -30,11 +31,7 @@ class EmbedOut(BaseModel):
 
 @router.post("/embed", response_model=EmbedOut)
 async def embed(body: EmbedIn, authorization: str | None = Header(default=None)) -> EmbedOut:
-    token = _settings.ipo_ingest_token
-    if not token:
-        raise HTTPException(status_code=503, detail="ipo_ingest_token not configured")
-    if authorization != f"Bearer {token}":
-        raise HTTPException(status_code=401, detail="unauthorized")
+    require_bearer(authorization, _settings.ipo_ingest_token, name="ipo_ingest_token")
 
     texts = [t[:MAX_CHARS] for t in body.texts]
     try:

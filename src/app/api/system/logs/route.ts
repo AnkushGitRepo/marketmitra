@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/currentUserId';
+import { isAdminUser } from '@/lib/auth/admin';
 import { listEvents, type EventLevel } from '@/lib/system/eventLog';
 
 // System event log feed (ADR 0029) — backs the "Logs" panel on
-// /dashboard/system. Not user-scoped data (it's operational, not personal),
-// but still gated behind sign-in like the rest of /dashboard* — this app
-// has no separate admin role, so "signed in" is the existing bar.
+// /dashboard/system. Operational data (cron results, error messages), not
+// per-user, but hosted sign-up is open to anyone — so it is restricted to the
+// operator via ADMIN_USER_IDS (see lib/auth/admin.ts), not just "signed in".
 
 const LEVELS: EventLevel[] = ['info', 'warn', 'error'];
 
@@ -13,6 +14,9 @@ export async function GET(request: Request) {
   const userId = await getCurrentUserId();
   if (!userId) {
     return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
+  }
+  if (!isAdminUser(userId)) {
+    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
 
   const url = new URL(request.url);

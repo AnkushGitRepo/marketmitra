@@ -8,6 +8,8 @@ import styles from './page.module.css';
 interface Props {
   initialStatus: SystemStatus;
   initialEvents: SystemEvent[];
+  /** Operator-only; false hides the event log (the API refuses it too). */
+  canViewLogs: boolean;
 }
 
 const STATUS_LABEL: Record<ComponentHealth['status'], string> = {
@@ -18,7 +20,9 @@ const STATUS_LABEL: Record<ComponentHealth['status'], string> = {
 };
 
 function StatusPill({ status }: { status: ComponentHealth['status'] }) {
-  return <span className={`${styles.pill} ${styles[`pill_${status}`]}`}>{STATUS_LABEL[status]}</span>;
+  return (
+    <span className={`${styles.pill} ${styles[`pill_${status}`]}`}>{STATUS_LABEL[status]}</span>
+  );
 }
 
 function formatTs(iso: string | Date): string {
@@ -34,7 +38,7 @@ function formatTs(iso: string | Date): string {
 
 const LEVELS: Array<EventLevel | 'all'> = ['all', 'info', 'warn', 'error'];
 
-export function SystemPageClient({ initialStatus, initialEvents }: Props) {
+export function SystemPageClient({ initialStatus, initialEvents, canViewLogs }: Props) {
   const [status, setStatus] = useState(initialStatus);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -92,18 +96,23 @@ export function SystemPageClient({ initialStatus, initialEvents }: Props) {
           <p className={styles.eyebrow}>Infrastructure</p>
           <h1 className={styles.h1}>System status</h1>
           <p className={styles.introNote}>
-            Live health of every component this deployment depends on, plus the last 30 days of
-            cron / job activity. The same checks power the public{' '}
-            <a href="/status">/status</a> page.
+            Live health of every component this deployment depends on, plus the last 30 days of cron
+            / job activity. The same checks power the public <a href="/status">/status</a> page.
           </p>
         </div>
-        <button type="button" className={styles.refreshBtn} onClick={refreshStatus} disabled={refreshing}>
+        <button
+          type="button"
+          className={styles.refreshBtn}
+          onClick={refreshStatus}
+          disabled={refreshing}
+        >
           {refreshing ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
 
       <p className={styles.checkedAt}>
-        Overall: <StatusPill status={status.overall} /> &middot; checked {formatTs(status.checkedAt)}
+        Overall: <StatusPill status={status.overall} /> &middot; checked{' '}
+        {formatTs(status.checkedAt)}
       </p>
 
       <div className={styles.componentGrid}>
@@ -153,60 +162,75 @@ export function SystemPageClient({ initialStatus, initialEvents }: Props) {
         </table>
       </div>
 
-      <div className={styles.headRow}>
-        <h2 className={styles.sectionTitle}>Event log</h2>
-        <div className={styles.levelFilter}>
-          {LEVELS.map((l) => (
+      {!canViewLogs ? (
+        <p className={styles.introNote}>
+          The event log is restricted to the operator of this instance.
+        </p>
+      ) : (
+        <>
+          <div className={styles.headRow}>
+            <h2 className={styles.sectionTitle}>Event log</h2>
+            <div className={styles.levelFilter}>
+              {LEVELS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  className={`${styles.filterBtn} ${level === l ? styles.filterBtnActive : ''}`}
+                  onClick={() => changeLevel(l)}
+                >
+                  {l === 'all' ? 'All' : l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Level</th>
+                  <th>Source</th>
+                  <th>Message</th>
+                  <th>Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((e) => (
+                  <tr key={e.id}>
+                    <td>{formatTs(e.ts)}</td>
+                    <td>
+                      <span className={`${styles.levelTag} ${styles[`level_${e.level}`]}`}>
+                        {e.level}
+                      </span>
+                    </td>
+                    <td className={styles.mono}>{e.source}</td>
+                    <td>{e.message}</td>
+                    <td>{e.durationMs != null ? `${e.durationMs} ms` : '—'}</td>
+                  </tr>
+                ))}
+                {events.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className={styles.emptyRow}>
+                      {loadingLogs ? 'Loading…' : 'No events recorded yet.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {hasMore && (
             <button
-              key={l}
               type="button"
-              className={`${styles.filterBtn} ${level === l ? styles.filterBtnActive : ''}`}
-              onClick={() => changeLevel(l)}
+              className={styles.loadMoreBtn}
+              onClick={loadMore}
+              disabled={loadingLogs}
             >
-              {l === 'all' ? 'All' : l}
+              {loadingLogs ? 'Loading…' : 'Load more'}
             </button>
-          ))}
-        </div>
-      </div>
-
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Level</th>
-              <th>Source</th>
-              <th>Message</th>
-              <th>Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map((e) => (
-              <tr key={e.id}>
-                <td>{formatTs(e.ts)}</td>
-                <td>
-                  <span className={`${styles.levelTag} ${styles[`level_${e.level}`]}`}>{e.level}</span>
-                </td>
-                <td className={styles.mono}>{e.source}</td>
-                <td>{e.message}</td>
-                <td>{e.durationMs != null ? `${e.durationMs} ms` : '—'}</td>
-              </tr>
-            ))}
-            {events.length === 0 && (
-              <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  {loadingLogs ? 'Loading…' : 'No events recorded yet.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {hasMore && (
-        <button type="button" className={styles.loadMoreBtn} onClick={loadMore} disabled={loadingLogs}>
-          {loadingLogs ? 'Loading…' : 'Load more'}
-        </button>
+          )}
+        </>
       )}
     </div>
   );

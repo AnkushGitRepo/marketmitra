@@ -18,6 +18,7 @@ import type { NewsItem } from '@/lib/dashboard/newsApi';
 import type { Bar, RangeKey } from '@/lib/chart/bars';
 import { formatRatioValue, stripCitationMarkers, type FinTable, type ShareholdingSeries } from '@/lib/dashboard/transforms';
 import styles from './page.module.css';
+import { safeHref } from '@/lib/security/safeHref';
 
 const DOCS_COLLAPSED_COUNT = 4;
 
@@ -361,7 +362,7 @@ export function StockPageClient({
                 {visibleDocuments.map((doc) => (
                   <a
                     key={doc.url}
-                    href={doc.url}
+                    href={safeHref(doc.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.docRow}

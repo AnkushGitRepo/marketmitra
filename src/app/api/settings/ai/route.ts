@@ -8,7 +8,15 @@ import { clearAiSettings, getAiSettingsView, setAiSettings } from '@/lib/userSet
 const putSchema = z.object({
   provider: z.enum(['gemini', 'anthropic', 'openrouter']),
   apiKey: z.string().trim().min(10).max(400),
-  model: z.string().trim().max(120).optional(),
+  // Model ids end up in provider request URLs, so allow only id-like characters
+  // (letters, digits, . _ : / -) and no path traversal.
+  model: z
+    .string()
+    .trim()
+    .max(120)
+    .regex(/^[A-Za-z0-9._:/-]*$/, 'Model id contains invalid characters')
+    .refine((m) => !m.includes('..'), 'Model id contains invalid characters')
+    .optional(),
 });
 
 export async function GET() {

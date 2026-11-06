@@ -15,10 +15,14 @@ on a live route (unlike ``pdf_financials.py``).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from io import BytesIO
+from urllib.parse import urljoin
 
 import httpx
+
+from app.security import UnsafeUrlError, validate_public_url
 
 logger = logging.getLogger("fundamentals.pdf_text")
 
@@ -32,21 +36,49 @@ class PdfTextError(RuntimeError):
     """Download or extraction failed in a way the caller should surface."""
 
 
+_MAX_REDIRECTS = 5
+
+
 async def download_pdf(url: str) -> bytes:
+    """Fetch a PDF, refusing anything that would turn this into an SSRF proxy.
+
+    Every hop (the original URL and each redirect) must resolve to public
+    addresses only, redirects are followed manually so none is trusted blindly,
+    and the body is streamed with a hard size cap instead of being loaded whole.
+    """
+    current = url
     try:
-        async with httpx.AsyncClient(
-            timeout=DOWNLOAD_TIMEOUT_SECONDS, follow_redirects=True
-        ) as client:
-            response = await client.get(url, headers={"User-Agent": _UA})
-            response.raise_for_status()
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT_SECONDS, follow_redirects=False) as client:
+            for _ in range(_MAX_REDIRECTS + 1):
+                try:
+                    # getaddrinfo blocks, so keep it off the event loop.
+                    await asyncio.to_thread(validate_public_url, current)
+                except UnsafeUrlError as exc:
+                    raise PdfTextError(f"refusing to fetch: {exc}") from exc
+
+                async with client.stream("GET", current, headers={"User-Agent": _UA}) as response:
+                    if response.is_redirect:
+                        location = response.headers.get("location", "")
+                        if not location:
+                            raise PdfTextError("redirect without a Location header")
+                        current = urljoin(current, location)
+                        continue
+                    response.raise_for_status()
+                    chunks: list[bytes] = []
+                    size = 0
+                    async for chunk in response.aiter_bytes():
+                        size += len(chunk)
+                        if size > MAX_PDF_BYTES:
+                            raise PdfTextError(f"PDF too large (limit {MAX_PDF_BYTES} bytes)")
+                        chunks.append(chunk)
+                    content_type = response.headers.get("content-type", "").lower()
+                    body = b"".join(chunks)
+                break
+            else:
+                raise PdfTextError("too many redirects")
     except httpx.HTTPError as exc:
         raise PdfTextError(f"could not fetch PDF: {exc}") from exc
 
-    body = response.content
-    if len(body) > MAX_PDF_BYTES:
-        raise PdfTextError(f"PDF too large ({len(body)} bytes, limit {MAX_PDF_BYTES})")
-
-    content_type = response.headers.get("content-type", "").lower()
     if not body[:1024].lstrip().startswith(b"%PDF-") and "pdf" not in content_type:
         raise PdfTextError("response does not look like a PDF")
     return body

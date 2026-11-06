@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { bearerMatches } from '@/lib/security/secrets';
 import { ensureChunksIndexes } from '@/lib/rag/chunks';
 import { indexCorpus } from '@/lib/rag/indexer';
 import { logEvent } from '@/lib/system/eventLog';
@@ -29,7 +30,7 @@ function authorize(request: Request): { ok: true } | { ok: false; status: number
     }
     return { ok: true }; // local dev convenience
   }
-  if (request.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!bearerMatches(request.headers.get('authorization'), secret)) {
     return { ok: false, status: 401, error: 'Unauthorized' };
   }
   return { ok: true };

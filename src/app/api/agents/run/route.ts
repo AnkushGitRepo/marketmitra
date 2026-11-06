@@ -1,4 +1,5 @@
 import { NextResponse, after } from 'next/server';
+import { resolveInternalOrigin } from '@/lib/agents/internalOrigin';
 import { z } from 'zod';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getCurrentUserId } from '@/lib/currentUserId';
@@ -60,7 +61,7 @@ async function handlePOST(request: Request) {
   // workflow (agents-tick.yml) sweeps if this fetch is dropped.
   after(async () => {
     try {
-      await fetch(new URL(`/api/agents/tick?id=${id}`, request.url), {
+      await fetch(new URL(`/api/agents/tick?id=${id}`, resolveInternalOrigin(process.env, request.url)), {
         method: 'POST',
         headers: process.env.CRON_SECRET
           ? { authorization: `Bearer ${process.env.CRON_SECRET}` }

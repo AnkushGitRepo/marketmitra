@@ -68,6 +68,7 @@ export async function updateHolding(
   id: string,
   input: { quantity: number; avgPrice: number }
 ): Promise<Holding | null> {
+  if (!ObjectId.isValid(id)) return null;
   const col = await collection();
   const result = await col.findOneAndUpdate(
     { _id: new ObjectId(id), userId },
@@ -78,6 +79,7 @@ export async function updateHolding(
 }
 
 export async function deleteHolding(userId: string, id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
   const col = await collection();
   const result = await col.deleteOne({ _id: new ObjectId(id), userId });
   return result.deletedCount > 0;

@@ -3,6 +3,13 @@ import { z } from 'zod';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { isEncKeyConfigured } from '@/lib/crypto';
 import {
+  SLACK_WEBHOOK_HOSTS,
+  TELEGRAM_CHAT_ID_RE,
+  TELEGRAM_TOKEN_RE,
+  outboundOptions,
+} from '@/lib/notifications/channels';
+import { validateOutboundUrl } from '@/lib/security/outbound';
+import {
   getNotificationChannelSettingsView,
   setNotificationChannels,
 } from '@/lib/userSettings';
@@ -17,14 +24,6 @@ const putSchema = z.object({
   customWebhookUrl: z.string().trim().max(500).optional(),
 });
 
-function isHttpUrl(value: string): boolean {
-  try {
-    const u = new URL(value);
-    return u.protocol === 'https:' || u.protocol === 'http:';
-  } catch {
-    return false;
-  }
-}
 
 export async function GET() {
   const userId = await getCurrentUserId();
@@ -49,15 +48,26 @@ export async function PUT(request: Request) {
   }
   const input = parsed.data;
 
-  for (const [field, label] of [
-    ['slackWebhookUrl', 'Slack webhook URL'],
-    ['whatsappWebhookUrl', 'WhatsApp webhook URL'],
-    ['customWebhookUrl', 'Custom webhook URL'],
+  // Webhook targets are URLs the server will POST to, so they are validated
+  // against SSRF rules here (and again at send time): https + public hosts
+  // only when hosted, Slack pinned to hooks.slack.com.
+  for (const [field, label, hosts] of [
+    ['slackWebhookUrl', 'Slack webhook URL', SLACK_WEBHOOK_HOSTS],
+    ['whatsappWebhookUrl', 'WhatsApp webhook URL', undefined],
+    ['customWebhookUrl', 'Custom webhook URL', undefined],
   ] as const) {
     const value = input[field];
-    if (value && !isHttpUrl(value)) {
-      return NextResponse.json({ success: false, error: `${label} must be a valid http(s) URL.` }, { status: 422 });
+    if (!value) continue;
+    const check = validateOutboundUrl(value, outboundOptions(hosts));
+    if (!check.ok) {
+      return NextResponse.json({ success: false, error: `${label}: ${check.reason}.` }, { status: 422 });
     }
+  }
+  if (input.telegramBotToken && !TELEGRAM_TOKEN_RE.test(input.telegramBotToken)) {
+    return NextResponse.json({ success: false, error: 'Telegram bot token looks invalid.' }, { status: 422 });
+  }
+  if (input.telegramChatId && !TELEGRAM_CHAT_ID_RE.test(input.telegramChatId)) {
+    return NextResponse.json({ success: false, error: 'Telegram chat id looks invalid.' }, { status: 422 });
   }
 
   await setNotificationChannels(userId, input);

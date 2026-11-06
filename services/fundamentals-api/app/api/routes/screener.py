@@ -1,11 +1,12 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.config import get_settings
+from app.security import require_bearer
 from app.services import screener_service as svc
 
 router = APIRouter(prefix="/screener", tags=["screener"])
@@ -131,9 +132,5 @@ async def ingest_screener_metrics(
     """Called only by scripts/refresh_screener_universe.py. Guarded by
     `screener_ingest_token` — refused (503) if that isn't configured, same
     shared-secret-bearer-token pattern as POST /ipos/ingest."""
-    token = _settings.screener_ingest_token
-    if not token:
-        raise HTTPException(status_code=503, detail="screener_ingest_token not configured")
-    if authorization != f"Bearer {token}":
-        raise HTTPException(status_code=401, detail="unauthorized")
+    require_bearer(authorization, _settings.screener_ingest_token, name="screener_ingest_token")
     return await svc.ingest_screener_metrics(session, body.rows)

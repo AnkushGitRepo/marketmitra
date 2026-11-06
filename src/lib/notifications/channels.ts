@@ -1,4 +1,6 @@
 import { Resend } from 'resend';
+import { isHosted } from '@/lib/deployment-mode';
+import { describeOutboundError, safeOutboundFetch, type OutboundOptions } from '@/lib/security/outbound';
 import type { ChannelResult, NotificationPayload } from './types';
 
 const WEBHOOK_TIMEOUT_MS = 5_000;
@@ -10,6 +12,18 @@ const WEBHOOK_TIMEOUT_MS = 5_000;
 // `ALERT_EMAIL_FROM` (ADR 0014 amendment).
 const DEFAULT_FROM = 'MarketMitra <onboarding@resend.dev>';
 
+/** Hosted: https to public hosts only. Self-host: the operator may point at
+ * their own http://localhost automation (n8n, etc.). */
+export function outboundOptions(allowedHosts?: readonly string[]): OutboundOptions {
+  const hosted = isHosted();
+  return { allowHttp: !hosted, allowPrivate: !hosted, allowedHosts: hosted ? allowedHosts : undefined };
+}
+
+/** Slack incoming webhooks only ever live on this host. */
+export const SLACK_WEBHOOK_HOSTS = ['hooks.slack.com'] as const;
+export const TELEGRAM_TOKEN_RE = /^\d{5,15}:[A-Za-z0-9_-]{20,}$/;
+export const TELEGRAM_CHAT_ID_RE = /^(-?\d{1,20}|@[A-Za-z0-9_]{5,32})$/;
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://marketmitra-v2.vercel.app';
 
 /** POST the notification to a user-supplied URL. Covers Telegram/Discord/
@@ -20,28 +34,28 @@ export async function sendWebhook(
   payload: NotificationPayload
 ): Promise<ChannelResult> {
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        kind: payload.kind,
-        title: payload.title,
-        body: payload.body,
-        href: payload.href ?? null,
-        meta: payload.meta ?? {},
-      }),
-      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
-    });
+    const response = await safeOutboundFetch(
+      url,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          kind: payload.kind,
+          title: payload.title,
+          body: payload.body,
+          href: payload.href ?? null,
+          meta: payload.meta ?? {},
+        }),
+      },
+      { ...outboundOptions(), timeoutMs: WEBHOOK_TIMEOUT_MS }
+    );
+    await response.body?.cancel().catch(() => {});
     if (!response.ok) {
       return { channel: 'webhook', status: 'error', detail: `HTTP ${response.status}` };
     }
     return { channel: 'webhook', status: 'sent' };
   } catch (err) {
-    return {
-      channel: 'webhook',
-      status: 'error',
-      detail: err instanceof Error ? err.message : 'unknown error',
-    };
+    return { channel: 'webhook', status: 'error', detail: describeOutboundError(err) };
   }
 }
 
@@ -52,19 +66,18 @@ export async function sendSlack(webhookUrl: string, payload: NotificationPayload
   const link = payload.href ? `${APP_URL}${payload.href}` : APP_URL;
   const text = `*${payload.title}*\n${payload.body}\n<${link}|Open in MarketMitra>`;
   try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ text }),
-      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
-    });
-    if (!response.ok) {
-      const detail = await response.text().catch(() => `HTTP ${response.status}`);
-      return { channel: 'slack', status: 'error', detail: detail.slice(0, 200) };
-    }
+    const response = await safeOutboundFetch(
+      webhookUrl,
+      { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) },
+      { ...outboundOptions(SLACK_WEBHOOK_HOSTS), timeoutMs: WEBHOOK_TIMEOUT_MS }
+    );
+    await response.body?.cancel().catch(() => {});
+    // Never echo the response body: for a user-supplied URL it would let them
+    // read whatever answered (SSRF response exfiltration).
+    if (!response.ok) return { channel: 'slack', status: 'error', detail: `HTTP ${response.status}` };
     return { channel: 'slack', status: 'sent' };
   } catch (err) {
-    return { channel: 'slack', status: 'error', detail: err instanceof Error ? err.message : 'unknown error' };
+    return { channel: 'slack', status: 'error', detail: describeOutboundError(err) };
   }
 }
 
@@ -82,22 +95,26 @@ export async function sendTelegram(
   chatId: string,
   payload: NotificationPayload
 ): Promise<ChannelResult> {
+  if (!TELEGRAM_TOKEN_RE.test(botToken) || !TELEGRAM_CHAT_ID_RE.test(chatId)) {
+    return { channel: 'telegram', status: 'error', detail: 'Invalid Telegram bot token or chat id format' };
+  }
   const link = payload.href ? `${APP_URL}${payload.href}` : APP_URL;
   const text = `*${escapeTelegramMarkdown(payload.title)}*\n${escapeTelegramMarkdown(payload.body)}\n[Open in MarketMitra](${link})`;
   try {
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown', disable_web_page_preview: true }),
-      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
-    });
-    if (!response.ok) {
-      const detail = await response.text().catch(() => `HTTP ${response.status}`);
-      return { channel: 'telegram', status: 'error', detail: detail.slice(0, 200) };
-    }
+    const response = await safeOutboundFetch(
+      `https://api.telegram.org/bot${botToken}/sendMessage`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown', disable_web_page_preview: true }),
+      },
+      { allowHttp: false, allowPrivate: false, allowedHosts: ['api.telegram.org'], timeoutMs: WEBHOOK_TIMEOUT_MS }
+    );
+    await response.body?.cancel().catch(() => {});
+    if (!response.ok) return { channel: 'telegram', status: 'error', detail: `HTTP ${response.status}` };
     return { channel: 'telegram', status: 'sent' };
   } catch (err) {
-    return { channel: 'telegram', status: 'error', detail: err instanceof Error ? err.message : 'unknown error' };
+    return { channel: 'telegram', status: 'error', detail: describeOutboundError(err) };
   }
 }
 

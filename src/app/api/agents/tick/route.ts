@@ -1,4 +1,6 @@
 import { NextResponse, after } from 'next/server';
+import { resolveInternalOrigin } from '@/lib/agents/internalOrigin';
+import { bearerMatches } from '@/lib/security/secrets';
 import { advanceRun } from '@/lib/agents/runner';
 import { claimNextRun, ensureAgentRunsIndexes } from '@/lib/agents/store';
 
@@ -19,7 +21,7 @@ function authorize(request: Request): { ok: true } | { ok: false; status: number
     }
     return { ok: true };
   }
-  if (request.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!bearerMatches(request.headers.get('authorization'), secret)) {
     return { ok: false, status: 401, error: 'Unauthorized' };
   }
   return { ok: true };
@@ -50,7 +52,7 @@ async function handle(request: Request) {
   if (!result.done) {
     after(async () => {
       try {
-        await fetch(new URL(`/api/agents/tick?id=${doc._id.toString()}`, request.url), {
+        await fetch(new URL(`/api/agents/tick?id=${doc._id.toString()}`, resolveInternalOrigin(process.env, request.url)), {
           method: 'POST',
           headers: process.env.CRON_SECRET
             ? { authorization: `Bearer ${process.env.CRON_SECRET}` }

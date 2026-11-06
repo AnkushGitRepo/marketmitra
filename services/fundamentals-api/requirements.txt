@@ -48,3 +48,11 @@ pdfplumber>=0.11
 # onnxruntime (CPU) + tokenizers; the ~64 MB quantised bge-small model is
 # downloaded to fastembed_cache_dir (/tmp on Vercel) on first use.
 fastembed>=0.8
+
+# Security floors for transitive dependencies (pip-audit, 2026-11): these are
+# pulled in by pdfplumber / httpx / fastembed, not imported directly, so without
+# an explicit floor a build could resolve to a release with known CVEs.
+pillow>=13.0.0      # 39 advisories fixed in 13.0.0 (image parsing of fetched PDFs)
+urllib3>=2.8.0
+certifi>=2026.10.18
+filelock>=4.2.1

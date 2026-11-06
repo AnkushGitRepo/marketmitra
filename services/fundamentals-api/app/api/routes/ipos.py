@@ -1,11 +1,12 @@
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.config import get_settings
+from app.security import require_bearer
 from app.services import ipo_service as svc
 
 router = APIRouter(prefix="/ipos", tags=["ipos"])
@@ -60,9 +61,5 @@ async def ingest_ipos(
 ) -> dict:
     """Called by the out-of-band headless-browser refresh job. Guarded by
     `ipo_ingest_token` — refused (503) if that isn't configured."""
-    token = _settings.ipo_ingest_token
-    if not token:
-        raise HTTPException(status_code=503, detail="ipo_ingest_token not configured")
-    if authorization != f"Bearer {token}":
-        raise HTTPException(status_code=401, detail="unauthorized")
+    require_bearer(authorization, _settings.ipo_ingest_token, name="ipo_ingest_token")
     return await svc.ingest_ipos(session, body.rows)

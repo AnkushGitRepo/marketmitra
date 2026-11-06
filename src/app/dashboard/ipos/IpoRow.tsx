@@ -6,6 +6,7 @@ import type { Ipo } from '@/lib/dashboard/iposApi';
 import type { IpoTrigger } from '@/lib/alerts/types';
 import { InsightCard } from '@/components/dashboard-charts/InsightCard';
 import styles from './page.module.css';
+import { safeHref } from '@/lib/security/safeHref';
 
 const TRIGGER_LABELS: Record<IpoTrigger, string> = {
   opens: 'When it opens',
@@ -110,7 +111,7 @@ export function IpoRow({ ipo, aiKeyAvailable }: { ipo: Ipo; aiKeyAvailable: bool
             {ipo.source_url && (
               <>
                 {' '}
-                <a href={ipo.source_url} target="_blank" rel="noopener noreferrer">
+                <a href={safeHref(ipo.source_url)} target="_blank" rel="noopener noreferrer">
                   Source ↗
                 </a>
               </>

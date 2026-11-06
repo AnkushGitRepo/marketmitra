@@ -1,5 +1,6 @@
 import type { NewsItem, NewsSentiment } from '@/lib/dashboard/newsApi';
 import styles from './NewsList.module.css';
+import { safeHref } from '@/lib/security/safeHref';
 
 const SENTIMENT_TITLE: Record<NewsSentiment, string> = {
   positive: 'Positive headline tone',
@@ -40,7 +41,7 @@ export function NewsList({ items, showSymbols = false, emptyText = 'No news yet.
             aria-label={SENTIMENT_TITLE[item.sentiment]}
           />
           <div className={styles.body}>
-            <a href={item.url} target="_blank" rel="noopener noreferrer" className={styles.title}>
+            <a href={safeHref(item.url)} target="_blank" rel="noopener noreferrer" className={styles.title}>
               {item.title}
             </a>
             <p className={styles.meta}>

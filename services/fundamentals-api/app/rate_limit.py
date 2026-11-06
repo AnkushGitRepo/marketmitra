@@ -77,8 +77,19 @@ async def check_rate_limit(ip: str, settings: Settings) -> RateLimitResult:
 
 
 def client_ip(headers: httpx.Headers | dict, fallback: str | None) -> str:
-    """First hop of `x-forwarded-for` (Vercel sets it), else the socket peer."""
-    xff = headers.get("x-forwarded-for") if hasattr(headers, "get") else None
+    """The caller's IP for rate limiting.
+
+    Platform-set headers win: on Vercel ``x-vercel-forwarded-for`` / ``x-real-ip``
+    are written by the edge and can't be forged, whereas the *first* hop of
+    ``x-forwarded-for`` is whatever the client sent — rotating it would dodge
+    the limit. ``x-forwarded-for`` is only a fallback, then the socket peer.
+    """
+    get = headers.get if hasattr(headers, "get") else (lambda _k: None)
+    for name in ("x-vercel-forwarded-for", "x-real-ip"):
+        value = get(name)
+        if value and value.strip():
+            return value.split(",")[0].strip()
+    xff = get("x-forwarded-for")
     if xff:
         first = xff.split(",")[0].strip()
         if first:

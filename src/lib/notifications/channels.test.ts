@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { OutboundBlockedError } from '@/lib/security/outbound';
 import type { NotificationPayload } from './types';
 
 const send = vi.fn();
@@ -6,6 +7,14 @@ vi.mock('resend', () => ({
   Resend: class {
     emails = { send };
   },
+}));
+
+// Outbound delivery goes through the SSRF-guarded client; mock just the network
+// call and keep the real validation helpers/error types.
+const safeFetch = vi.fn();
+vi.mock('@/lib/security/outbound', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/security/outbound')>()),
+  safeOutboundFetch: (...args: unknown[]) => safeFetch(...args),
 }));
 
 const { sendEmail, sendSlack, sendTelegram, sendWebhook, sendWhatsapp } = await import('./channels');
@@ -82,21 +91,22 @@ describe('sendEmail', () => {
   });
 });
 
+const ok = () => ({ ok: true, status: 200, body: { cancel: async () => {} } });
+const fail = (status: number) => ({ ok: false, status, body: { cancel: async () => {} } });
+const sentBody = () => JSON.parse(safeFetch.mock.calls[0][1].body);
+
 describe('sendWebhook', () => {
-  const fetchMock = vi.fn();
   beforeEach(() => {
-    vi.stubGlobal('fetch', fetchMock);
-    fetchMock.mockReset();
+    safeFetch.mockReset();
   });
 
   it('POSTs the generic payload shape and reports "sent"', async () => {
-    fetchMock.mockResolvedValue({ ok: true });
+    safeFetch.mockResolvedValue(ok());
     const r = await sendWebhook('https://example.com/hook', payload);
     expect(r).toEqual({ channel: 'webhook', status: 'sent' });
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url] = safeFetch.mock.calls[0];
     expect(url).toBe('https://example.com/hook');
-    const body = JSON.parse(init.body);
-    expect(body).toEqual({
+    expect(sentBody()).toEqual({
       kind: 'alert',
       title: payload.title,
       body: payload.body,
@@ -105,93 +115,125 @@ describe('sendWebhook', () => {
     });
   });
 
+  it('applies the SSRF guard: https + public hosts only when hosted', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DEPLOYMENT_MODE', 'hosted');
+    safeFetch.mockResolvedValue(ok());
+    await sendWebhook('https://example.com/hook', payload);
+    expect(safeFetch.mock.calls[0][2]).toMatchObject({ allowHttp: false, allowPrivate: false });
+  });
+
+  it('lets a self-hoster target their own http://localhost automation', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DEPLOYMENT_MODE', 'selfhost');
+    safeFetch.mockResolvedValue(ok());
+    await sendWebhook('http://localhost:5678/hook', payload);
+    expect(safeFetch.mock.calls[0][2]).toMatchObject({ allowHttp: true, allowPrivate: true });
+  });
+
   it('maps a non-2xx response to "error"', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    safeFetch.mockResolvedValue(fail(500));
     const r = await sendWebhook('https://example.com/hook', payload);
     expect(r).toEqual({ channel: 'webhook', status: 'error', detail: 'HTTP 500' });
   });
 
-  it('catches a network throw', async () => {
-    fetchMock.mockRejectedValue(new Error('timeout'));
+  it('reports a blocked URL with the guard\'s safe reason', async () => {
+    safeFetch.mockRejectedValue(new OutboundBlockedError('URL must not point at a private or local address'));
+    const r = await sendWebhook('https://10.0.0.1/hook', payload);
+    expect(r).toEqual({ channel: 'webhook', status: 'error', detail: 'URL must not point at a private or local address' });
+  });
+
+  it('hides raw network errors so a user cannot probe internal hosts', async () => {
+    safeFetch.mockRejectedValue(new Error('connect ECONNREFUSED 10.0.0.7:6379'));
     const r = await sendWebhook('https://example.com/hook', payload);
-    expect(r).toEqual({ channel: 'webhook', status: 'error', detail: 'timeout' });
+    expect(r).toEqual({ channel: 'webhook', status: 'error', detail: 'Could not reach the URL' });
   });
 });
 
 describe('sendSlack', () => {
-  const fetchMock = vi.fn();
   beforeEach(() => {
-    vi.stubGlobal('fetch', fetchMock);
-    fetchMock.mockReset();
+    safeFetch.mockReset();
   });
 
   it('POSTs a Slack-shaped {text} payload and reports "sent"', async () => {
-    fetchMock.mockResolvedValue({ ok: true });
+    safeFetch.mockResolvedValue(ok());
     const r = await sendSlack('https://hooks.slack.com/services/x', payload);
     expect(r).toEqual({ channel: 'slack', status: 'sent' });
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe('https://hooks.slack.com/services/x');
-    const body = JSON.parse(init.body);
+    expect(safeFetch.mock.calls[0][0]).toBe('https://hooks.slack.com/services/x');
+    const body = sentBody();
     expect(body.text).toContain(payload.title);
     expect(body.text).toContain(payload.body);
     expect(body.text).toContain('/dashboard/stock/RELIANCE');
   });
 
-  it('maps a non-2xx response to "error" with the response body as detail', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 404, text: async () => 'invalid_payload' });
+  it('pins Slack to hooks.slack.com when hosted', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DEPLOYMENT_MODE', 'hosted');
+    safeFetch.mockResolvedValue(ok());
+    await sendSlack('https://hooks.slack.com/services/x', payload);
+    expect(safeFetch.mock.calls[0][2].allowedHosts).toEqual(['hooks.slack.com']);
+  });
+
+  it('reports only the status code on failure — never the response body', async () => {
+    safeFetch.mockResolvedValue({ ...fail(404), text: async () => 'internal-service-secret' });
     const r = await sendSlack('https://hooks.slack.com/services/x', payload);
-    expect(r).toEqual({ channel: 'slack', status: 'error', detail: 'invalid_payload' });
+    expect(r).toEqual({ channel: 'slack', status: 'error', detail: 'HTTP 404' });
   });
 });
 
 describe('sendTelegram', () => {
-  const fetchMock = vi.fn();
+  const TOKEN = '123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw';
   beforeEach(() => {
-    vi.stubGlobal('fetch', fetchMock);
-    fetchMock.mockReset();
+    safeFetch.mockReset();
   });
 
   it('POSTs to the Bot API sendMessage endpoint with chat_id + text', async () => {
-    fetchMock.mockResolvedValue({ ok: true });
-    const r = await sendTelegram('123:abc', '456', payload);
+    safeFetch.mockResolvedValue(ok());
+    const r = await sendTelegram(TOKEN, '456', payload);
     expect(r).toEqual({ channel: 'telegram', status: 'sent' });
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe('https://api.telegram.org/bot123:abc/sendMessage');
-    const body = JSON.parse(init.body);
+    expect(safeFetch.mock.calls[0][0]).toBe(`https://api.telegram.org/bot${TOKEN}/sendMessage`);
+    const body = sentBody();
     expect(body.chat_id).toBe('456');
     expect(body.parse_mode).toBe('Markdown');
     expect(body.text).toContain('RELIANCE crossed');
+    expect(safeFetch.mock.calls[0][2].allowedHosts).toEqual(['api.telegram.org']);
   });
 
   it('escapes Telegram markdown special characters in title/body', async () => {
-    fetchMock.mockResolvedValue({ ok: true });
-    await sendTelegram('123:abc', '456', { ...payload, title: '[TCS] up_down*move' });
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.text).toContain('\\[TCS\\] up\\_down\\*move');
+    safeFetch.mockResolvedValue(ok());
+    await sendTelegram(TOKEN, '456', { ...payload, title: '[TCS] up_down*move' });
+    expect(sentBody().text).toContain('\\[TCS\\] up\\_down\\*move');
   });
 
-  it('maps a non-2xx response to "error"', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 401, text: async () => 'Unauthorized' });
-    const r = await sendTelegram('bad-token', '456', payload);
-    expect(r).toEqual({ channel: 'telegram', status: 'error', detail: 'Unauthorized' });
+  it('maps a non-2xx response to "error" with just the status', async () => {
+    safeFetch.mockResolvedValue({ ...fail(401), text: async () => 'Unauthorized' });
+    const r = await sendTelegram(TOKEN, '456', payload);
+    expect(r).toEqual({ channel: 'telegram', status: 'error', detail: 'HTTP 401' });
+  });
+
+  it('rejects a malformed token or chat id without making a request', async () => {
+    for (const [token, chat] of [
+      ['bad-token', '456'],
+      [`${TOKEN}/../x`, '456'],
+      [TOKEN, '456; drop'],
+    ]) {
+      const r = await sendTelegram(token, chat, payload);
+      expect(r).toEqual({ channel: 'telegram', status: 'error', detail: 'Invalid Telegram bot token or chat id format' });
+    }
+    expect(safeFetch).not.toHaveBeenCalled();
   });
 });
 
 describe('sendWhatsapp', () => {
-  const fetchMock = vi.fn();
   beforeEach(() => {
-    vi.stubGlobal('fetch', fetchMock);
-    fetchMock.mockReset();
+    safeFetch.mockReset();
   });
 
   it('relays through the generic webhook shape, tagged as the whatsapp channel', async () => {
-    fetchMock.mockResolvedValue({ ok: true });
+    safeFetch.mockResolvedValue(ok());
     const r = await sendWhatsapp('https://example.com/relay', payload);
     expect(r).toEqual({ channel: 'whatsapp', status: 'sent' });
   });
 
   it('surfaces a relay failure as the whatsapp channel', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    safeFetch.mockResolvedValue(fail(500));
     const r = await sendWhatsapp('https://example.com/relay', payload);
     expect(r).toEqual({ channel: 'whatsapp', status: 'error', detail: 'HTTP 500' });
   });

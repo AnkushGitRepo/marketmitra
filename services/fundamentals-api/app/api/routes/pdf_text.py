@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.ingestion.pdf_text import PdfTextError, fetch_pdf_text
+from app.security import require_bearer
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 _settings = get_settings()
@@ -43,11 +44,7 @@ async def extract_text(
     body: ExtractTextIn,
     authorization: str | None = Header(default=None),
 ) -> ExtractTextOut:
-    token = _settings.ipo_ingest_token
-    if not token:
-        raise HTTPException(status_code=503, detail="ipo_ingest_token not configured")
-    if authorization != f"Bearer {token}":
-        raise HTTPException(status_code=401, detail="unauthorized")
+    require_bearer(authorization, _settings.ipo_ingest_token, name="ipo_ingest_token")
 
     if not body.url.lower().startswith(("http://", "https://")):
         raise HTTPException(status_code=422, detail="url must be http(s)")

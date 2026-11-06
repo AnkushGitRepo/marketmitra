@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { bearerMatches } from '@/lib/security/secrets';
 import { evaluateAlerts } from '@/lib/alerts/evaluate';
 import { isNseSession } from '@/lib/alerts/marketHours';
 import { logEvent } from '@/lib/system/eventLog';
@@ -26,7 +27,7 @@ function authorize(request: Request): { ok: true } | { ok: false; status: number
     return { ok: true }; // local dev convenience
   }
   const header = request.headers.get('authorization');
-  if (header !== `Bearer ${secret}`) {
+  if (!bearerMatches(header, secret)) {
     return { ok: false, status: 401, error: 'Unauthorized' };
   }
   return { ok: true };

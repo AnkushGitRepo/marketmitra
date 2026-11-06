@@ -86,14 +86,20 @@ function getLimiter(tier: RateLimitTier, authed: boolean): Ratelimit {
   return rl;
 }
 
-/** First hop of `x-forwarded-for`, or `x-real-ip`, else a fixed fallback. */
+/** The caller's IP for rate limiting. Platform-set headers win: on Vercel
+ * `x-vercel-forwarded-for` / `x-real-ip` are written by the edge and can't be
+ * forged by the client, whereas a client can put anything in the *first* hop of
+ * `x-forwarded-for` and rotate it to dodge the limit. That header is only a
+ * last resort. */
 function clientIp(req: Request): string {
+  const trusted = req.headers.get('x-vercel-forwarded-for') || req.headers.get('x-real-ip');
+  if (trusted?.trim()) return trusted.split(',')[0].trim();
   const xff = req.headers.get('x-forwarded-for');
   if (xff) {
     const first = xff.split(',')[0]?.trim();
     if (first) return first;
   }
-  return req.headers.get('x-real-ip')?.trim() || 'unknown-ip';
+  return 'unknown-ip';
 }
 
 /**

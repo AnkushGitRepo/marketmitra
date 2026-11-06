@@ -1,6 +1,7 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { isHosted } from '@/lib/deployment-mode';
+import { isCrossSiteWrite } from '@/lib/security/csrf';
 import { checkRateLimit, rateLimitResponse, rateLimitHeaders } from '@/lib/rateLimit';
 
 const isProtectedRoute = createRouteMatcher(['/dashboard(.*)']);
@@ -36,7 +37,24 @@ const hostedProxy = clerkMiddleware(async (auth, req) => {
   }
 });
 
+const isMcpRoute = createRouteMatcher(['/api/mcp(.*)']);
+
 export default function proxy(req: NextRequest, event: NextFetchEvent) {
+  // CSRF: refuse state-changing API calls a browser makes from another site.
+  // (MCP is anonymous and meant to be callable from any client, so it's exempt.)
+  if (
+    isDefaultRateLimited(req) &&
+    !isMcpRoute(req) &&
+    isCrossSiteWrite({
+      method: req.method,
+      origin: req.headers.get('origin'),
+      host: req.headers.get('host'),
+      secFetchSite: req.headers.get('sec-fetch-site'),
+    })
+  ) {
+    return NextResponse.json({ success: false, error: 'Cross-site request blocked' }, { status: 403 });
+  }
+
   if (!isHosted()) {
     return NextResponse.next();
   }

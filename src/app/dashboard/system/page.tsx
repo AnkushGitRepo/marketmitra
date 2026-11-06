@@ -1,4 +1,5 @@
 import { getCurrentUserId } from '@/lib/currentUserId';
+import { isAdminUser } from '@/lib/auth/admin';
 import { getSystemStatus } from '@/lib/system/health';
 import { listEvents } from '@/lib/system/eventLog';
 import { SystemPageClient } from './SystemPageClient';
@@ -18,14 +19,15 @@ export default async function SystemPage() {
 
   const status = await getSystemStatus();
 
+  const canViewLogs = isAdminUser(userId);
   let events: Awaited<ReturnType<typeof listEvents>> = [];
   try {
-    events = await listEvents({ limit: 50 });
+    if (canViewLogs) events = await listEvents({ limit: 50 });
   } catch {
     // Mongo unreachable — render the shell with an empty log rather than 500.
     // The status cards above already surface a "down" MongoDB component in
     // this case, so the empty log here isn't a silent failure.
   }
 
-  return <SystemPageClient initialStatus={status} initialEvents={events} />;
+  return <SystemPageClient initialStatus={status} initialEvents={events} canViewLogs={canViewLogs} />;
 }

@@ -76,6 +76,26 @@ async def rate_limit_middleware(request: Request, call_next):
     return response
 
 
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+    "Cross-Origin-Resource-Policy": "same-site",
+}
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    """Defence-in-depth headers on every response, including 429s and errors.
+    This is a JSON API: nothing it serves should ever be sniffed, framed, or
+    leak its URL through a Referer."""
+    response = await call_next(request)
+    for name, value in _SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
+
+
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok"}
