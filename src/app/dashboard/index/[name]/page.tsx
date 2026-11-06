@@ -3,6 +3,7 @@ import { getQuotes, type PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { fetchIndexHistory, isTrackedIndexName } from '@/lib/dashboard/yahooQuote';
 import { toCandleSeries, toRangeSeries } from '@/lib/dashboard/transforms';
+import { slicePricesByPeriod } from '@/lib/dashboard/pricePeriods';
 import type { CandlePoint } from '@/lib/dashboard/chartMath';
 import { IndexPageClient } from './IndexPageClient';
 import styles from './page.module.css';
@@ -39,11 +40,13 @@ export default async function IndexPage({ params }: { params: Promise<{ name: st
     );
   }
 
-  const [quotes, news, ...priceSets] = await Promise.all([
+  // One 5-year fetch, sliced per range tab, instead of four Yahoo calls.
+  const [quotes, news, fiveYear] = await Promise.all([
     getQuotes([name]),
     getNews({ limit: 6 }),
-    ...PRICE_PERIODS.map((p) => fetchIndexHistory(name, p)),
+    fetchIndexHistory(name, '5y'),
   ]);
+  const priceSets = PRICE_PERIODS.map((p) => slicePricesByPeriod(fiveYear, p));
 
   const quote = quotes[0] ?? null;
 

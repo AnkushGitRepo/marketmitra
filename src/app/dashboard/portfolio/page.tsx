@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
-import { getPortfolioValueHistory } from '@/lib/dashboard/portfolioHistory';
+import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
 import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCachedInsight } from '@/lib/insights';
-import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { listNotifications } from '@/lib/notifications/store';
 import { PortfolioPageClient } from './PortfolioPageClient';
@@ -16,8 +15,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = 'force-dynamic';
-
-const PERIODS: PricePeriod[] = ['1mo', '6mo', '1y', '5y'];
 
 export default async function PortfolioPage() {
   const userId = await getCurrentUserId();
@@ -33,9 +30,7 @@ export default async function PortfolioPage() {
   const holdings = await getEnrichedHoldings(userId);
   const positions = holdings.map((h) => ({ symbol: h.symbol, quantity: h.quantity }));
 
-  const historyByPeriod = Object.fromEntries(
-    await Promise.all(PERIODS.map(async (p) => [p, await getPortfolioValueHistory(positions, p)] as const))
-  ) as Record<PricePeriod, Awaited<ReturnType<typeof getPortfolioValueHistory>>>;
+  const historyByPeriod = await getPortfolioValueHistories(positions);
 
   const [hasKey, cachedInsight] = await Promise.all([
     resolveHasAiKey(getUserAiConfig(userId)),

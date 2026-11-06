@@ -25,6 +25,8 @@ export function CompanyLogo({ symbol, size }: { symbol: string; size: number }) 
       width={size}
       height={size}
       style={{ width: size, height: size, objectFit: 'contain' }}
+      loading="lazy"
+      decoding="async"
       onError={() => setErrored(true)}
     />
   );

@@ -1,4 +1,5 @@
-import { getPrices, type PricePeriod } from './fundamentalsApi';
+import { getPrices, type PricePeriod, type PricePointOut } from './fundamentalsApi';
+import { slicePricesByPeriod } from './pricePeriods';
 import { downsample, formatPriceLabel } from './transforms';
 import type { RangeSeries } from './chartMath';
 
@@ -20,7 +21,38 @@ export async function getPortfolioValueHistory(
   if (positions.length === 0) return { v: [], l: [] };
 
   const priceSets = await Promise.all(positions.map((p) => getPrices(p.symbol, period)));
+  return buildSeries(positions, priceSets, period);
+}
 
+const ALL_PERIODS: PricePeriod[] = ['1mo', '6mo', '1y', '5y'];
+
+/** Every period's series from a single 5-year fetch per symbol — N price
+ * requests instead of 4 × N (see `slicePricesByPeriod`). */
+export async function getPortfolioValueHistories(
+  positions: HeldPosition[]
+): Promise<Record<PricePeriod, RangeSeries>> {
+  if (positions.length === 0) {
+    const empty = (): RangeSeries => ({ v: [], l: [] });
+    return { '1mo': empty(), '6mo': empty(), '1y': empty(), '5y': empty() };
+  }
+  const fiveYear = await Promise.all(positions.map((p) => getPrices(p.symbol, '5y')));
+  return Object.fromEntries(
+    ALL_PERIODS.map((period) => [
+      period,
+      buildSeries(
+        positions,
+        fiveYear.map((rows) => slicePricesByPeriod(rows, period)),
+        period
+      ),
+    ])
+  ) as Record<PricePeriod, RangeSeries>;
+}
+
+function buildSeries(
+  positions: HeldPosition[],
+  priceSets: (PricePointOut[] | null)[],
+  period: PricePeriod
+): RangeSeries {
   const byDate = new Map<string, number>();
   positions.forEach((position, i) => {
     for (const point of priceSets[i] ?? []) {

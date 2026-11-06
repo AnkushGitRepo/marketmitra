@@ -1,0 +1,70 @@
+.pageRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--app-border-softer);
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.heading {
+  height: 38px;
+  width: 220px;
+}
+
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.stat {
+  height: 108px;
+  border-radius: var(--radius-lg);
+}
+
+.chart {
+  height: 320px;
+  border-radius: var(--radius-lg);
+}
+
+.splitRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.panel {
+  height: 240px;
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 900px) {
+  .statRow,
+  .splitRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, use, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { PillTabs } from '@/components/dashboard-charts/PillTabs';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
@@ -63,8 +63,8 @@ interface StockPageClientProps {
   shareholding: ShareholdingSeries[];
   financials: Record<StatementKey, FinTable>;
   bars: Bar[];
-  latestClose: string | null;
-  previousClose: string | null;
+  /** Resolves when the live quote does (or falls back to the EOD close). */
+  quote: Promise<HeaderQuote>;
 }
 
 function formatPeerValue(value: string | null, kind: 'inr' | 'inr_cr' | 'pct' | 'x'): string {
@@ -75,6 +75,36 @@ function formatPeerValue(value: string | null, kind: 'inr' | 'inr_cr' | 'pct' | 
   if (kind === 'inr_cr') return `₹${num.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Cr`;
   if (kind === 'x') return `${num.toFixed(1)}x`;
   return `${num.toFixed(2)}%`;
+}
+
+export interface HeaderQuote {
+  latestClose: string | null;
+  previousClose: string | null;
+}
+
+function LivePrice({ quote }: { quote: Promise<HeaderQuote> }) {
+  const { masked } = useMask();
+  const { latestClose, previousClose } = use(quote);
+  const price = latestClose !== null ? Number(latestClose) : null;
+  const prev = previousClose !== null ? Number(previousClose) : null;
+  const change = price !== null && prev !== null ? price - prev : null;
+  const changePct = change !== null && prev ? (change / prev) * 100 : null;
+  const up = (change ?? 0) >= 0;
+
+  return (
+    <>
+      <p className={styles.price}>{price !== null ? formatInr(price, 2, masked) : '—'}</p>
+      {change !== null && changePct !== null ? (
+        <p className={styles.priceChg} style={{ color: up ? 'var(--app-gain)' : 'var(--app-loss)' }}>
+          {up ? '+' : ''}
+          {change.toFixed(2)} ({up ? '+' : ''}
+          {changePct.toFixed(2)}%)
+        </p>
+      ) : (
+        <p className={styles.priceChg}>&nbsp;</p>
+      )}
+    </>
+  );
 }
 
 export function StockPageClient({
@@ -88,11 +118,9 @@ export function StockPageClient({
   shareholding,
   financials,
   bars,
-  latestClose,
-  previousClose,
+  quote,
 }: StockPageClientProps) {
   const router = useRouter();
-  const { masked } = useMask();
   const { setPageContext } = usePageContext();
   const [range, setRange] = useState<PricePeriod>('1y');
   const [fin, setFin] = useState<StatementKey>('profit_and_loss');
@@ -105,12 +133,6 @@ export function StockPageClient({
     setPageContext({ page: 'stock', ticker: symbol, range });
     return () => setPageContext(null);
   }, [symbol, range, setPageContext]);
-
-  const price = latestClose !== null ? Number(latestClose) : null;
-  const prev = previousClose !== null ? Number(previousClose) : null;
-  const change = price !== null && prev !== null ? price - prev : null;
-  const changePct = change !== null && prev ? (change / prev) * 100 : null;
-  const up = (change ?? 0) >= 0;
 
   const finTable = financials[fin];
 
@@ -138,14 +160,16 @@ export function StockPageClient({
           </div>
         </div>
         <div className={styles.priceCol}>
-          <p className={styles.price}>{price !== null ? formatInr(price, 2, masked) : '—'}</p>
-          {change !== null && changePct !== null && (
-            <p className={styles.priceChg} style={{ color: up ? 'var(--app-gain)' : 'var(--app-loss)' }}>
-              {up ? '+' : ''}
-              {change.toFixed(2)} ({up ? '+' : ''}
-              {changePct.toFixed(2)}%)
-            </p>
-          )}
+          <Suspense
+            fallback={
+              <>
+                <p className={styles.price}>—</p>
+                <p className={styles.priceChg}>&nbsp;</p>
+              </>
+            }
+          >
+            <LivePrice quote={quote} />
+          </Suspense>
           <button
             type="button"
             className={styles.setAlertButton}
