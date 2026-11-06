@@ -249,7 +249,7 @@
           "Market data"
         ],
         "summary": "Screen stocks by financial criteria",
-        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending unless `sort_by`/`order` are given (server-side, over the whole matching set; NULLs last). Market cap, price, P/E, P/B and dividend yield refresh daily for the whole universe; ROE, ROCE, debt/equity and growth are scraped incrementally, so those filters only match companies that have been scraped yet. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope).",
+        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending unless `sort_by`/`order` are given (server-side, over the whole matching set; NULLs last). Market cap, price, P/E, P/B and dividend yield refresh daily for the whole universe; ROE, ROCE, debt/equity and growth are scraped incrementally, so those filters only match companies that have been scraped yet. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope). Paginate with `limit` + `offset`; the total number of matches (ignoring paging) is returned in the `X-Total-Count` response header.",
         "security": [],
         "parameters": [
           {
@@ -457,6 +457,26 @@
               ],
               "default": "desc"
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Company name or symbol contains-match."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Rows to skip (pagination)."
           }
         ],
         "responses": {
@@ -2736,6 +2756,263 @@
           },
           "503": {
             "description": "CRON_SECRET or SCREENER_INGEST_TOKEN not set."
+          }
+        }
+      }
+    },
+    "/api/screener/facets": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Screener sector/industry options",
+        "description": "Sectors and industries present in the screener data, with company counts. Pass `sector` to narrow `industries` to that sector. Public, read-only.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ sectors: string[], industries: string[], sector_counts: {name: n}, industry_counts: {name: n} }"
+          }
+        }
+      }
+    },
+    "/api/screener/export": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Download screener results as CSV",
+        "description": "Same filter and sort parameters as GET /api/screener; `limit`/`offset` are ignored and EVERY matching row is exported (capped at 5,000). Returns text/csv with a Content-Disposition attachment filename. Text cells that start with = + - @ are prefixed with an apostrophe to defuse spreadsheet formula injection.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "market_cap_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "market_cap_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pe_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pe_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pb_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pb_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "roe_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            },
+            "description": "Percent, e.g. 15 for 15%."
+          },
+          {
+            "name": "roe_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "roce_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "roce_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "dividend_yield_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "dividend_yield_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "debt_to_equity_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "debt_to_equity_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sales_growth_3y_cagr_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            },
+            "description": "Percent CAGR, e.g. 10 for 10%."
+          },
+          {
+            "name": "sales_growth_3y_cagr_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "profit_growth_3y_cagr_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "profit_growth_3y_cagr_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "Information Technology"
+          },
+          {
+            "name": "industry",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "market_cap",
+                "pe",
+                "pb",
+                "roe",
+                "roce",
+                "dividend_yield",
+                "debt_to_equity",
+                "sales_growth_3y_cagr",
+                "profit_growth_3y_cagr"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Company name or symbol contains-match."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter."
           }
         }
       }

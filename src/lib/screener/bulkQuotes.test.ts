@@ -27,7 +27,12 @@ describe('toScreenerQuoteRow', () => {
   });
 
   it('drops negative/zero P/E and P/B instead of storing them', () => {
-    const row = toScreenerQuoteRow({ symbol: 'LOSS.NS', regularMarketPrice: 5, trailingPE: -4, priceToBook: 0 });
+    const row = toScreenerQuoteRow({
+      symbol: 'LOSS.NS',
+      regularMarketPrice: 5,
+      trailingPE: -4,
+      priceToBook: 0,
+    });
     expect(row).toEqual({ symbol: 'LOSS', current_price: 5 });
   });
 

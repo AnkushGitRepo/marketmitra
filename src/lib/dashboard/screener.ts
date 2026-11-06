@@ -5,10 +5,13 @@
 // drift onto a different filter shape than the others.
 
 import { getJson } from './fundamentalsApi';
+
+const FUNDAMENTALS_BASE_URL = process.env.FUNDAMENTALS_API_URL ?? 'http://localhost:8420';
 import {
   buildScreenerQuery,
   type ScreenerFacets,
   type ScreenerFilters,
+  type ScreenerPage,
   type ScreenerResultRow,
   type ScreenerStats,
 } from './screenerSchema';
@@ -17,7 +20,7 @@ import {
 // (see its own comment) — re-exported here so existing server-side callers
 // of this module don't need to change their import path.
 export { buildScreenerQuery };
-export type { ScreenerFacets, ScreenerResultRow, ScreenerStats };
+export type { ScreenerFacets, ScreenerPage, ScreenerResultRow, ScreenerStats };
 
 /** Filters the bulk-refreshed screener_metrics table. Never throws — an
  * unreachable fundamentals-api or a bad query returns [], same "no data
@@ -31,8 +34,31 @@ export async function runScreener(filters: ScreenerFilters): Promise<ScreenerRes
   return result ?? [];
 }
 
-export async function getScreenerFacets(): Promise<ScreenerFacets> {
-  const result = await getJson<ScreenerFacets>('/screener/facets', 3600);
+/** One page of results plus the total match count (from fundamentals-api's
+ * `X-Total-Count` header), for pagination and CSV export. Never throws — an
+ * unreachable backend yields an empty page. Short revalidate: the table only
+ * changes when the daily jobs run, but a filter change must feel live. */
+export async function runScreenerPage(filters: ScreenerFilters): Promise<ScreenerPage> {
+  const query = buildScreenerQuery(filters);
+  const path = query ? `/screener?${query}` : '/screener';
+  try {
+    const response = await fetch(`${FUNDAMENTALS_BASE_URL}${path}`, { next: { revalidate: 300 } });
+    if (!response.ok) return { rows: [], total: 0 };
+    const rows = (await response.json()) as ScreenerResultRow[];
+    const total = Number(response.headers.get('x-total-count'));
+    return { rows, total: Number.isFinite(total) && total >= rows.length ? total : rows.length };
+  } catch {
+    return { rows: [], total: 0 };
+  }
+}
+
+/** Facets are cheap and fill in as the fundamentals backfill progresses, so
+ * they're cached only briefly — an hour-long cache froze the dropdown at
+ * whatever the first (nearly empty) scrape had produced. `sector` narrows
+ * `industries` to that sector. */
+export async function getScreenerFacets(sector?: string): Promise<ScreenerFacets> {
+  const path = sector ? `/screener/facets?sector=${encodeURIComponent(sector)}` : '/screener/facets';
+  const result = await getJson<ScreenerFacets>(path, 300);
   return result ?? { sectors: [], industries: [] };
 }
 

@@ -51,12 +51,21 @@ def _fake_row(**overrides):
 
 
 def test_get_screener_route_shape(client, monkeypatch):
+    seen = {}
+
     async def fake_query(session, filters):
+        seen.update(filters)
         return [_fake_row()]
 
+    async def fake_count(session, filters):
+        return 137
+
     monkeypatch.setattr("app.api.routes.screener.svc.query_screener_metrics", fake_query)
-    res = client.get("/screener?pe_max=20&sector=Information+Technology")
+    monkeypatch.setattr("app.api.routes.screener.svc.count_screener_metrics", fake_count)
+    res = client.get("/screener?pe_max=20&sector=Information+Technology&q=tcs&offset=50&limit=25")
     assert res.status_code == 200
+    assert res.headers["x-total-count"] == "137"
+    assert (seen["q"], seen["offset"], seen["limit"]) == ("tcs", 50, 25)
     body = res.json()
     assert body[0]["symbol"] == "TESTA"
     assert body[0]["pe"] == 15.0
@@ -64,13 +73,17 @@ def test_get_screener_route_shape(client, monkeypatch):
 
 
 def test_get_screener_facets_route_shape(client, monkeypatch):
-    async def fake_facets(session):
+    seen = {}
+
+    async def fake_facets(session, sector=None):
+        seen["sector"] = sector
         return {"sectors": ["Banking", "Information Technology"], "industries": ["IT Services"]}
 
     monkeypatch.setattr("app.api.routes.screener.svc.get_screener_facets", fake_facets)
-    res = client.get("/screener/facets")
+    res = client.get("/screener/facets?sector=Information+Technology")
     assert res.status_code == 200
-    assert res.json() == {"sectors": ["Banking", "Information Technology"], "industries": ["IT Services"]}
+    assert res.json()["industries"] == ["IT Services"]
+    assert seen["sector"] == "Information Technology"
 
 
 def test_screener_ingest_requires_token(client):
@@ -176,3 +189,12 @@ def test_stats_route_shape(client, monkeypatch):
     monkeypatch.setattr("app.api.routes.screener.svc.get_screener_stats", fake_stats)
     body = client.get("/screener/stats").json()
     assert body["with_fundamentals"] == 400
+
+
+def test_offset_and_limit_are_bounded(client):
+    assert client.get("/screener?offset=-1").status_code == 422
+    assert client.get("/screener?limit=501").status_code == 422
+
+
+def test_like_pattern_escapes_wildcards():
+    assert svc._escape_like("50%_off\\") == "50\\%\\_off\\\\"

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -67,11 +67,14 @@ def _to_out(row) -> ScreenerMetricOut:
 
 
 @router.get("/facets")
-async def get_screener_facets(session: AsyncSession = Depends(get_db)) -> dict:
-    """{ sectors: string[], industries: string[] } — populates the
-    Screener page's sector dropdown from what's actually in the data,
-    never a hand-maintained list."""
-    return await svc.get_screener_facets(session)
+async def get_screener_facets(
+    sector: str | None = Query(default=None, max_length=128),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """{ sectors, industries, sector_counts, industry_counts } — populates
+    the Screener page's dropdowns from what's actually in the data, never a
+    hand-maintained list. Pass `sector` to narrow `industries` to it."""
+    return await svc.get_screener_facets(session, sector)
 
 
 @router.get("/stats")
@@ -83,8 +86,10 @@ async def get_screener_stats(session: AsyncSession = Depends(get_db)) -> dict:
 
 @router.get("", response_model=list[ScreenerMetricOut])
 async def get_screener_metrics(
+    response: Response,
     sector: str | None = Query(default=None),
     industry: str | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=64),
     market_cap_min: float | None = Query(default=None),
     market_cap_max: float | None = Query(default=None),
     pe_min: float | None = Query(default=None),
@@ -106,6 +111,7 @@ async def get_screener_metrics(
     sort_by: str | None = Query(default=None, pattern="^[a-z_0-9]+$", max_length=40),
     order: str = Query(default="desc", pattern="^(asc|desc)$"),
     limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0, le=100_000),
     session: AsyncSession = Depends(get_db),
 ) -> list[ScreenerMetricOut]:
     """Filter the bulk-refreshed screener_metrics table (ADR 0025) — every
@@ -115,6 +121,7 @@ async def get_screener_metrics(
     filters = {
         "sector": sector,
         "industry": industry,
+        "q": q,
         "market_cap_min": market_cap_min, "market_cap_max": market_cap_max,
         "pe_min": pe_min, "pe_max": pe_max,
         "pb_min": pb_min, "pb_max": pb_max,
@@ -129,8 +136,12 @@ async def get_screener_metrics(
         "sort_by": sort_by,
         "order": order,
         "limit": limit,
+        "offset": offset,
     }
     rows = await svc.query_screener_metrics(session, filters)
+    # Total matches (ignoring limit/offset) for pagination — a header so the
+    # body stays the plain array existing consumers already parse.
+    response.headers["X-Total-Count"] = str(await svc.count_screener_metrics(session, filters))
     return [_to_out(r) for r in rows]
 
 

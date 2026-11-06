@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -198,30 +198,66 @@ async def get_screener_stats(session: AsyncSession) -> dict:
     }
 
 
-async def query_screener_metrics(session: AsyncSession, filters: dict) -> list[ScreenerMetricsORM]:
-    stmt = select(ScreenerMetricsORM).where(ScreenerMetricsORM.fetch_status != "failed")
+def _escape_like(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _filtered(stmt, filters: dict):
+    """Shared by the page query and the total count so they can never
+    disagree about what "matching" means."""
+    stmt = stmt.where(ScreenerMetricsORM.fetch_status != "failed")
     sector = filters.get("sector")
     if sector:
         stmt = stmt.where(ScreenerMetricsORM.sector == sector)
     industry = filters.get("industry")
     if industry:
         stmt = stmt.where(ScreenerMetricsORM.industry == industry)
-    stmt = _apply_range_filters(stmt, filters)
-    stmt = stmt.order_by(*_order_by(filters))
-    limit = filters.get("limit") or 100
-    stmt = stmt.limit(limit)
+    text = (filters.get("q") or "").strip()
+    if text:
+        pattern = f"%{_escape_like(text)}%"
+        stmt = stmt.where(
+            or_(
+                ScreenerMetricsORM.symbol.ilike(pattern, escape="\\"),
+                ScreenerMetricsORM.name.ilike(pattern, escape="\\"),
+            )
+        )
+    return _apply_range_filters(stmt, filters)
+
+
+async def query_screener_metrics(session: AsyncSession, filters: dict) -> list[ScreenerMetricsORM]:
+    stmt = _filtered(select(ScreenerMetricsORM), filters).order_by(*_order_by(filters))
+    stmt = stmt.offset(filters.get("offset") or 0).limit(filters.get("limit") or 100)
     return list((await session.execute(stmt)).scalars())
 
 
-async def get_screener_facets(session: AsyncSession) -> dict:
-    sectors = (
+async def count_screener_metrics(session: AsyncSession, filters: dict) -> int:
+    stmt = _filtered(select(func.count()).select_from(ScreenerMetricsORM), filters)
+    return int(await session.scalar(stmt) or 0)
+
+
+async def get_screener_facets(session: AsyncSession, sector: str | None = None) -> dict:
+    """Sector/industry options with company counts, from what's actually in
+    the data. `industries` is narrowed to `sector` when given, so the UI's
+    industry dropdown only offers industries that exist inside that sector."""
+    base = ScreenerMetricsORM.fetch_status != "failed"
+    sector_rows = (
         await session.execute(
-            select(ScreenerMetricsORM.sector).where(ScreenerMetricsORM.sector.is_not(None)).distinct()
+            select(ScreenerMetricsORM.sector, func.count())
+            .where(base, ScreenerMetricsORM.sector.is_not(None))
+            .group_by(ScreenerMetricsORM.sector)
         )
-    ).scalars()
-    industries = (
-        await session.execute(
-            select(ScreenerMetricsORM.industry).where(ScreenerMetricsORM.industry.is_not(None)).distinct()
-        )
-    ).scalars()
-    return {"sectors": sorted(sectors), "industries": sorted(industries)}
+    ).all()
+    industry_stmt = (
+        select(ScreenerMetricsORM.industry, func.count())
+        .where(base, ScreenerMetricsORM.industry.is_not(None))
+        .group_by(ScreenerMetricsORM.industry)
+    )
+    if sector:
+        industry_stmt = industry_stmt.where(ScreenerMetricsORM.sector == sector)
+    industry_rows = (await session.execute(industry_stmt)).all()
+    return {
+        "sectors": sorted(name for name, _ in sector_rows),
+        "industries": sorted(name for name, _ in industry_rows),
+        "sector_counts": {name: n for name, n in sector_rows},
+        "industry_counts": {name: n for name, n in industry_rows},
+    }

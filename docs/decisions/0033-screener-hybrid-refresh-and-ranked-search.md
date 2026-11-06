@@ -81,3 +81,23 @@ listings and ISINs, and had no typo tolerance.
   consolidated figures; dividend yield units from Yahoo are sanity-capped at 25%.
   Yahoo may rate-limit a datacenter IP — a failed chunk is skipped and retried
   next run.
+
+## Addendum (2026-11-06): paging, CSV, filters, sector facets
+
+- **Sector dropdown showed one/few options** because facets come from scraped
+  rows (only 5 existed before the backfill) and the page cached them for an
+  hour. Facets are now cached ≤5 min, carry company counts, and the industry
+  list is scoped to the selected sector (`GET /screener/facets?sector=`).
+  Sectors only exist for scraped companies — they fill in as the backfill
+  runs; the page says so while the list is empty.
+- **Pagination:** `limit`/`offset` + `X-Total-Count` (header, so `/api/screener`
+  stays a plain array). The UI pages 25/50/100/200 with a page-number window,
+  keeps filters/sort/page in the URL, and ignores stale responses.
+- **CSV:** `GET /api/screener/export` streams every matching row (not just the
+  visible page), formula-injection-safe.
+- **Filters:** quick screens (quality, value, dividend, growth, low debt,
+  large/small cap), company/symbol text search, sector → industry, filters
+  grouped (size / valuation / profitability / growth), removable applied-filter
+  chips, clear-all. One parser (`src/lib/screener/params.ts`) serves the API,
+  the export and the URL state.
+

@@ -80,6 +80,15 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Errors:** `400` if any `_min`/`_max`/`limit` value isn't a valid number.
 - **Note:** a thin proxy to fundamentals-api's `GET /screener`, backed by a table whose price-derived fields (market cap, price, P/E, P/B, dividend yield) refresh daily for the whole universe and whose fundamentals (ROE, ROCE, debt/equity, growth) are scraped incrementally, stalest first ([ADR 0033](./decisions/0033-screener-hybrid-refresh-and-ranked-search.md)) — not the same freshness as this stock's live detail page. Fundamentals filters only match companies scraped so far. Same shared filter schema (`src/lib/dashboard/screenerSchema.ts`) as Mitra's `run_screener` MCP tool below, so the two can never drift apart.
 
+### `GET /api/screener` — pagination, text search (update)
+- Adds `q` (company/symbol contains-match), `industry`, `limit` (1–500, default 100) and `offset`. The body is still the plain array; the **total** matches (ignoring paging) is in the `X-Total-Count` response header. The Screener page pages with `limit` 25/50/100/200 + `offset`, and keeps the whole screen in the URL so it is shareable.
+
+### `GET /api/screener/facets`
+- **Purpose:** sector/industry options for the Screener dropdowns, with company counts: `{ sectors, industries, sector_counts, industry_counts }`. `?sector=` narrows `industries` to that sector. Public, read-only, cached ≤5 min (it grows as the fundamentals backfill progresses).
+
+### `GET /api/screener/export`
+- **Purpose:** download the screen as CSV. Same filter/sort params as `/api/screener`; `limit`/`offset` are ignored and **every** matching row is exported (cap 5,000). UTF-8 with BOM, CRLF, units in the headers; text cells beginning `= + - @` are apostrophe-prefixed to defuse spreadsheet formula injection. `400` on an invalid filter.
+
 ### `GET /api/stock/{ticker}`  _(ADR 0024)_
 - **Purpose:** Screener.in-style "everything about this ticker" in one call — company profile, a live quote, ratios, shareholding pattern, peer comparison, document links, and financial statements. Replaces having to stitch together `GET /api/search` (name/symbol only) plus several separate fundamentals-api calls.
 - **Auth:** public — no session required (same as `GET /api/search`/`GET /api/news`).

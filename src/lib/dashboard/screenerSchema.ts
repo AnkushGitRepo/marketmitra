@@ -81,7 +81,11 @@ export const screenerFiltersSchema = z.object({
   order: z.enum(['asc', 'desc']).optional(),
   sector: z.string().trim().min(1).optional(),
   industry: z.string().trim().min(1).optional(),
+  /** Company name / symbol contains-match. */
+  q: z.string().trim().min(1).max(64).optional(),
   limit: z.number().int().min(1).max(500).optional(),
+  /** Rows to skip — pagination. */
+  offset: z.number().int().min(0).max(100_000).optional(),
 });
 
 export type ScreenerFilters = z.infer<typeof screenerFiltersSchema>;
@@ -128,6 +132,15 @@ export interface ScreenerStats {
 export interface ScreenerFacets {
   sectors: string[];
   industries: string[];
+  /** Companies per sector / industry (absent from older API versions). */
+  sector_counts?: Record<string, number>;
+  industry_counts?: Record<string, number>;
+}
+
+export interface ScreenerPage {
+  rows: ScreenerResultRow[];
+  /** All companies matching the filters, ignoring limit/offset. */
+  total: number;
 }
 
 export function buildScreenerQuery(filters: ScreenerFilters): string {

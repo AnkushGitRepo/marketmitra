@@ -811,3 +811,10 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   backfill — see ADR 0033 "Deploy needs". Medium article the user linked was
   403 to WebFetch and not read.
 
+- Screener follow-up: server-side pagination (`offset`, `X-Total-Count`), CSV
+  export route, quick screens, text search, sector→industry facets with counts
+  (fixes the one-option sector dropdown: it was a ≤5-row table + 1h cache).
+  Found + fixed a pre-existing bug: `refresh-screener.yml` never installed
+  pydantic, so the first full backfill crashed on import. Verified in a real
+  browser against 652 synthetic local rows (since removed).
+

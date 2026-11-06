@@ -285,3 +285,244 @@
   color: var(--app-text-subtle);
   font-weight: 400;
 }
+
+/* quick screens */
+
+.presetRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.presetLabel {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+  margin-right: 4px;
+}
+
+.presetChip {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  color: var(--app-ink);
+  cursor: pointer;
+  min-height: 34px;
+}
+
+.presetChip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.presetChipActive {
+  background: var(--app-teal-tint);
+  border-color: var(--app-teal-bg-strong);
+  color: var(--app-teal-strong);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .presetChip:hover:not(:disabled) {
+    background: var(--app-teal-tint);
+  }
+}
+
+/* search / sector / industry row */
+
+.searchRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 760px) {
+  .searchRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.fieldWide {
+  min-width: 0;
+}
+
+.hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--app-text-subtle);
+}
+
+/* grouped range filters */
+
+.groups {
+  align-items: start;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.group {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid var(--app-border-softer);
+  border-radius: var(--radius-lg, 16px);
+  padding: 12px 16px 16px;
+}
+
+.groupTitle {
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.groupFields {
+  display: grid;
+  gap: 12px;
+}
+
+/* applied-filter chips */
+
+.activeChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.activeChip {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  color: var(--app-ink);
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.clearLink {
+  border: none;
+  background: none;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  color: var(--app-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 6px 4px;
+  min-height: 32px;
+}
+
+/* results toolbar */
+
+.resultsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.resultsCount {
+  margin: 0;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.resultsBar a.btnSecondary {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 18px;
+}
+
+.tableLoading {
+  opacity: 0.55;
+  transition: opacity var(--duration-fast) ease;
+}
+
+/* pagination */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+  margin-top: 16px;
+}
+
+.pageSummary {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pageButtons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.pageBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pageBtnActive {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.pageGap {
+  padding: 0 4px;
+  color: var(--app-text-subtle);
+}
+
+.pageSize {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+}
+
+.pageSize .select {
+  width: auto;
+  padding: 7px 14px;
+}
