@@ -2,19 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { useNotifications, type NotificationItem } from './NotificationsProvider';
 import styles from './NotificationBell.module.css';
-
-interface NotificationItem {
-  id: string;
-  kind: string;
-  title: string;
-  body: string;
-  href: string | null;
-  read: boolean;
-  createdAt: string;
-}
-
-const POLL_MS = 60_000;
 
 function relative(iso: string): string {
   const secs = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
@@ -28,37 +17,9 @@ function relative(iso: string): string {
 
 export function NotificationBell() {
   const router = useRouter();
-  const [items, setItems] = useState<NotificationItem[]>([]);
-  const [unread, setUnread] = useState(0);
+  const { items, unread, reload } = useNotifications();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-
-  // A failed poll is a no-op for a header widget — the next tick retries.
-  // setState lives inside the `.then` callback (not synchronously in an
-  // effect) — same pattern as useSymbolSearch.
-  const load = (signal?: AbortSignal) => {
-    fetch('/api/notifications?limit=20', { cache: 'no-store', signal })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((payload) => {
-        if (!payload) return;
-        setItems(payload.data ?? []);
-        setUnread(payload.meta?.unread ?? 0);
-      })
-      .catch(() => {});
-  };
-
-  useEffect(() => {
-    const controller = new AbortController();
-    load(controller.signal);
-    const timer = setInterval(() => load(controller.signal), POLL_MS);
-    const onFocus = () => load(controller.signal);
-    window.addEventListener('focus', onFocus);
-    return () => {
-      controller.abort();
-      clearInterval(timer);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -79,7 +40,7 @@ export function NotificationBell() {
     } catch {
       /* ignore */
     }
-    load();
+    reload();
   };
 
   const onItemClick = async (item: NotificationItem) => {

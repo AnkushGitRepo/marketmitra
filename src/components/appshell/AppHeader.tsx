@@ -8,6 +8,7 @@ import { useSymbolSearch } from '@/lib/dashboard/useSymbolSearch';
 import { Logo } from '@/components/landing/Logo';
 import { HostedUserBadge } from './HostedUserBadge';
 import { NotificationBell } from './NotificationBell';
+import { NotificationsProvider } from './NotificationsProvider';
 import styles from './AppHeader.module.css';
 
 interface AppHeaderProps {
@@ -28,7 +29,7 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
   );
 
   return (
-    <>
+    <NotificationsProvider>
       <header className={styles.headerDesktop} data-app-desktop>
         <div className={styles.headerInner}>
           <div className={styles.searchWrap}>
@@ -82,6 +83,6 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
           </button>
         </div>
       </header>
-    </>
+    </NotificationsProvider>
   );
 }
