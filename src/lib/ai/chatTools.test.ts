@@ -7,7 +7,11 @@ vi.mock('@/lib/mcp/tools', () => ({
   tools: [
     {
       name: 'get_quote',
-      config: { title: 'Quote', description: 'Live quote', inputSchema: z.object({ symbol: z.string() }) },
+      config: {
+        title: 'Quote',
+        description: 'Live quote',
+        inputSchema: z.object({ symbol: z.string() }),
+      },
       run: (a: unknown) => run(a),
     },
   ],
@@ -25,6 +29,12 @@ vi.mock('@/lib/alerts/store', () => ({ createAlert, getAlertById, listAlerts, up
 const logMitraAction = vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({}));
 vi.mock('@/lib/mitra/activityLog', () => ({ logMitraAction }));
 
+const screenForModel = vi.fn<(filters: unknown) => Promise<unknown>>();
+vi.mock('@/lib/screener/mitra', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/screener/mitra')>()),
+  screenForModel: (filters: unknown) => screenForModel(filters),
+}));
+
 const { buildChatTools } = await import('./chatTools');
 
 type ExecTool = { execute: (args: unknown) => Promise<unknown> };
@@ -37,6 +47,7 @@ beforeEach(() => {
   listAlerts.mockReset();
   updateAlert.mockReset();
   logMitraAction.mockClear();
+  screenForModel.mockReset();
 });
 
 const fakeAlert = (over: Record<string, unknown> = {}) => ({
@@ -63,7 +74,7 @@ const fakeAlert = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('buildChatTools', () => {
-  it('adapts every MCP tool plus search_context plus the 4 navigation tools plus the 4 alert tools', () => {
+  it('adapts every MCP tool plus search_context plus the 5 navigation tools plus the 4 alert tools', () => {
     const set = buildChatTools('u1');
     expect(Object.keys(set).sort()).toEqual([
       'create_alert',
@@ -72,6 +83,7 @@ describe('buildChatTools', () => {
       'navigate_to_dashboard',
       'navigate_to_markets',
       'navigate_to_portfolio',
+      'open_screener',
       'open_stock',
       'search_context',
       'set_alert_status',
@@ -113,6 +125,42 @@ describe('buildChatTools', () => {
     expect(out).toEqual({ navigated: true, to: '/dashboard/stock/TCS' });
   });
 
+  it('open_screener runs the screen and returns a deep link plus the matches', async () => {
+    const filters = { sales_growth_3y_cagr_min: 15, roe_min: 15, sort_by: 'profit_growth_3y_cagr' };
+    screenForModel.mockResolvedValue({
+      count: 42,
+      results: [{ symbol: 'TCS' }],
+      truncated: true,
+      appliedFilters: filters,
+    });
+    const set = buildChatTools('u1');
+    const out = (await (set.open_screener as unknown as ExecTool).execute(filters)) as Record<
+      string,
+      unknown
+    >;
+    expect(screenForModel).toHaveBeenCalledWith(filters);
+    expect(out).toMatchObject({
+      navigated: true,
+      to: '/dashboard/screener?sales_growth_3y_cagr_min=15&roe_min=15&sort_by=profit_growth_3y_cagr',
+      count: 42,
+    });
+  });
+
+  it('open_screener does not navigate when the screener is unavailable', async () => {
+    screenForModel.mockRejectedValue(new Error('fundamentals-api down'));
+    const set = buildChatTools('u1');
+    const out = await (set.open_screener as unknown as ExecTool).execute({ roe_min: 15 });
+    expect(out).toEqual({ navigated: false, error: 'fundamentals-api down' });
+  });
+
+  it('open_screener only accepts the shared screener schema (nothing the page cannot show)', () => {
+    const set = buildChatTools('u1');
+    const schema = (set.open_screener as unknown as { inputSchema: z.ZodTypeAny }).inputSchema;
+    expect(schema.safeParse({ roe_min: 15, sort_by: 'roe' }).success).toBe(true);
+    expect(schema.safeParse({ sort_by: 'symbol' }).success).toBe(false);
+    expect(schema.safeParse({ roe_min: 'high' }).success).toBe(false);
+  });
+
   it('an adapted MCP tool calls run and passes args through', async () => {
     run.mockResolvedValue({ ltp: 2500 });
     const set = buildChatTools('u1');
@@ -124,7 +172,9 @@ describe('buildChatTools', () => {
   it('an adapted MCP tool surfaces a thrown error as { error }', async () => {
     run.mockRejectedValue(new Error('upstream 502'));
     const set = buildChatTools('u1');
-    expect(await (set.get_quote as unknown as ExecTool).execute({ symbol: 'X' })).toEqual({ error: 'upstream 502' });
+    expect(await (set.get_quote as unknown as ExecTool).execute({ symbol: 'X' })).toEqual({
+      error: 'upstream 502',
+    });
   });
 
   it('search_context maps retrieved chunks to passages', async () => {
@@ -141,7 +191,9 @@ describe('buildChatTools', () => {
       },
     ]);
     const set = buildChatTools('u1');
-    const out = (await (set.search_context as unknown as ExecTool).execute({ query: 'why capex' })) as {
+    const out = (await (set.search_context as unknown as ExecTool).execute({
+      query: 'why capex',
+    })) as {
       available: boolean;
       passages: Array<Record<string, unknown>>;
     };
@@ -165,17 +217,21 @@ describe('buildChatTools', () => {
     });
   });
   describe('alert-management tools', () => {
-    it('list_alerts returns the current user\'s alerts', async () => {
+    it("list_alerts returns the current user's alerts", async () => {
       listAlerts.mockResolvedValue([fakeAlert()]);
       const set = buildChatTools('u1');
-      const out = (await (set.list_alerts as unknown as ExecTool).execute({})) as { alerts: unknown[] };
+      const out = (await (set.list_alerts as unknown as ExecTool).execute({})) as {
+        alerts: unknown[];
+      };
       expect(listAlerts).toHaveBeenCalledWith('u1');
       expect(out.alerts).toHaveLength(1);
     });
 
     it('list_alerts refuses without a signed-in user', async () => {
       const set = buildChatTools(null);
-      expect(await (set.list_alerts as unknown as ExecTool).execute({})).toEqual({ error: 'Not signed in.' });
+      expect(await (set.list_alerts as unknown as ExecTool).execute({})).toEqual({
+        error: 'Not signed in.',
+      });
       expect(listAlerts).not.toHaveBeenCalled();
     });
 
@@ -191,14 +247,18 @@ describe('buildChatTools', () => {
       expect(out).toMatchObject({ created: true, alertId: 'a1' });
       expect(createAlert).toHaveBeenCalledWith(
         'u1',
-        expect.objectContaining({ type: 'trailing_stop', symbol: 'RELIANCE', source: 'mitra' })
+        expect.objectContaining({ type: 'trailing_stop', symbol: 'RELIANCE', source: 'mitra' }),
       );
       expect(logMitraAction).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'alert_created', source: 'mitra', reason: 'No alert existed on this holding yet.' })
+        expect.objectContaining({
+          action: 'alert_created',
+          source: 'mitra',
+          reason: 'No alert existed on this holding yet.',
+        }),
       );
     });
 
-    it('create_alert rejects a trailing_stop % outside Mitra\'s own bounds, without creating anything', async () => {
+    it("create_alert rejects a trailing_stop % outside Mitra's own bounds, without creating anything", async () => {
       const set = buildChatTools('u1');
       const out = await (set.create_alert as unknown as ExecTool).execute({
         type: 'trailing_stop',
@@ -234,7 +294,7 @@ describe('buildChatTools', () => {
       expect(createAlert).not.toHaveBeenCalled();
     });
 
-    it('update_alert_params validates against the existing alert\'s own type and logs a before/after diff', async () => {
+    it("update_alert_params validates against the existing alert's own type and logs a before/after diff", async () => {
       getAlertById.mockResolvedValue(fakeAlert({ params: { trailPct: 10 } }));
       updateAlert.mockResolvedValue(fakeAlert({ params: { trailPct: 15 } }));
       const set = buildChatTools('u1');
@@ -249,16 +309,16 @@ describe('buildChatTools', () => {
           action: 'alert_updated',
           before: expect.objectContaining({ params: { trailPct: 10 } }),
           after: expect.objectContaining({ params: { trailPct: 15 } }),
-        })
+        }),
       );
     });
 
-    it('update_alert_params refuses an alert id that is not the user\'s own', async () => {
+    it("update_alert_params refuses an alert id that is not the user's own", async () => {
       getAlertById.mockResolvedValue(null);
       const set = buildChatTools('u1');
       const out = await (set.update_alert_params as unknown as ExecTool).execute({
         alertId: 'not-mine',
-        reason: 'Trying to touch another user\'s alert.',
+        reason: "Trying to touch another user's alert.",
       });
       expect(out).toMatchObject({ error: expect.stringContaining('not yours') });
       expect(updateAlert).not.toHaveBeenCalled();
@@ -274,7 +334,9 @@ describe('buildChatTools', () => {
         reason: 'This alert has been misfiring on normal volatility.',
       });
       expect(out).toMatchObject({ updated: true, status: 'paused' });
-      expect(logMitraAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'alert_paused' }));
+      expect(logMitraAction).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'alert_paused' }),
+      );
     });
 
     it('set_alert_status resumes a paused alert and logs alert_resumed, never alert_paused', async () => {
@@ -287,7 +349,9 @@ describe('buildChatTools', () => {
         reason: 'The market has calmed down since this was paused.',
       });
       expect(out).toMatchObject({ updated: true, status: 'active' });
-      expect(logMitraAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'alert_resumed' }));
+      expect(logMitraAction).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'alert_resumed' }),
+      );
     });
 
     it('set_alert_status is a no-op (and does not log) when already in the requested state', async () => {
@@ -303,7 +367,7 @@ describe('buildChatTools', () => {
       expect(logMitraAction).not.toHaveBeenCalled();
     });
 
-    it('none of the alert tools has a delete/remove tool name (ADR 0030\'s no-delete rule)', () => {
+    it("none of the alert tools has a delete/remove tool name (ADR 0030's no-delete rule)", () => {
       const set = buildChatTools('u1');
       expect(Object.keys(set).some((n) => /delete|remove/i.test(n))).toBe(false);
     });

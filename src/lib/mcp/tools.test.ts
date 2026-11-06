@@ -14,7 +14,7 @@ const fApi = {
 };
 const newsApi = { getNews: vi.fn() };
 const iposApi = { getIpos: vi.fn() };
-const screenerApi = { runScreener: vi.fn() };
+const screenerApi = { runScreenerPage: vi.fn(), getScreenerStats: vi.fn(), getScreenerFacets: vi.fn() };
 
 vi.mock('@/lib/dashboard/fundamentalsApi', () => fApi);
 vi.mock('@/lib/dashboard/newsApi', () => newsApi);
@@ -30,13 +30,19 @@ const tool = (name: string) => {
 };
 
 beforeEach(() => {
-  for (const m of [...Object.values(fApi), newsApi.getNews, iposApi.getIpos, screenerApi.runScreener])
+  for (const m of [
+    ...Object.values(fApi),
+    newsApi.getNews,
+    iposApi.getIpos,
+    screenerApi.runScreenerPage,
+    screenerApi.getScreenerStats,
+  ])
     m.mockReset();
 });
 afterEach(() => vi.clearAllMocks());
 
 describe('tool registry', () => {
-  it('exposes exactly the 8 v1 public-data tools', () => {
+  it('exposes exactly the 9 public-data tools', () => {
     expect(toolNames.sort()).toEqual(
       [
         'get_company_fundamentals',
@@ -44,10 +50,11 @@ describe('tool registry', () => {
         'get_news',
         'get_price_history',
         'get_quote',
+        'get_screener_options',
         'list_ipos',
         'run_screener',
         'search_symbols',
-      ].sort()
+      ].sort(),
     );
   });
 
@@ -73,7 +80,9 @@ describe('search_symbols', () => {
   });
 
   it('returns results with a count', async () => {
-    fApi.searchSymbols.mockResolvedValue([{ type: 'company', symbol: 'RELIANCE', name: 'Reliance' }]);
+    fApi.searchSymbols.mockResolvedValue([
+      { type: 'company', symbol: 'RELIANCE', name: 'Reliance' },
+    ]);
     const out = (await tool('search_symbols').run({ query: 'reli' })) as {
       count: number;
       results: unknown[];
@@ -115,7 +124,9 @@ describe('get_company_fundamentals', () => {
 
   it('fetches all sections by default (including a live quote) and coalesces nulls to []', async () => {
     fApi.getCompany.mockResolvedValue({ symbol: 'RELIANCE', name: 'Reliance', about: 'oil' });
-    fApi.getQuotes.mockResolvedValue([{ symbol: 'RELIANCE', price: '1400', source_tier: 'yahoo_finance2' }]);
+    fApi.getQuotes.mockResolvedValue([
+      { symbol: 'RELIANCE', price: '1400', source_tier: 'yahoo_finance2' },
+    ]);
     fApi.getRatios.mockResolvedValue(null);
     fApi.getShareholding.mockResolvedValue([{ category: 'Promoters', percentage: '50' }]);
     fApi.getPeers.mockResolvedValue(null);
@@ -165,7 +176,8 @@ describe('get_price_history', () => {
 
   it('rejects an unknown period', () => {
     expect(
-      tool('get_price_history').config.inputSchema.safeParse({ symbol: 'INFY', period: '3y' }).success
+      tool('get_price_history').config.inputSchema.safeParse({ symbol: 'INFY', period: '3y' })
+        .success,
     ).toBe(false);
   });
 });
@@ -175,7 +187,11 @@ describe('get_news', () => {
     newsApi.getNews.mockResolvedValue({ items: [{ title: 'x' }], next_cursor: 'c1' });
     const parsed = tool('get_news').config.inputSchema.parse({ symbols: ['HDFCBANK'] });
     const out = (await tool('get_news').run(parsed)) as { next_cursor: string; note: string };
-    expect(newsApi.getNews).toHaveBeenCalledWith({ symbols: ['HDFCBANK'], limit: 20, cursor: undefined });
+    expect(newsApi.getNews).toHaveBeenCalledWith({
+      symbols: ['HDFCBANK'],
+      limit: 20,
+      cursor: undefined,
+    });
     expect(out.next_cursor).toBe('c1');
     expect(out.note).toMatch(/not a signal/i);
   });
@@ -183,21 +199,30 @@ describe('get_news', () => {
   it('omits an empty symbols array (broad stream)', async () => {
     newsApi.getNews.mockResolvedValue({ items: [], next_cursor: null });
     await tool('get_news').run({ symbols: [], limit: 20 });
-    expect(newsApi.getNews).toHaveBeenCalledWith({ symbols: undefined, limit: 20, cursor: undefined });
+    expect(newsApi.getNews).toHaveBeenCalledWith({
+      symbols: undefined,
+      limit: 20,
+      cursor: undefined,
+    });
   });
 });
 
 describe('list_ipos', () => {
   it('forwards the status filter and carries the GMP caveat', async () => {
     iposApi.getIpos.mockResolvedValue([{ slug: 'acme', name: 'Acme' }]);
-    const out = (await tool('list_ipos').run({ status: 'open' })) as { count: number; note: string };
+    const out = (await tool('list_ipos').run({ status: 'open' })) as {
+      count: number;
+      note: string;
+    };
     expect(iposApi.getIpos).toHaveBeenCalledWith('open');
     expect(out.count).toBe(1);
     expect(out.note).toMatch(/unofficial grey-market estimate/i);
   });
 
   it('rejects an unknown status', () => {
-    expect(tool('list_ipos').config.inputSchema.safeParse({ status: 'delisted' }).success).toBe(false);
+    expect(tool('list_ipos').config.inputSchema.safeParse({ status: 'delisted' }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -212,37 +237,118 @@ describe('get_market_indices', () => {
 
 describe('run_screener', () => {
   it('rejects a non-numeric value for a range filter at the boundary', () => {
-    expect(
-      tool('run_screener').config.inputSchema.safeParse({ pe_min: 'cheap' }).success
-    ).toBe(false);
+    expect(tool('run_screener').config.inputSchema.safeParse({ pe_min: 'cheap' }).success).toBe(
+      false,
+    );
   });
 
   it('accepts an empty filter set (no criteria = default preset)', () => {
     expect(tool('run_screener').config.inputSchema.safeParse({}).success).toBe(true);
   });
 
-  it('passes parsed filters straight through to runScreener', async () => {
-    screenerApi.runScreener.mockResolvedValue([{ symbol: 'TCS' }]);
-    await tool('run_screener').run({ pe_max: 20, roe_min: 15 });
-    expect(screenerApi.runScreener).toHaveBeenCalledWith({ pe_max: 20, roe_min: 15 });
+  const row = (symbol: string) => ({
+    symbol,
+    name: `${symbol} Ltd`,
+    sector: 'IT',
+    industry: null,
+    market_cap: 1234.6,
+    current_price: 10,
+    pe: 12,
+    book_value: null,
+    pb: 2,
+    dividend_yield: 1,
+    roce: 20,
+    roe: 18,
+    face_value: 1,
+    debt_to_equity: 0.2,
+    sales_growth_3y_cagr: 15,
+    profit_growth_3y_cagr: 22,
+    fetch_status: 'ok',
+    source_tier: 'x',
+    fetched_at: '2026-11-06T00:00:00Z',
   });
 
-  it('caps results at 20 and flags truncation, but reports the true count', async () => {
-    const rows = Array.from({ length: 30 }, (_, i) => ({ symbol: `S${i}` }));
-    screenerApi.runScreener.mockResolvedValue(rows);
+  it('passes filters to the screener page query, without paging the caller supplied', async () => {
+    screenerApi.runScreenerPage.mockResolvedValue({ rows: [row('TCS')], total: 1 });
+    await tool('run_screener').run({ pe_max: 20, roe_min: 15, limit: 500, offset: 9 });
+    expect(screenerApi.runScreenerPage).toHaveBeenCalledWith({
+      pe_max: 20,
+      roe_min: 15,
+      limit: 20,
+      offset: 0,
+    });
+  });
+
+  it('returns compact rows, capped at 20, with the true total match count', async () => {
+    screenerApi.runScreenerPage.mockResolvedValue({
+      rows: Array.from({ length: 20 }, (_, i) => row(`S${i}`)),
+      total: 137,
+    });
     const out = (await tool('run_screener').run({})) as {
       count: number;
-      results: unknown[];
+      results: { symbol: string; market_cap_cr: number; roe_pct: number }[];
       truncated: boolean;
     };
-    expect(out.count).toBe(30);
+    expect(out.count).toBe(137);
     expect(out.results).toHaveLength(20);
+    expect(out.results[0]).toMatchObject({ symbol: 'S0', market_cap_cr: 1235, roe_pct: 18 });
     expect(out.truncated).toBe(true);
   });
 
   it('does not flag truncation when everything fits', async () => {
-    screenerApi.runScreener.mockResolvedValue([{ symbol: 'TCS' }]);
+    screenerApi.runScreenerPage.mockResolvedValue({ rows: [row('TCS')], total: 1 });
     const out = (await tool('run_screener').run({})) as { truncated: boolean };
     expect(out.truncated).toBe(false);
+  });
+
+  it('steers the next attempt when nothing matches', async () => {
+    screenerApi.runScreenerPage.mockResolvedValue({ rows: [], total: 0 });
+    screenerApi.getScreenerStats.mockResolvedValue({ universe: 1, with_fundamentals: 1 });
+    const withSector = (await tool('run_screener').run({ sector: 'Pharma' })) as { hint?: string };
+    expect(withSector.hint).toMatch(/get_screener_options/);
+    const plain = (await tool('run_screener').run({ pe_max: 1 })) as { hint?: string };
+    expect(plain.hint).toMatch(/Loosen/);
+  });
+
+  it('adds a coverage warning only when the screen uses scraped fundamentals', async () => {
+    screenerApi.runScreenerPage.mockResolvedValue({ rows: [], total: 0 });
+    screenerApi.getScreenerStats.mockResolvedValue({ universe: 2630, with_fundamentals: 900 });
+    const priceOnly = (await tool('run_screener').run({ pe_max: 15 })) as { coverage?: unknown };
+    expect(priceOnly.coverage).toBeUndefined();
+    const quality = (await tool('run_screener').run({ roe_min: 15 })) as {
+      coverage?: { companiesWithFundamentals: number; note: string };
+    };
+    expect(quality.coverage?.companiesWithFundamentals).toBe(900);
+    expect(quality.coverage?.note).toMatch(/scraped so far/);
+  });
+});
+
+describe('get_screener_options', () => {
+  it('lists sectors with company counts when no sector is given', async () => {
+    screenerApi.getScreenerFacets.mockResolvedValue({
+      sectors: ['Capital Goods', 'Healthcare'],
+      industries: ['x'],
+      sector_counts: { 'Capital Goods': 40, Healthcare: 55 },
+      industry_counts: {},
+    });
+    const out = (await tool('get_screener_options').run({})) as { sectors: { name: string; companies: number }[] };
+    expect(screenerApi.getScreenerFacets).toHaveBeenCalledWith(undefined);
+    expect(out.sectors).toEqual([
+      { name: 'Capital Goods', companies: 40 },
+      { name: 'Healthcare', companies: 55 },
+    ]);
+  });
+
+  it('lists only that sector\'s industries when a sector is given', async () => {
+    screenerApi.getScreenerFacets.mockResolvedValue({
+      sectors: ['Healthcare'],
+      industries: ['Pharmaceuticals', 'Hospitals'],
+      industry_counts: { Pharmaceuticals: 30, Hospitals: 9 },
+    });
+    const out = (await tool('get_screener_options').run({ sector: 'Healthcare' })) as {
+      industries: { name: string; companies: number }[];
+    };
+    expect(screenerApi.getScreenerFacets).toHaveBeenCalledWith('Healthcare');
+    expect(out.industries[0]).toEqual({ name: 'Pharmaceuticals', companies: 30 });
   });
 });

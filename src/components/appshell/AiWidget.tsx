@@ -7,6 +7,7 @@ import { DefaultChatTransport, type UIMessage } from 'ai';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { usePageContext } from '@/lib/dashboard/PageContext';
 import { MitraCharacter } from '@/components/mitra/MitraCharacter';
+import { MarkdownLite } from '@/components/MarkdownLite';
 import { ImportPreviewCard } from './ImportPreviewCard';
 import type { ProposedChange } from '@/lib/portfolio-import/types';
 import styles from './AiWidget.module.css';
@@ -83,15 +84,18 @@ function parseErrorBody(error: Error): { error?: string; hint?: string } | null 
 }
 
 // `open` lives here so the panel stays open/closed across section
-// navigation, matching the source design. Chat/insight state lives in
-// AiPanelBody below, keyed by `section` from the parent (AppShell.tsx) so
-// switching sections resets it by remounting — not via setState-in-effect.
+// navigation, matching the source design. Chat state lives in AiPanelBody
+// below and is deliberately NOT keyed by `section`: Mitra can now move the
+// user between pages itself (open_stock, open_screener), and a conversation
+// that reset on every section change would be wiped exactly when the user
+// wants to refine ("now only IT"). `section` only drives the starter
+// prompts and the placeholder, and each message carries its own page context.
 export function AiWidget({ section }: { section: Section }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className={styles.wrap}>
-      {open && <AiPanelBody key={section} section={section} onClose={() => setOpen(false)} />}
+      {open && <AiPanelBody section={section} onClose={() => setOpen(false)} />}
 
       <button onClick={() => setOpen((o) => !o)} className={styles.launcher} type="button" aria-label="Toggle Mitra assistant">
         <MitraCharacter phase="idle" size={44} />
@@ -163,12 +167,14 @@ function AiPanelBody({ section, onClose }: { section: Section; onClose: () => vo
       // open_stock carries a dynamic ticker in its output rather than a
       // fixed route, so it isn't in the static map — handle separately.
       for (const part of message.parts) {
-        if (part.type !== 'tool-open_stock') continue;
+        // open_screener likewise carries its destination (the filtered
+        // Screener URL) in its output.
+        if (part.type !== 'tool-open_stock' && part.type !== 'tool-open_screener') continue;
         if (!('state' in part) || part.state !== 'output-available') continue;
         if (handledToolCallIds.current.has(part.toolCallId)) continue;
         handledToolCallIds.current.add(part.toolCallId);
-        const output = part.output as { to?: string } | undefined;
-        if (output?.to) router.push(output.to);
+        const output = part.output as { to?: string; navigated?: boolean } | undefined;
+        if (output?.navigated !== false && output?.to) router.push(output.to);
       }
     }
   }, [messages, router]);
@@ -283,7 +289,13 @@ function AiPanelBody({ section, onClose }: { section: Section; onClose: () => vo
                     isStreamingAi ? styles.msgTyping : ''
                   }`}
                 >
-                  {text || (isStreamingAi ? 'Thinking' : '')}
+                  {m.role === 'assistant' && text ? (
+                    // Mitra answers with short headings / bullets / **bold**
+                    // (e.g. a screening shortlist) — render them, don't show raw markup.
+                    <MarkdownLite text={text} className={styles.msgMarkdown} />
+                  ) : (
+                    text || (isStreamingAi ? 'Thinking' : '')
+                  )}
                 </div>
               );
             })}

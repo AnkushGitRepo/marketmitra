@@ -818,3 +818,9 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   pydantic, so the first full backfill crashed on import. Verified in a real
   browser against 652 synthetic local rows (since removed).
 
+- Mitra screening assistant (ADR 0034): `open_screener` + `get_screener_options`,
+  reworked `run_screener` (true count, coverage, zero-match hint), screening
+  playbook in the prompt, 9-step tool loop, screener page remounts on external
+  URL change, chat stream errors now logged. Live-tested against Gemini over
+  local synthetic data (removed). Found the account's saved Gemini key is invalid.
+

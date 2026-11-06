@@ -27,7 +27,8 @@ import {
 } from '@/lib/dashboard/stockAggregate';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { getIpos, type IpoStatus } from '@/lib/dashboard/iposApi';
-import { runScreener } from '@/lib/dashboard/screener';
+import { screenForModel } from '@/lib/screener/mitra';
+import { getScreenerFacets } from '@/lib/dashboard/screener';
 import { screenerFiltersSchema } from '@/lib/dashboard/screenerSchema';
 
 /** Framing appended to any tool touching AI-adjacent / market-sentiment data. */
@@ -104,7 +105,7 @@ const getCompanyFundamentalsTool = defineTool({
         .array(z.enum(STOCK_AGGREGATE_SECTIONS))
         .optional()
         .describe(
-          'Subset of: company, quote, ratios, shareholding, peers, documents, financials. Omit for all.'
+          'Subset of: company, quote, ratios, shareholding, peers, documents, financials. Omit for all.',
         ),
     }),
   },
@@ -122,10 +123,7 @@ const getPriceHistoryTool = defineTool({
       'Daily OHLCV price history for one NSE symbol over a fixed window (1mo, 6mo, 1y, or 5y). Newest row first. `source_tier` on every point.',
     inputSchema: z.object({
       symbol: SYMBOL,
-      period: z
-        .enum(PRICE_PERIODS)
-        .default('1y')
-        .describe('Look-back window. Default "1y".'),
+      period: z.enum(PRICE_PERIODS).default('1y').describe('Look-back window. Default "1y".'),
     }),
   },
   run: async ({ symbol, period }) => {
@@ -151,8 +149,17 @@ const getNewsTool = defineTool({
         .max(20)
         .optional()
         .describe('Optional: up to 20 NSE symbols to filter news by. Omit for the broad stream.'),
-      limit: z.number().int().min(1).max(50).default(20).describe('Items per page (1–50, default 20).'),
-      cursor: z.string().optional().describe('Opaque pagination cursor from a previous `next_cursor`.'),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .default(20)
+        .describe('Items per page (1–50, default 20).'),
+      cursor: z
+        .string()
+        .optional()
+        .describe('Opaque pagination cursor from a previous `next_cursor`.'),
     }),
   },
   run: async ({ symbols, limit, cursor }) => {
@@ -184,7 +191,8 @@ const listIposTool = defineTool({
     return {
       count: ipos.length,
       ipos,
-      note: 'GMP fields are an unofficial grey-market estimate compiled by a third-party tracker — not an exchange figure, not a prediction. ' +
+      note:
+        'GMP fields are an unofficial grey-market estimate compiled by a third-party tracker — not an exchange figure, not a prediction. ' +
         NOT_ADVICE,
     };
   },
@@ -209,17 +217,29 @@ const runScreenerTool = defineTool({
   config: {
     title: 'Screen stocks by financial criteria',
     description:
-      'Filter the NSE stock universe by financial criteria — market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, sales/profit growth (3y CAGR), and sector. Same fixed-field min/max + sector-equality schema as the dashboard\'s Screener page (no free-form query expressions). Translate a natural-language screening question (e.g. "P/E under 15 and ROE over 20%") into `<field>_min`/`<field>_max` filters. Data is refreshed at most once daily from a bulk scrape, and excludes companies whose last scrape failed. Returns up to `limit` matches (default 100, capped 500), sorted by market cap descending — mention the Screener page for a fuller/adjustable view of a large result set.',
+      'Filter the NSE stock universe by financial criteria and get the matches back as data. Fields (all min/max): market_cap (₹ crore), pe, pb, roe (%), roce (%), dividend_yield (%), debt_to_equity, sales_growth_3y_cagr (%), profit_growth_3y_cagr (%); plus `sector`/`industry` equality, `q` (company/symbol contains-match), `sort_by` (any of those fields) with `order` asc|desc, `limit` and `offset`. Fixed-field filters only — no free-form expressions. Translate a natural-language need (e.g. "P/E under 15 and ROE over 20%") into `<field>_min`/`<field>_max`. Percent fields are plain numbers (15 means 15%). Price-derived fields (market cap, P/E, P/B, yield) refresh daily for every company; ROE, ROCE, debt and growth come from a rotating scrape, so those filters only match companies scraped so far (see `coverage` in the result). Returns the true `count`, up to 20 compact rows sorted by market cap unless `sort_by` is given, and the `appliedFilters` echo. Cheap to call repeatedly — use it to tune a screen (loosen if 0 matches, tighten if hundreds) before presenting.',
     inputSchema: screenerFiltersSchema,
   },
-  run: async (filters) => {
-    const results = await runScreener(filters);
-    const capped = results.slice(0, 20);
+  run: async (filters) => ({ ...(await screenForModel(filters)), note: NOT_ADVICE }),
+});
+
+const getScreenerOptionsTool = defineTool({
+  name: 'get_screener_options',
+  config: {
+    title: 'List valid screener sectors and industries',
+    description:
+      'The exact sector and industry names the screener accepts (a misspelled or invented name silently matches nothing), with how many companies each holds. With no `sector`, returns every sector with its company count. With a `sector`, returns the industries inside it. Call this before filtering by sector/industry unless you already have the exact name. Sectors appear as company fundamentals are scraped, so counts can be partial.',
+    inputSchema: z.object({
+      sector: z.string().trim().min(1).max(128).optional().describe('Exact sector name, to list its industries.'),
+    }),
+  },
+  run: async ({ sector }) => {
+    const facets = await getScreenerFacets(sector);
+    const counts = sector ? facets.industry_counts : facets.sector_counts;
+    const names = sector ? facets.industries : facets.sectors;
     return {
-      count: results.length,
-      results: capped,
-      truncated: results.length > capped.length,
-      note: NOT_ADVICE,
+      [sector ? 'industries' : 'sectors']: names.map((name) => ({ name, companies: counts?.[name] ?? null })),
+      note: 'Use these exact names in `sector` / `industry`. A screen takes one sector at a time.',
     };
   },
 });
@@ -233,6 +253,7 @@ export const tools: readonly McpToolDef[] = [
   listIposTool,
   getMarketIndicesTool,
   runScreenerTool,
+  getScreenerOptionsTool,
 ];
 
 export const toolNames = tools.map((t) => t.name);

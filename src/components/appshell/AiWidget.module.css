@@ -184,7 +184,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 178px;
+  max-height: min(46vh, 340px);
   overflow-y: auto;
 }
 
@@ -208,6 +208,33 @@
   color: var(--app-ink);
   border-radius: 16px 16px 16px 4px;
   line-height: 1.5;
+}
+
+.msgMarkdown p,
+.msgMarkdown ul,
+.msgMarkdown h2,
+.msgMarkdown h3,
+.msgMarkdown h4 {
+  margin: 0 0 6px;
+}
+
+.msgMarkdown > :last-child {
+  margin-bottom: 0;
+}
+
+.msgMarkdown h2,
+.msgMarkdown h3,
+.msgMarkdown h4 {
+  font-size: 12.8px;
+  font-weight: 600;
+}
+
+.msgMarkdown ul {
+  padding-left: 18px;
+}
+
+.msgMarkdown li {
+  margin-bottom: 3px;
 }
 
 .composer {

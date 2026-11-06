@@ -7,7 +7,8 @@
 //     fundamentals, price history, news, IPOs, indices;
 //   - `search_context`, which vector-searches the retrieval corpus
 //     (indexed news + filings + the caller's private notes/holdings);
-//   - 4 navigation tools that let the client move the user to a page;
+//   - 5 navigation tools that let the client move the user to a page
+//     (`open_screener`, ADR 0034, also applies a set of screener filters);
 //   - 4 alert-management tools (ADR 0030) — the one place Mitra can write
 //     anything. Scoped narrowly and deliberately: alerts only (never
 //     holdings, settings, security, or billing), never a full delete
@@ -38,6 +39,8 @@ import { retrieve } from '@/lib/rag/retrieve';
 import { paramsSchemaForType } from '@/lib/alerts/schemas';
 import { createAlert, getAlertById, listAlerts, updateAlert } from '@/lib/alerts/store';
 import { checkMitraBounds } from '@/lib/alerts/mitraBounds';
+import { screenerFiltersSchema } from '@/lib/dashboard/screenerSchema';
+import { screenerUrl, screenForModel } from '@/lib/screener/mitra';
 import { logMitraAction } from '@/lib/mitra/activityLog';
 import type { AlertParams } from '@/lib/alerts/types';
 
@@ -128,6 +131,29 @@ export function buildChatTools(userId: string | null): ToolSet {
     }),
   });
 
+  // Screener navigation (ADR 0034). Same filter schema as the Screener page
+  // and `run_screener`, so Mitra cannot express a screen the page can't show.
+  // Unlike the other navigation tools this also runs the screen and returns
+  // the matches, so the model can name stocks from the exact list the user is
+  // about to see. Use `run_screener` to explore silently; call this once, with
+  // the final filters.
+  set.open_screener = tool({
+    description:
+      'Open the Screener page with these filters applied, and get back the matches so you can talk about them. Call this ONCE, with your final tuned filters, after exploring with `run_screener` (which moves nothing on screen). Same fields as run_screener: market_cap (₹ Cr), pe, pb, roe, roce, dividend_yield, debt_to_equity, sales_growth_3y_cagr, profit_growth_3y_cagr (each `_min`/`_max`; percentages are plain numbers, 15 = 15%), plus sector/industry, q, and sort_by + order. Returns the true match count, up to 20 compact rows, and `to` (the page URL). Briefly tell the user what you applied and why.',
+    inputSchema: screenerFiltersSchema,
+    execute: async (filters) => {
+      try {
+        const screen = await screenForModel(filters);
+        return { navigated: true, to: screenerUrl(screen.appliedFilters), ...screen };
+      } catch (err) {
+        return {
+          navigated: false,
+          error: err instanceof Error ? err.message : 'screener unavailable',
+        };
+      }
+    },
+  });
+
   // Alert management (ADR 0030). See this file's header comment for the
   // scope of what these can and cannot do.
 
@@ -141,14 +167,16 @@ export function buildChatTools(userId: string | null): ToolSet {
   ]);
   const mitraParamsSchema = z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
-    .describe("Type-specific parameters. price_threshold: {direction:'above'|'below', threshold}. percent_move: {direction:'up'|'down'|'either', pct}. week52_breach: {edge:'high'|'low', withinPct?}. portfolio_pnl: {metric:'total_value'|'unrealized_pnl'|'unrealized_pnl_pct', direction:'above'|'below', threshold}. trailing_stop: {trailPct} — 3 to 25 when set by you. cumulative_drawdown: {windowSessions, pct} — 2 to 10 sessions, 5 to 50% when set by you.");
+    .describe(
+      "Type-specific parameters. price_threshold: {direction:'above'|'below', threshold}. percent_move: {direction:'up'|'down'|'either', pct}. week52_breach: {edge:'high'|'low', withinPct?}. portfolio_pnl: {metric:'total_value'|'unrealized_pnl'|'unrealized_pnl_pct', direction:'above'|'below', threshold}. trailing_stop: {trailPct} — 3 to 25 when set by you. cumulative_drawdown: {windowSessions, pct} — 2 to 10 sessions, 5 to 50% when set by you.",
+    );
   const reasonSchema = z
     .string()
     .trim()
     .min(10)
     .max(300)
     .describe(
-      'Why you are doing this, in plain language a person would understand — this is logged and shown to the user on their Mitra-activity page verbatim, so write it for them, not for a log file.'
+      'Why you are doing this, in plain language a person would understand — this is logged and shown to the user on their Mitra-activity page verbatim, so write it for them, not for a log file.',
     );
 
   set.list_alerts = tool({
@@ -178,7 +206,7 @@ export function buildChatTools(userId: string | null): ToolSet {
 
   set.create_alert = tool({
     description:
-      "Create a new alert on a stock or the whole portfolio — on your own judgment (e.g. you notice a holding with no protection) or because the user asked. Cannot create ipo/ipo_watch alerts (use the IPO page for those). Bounds on trailing_stop/cumulative_drawdown/percent_move/week52_breach are stricter than what the Alerts page UI allows a human to set — if your params are rejected, tell the user the actual bound rather than silently retrying with different numbers, or suggest they set it themselves on the Alerts page for a value outside that range.",
+      'Create a new alert on a stock or the whole portfolio — on your own judgment (e.g. you notice a holding with no protection) or because the user asked. Cannot create ipo/ipo_watch alerts (use the IPO page for those). Bounds on trailing_stop/cumulative_drawdown/percent_move/week52_breach are stricter than what the Alerts page UI allows a human to set — if your params are rejected, tell the user the actual bound rather than silently retrying with different numbers, or suggest they set it themselves on the Alerts page for a value outside that range.',
     inputSchema: z.object({
       type: mitraAlertTypeEnum,
       symbol: z
@@ -231,7 +259,13 @@ export function buildChatTools(userId: string | null): ToolSet {
         source: 'mitra',
       });
 
-      return { created: true, alertId: alert.id, type: alert.type, symbol: alert.symbol, params: alert.params };
+      return {
+        created: true,
+        alertId: alert.id,
+        type: alert.type,
+        symbol: alert.symbol,
+        params: alert.params,
+      };
     },
   });
 
@@ -307,7 +341,8 @@ export function buildChatTools(userId: string | null): ToolSet {
       if (!userId) return { error: 'Not signed in.' };
       const existing = await getAlertById(userId, alertId);
       if (!existing) return { error: 'No alert with that id (or it is not yours).' };
-      if (existing.status === status) return { updated: false, alertId, status, note: 'already in that state' };
+      if (existing.status === status)
+        return { updated: false, alertId, status, note: 'already in that state' };
 
       const updated = await updateAlert(userId, alertId, { status });
       if (!updated) return { error: 'Could not update that alert.' };

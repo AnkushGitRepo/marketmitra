@@ -12,13 +12,16 @@ import { appendTurn, clearHistory, recentUserQuestions } from '@/lib/chat/chatHi
 import { syncRecentChat } from '@/lib/rag/userSync';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { getNews } from '@/lib/dashboard/newsApi';
+import { logEvent } from '@/lib/system/eventLog';
 import type { PageContextValue } from '@/lib/dashboard/pageContextTypes';
 
 export const dynamic = 'force-dynamic';
 // A tool-calling turn can take several round-trips (retrieval embed +
 // fundamentals-api calls); give it more room than a plain completion.
 export const maxDuration = 120;
-const MAX_TOOL_STEPS = 5;
+// Room for a screening conversation: a few tuning `run_screener` calls, the
+// final `open_screener`, then the written answer (ADR 0034).
+const MAX_TOOL_STEPS = 9;
 
 const MAX_TURNS = 12;
 
@@ -105,7 +108,16 @@ async function handlePOST(request: Request) {
         void syncRecentChat(userId, await recentUserQuestions(userId));
       },
     });
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      // Without this the client only ever sees "An error occurred." and the
+      // cause (bad key, provider rejecting a tool schema, quota) is lost.
+      // Log it for the operator; show the user something actionable.
+      onError: (error) => {
+        const detail = error instanceof Error ? error.message : String(error);
+        void logEvent({ level: 'error', source: 'api:ai/chat', message: `Chat stream failed: ${detail.slice(0, 400)}` });
+        return 'The AI provider returned an error. Check your key and model in Settings, then try again.';
+      },
+    });
   } catch {
     return NextResponse.json({ error: 'The AI request failed. Please try again.' }, { status: 502 });
   }

@@ -88,6 +88,10 @@ export default async function ScreenerPage({
         </p>
       )}
       <ScreenerPageClient
+        // Remount when the URL state changes from outside (e.g. Mitra opening a
+        // new screen while this page is already showing), since the client
+        // component seeds its state from these props once.
+        key={JSON.stringify([filters, pageIndex, pageSize])}
         initialResults={rows}
         initialTotal={total}
         initialFilters={filters}
