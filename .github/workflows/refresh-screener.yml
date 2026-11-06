@@ -35,7 +35,7 @@ on:
   workflow_dispatch:
     inputs:
       full:
-        description: "Backfill: scrape the ENTIRE universe (~21 min) instead of the stalest 400"
+        description: "Backfill: scrape the ENTIRE universe (~55 min) instead of the stalest 400"
         type: boolean
         default: false
       limit:
@@ -50,9 +50,11 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    # A full backfill is ~2,570 symbols at 2 req/s =~ 21 minutes; the daily
-    # incremental run (400 symbols) takes ~4. Headroom covers retry backoff.
-    timeout-minutes: 45
+    # Measured: a full backfill scrapes ~2,200 companies in 45 minutes (about
+    # 0.8/s in practice, well under the 2 req/s ceiling, because of page
+    # latency and retries), so a full run needs ~55 min. The daily incremental
+    # run (400 symbols) takes ~8. 90 leaves headroom.
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: services/fundamentals-api
