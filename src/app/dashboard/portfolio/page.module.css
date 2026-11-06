@@ -435,7 +435,8 @@
 .linkButton {
   border: none;
   background: none;
-  padding: 0;
+  padding: 4px 6px;
+  min-height: 24px;
   font-size: 12px;
   color: var(--app-teal-strong);
   cursor: pointer;
@@ -445,7 +446,8 @@
 .linkButtonDanger {
   border: none;
   background: none;
-  padding: 0;
+  padding: 4px 6px;
+  min-height: 24px;
   font-size: 12px;
   color: var(--app-loss);
   cursor: pointer;

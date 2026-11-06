@@ -210,10 +210,10 @@
   margin-right: -3px;
 }
 .up {
-  color: var(--color-mint-strong, #34c17c);
+  color: var(--app-gain, #0b8266);
 }
 .down {
-  color: var(--color-danger-soft, #f0836b);
+  color: var(--app-loss, #ba533c);
 }
 .empty {
   position: absolute;

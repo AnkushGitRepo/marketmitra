@@ -36,6 +36,7 @@ export function NewsList({ items, showSymbols = false, emptyText = 'No news yet.
           <span
             className={`${styles.dot} ${styles[`dot_${item.sentiment}`]}`}
             title={SENTIMENT_TITLE[item.sentiment]}
+            role="img"
             aria-label={SENTIMENT_TITLE[item.sentiment]}
           />
           <div className={styles.body}>

@@ -200,7 +200,7 @@
 .status_listed,
 .status_closed {
   background: var(--app-border-softer);
-  color: var(--app-text-subtle);
+  color: var(--app-text-muted);
 }
 
 .ipoQuick {

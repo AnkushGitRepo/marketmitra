@@ -20,7 +20,7 @@
   transform: translateY(-50%);
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #a9b2b8;
+  color: var(--app-text-subtle);
 }
 
 .chartCol {

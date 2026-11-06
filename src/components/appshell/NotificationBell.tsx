@@ -93,7 +93,8 @@ export function NotificationBell() {
       <button
         type="button"
         className={styles.bellButton}
-        aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+        // The visible badge text ("9+") must appear in the accessible name.
+        aria-label={unread > 0 ? `Notifications, ${unread > 9 ? '9+' : unread} unread` : 'Notifications'}
         onClick={() => setOpen((v) => !v)}
       >
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
