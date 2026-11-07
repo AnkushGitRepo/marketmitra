@@ -824,3 +824,13 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   URL change, chat stream errors now logged. Live-tested against Gemini over
   local synthetic data (removed). Found the account's saved Gemini key is invalid.
 
+- GitHub security setup: secret scanning + push protection enabled (repo
+  settings); CodeQL workflow (JS/TS, Python, Actions; weekly + push/PR),
+  Dependabot version updates (npm, pip in services/fundamentals-api, actions;
+  weekly, grouped, Next/React majors held back) and a dependency-review check on
+  PRs. Fixed the one open Dependabot alert (dev-only `minimatch` via
+  typescript-eslint) with a scoped npm override; `npm audit` and `pip-audit` are
+  clean (local Python venv had stale pillow/urllib3/certifi/filelock — production
+  already pinned floors in requirements.txt). Non-provider patterns and
+  validity checks are paid GitHub features and stay off.
+

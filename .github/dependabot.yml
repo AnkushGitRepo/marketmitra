@@ -1,0 +1,56 @@
+# Dependabot version updates (security updates are enabled separately in repo
+# settings and open PRs for vulnerable dependencies regardless of this file).
+#
+# Weekly, grouped, and capped so the project gets a small number of reviewable
+# PRs instead of one per package. Commit messages follow the repo's conventional
+# format (`chore(deps): …`).
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Major bumps of the framework core are deliberate migrations (this repo
+      # runs a Next.js with breaking changes — see CLAUDE.md), not a weekly PR.
+      - dependency-name: next
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: pip
+    directory: "/services/fundamentals-api"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]

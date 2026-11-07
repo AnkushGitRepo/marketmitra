@@ -1,0 +1,52 @@
+# CodeQL code scanning (static analysis for common vulnerabilities and coding
+# errors). Results appear under Security → Code scanning. Free on public repos.
+#
+# Covers the Next.js app (JavaScript/TypeScript), the fundamentals-api service
+# (Python) and the GitHub Actions workflows themselves (script-injection and
+# permission issues). `build-mode: none` — no build is needed for these.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so newly published queries run against unchanged code too.
+    - cron: "17 3 * * 1"
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, python, actions]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          # security-extended adds lower-precision security queries on top of
+          # the default suite — worth it for an app that holds users' API keys.
+          queries: security-extended
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
