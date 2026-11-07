@@ -7,6 +7,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from app import security as pdf_mod_security
 from app.api import deps
 from app.ingestion import pdf_text as pdf_mod
 from app.ingestion.pdf_text import PdfTextError, extract_pages
@@ -127,8 +128,15 @@ def _patch_client(monkeypatch, handler):
     monkeypatch.setattr(pdf_mod.httpx, "AsyncClient", factory)
 
 
+def _target(url):
+    """A pinned target that keeps the hostname, so MockTransport handlers can match on it."""
+    from urllib.parse import urlsplit
+
+    return pdf_mod_security.PinnedTarget(request_url=url, host_header=urlsplit(url).netloc, sni_hostname=None)
+
+
 def _public(monkeypatch):
-    monkeypatch.setattr(pdf_mod, "validate_public_url", lambda url: None)
+    monkeypatch.setattr(pdf_mod, "resolve_public_target", _target)
 
 
 @pytest.mark.anyio
@@ -154,11 +162,12 @@ async def test_download_revalidates_every_redirect_hop(monkeypatch):
 
     _patch_client(monkeypatch, handler)
 
-    def validate(url):
+    def resolve(url):
         if "10.0.0.5" in url:
             raise pdf_mod.UnsafeUrlError("non-public")
+        return _target(url)
 
-    monkeypatch.setattr(pdf_mod, "validate_public_url", validate)
+    monkeypatch.setattr(pdf_mod, "resolve_public_target", resolve)
     with pytest.raises(pdf_mod.PdfTextError, match="refusing"):
         await pdf_mod.download_pdf("https://public.example/report.pdf")
 
@@ -191,3 +200,25 @@ async def test_download_stops_reading_past_the_size_cap(monkeypatch):
     _patch_client(monkeypatch, lambda request: httpx.Response(200, content=b"%PDF-" + b"x" * 5000))
     with pytest.raises(pdf_mod.PdfTextError, match="too large"):
         await pdf_mod.download_pdf("https://public.example/huge.pdf")
+
+
+@pytest.mark.anyio
+async def test_download_connects_to_the_validated_ip_not_the_hostname(monkeypatch):
+    """The anti-rebinding property: the socket target is the address that was
+    checked, while Host and the TLS server name still carry the original host."""
+    seen = {}
+
+    def resolve(url):
+        return pdf_mod_security.resolve_public_target(url, resolve=lambda host: ["93.184.216.34"])
+
+    monkeypatch.setattr(pdf_mod, "resolve_public_target", resolve)
+
+    def handler(request):
+        seen["host"] = request.url.host
+        seen["host_header"] = request.headers["host"]
+        seen["sni"] = request.extensions.get("sni_hostname")
+        return httpx.Response(200, content=_PDF)
+
+    _patch_client(monkeypatch, handler)
+    await pdf_mod.download_pdf("https://filings.example/report.pdf?x=1")
+    assert seen == {"host": "93.184.216.34", "host_header": "filings.example", "sni": "filings.example"}

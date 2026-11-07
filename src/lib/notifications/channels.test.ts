@@ -202,6 +202,13 @@ describe('sendTelegram', () => {
     expect(sentBody().text).toContain('\\[TCS\\] up\\_down\\*move');
   });
 
+  it('escapes backticks and backslashes so input cannot cancel an escape', async () => {
+    safeFetch.mockResolvedValue(ok());
+    await sendTelegram(TOKEN, '456', { ...payload, title: 'a`b \\_c' });
+    // `\_` must not become `\\_` (an escaped backslash followed by a live `_`).
+    expect(sentBody().text).toContain('a\\`b \\\\\\_c');
+  });
+
   it('maps a non-2xx response to "error" with just the status', async () => {
     safeFetch.mockResolvedValue({ ...fail(401), text: async () => 'Unauthorized' });
     const r = await sendTelegram(TOKEN, '456', payload);

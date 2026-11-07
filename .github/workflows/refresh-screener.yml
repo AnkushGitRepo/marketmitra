@@ -47,6 +47,10 @@ concurrency:
   group: refresh-screener
   cancel-in-progress: false
 
+# Least privilege: this job only reads the repository.
+permissions:
+  contents: read
+
 jobs:
   refresh:
     runs-on: ubuntu-latest

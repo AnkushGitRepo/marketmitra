@@ -22,7 +22,7 @@ from urllib.parse import urljoin
 
 import httpx
 
-from app.security import UnsafeUrlError, validate_public_url
+from app.security import UnsafeUrlError, resolve_public_target
 
 logger = logging.getLogger("fundamentals.pdf_text")
 
@@ -43,8 +43,10 @@ async def download_pdf(url: str) -> bytes:
     """Fetch a PDF, refusing anything that would turn this into an SSRF proxy.
 
     Every hop (the original URL and each redirect) must resolve to public
-    addresses only, redirects are followed manually so none is trusted blindly,
-    and the body is streamed with a hard size cap instead of being loaded whole.
+    addresses only and is connected to by the validated IP (no second DNS
+    lookup to rebind), redirects are followed manually so none is trusted
+    blindly, and the body is streamed with a hard size cap instead of being
+    loaded whole.
     """
     current = url
     try:
@@ -52,11 +54,19 @@ async def download_pdf(url: str) -> bytes:
             for _ in range(_MAX_REDIRECTS + 1):
                 try:
                     # getaddrinfo blocks, so keep it off the event loop.
-                    await asyncio.to_thread(validate_public_url, current)
+                    target = await asyncio.to_thread(resolve_public_target, current)
                 except UnsafeUrlError as exc:
                     raise PdfTextError(f"refusing to fetch: {exc}") from exc
 
-                async with client.stream("GET", current, headers={"User-Agent": _UA}) as response:
+                # Connect to the IP that was just validated (not the name again,
+                # which a rebinding DNS server could now answer differently),
+                # keeping the original host for the Host header and TLS checks.
+                async with client.stream(
+                    "GET",
+                    target.request_url,
+                    headers={"User-Agent": _UA, "Host": target.host_header},
+                    extensions={"sni_hostname": target.sni_hostname} if target.sni_hostname else {},
+                ) as response:
                     if response.is_redirect:
                         location = response.headers.get("location", "")
                         if not location:

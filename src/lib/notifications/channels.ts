@@ -82,9 +82,11 @@ export async function sendSlack(webhookUrl: string, payload: NotificationPayload
 }
 
 /** Escapes Telegram's Markdown v1 special characters in plain body text
- * (not in the link we build ourselves). */
-function escapeTelegramMarkdown(s: string): string {
-  return s.replace(/([_*[\]])/g, '\\$1');
+ * (not in the link we build ourselves). The backslash is escaped too: left
+ * alone, an input like `\_` would become `\\_`, whose first backslash escapes
+ * the second and leaves the `_` free to open an italic span. */
+export function escapeTelegramMarkdown(s: string): string {
+  return s.replace(/([\\_*`[\]])/g, '\\$1');
 }
 
 /** Real Telegram Bot API `sendMessage` — the user's own bot token + the

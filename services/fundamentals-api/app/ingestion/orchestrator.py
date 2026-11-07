@@ -20,6 +20,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
 from app.schemas import SourceTier
+from app.security import log_safe
 
 logger = logging.getLogger("fundamentals.orchestrator")
 
@@ -63,7 +64,7 @@ async def resolve_with_fallback(
         except Exception as exc:  # noqa: BLE001 — a broken tier must not break the chain
             logger.warning(
                 "tier=%s label=%s context=%s failed: %s",
-                tiered.tier, tiered.label, context_label, exc,
+                tiered.tier, log_safe(tiered.label), log_safe(context_label), log_safe(exc),
             )
             result.errors[tiered.tier] = str(exc)
             continue
@@ -80,12 +81,12 @@ async def resolve_with_fallback(
         if served_this_tier:
             logger.info(
                 "tier=%s label=%s context=%s served=%s",
-                tiered.tier, tiered.label, context_label, sorted(served_this_tier),
+                tiered.tier, log_safe(tiered.label), log_safe(context_label), log_safe(sorted(served_this_tier)),
             )
 
     if remaining:
         logger.warning(
-            "context=%s unresolved after all tiers: %s", context_label, sorted(remaining)
+            "context=%s unresolved after all tiers: %s", log_safe(context_label), log_safe(sorted(remaining))
         )
 
     return result

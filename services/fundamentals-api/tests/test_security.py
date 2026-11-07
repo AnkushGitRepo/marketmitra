@@ -111,3 +111,67 @@ def test_responses_carry_security_headers():
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["referrer-policy"] == "no-referrer"
     assert "max-age" in response.headers["strict-transport-security"]
+
+
+def test_log_safe_escapes_line_breaks_so_a_value_cannot_forge_log_lines():
+    from app.security import log_safe
+
+    forged = "TCS\nINFO fake: admin logged in\r\nWARNING x"
+    out = log_safe(forged)
+    assert "\n" not in out and "\r" not in out
+    assert "TCS\\nINFO fake" in out
+
+
+def test_log_safe_escapes_backslashes_and_caps_length():
+    from app.security import log_safe
+
+    assert log_safe("a\\nb") == "a\\\\nb"  # a literal backslash-n stays distinguishable from a real newline
+    long = log_safe("x" * 1000, limit=50)
+    assert long.startswith("x" * 50) and long.endswith("…") and len(long) == 51
+
+
+def test_log_safe_accepts_non_strings():
+    from app.security import log_safe
+
+    assert log_safe(["A", "B\nC"]) == "['A', 'B\\\\nC']"
+    assert log_safe(None) == "None"
+
+
+class TestResolvePublicTarget:
+    @staticmethod
+    def _one(ip):
+        calls = []
+
+        def resolver(host):
+            calls.append(host)
+            return [ip]
+
+        return resolver, calls
+
+    def test_pins_the_connection_to_the_checked_ip_and_keeps_the_name(self):
+        resolver, calls = self._one("93.184.216.34")
+        target = security.resolve_public_target("https://example.com:8443/a/b.pdf?q=1#frag", resolve=resolver)
+        assert target.request_url == "https://93.184.216.34:8443/a/b.pdf?q=1"
+        assert target.host_header == "example.com:8443"
+        assert target.sni_hostname == "example.com"
+        assert calls == ["example.com"]  # resolved exactly once
+
+    def test_plain_http_has_no_sni(self):
+        resolver, _ = self._one("93.184.216.34")
+        target = security.resolve_public_target("http://example.com/x", resolve=resolver)
+        assert target.request_url == "http://93.184.216.34/x"
+        assert target.sni_hostname is None
+
+    def test_ipv6_answers_are_bracketed(self):
+        resolver, _ = self._one("2606:2800:220:1:248:1893:25c8:1946")
+        target = security.resolve_public_target("https://example.com/x", resolve=resolver)
+        assert target.request_url == "https://[2606:2800:220:1:248:1893:25c8:1946]/x"
+
+    def test_public_ip_literal_is_left_alone(self):
+        target = security.resolve_public_target("http://93.184.216.34/x")
+        assert target.request_url == "http://93.184.216.34/x"
+        assert target.host_header == "93.184.216.34"
+
+    def test_refuses_when_any_answer_is_internal(self):
+        with pytest.raises(security.UnsafeUrlError):
+            security.resolve_public_target("https://evil.example/x", resolve=lambda h: ["93.184.216.34", "10.0.0.5"])

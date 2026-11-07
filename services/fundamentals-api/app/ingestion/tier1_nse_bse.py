@@ -29,6 +29,7 @@ from bsedata.bse import BSE
 
 from app.config import get_settings
 from app.ingestion.rate_limit import RateLimiter
+from app.security import log_safe
 
 logger = logging.getLogger("fundamentals.tier1")
 
@@ -77,7 +78,7 @@ async def get_nse_quote(symbol: str) -> dict:
     try:
         data = await asyncio.to_thread(nse_eq, symbol)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("nse_eq(%s) failed: %s", symbol, exc)
+        logger.warning("nse_eq(%s) failed: %s", log_safe(symbol), log_safe(exc))
         return {}
 
     if not data:

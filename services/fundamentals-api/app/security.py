@@ -9,8 +9,9 @@ from __future__ import annotations
 import hmac
 import ipaddress
 import socket
+from dataclasses import dataclass
 from collections.abc import Callable
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from fastapi import HTTPException
 
@@ -28,6 +29,18 @@ def require_bearer(authorization: str | None, token: str | None, *, name: str) -
     supplied = (authorization or "").encode()
     if not hmac.compare_digest(supplied, expected):
         raise HTTPException(status_code=401, detail="unauthorized")
+
+
+def log_safe(value: object, *, limit: int = 200) -> str:
+    """Render ``value`` for a log line without letting it forge extra lines.
+
+    Symbols, query params and upstream error text can carry attacker-chosen
+    CR/LF; written verbatim they could fake log entries. Newlines are escaped
+    (not dropped, so the original is still recognisable) and the length is
+    capped so one request cannot flood the log.
+    """
+    text = str(value).replace("\\", "\\\\").replace("\r", "\\r").replace("\n", "\\n")
+    return text if len(text) <= limit else f"{text[:limit]}…"
 
 
 class UnsafeUrlError(ValueError):
@@ -50,14 +63,33 @@ def _system_resolve(host: str) -> list[str]:
     return [info[4][0] for info in socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)]
 
 
-def validate_public_url(url: str, *, resolve: Callable[[str], list[str]] = _system_resolve) -> None:
-    """Raise :class:`UnsafeUrlError` unless ``url`` is http(s) to public hosts.
+@dataclass(frozen=True)
+class PinnedTarget:
+    """A validated destination to connect to.
 
-    Resolves the hostname and requires *every* answer to be public, so a name
-    with one internal A record is refused. Call this for each redirect hop too.
+    ``request_url`` has the hostname replaced by the exact public IP that was
+    checked, so the connection cannot be redirected by a second DNS lookup
+    (DNS rebinding: a name that answers "public" to the check and "internal"
+    to the connect). ``host_header`` and ``sni_hostname`` keep the original
+    name so virtual hosting and TLS certificate verification still work.
+    """
+
+    request_url: str
+    host_header: str
+    sni_hostname: str | None
+
+
+def resolve_public_target(url: str, *, resolve: Callable[[str], list[str]] = _system_resolve) -> PinnedTarget:
+    """Return a :class:`PinnedTarget` for ``url``, or raise :class:`UnsafeUrlError`
+    unless it is http(s) to public hosts only.
+
+    Resolves the hostname **once** and requires *every* answer to be public (a
+    name with one internal A record is refused), then pins the connection to
+    the first answer. Call this for each redirect hop too.
     """
     try:
         parts = urlsplit(url)
+        port = parts.port
     except ValueError as exc:
         raise UnsafeUrlError("malformed URL") from exc
     if parts.scheme not in ("http", "https"):
@@ -67,12 +99,33 @@ def validate_public_url(url: str, *, resolve: Callable[[str], list[str]] = _syst
     host = parts.hostname
     if not host:
         raise UnsafeUrlError("URL has no host")
+    literal = _is_ip_literal(host)
     try:
-        addresses = [host] if _is_ip_literal(host) else resolve(host)
+        addresses = [host] if literal else resolve(host)
     except OSError as exc:
         raise UnsafeUrlError("host did not resolve") from exc
     if not addresses or not all(is_public_ip(a) for a in addresses):
         raise UnsafeUrlError("URL resolves to a non-public address")
+
+    host_header = f"{host}:{port}" if port else host
+    if literal:
+        return PinnedTarget(request_url=url, host_header=host_header, sni_hostname=None)
+    ip = addresses[0]
+    netloc = f"[{ip}]" if ":" in ip else ip
+    if port:
+        netloc = f"{netloc}:{port}"
+    pinned = urlunsplit((parts.scheme, netloc, parts.path, parts.query, ""))
+    return PinnedTarget(
+        request_url=pinned,
+        host_header=host_header,
+        sni_hostname=host if parts.scheme == "https" else None,
+    )
+
+
+def validate_public_url(url: str, *, resolve: Callable[[str], list[str]] = _system_resolve) -> None:
+    """Raise :class:`UnsafeUrlError` unless ``url`` is http(s) to public hosts.
+    Validation only; use :func:`resolve_public_target` when you will connect."""
+    resolve_public_target(url, resolve=resolve)
 
 
 def _is_ip_literal(host: str) -> bool:

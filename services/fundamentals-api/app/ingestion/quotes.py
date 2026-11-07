@@ -35,6 +35,7 @@ from app.config import get_settings
 from app.db.models import CompanyORM
 from app.ingestion import tier1_nse_bse
 from app.ingestion.indices import TRACKED_INDICES
+from app.security import log_safe
 
 logger = logging.getLogger("fundamentals.quotes")
 
@@ -88,7 +89,7 @@ async def _get_bse_code(symbol: str, session: AsyncSession | None) -> str | None
         stmt = select(CompanyORM.bse_code).where(CompanyORM.nse_symbol == symbol.strip().upper())
         return (await session.execute(stmt)).scalar_one_or_none()
     except Exception as exc:  # noqa: BLE001
-        logger.warning("bse_code lookup for %s failed: %s", symbol, exc)
+        logger.warning("bse_code lookup for %s failed: %s", log_safe(symbol), log_safe(exc))
         return None
 
 
@@ -108,7 +109,7 @@ async def get_quote(symbol: str, session: AsyncSession | None = None) -> dict | 
         try:
             nse = await tier1_nse_bse.get_nse_quote(key)
         except Exception as exc:  # noqa: BLE001 — get_nse_quote already catches internally; belt-and-braces
-            logger.warning("get_nse_quote(%s) raised: %s", key, exc)
+            logger.warning("get_nse_quote(%s) raised: %s", log_safe(key), log_safe(exc))
             nse = {}
         if nse.get("last_price") is not None:
             raw = nse

@@ -9,6 +9,10 @@ on:
   deployment_status:
   workflow_dispatch:
 
+# Least privilege: this job only reads the repository.
+permissions:
+  contents: read
+
 jobs:
   smoke:
     if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'

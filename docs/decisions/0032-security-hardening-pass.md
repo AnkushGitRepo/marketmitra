@@ -43,3 +43,23 @@ instance has open sign-up, so "signed in" is not a trust boundary.
 - The Python service's read endpoints are public by design (documented API) and
   rely on per-IP rate limiting (Upstash); ingestion/embedding/PDF endpoints are
   bearer-protected and fail closed when their token is unset.
+
+## Addendum (2026-11-07): CodeQL findings
+
+CodeQL code scanning (`.github/workflows/codeql.yml`) was switched on and its
+first scan found 17 alerts. Resolved:
+
+- **SSRF in the PDF downloader (critical):** the guard already validated every
+  redirect hop, but it resolved the name once to check and httpx resolved it
+  again to connect — a DNS-rebinding window. `resolve_public_target` now
+  resolves once, requires every answer to be public, and the downloader
+  connects to that exact IP (original name kept for `Host` and the TLS
+  server-name check). Verified against real HTTPS hosts; metadata/localhost
+  targets are still refused. CodeQL may keep flagging the call because it cannot
+  see custom sanitizers — if it does, dismiss it with this ADR as the reason.
+- **Log injection (6, medium):** symbols / error text reached log lines
+  verbatim; `log_safe()` escapes CR/LF and backslashes and caps length.
+- **Telegram escaping (high):** the Markdown escaper did not escape backslashes
+  or backticks, so `\_` could cancel its own escape.
+- **Workflow permissions (9, medium):** every workflow now declares least
+  privilege (`contents: read`, or none for pure HTTP-trigger jobs).

@@ -19,6 +19,10 @@ concurrency:
   group: agents-reflect
   cancel-in-progress: false
 
+# Least privilege: this job calls an HTTP endpoint and never touches the repository,
+# so it gets no GITHUB_TOKEN permissions at all.
+permissions: {}
+
 jobs:
   reflect:
     runs-on: ubuntu-latest
