@@ -1,0 +1,70 @@
+# Publishes docs/wiki/ to the repository's GitHub Wiki.
+#
+# The wiki's source of truth is docs/wiki/ in this repo, so changes to it are
+# reviewed like code. Merging to main re-publishes it; pages edited directly on
+# github.com would be overwritten by the next run.
+#
+# ONE-TIME SETUP: GitHub only creates the wiki's git repository when its first
+# page is saved in the browser. Open the Wiki tab → "Create the first page" →
+# Save (any content — this workflow replaces it), then run this workflow once
+# from the Actions tab.
+
+name: Publish wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/wiki/**"
+      - ".github/workflows/wiki-sync.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: wiki-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # Pushing to the wiki repository uses the workflow token's write access.
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Publish docs/wiki to the GitHub wiki
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if ! git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.wiki.git" "$RUNNER_TEMP/wiki" 2>/dev/null; then
+            msg="The wiki repository does not exist yet. Create its first page once in the browser (Wiki tab -> Create the first page -> Save), then run this workflow again."
+            if [ "$EVENT" = "workflow_dispatch" ]; then
+              echo "::error::$msg"
+              exit 1
+            fi
+            echo "::warning::$msg"
+            exit 0
+          fi
+
+          rsync -a --delete --exclude='.git' docs/wiki/ "$RUNNER_TEMP/wiki/"
+
+          cd "$RUNNER_TEMP/wiki"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki is already up to date."
+            exit 0
+          fi
+          git commit --quiet -m "Sync wiki from ${SHA::7}"
+          git push --quiet
+          echo "Wiki published from ${SHA::7}."

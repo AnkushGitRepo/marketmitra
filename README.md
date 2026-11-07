@@ -8,7 +8,7 @@ rather not run their own infrastructure.
 [![License: MIT](https://img.shields.io/github/license/AnkushGitRepo/marketmitra)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](.github/CONTRIBUTING.md)
 
-**[Live demo](https://marketmitra-v2.vercel.app)** · [Documentation](#project-context-for-humans-and-agents) · [Contributing](.github/CONTRIBUTING.md) · [Report a bug](../../issues/new/choose)
+**[Live demo](https://marketmitra-v2.vercel.app)** · [Wiki](../../wiki) · [Documentation](#project-context-for-humans-and-agents) · [Contributing](.github/CONTRIBUTING.md) · [Report a bug](../../issues/new/choose)
 
 ---
 
@@ -187,6 +187,9 @@ See [`/docs/api-surface.md`](docs/api-surface.md) for the full endpoint referenc
 This repo is built to be picked up cold by a fresh session — human or AI agent — without
 re-deriving context from scratch:
 
+- **[Wiki](../../wiki)** — the readable guide: getting started, features, the screener, Mitra,
+  deployment, operations, security. Its source is [`docs/wiki/`](docs/wiki/) and it is
+  published automatically from `main`.
 - **[`CLAUDE.md`](CLAUDE.md)** — entry point: current status, stack constraints, pointers to
   everything below.
 - **[`/docs/architecture.md`](docs/architecture.md)** — current system architecture: routes,
