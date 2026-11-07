@@ -14,6 +14,10 @@ export const NAV_ITEMS = [
   { href: '/dashboard/mitra-activity', label: 'Mitra activity' },
 ] as const;
 
+// Shown only when the local-only Advisor is switched on (ADVISOR_MODE=enabled);
+// kept out of NAV_ITEMS so it can never appear by default.
+export const ADVISOR_NAV_ITEM = { href: '/dashboard/advisor', label: 'Advisor' } as const;
+
 export function isNavActive(pathname: string, href: string): boolean {
   if (href === '/dashboard') return pathname === '/dashboard';
   if (pathname.startsWith(href)) return true;

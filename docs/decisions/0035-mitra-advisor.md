@@ -1,0 +1,81 @@
+# 0035 — Mitra Advisor: a local-only, rules-first decision-support tool
+
+**Status:** accepted (Phase 1 built)
+
+## Decision
+Add an opt-in `Advisor` section for the owner's own long-term investing. Deterministic code decides
+allocation, sizing and the quantitative screen; an LLM (later phases) only explains and reads text, and
+may state only figures passed to it and must cite its source. Recommend-only: no broker, no orders.
+"No action" is a first-class output.
+
+## Gating
+`isAdvisorEnabled()` = `ADVISOR_MODE === 'enabled'` **and** `!isHosted()`. Explicit flag, not hostname
+detection; a server-only variable. When off: every `/api/advisor/*` route returns 404, the dashboard
+pages 404, the sidebar entry is not rendered, and no advisor cron is registered. First use requires
+accepting a versioned disclaimer (`advisor_acknowledgements`).
+
+## Phase 1 scope
+Policy (Zod-validated, one Mongo doc per user, JSON import/export — no YAML dependency added) and the
+index-core allocator. The satellite share is parked in cash until Phase 2 supplies screened names.
+Rebalancing is tax-aware by default (new money to under-weight sleeves, no selling).
+
+## Known data gaps (for Phase 2)
+fundamentals-api has no promoter-pledge data, no ratio history, no capex line (FCF is approximable
+only as CFO+CFI) and no historical P/E. Screen gates return pass/fail/unknown; unknown blocks eligibility.
+
+## Consequences
+Collections: `advisor_policies`, `advisor_acknowledgements` (more in later phases). Not a product feature;
+not documented as part of the public API surface beyond OpenAPI entries tagged Advisor.
+
+## Phase 2 — quality screen (built)
+`src/lib/advisor/screen/`: `config.ts` (every threshold), `rules.ts` (pure gates), `normalize.ts` (API rows →
+`ScreenData`), `fetch.ts` (live read). Findings that revised the "data gaps" above: the service *does* provide a
+`Free Cash Flow` line, ~10 years of annual P&L/balance sheet, and 13 quarters of shareholding; ROCE history is
+derived as (PBT + interest) ÷ (equity + reserves + borrowings) and cross-checked against the reported ROCE
+(disagreement is a warning flag, not a block); historical P/E = year-end price ÷ EPS over the 5y price window
+(so a 10-year median is not possible yet). Still missing: **promoter pledge** — always `unknown`, which blocks
+eligibility by design — and banks/NBFCs lack PBT/interest lines, so their ROCE and growth gates are `unknown`.
+
+## Phase 3 — cited research memo (built)
+`src/lib/advisor/memo/`. One structured-JSON LLM call (not the Phase 11 agent loop — that pipeline's debate/trade
+framing doesn't fit a recommend-only memo; only its `scanForTradeActions` tone check is reused). Inputs are the
+screen's measured values (citable facts `F1…`) and keyword-ranked passages of the latest annual report
+(`AR1-nnn`, ≈60k chars). `cite.ts` is the gate: every claim needs a citation whose quote is a verbatim excerpt of a
+supplied source, or `notFound: true` with no figures; every number must appear in a cited quote; no trade-call
+language; thesis ≤ 3 sentences; kill criteria restricted to seven machine-checkable metrics with sane ranges.
+One repair attempt with the validator's complaints fed back; otherwise the memo is rejected and nothing is stored.
+Code adds three standing kill criteria (`killDefaults.ts`) independent of the model. The prompt is
+`memo/prompts/v1.ts` (`memo-v1`, stored with every memo, along with the exact source text for audit).
+Needs `IPO_INGEST_TOKEN` in `.env.local` (same secret as the fundamentals service) to read filings.
+
+## Phase 4 — decision journal + thesis monitoring (built)
+`src/lib/advisor/journal/`. A recommendation is recorded from a stored memo (price from the live quote, the memo's
+thesis, its kill criteria plus the standing ones, and the screen snapshot) or as the month's plan; the user later marks
+it followed / ignored / modified (with the amount actually invested). `killMonitor.ts` (pure) evaluates a criterion
+over the same normalised data the screen uses — `unknown`, never "fired", when data is missing or the metric's natural
+period doesn't match. `review.ts` notifies through the existing `deliverNotification` pipeline (in-app + the user's
+channels) only when a criterion fires, once per criterion per entry (the firing is recorded *before* delivery, so a
+delivery failure can't cause repeats); ignored entries aren't monitored. The review runs from
+`POST /api/advisor/review` (manual) and `/api/cron/advisor-review` (bearer `CRON_SECRET`). The cron is intentionally
+NOT in `vercel.json` or any workflow (asserted by a test): run it from a local scheduler.
+Also added: a filing override (`filingUrl` / `filingText`) on the memo route, because BSE refuses the downloader (403).
+
+## Phase 5 — paper tracker, benchmark warning, behaviour guard (built)
+**Paper tracker** (`performance/paper.ts`, pure): each recorded stock recommendation — ignored ones included, since the
+question is the quality of the suggestions — is a hypothetical buy at that day's close, against the same rupees in
+NIFTYBEES on the same day. Totals, per-entry results, a month-end history that keeps the losing months, and XIRR only after
+a year of history. No backtest anywhere. **Trailing warning:** over entries ≥180 days old (≥3 of them), if the sleeve's
+return is below the index's, the page says so and suggests more weight to the index core; with fewer it says it is too
+early to judge; when ahead it says that is a small sample, not proof.
+**Behaviour guard** (`behaviour/guard.ts`): market stress is read from NIFTYBEES (day fall ≥2.5% or ≥10% below the 1-year
+high). In Mitra chat (`/api/ai/chat`, only when the flag is on, a policy exists and the disclaimer is accepted) the system
+prompt gains the user's policy; during stress or a dip question Mitra is told to answer from the policy and not to
+produce buy/sell suggestions, and a dip question restricts the toolset to the read-only advisor tools. `dipCooldownDays`
+(policy field, default 14): the first dip question is served and starts the cooldown; a repeat inside it gets a fixed
+reply (streamed without calling the model) that quotes the user's own drawdown tolerance and says no action is required.
+Blocked repeats do not extend the cooldown. The model's wording on the *first* dip answer is steered by the prompt, not
+guaranteed byte-exact — only the cooldown reply is deterministic.
+**Mitra tools:** five read-only tools (`advisor_policy_summary`, `advisor_current_plan`, `advisor_memo`, `advisor_journal`,
+`advisor_performance`) are added to the authenticated chat toolset. They are deliberately NOT registered on the anonymous
+`/api/mcp` endpoint (ADR 0019 — public data only, no auth): a personal policy and journal must not be readable without a
+session, and `next dev` listens on the LAN. Exposing them over MCP would need a token design first.

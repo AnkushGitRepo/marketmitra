@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSyncExternalStore } from 'react';
-import { NAV_ITEMS, isNavActive } from './navItems';
-import { NAV_ICONS } from './NavIcons';
+import { ADVISOR_NAV_ITEM, NAV_ITEMS, isNavActive } from './navItems';
+import { NAV_ICONS, ResearchIcon } from './NavIcons';
 import { Logo } from '@/components/landing/Logo';
 import styles from './Sidebar.module.css';
 
@@ -35,7 +35,7 @@ function ChevronIcon() {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }) {
   const pathname = usePathname();
   const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
@@ -74,8 +74,8 @@ export function Sidebar() {
       </div>
 
       <nav className={styles.nav}>
-        {NAV_ITEMS.map((item) => {
-          const Icon = NAV_ICONS[item.href];
+        {[...NAV_ITEMS, ...(advisorEnabled ? [ADVISOR_NAV_ITEM] : [])].map((item) => {
+          const Icon = NAV_ICONS[item.href as keyof typeof NAV_ICONS] ?? ResearchIcon;
           const active = isNavActive(pathname, item.href);
           return (
             <Link

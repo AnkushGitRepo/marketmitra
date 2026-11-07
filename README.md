@@ -50,6 +50,22 @@ rather not run their own infrastructure.
 No usage numbers, growth stats, or "battle-tested" claims appear anywhere in this repo. It's
 a young rewrite — if a claim like that shows up somewhere, it's a bug, not a feature.
 
+## Mitra Advisor (local-only, opt-in)
+
+An optional, rules-based, long-term, quality-focused decision-support tool for your own money:
+you write an Investment Policy once, and it produces a deterministic monthly plan — which is
+often "no action this month". It is **off by default**, only runs when you set
+`ADVISOR_MODE=enabled`, and is refused on a hosted deployment even if the variable is set.
+
+> **Disclaimer.** Educational decision support, not investment advice. It does not guarantee
+> or predict returns, and the stock sleeve may trail a plain index fund. It never places orders
+> or touches a broker — every recommendation is a proposal you confirm and execute yourself.
+> Scraped data can be wrong or stale. You are solely responsible for your decisions. You must
+> accept this in-app the first time you use it.
+
+Built: the flag and disclaimer, the policy (JSON import/export), the monthly plan, a quality screen, cited research memos, a decision journal with kill-criteria alerts, and paper-trading against a Nifty 50 fund with a plain warning if the stock picks trail it.
+See [ADR 0035](docs/decisions/0035-mitra-advisor.md).
+
 ## Status
 
 All planned phases are built. Phase-by-phase history, decisions, and what's still open live
