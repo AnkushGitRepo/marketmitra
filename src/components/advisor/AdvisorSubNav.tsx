@@ -6,6 +6,7 @@ import styles from './advisor.module.css';
 
 const LINKS = [
   { href: '/dashboard/advisor', label: 'This month' },
+  { href: '/dashboard/advisor/screen', label: 'Screen' },
   { href: '/dashboard/advisor/policy', label: 'Policy' },
 ] as const;
 

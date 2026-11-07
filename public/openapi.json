@@ -3159,6 +3159,51 @@
           }
         }
       }
+    },
+    "/api/advisor/screen": {
+      "get": {
+        "tags": [
+          "Advisor"
+        ],
+        "summary": "Quality screen for one symbol",
+        "description": "Runs the deterministic quality screen (5-year ROCE, debt/equity, free cash flow, growth consistency, promoter pledge and trend, P/E vs own history, data freshness/completeness) and returns every gate with its measured value. A gate that cannot be evaluated is `unknown` and blocks eligibility. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "NSE symbol, e.g. TCS."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Screen result."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Disclaimer not accepted."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "422": {
+            "description": "Missing or invalid symbol."
+          },
+          "502": {
+            "description": "Fundamentals unavailable."
+          }
+        }
+      }
     }
   }
 }
