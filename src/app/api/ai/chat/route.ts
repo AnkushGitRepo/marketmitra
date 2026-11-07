@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/rateLimit';
 import { z } from 'zod';
-import { convertToModelMessages, safeValidateUIMessages, type UIMessage } from 'ai';
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  safeValidateUIMessages,
+  type UIMessage,
+} from 'ai';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
@@ -13,6 +19,7 @@ import { syncRecentChat } from '@/lib/rag/userSync';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { logEvent } from '@/lib/system/eventLog';
+import { prepareAdvisorChat } from '@/lib/advisor/behaviour/chat';
 import type { PageContextValue } from '@/lib/dashboard/pageContextTypes';
 
 export const dynamic = 'force-dynamic';
@@ -70,6 +77,18 @@ async function buildContext(userId: string): Promise<string> {
   return formatChatContext(holdings, mergeNews(specific.items, broad.items));
 }
 
+/** A fixed assistant reply, streamed in the same shape as a model reply. */
+function textReply(text: string): Response {
+  const stream = createUIMessageStream({
+    execute: ({ writer }) => {
+      writer.write({ type: 'text-start', id: 'advisor-reply' });
+      writer.write({ type: 'text-delta', id: 'advisor-reply', delta: text });
+      writer.write({ type: 'text-end', id: 'advisor-reply' });
+    },
+  });
+  return createUIMessageStreamResponse({ stream });
+}
+
 async function handlePOST(request: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -93,9 +112,19 @@ async function handlePOST(request: Request) {
 
   const context = await buildContext(userId);
   const pageContextLine = formatPageContext(parsed.data.pageContext ?? null);
-  const system = `${CHAT_SYSTEM_AGENTIC}\n\n--- PORTFOLIO CONTEXT ---\n${context}\n\n--- CURRENT PAGE ---\n${pageContextLine}`;
-  const tools = buildChatTools(userId);
   const lastUserMessage = lastUserText(uiMessages);
+
+  // Mitra Advisor (local-only, ADR 0035): null unless the flag is on and a
+  // policy exists, in which case chat is exactly what it was before.
+  const advisor = await prepareAdvisorChat(userId, lastUserMessage, new Date()).catch(() => null);
+  if (advisor?.blockedReply) return textReply(advisor.blockedReply);
+
+  const system = `${CHAT_SYSTEM_AGENTIC}\n\n--- PORTFOLIO CONTEXT ---\n${context}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
+  const tools = advisor
+    ? advisor.advisorToolsOnly
+      ? advisor.tools
+      : { ...buildChatTools(userId), ...advisor.tools }
+    : buildChatTools(userId);
   const modelMessages = await convertToModelMessages(uiMessages);
 
   try {

@@ -59,3 +59,23 @@ delivery failure can't cause repeats); ignored entries aren't monitored. The rev
 `POST /api/advisor/review` (manual) and `/api/cron/advisor-review` (bearer `CRON_SECRET`). The cron is intentionally
 NOT in `vercel.json` or any workflow (asserted by a test): run it from a local scheduler.
 Also added: a filing override (`filingUrl` / `filingText`) on the memo route, because BSE refuses the downloader (403).
+
+## Phase 5 — paper tracker, benchmark warning, behaviour guard (built)
+**Paper tracker** (`performance/paper.ts`, pure): each recorded stock recommendation — ignored ones included, since the
+question is the quality of the suggestions — is a hypothetical buy at that day's close, against the same rupees in
+NIFTYBEES on the same day. Totals, per-entry results, a month-end history that keeps the losing months, and XIRR only after
+a year of history. No backtest anywhere. **Trailing warning:** over entries ≥180 days old (≥3 of them), if the sleeve's
+return is below the index's, the page says so and suggests more weight to the index core; with fewer it says it is too
+early to judge; when ahead it says that is a small sample, not proof.
+**Behaviour guard** (`behaviour/guard.ts`): market stress is read from NIFTYBEES (day fall ≥2.5% or ≥10% below the 1-year
+high). In Mitra chat (`/api/ai/chat`, only when the flag is on, a policy exists and the disclaimer is accepted) the system
+prompt gains the user's policy; during stress or a dip question Mitra is told to answer from the policy and not to
+produce buy/sell suggestions, and a dip question restricts the toolset to the read-only advisor tools. `dipCooldownDays`
+(policy field, default 14): the first dip question is served and starts the cooldown; a repeat inside it gets a fixed
+reply (streamed without calling the model) that quotes the user's own drawdown tolerance and says no action is required.
+Blocked repeats do not extend the cooldown. The model's wording on the *first* dip answer is steered by the prompt, not
+guaranteed byte-exact — only the cooldown reply is deterministic.
+**Mitra tools:** five read-only tools (`advisor_policy_summary`, `advisor_current_plan`, `advisor_memo`, `advisor_journal`,
+`advisor_performance`) are added to the authenticated chat toolset. They are deliberately NOT registered on the anonymous
+`/api/mcp` endpoint (ADR 0019 — public data only, no auth): a personal policy and journal must not be readable without a
+session, and `next dev` listens on the LAN. Exposing them over MCP would need a token design first.

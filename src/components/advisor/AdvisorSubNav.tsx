@@ -9,6 +9,7 @@ const LINKS = [
   { href: '/dashboard/advisor/screen', label: 'Screen' },
   { href: '/dashboard/advisor/research', label: 'Research' },
   { href: '/dashboard/advisor/journal', label: 'Journal' },
+  { href: '/dashboard/advisor/performance', label: 'Performance' },
   { href: '/dashboard/advisor/policy', label: 'Policy' },
 ] as const;
 
