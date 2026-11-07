@@ -199,13 +199,14 @@ export function computeMonthlyPlan(input: PlanInput): MonthlyPlan {
     (l) => (l.kind === 'buy_index' || l.kind === 'rebalance_sell') && l.amountINR > 0,
   );
   const noAction = !actionable;
+  const actionCount = lines.filter((l) => l.kind === 'buy_index' || l.kind === 'rebalance_sell').length;
   return {
     month,
     lines,
     noAction,
     summary: noAction
       ? 'No action this month.'
-      : `${lines.filter((l) => l.kind === 'buy_index' || l.kind === 'rebalance_sell').length} action(s) for ${month}.`,
+      : `${actionCount} ${actionCount === 1 ? 'action' : 'actions'} for ${month}.`,
     notes,
   };
 }

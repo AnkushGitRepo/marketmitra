@@ -71,9 +71,9 @@ export default async function AdvisorPlanPage() {
         ))}
       </div>
       <p className={styles.muted}>
-        Not yet wired: the satellite stock screen, research memos, journal and performance tracking. Until
-        then the satellite share stays in cash, and rebalancing is not checked because your current holdings
-        are not read.
+        The satellite share stays in cash: the plan never picks stocks for you. Use Screen and Research to
+        examine a company yourself, and record any recommendation in the Journal. Rebalancing is not checked
+        here because your current holdings are not read.
       </p>
     </>
   );

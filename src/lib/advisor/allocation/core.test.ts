@@ -37,6 +37,7 @@ describe('computeMonthlyPlan', () => {
     expect(plan.lines.find((l) => l.kind === 'hold_satellite')?.amountINR).toBe(6000);
     expect(plan.lines.find((l) => l.kind === 'hold_cash')?.amountINR).toBe(3000);
     expect(plan.noAction).toBe(false);
+    expect(plan.summary).toBe('2 actions for 2026-11.');
     expect(plan.lines.every((l) => l.rule.length > 0)).toBe(true);
   });
 
