@@ -63,7 +63,7 @@ often "no action this month". It is **off by default**, only runs when you set
 > Scraped data can be wrong or stale. You are solely responsible for your decisions. You must
 > accept this in-app the first time you use it.
 
-Currently built: the flag, the policy (JSON import/export), the monthly plan, a quality screen and cited research memos.
+Currently built: the flag, the policy, the monthly plan, a quality screen, cited research memos, and a decision journal with kill-criteria alerts.
 See [ADR 0035](docs/decisions/0035-mitra-advisor.md).
 
 ## Status

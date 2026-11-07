@@ -47,3 +47,15 @@ One repair attempt with the validator's complaints fed back; otherwise the memo 
 Code adds three standing kill criteria (`killDefaults.ts`) independent of the model. The prompt is
 `memo/prompts/v1.ts` (`memo-v1`, stored with every memo, along with the exact source text for audit).
 Needs `IPO_INGEST_TOKEN` in `.env.local` (same secret as the fundamentals service) to read filings.
+
+## Phase 4 — decision journal + thesis monitoring (built)
+`src/lib/advisor/journal/`. A recommendation is recorded from a stored memo (price from the live quote, the memo's
+thesis, its kill criteria plus the standing ones, and the screen snapshot) or as the month's plan; the user later marks
+it followed / ignored / modified (with the amount actually invested). `killMonitor.ts` (pure) evaluates a criterion
+over the same normalised data the screen uses — `unknown`, never "fired", when data is missing or the metric's natural
+period doesn't match. `review.ts` notifies through the existing `deliverNotification` pipeline (in-app + the user's
+channels) only when a criterion fires, once per criterion per entry (the firing is recorded *before* delivery, so a
+delivery failure can't cause repeats); ignored entries aren't monitored. The review runs from
+`POST /api/advisor/review` (manual) and `/api/cron/advisor-review` (bearer `CRON_SECRET`). The cron is intentionally
+NOT in `vercel.json` or any workflow (asserted by a test): run it from a local scheduler.
+Also added: a filing override (`filingUrl` / `filingText`) on the memo route, because BSE refuses the downloader (403).

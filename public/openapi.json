@@ -3315,6 +3315,237 @@
           }
         }
       }
+    },
+    "/api/advisor/journal": {
+      "get": {
+        "tags": [
+          "Advisor"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "List decision-journal entries",
+        "description": "Recorded recommendations, newest first. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "responses": {
+          "200": {
+            "description": "Entries."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Disclaimer not accepted."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Advisor"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Record a recommendation",
+        "description": "Records a stock (from a stored memo, with its price and kill criteria) or this month's plan. Recording is not executing. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "stock",
+                      "plan"
+                    ]
+                  },
+                  "memoId": {
+                    "type": "string"
+                  },
+                  "amountINR": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The entry."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Disclaimer not accepted."
+          },
+          "404": {
+            "description": "Advisor not enabled, or memo not found."
+          },
+          "409": {
+            "description": "No policy saved."
+          },
+          "422": {
+            "description": "Invalid request."
+          }
+        }
+      }
+    },
+    "/api/advisor/journal/{id}": {
+      "patch": {
+        "tags": [
+          "Advisor"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Record what you did",
+        "description": "Marks an entry followed, ignored or modified (with the amount actually invested). Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "followed",
+                      "ignored",
+                      "modified"
+                    ]
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "actedAmountINR": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated entry."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Disclaimer not accepted."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "422": {
+            "description": "Invalid request."
+          }
+        }
+      }
+    },
+    "/api/advisor/review": {
+      "post": {
+        "tags": [
+          "Advisor"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Check kill criteria now",
+        "description": "Evaluates every monitored recommendation's kill criteria against fresh data and notifies once per criterion that has fired. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "responses": {
+          "200": {
+            "description": "Review summary."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Disclaimer not accepted."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          }
+        }
+      }
+    },
+    "/api/cron/advisor-review": {
+      "get": {
+        "tags": [
+          "Cron"
+        ],
+        "summary": "Advisor thesis review (local scheduler)",
+        "description": "Runs the kill-criteria review for all journal entries. Not registered in vercel.json or any workflow; call it from your own scheduler with the CRON_SECRET bearer. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review summary."
+          },
+          "401": {
+            "description": "Unauthorized."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Cron"
+        ],
+        "summary": "Advisor thesis review (local scheduler)",
+        "description": "Runs the kill-criteria review for all journal entries. Not registered in vercel.json or any workflow; call it from your own scheduler with the CRON_SECRET bearer. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review summary."
+          },
+          "401": {
+            "description": "Unauthorized."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          }
+        }
+      }
     }
   }
 }
