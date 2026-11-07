@@ -10,14 +10,14 @@ import { MaskProvider, useMask } from '@/lib/dashboard/MaskContext';
 import { PageContextProvider } from '@/lib/dashboard/PageContext';
 import styles from './AppShell.module.css';
 
-function AppShellInner({ children }: { children: ReactNode }) {
+function AppShellInner({ children, advisorEnabled }: { children: ReactNode; advisorEnabled: boolean }) {
   const { toggleMask } = useMask();
   const pathname = usePathname();
   const section = sectionFromPathname(pathname);
 
   return (
     <div className={styles.shell}>
-      <Sidebar />
+      <Sidebar advisorEnabled={advisorEnabled} />
       <div className={styles.contentArea}>
         <AppHeader onToggleMask={toggleMask} />
         <main className={styles.main}>{children}</main>
@@ -28,11 +28,11 @@ function AppShellInner({ children }: { children: ReactNode }) {
   );
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, advisorEnabled = false }: { children: ReactNode; advisorEnabled?: boolean }) {
   return (
     <MaskProvider>
       <PageContextProvider>
-        <AppShellInner>{children}</AppShellInner>
+        <AppShellInner advisorEnabled={advisorEnabled}>{children}</AppShellInner>
       </PageContextProvider>
     </MaskProvider>
   );

@@ -47,6 +47,10 @@
     {
       "name": "System",
       "description": "Machine-to-machine / infrastructure."
+    },
+    {
+      "name": "Advisor",
+      "description": "Local-only, opt-in decision-support (ADVISOR_MODE=enabled)."
     }
   ],
   "components": {
@@ -3013,6 +3017,145 @@
           },
           "400": {
             "description": "Invalid filter."
+          }
+        }
+      }
+    },
+    "/api/advisor/acknowledge": {
+      "get": {
+        "tags": [
+          "Advisor"
+        ],
+        "summary": "Disclaimer acceptance status",
+        "description": "Whether the current disclaimer version has been accepted. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Advisor"
+        ],
+        "summary": "Accept the Advisor disclaimer",
+        "description": "Records acceptance of the current disclaimer version. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          }
+        }
+      }
+    },
+    "/api/advisor/policy": {
+      "get": {
+        "tags": [
+          "Advisor"
+        ],
+        "summary": "Get the Investment Policy",
+        "description": "The saved policy (null if none). `?format=file` downloads it as JSON. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "403": {
+            "description": "The Advisor disclaimer has not been accepted."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Advisor"
+        ],
+        "summary": "Save the Investment Policy",
+        "description": "Validates (allocation sums to 100, index weights sum to 100, position limits can fill the satellite sleeve) and saves. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "403": {
+            "description": "The Advisor disclaimer has not been accepted."
+          },
+          "422": {
+            "description": "Invalid policy; `issues` lists each problem."
+          }
+        }
+      }
+    },
+    "/api/advisor/plan": {
+      "get": {
+        "tags": [
+          "Advisor"
+        ],
+        "summary": "This month's plan",
+        "description": "Deterministic monthly plan from the policy: identical input gives identical output, and 'No action this month' is a valid result. Recommend-only; nothing is executed. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "403": {
+            "description": "The Advisor disclaimer has not been accepted."
+          },
+          "409": {
+            "description": "No policy saved yet."
+          },
+          "422": {
+            "description": "Invalid query."
           }
         }
       }
