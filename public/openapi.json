@@ -3204,6 +3204,117 @@
           }
         }
       }
+    },
+    "/api/advisor/memo": {
+      "get": {
+        "tags": [
+          "Advisor"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Latest stored research memo for a symbol",
+        "description": "Returns the most recent cited memo (null if none). Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The memo or null."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Disclaimer not accepted."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "422": {
+            "description": "Invalid symbol."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Advisor"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Write a cited research memo",
+        "description": "Reads the latest annual report and the quality-screen facts, asks the user's configured model for a structured memo (business, moat, management, capital allocation, risks, thesis, kill criteria), and verifies every claim: each needs a verbatim quote from a supplied source or an explicit 'not found in provided material', and every figure must appear in a cited quote. A memo that fails verification after one repair attempt is rejected (422) and not stored. Stocks that fail the screen are refused (409) unless allowIneligible is true. Analysis only — never a trade recommendation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "allowIneligible": {
+                    "type": "boolean"
+                  },
+                  "filingUrl": {
+                    "type": "string",
+                    "description": "Optional https URL of a filing PDF to use instead of the annual report on file."
+                  },
+                  "filingText": {
+                    "type": "string",
+                    "description": "Optional filing text (500–2,000,000 chars) to use instead of fetching a PDF."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored memo."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Disclaimer not accepted."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "409": {
+            "description": "Stock does not clear the screen."
+          },
+          "412": {
+            "description": "No AI key configured."
+          },
+          "422": {
+            "description": "Invalid input, or the memo could not be grounded."
+          },
+          "424": {
+            "description": "Annual report unavailable or unreadable."
+          },
+          "502": {
+            "description": "Upstream failure."
+          }
+        }
+      }
     }
   }
 }

@@ -35,3 +35,15 @@ derived as (PBT + interest) ÷ (equity + reserves + borrowings) and cross-checke
 (disagreement is a warning flag, not a block); historical P/E = year-end price ÷ EPS over the 5y price window
 (so a 10-year median is not possible yet). Still missing: **promoter pledge** — always `unknown`, which blocks
 eligibility by design — and banks/NBFCs lack PBT/interest lines, so their ROCE and growth gates are `unknown`.
+
+## Phase 3 — cited research memo (built)
+`src/lib/advisor/memo/`. One structured-JSON LLM call (not the Phase 11 agent loop — that pipeline's debate/trade
+framing doesn't fit a recommend-only memo; only its `scanForTradeActions` tone check is reused). Inputs are the
+screen's measured values (citable facts `F1…`) and keyword-ranked passages of the latest annual report
+(`AR1-nnn`, ≈60k chars). `cite.ts` is the gate: every claim needs a citation whose quote is a verbatim excerpt of a
+supplied source, or `notFound: true` with no figures; every number must appear in a cited quote; no trade-call
+language; thesis ≤ 3 sentences; kill criteria restricted to seven machine-checkable metrics with sane ranges.
+One repair attempt with the validator's complaints fed back; otherwise the memo is rejected and nothing is stored.
+Code adds three standing kill criteria (`killDefaults.ts`) independent of the model. The prompt is
+`memo/prompts/v1.ts` (`memo-v1`, stored with every memo, along with the exact source text for audit).
+Needs `IPO_INGEST_TOKEN` in `.env.local` (same secret as the fundamentals service) to read filings.
