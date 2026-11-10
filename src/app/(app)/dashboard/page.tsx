@@ -5,6 +5,8 @@ import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
 import { getIndices } from '@/lib/dashboard/fundamentalsApi';
 import { getIpos } from '@/lib/dashboard/iposApi';
 import { getTopMovers } from '@/lib/dashboard/quotes';
+import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
+import { getCachedInsight } from '@/lib/insights';
 import { listNotifications } from '@/lib/notifications/store';
 import { DashboardPageClient } from './DashboardPageClient';
 
@@ -20,14 +22,16 @@ export default async function DashboardPage() {
   const holdings = userId ? await getEnrichedHoldings(userId) : [];
   const positions = holdings.map((h) => ({ symbol: h.symbol, quantity: h.quantity }));
 
-  const [history, indices, movers, openIpos, notifications] = await Promise.all([
+  const [history, indices, movers, openIpos, notifications, hasKey, cachedInsight] = await Promise.all([
     getPortfolioValueHistories(positions),
     getIndices(),
     getTopMovers(),
     getIpos('open'),
     userId ? listNotifications(userId, 20) : Promise.resolve({ items: [], unread: 0 }),
+    userId ? resolveHasAiKey(getUserAiConfig(userId)) : Promise.resolve(false),
+    userId ? getCachedInsight('portfolio', 'portfolio', userId).catch(() => null) : Promise.resolve(null),
   ]);
-  const activity = notifications.items.filter((n) => n.kind === 'alert' || n.kind === 'system').slice(0, 6);
+  const alerts = notifications.items.filter((n) => n.kind === 'alert');
 
   return (
     <DashboardPageClient
@@ -37,7 +41,10 @@ export default async function DashboardPage() {
       gainers={movers.gainers}
       losers={movers.losers}
       openIpos={openIpos}
-      activity={activity}
+      alerts={alerts}
+      now={new Date()}
+      hasAiKey={hasKey}
+      insight={cachedInsight?.content ?? null}
     />
   );
 }

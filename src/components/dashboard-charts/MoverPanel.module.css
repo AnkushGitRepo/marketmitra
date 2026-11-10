@@ -109,3 +109,23 @@
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
 }
+
+/* Change as a pill: muted red on rose for losers, so a fall reads at a glance without shouting. */
+.chg {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.chgGain {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+.chgLoss {
+  background: var(--app-loss-bg);
+  color: var(--app-loss-text);
+}

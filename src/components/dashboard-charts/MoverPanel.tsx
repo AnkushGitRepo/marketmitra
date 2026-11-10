@@ -17,7 +17,6 @@ export function MoverPanel({ title, rows }: { title: string; rows: Quote[] }) {
       <div className={styles.rows}>
         {rows.map((m) => {
           const up = m.changePct >= 0;
-          const chgColor = up ? 'var(--app-gain)' : 'var(--app-loss)';
           return (
             <button
               key={m.symbol}
@@ -36,10 +35,10 @@ export function MoverPanel({ title, rows }: { title: string; rows: Quote[] }) {
               </div>
               <div className={styles.priceCol}>
                 <p className={styles.price}>₹{m.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
-                <p className={styles.chg} style={{ color: chgColor }}>
-                  {up ? '+' : ''}
+                <span className={`${styles.chg} ${up ? styles.chgGain : styles.chgLoss}`}>
+                  <span aria-hidden="true">{up ? '▲' : '▼'}</span> {up ? '+' : ''}
                   {m.changePct.toFixed(2)}%
-                </p>
+                </span>
               </div>
             </button>
           );
