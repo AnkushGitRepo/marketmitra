@@ -4,7 +4,7 @@ Thanks for considering a contribution. MarketMitra is free, open-source, and sel
 by design — outside contributions are genuinely welcome, not just tolerated.
 
 This guide covers how to propose a change. For what the project *is* and how it's built,
-start with [`README.md`](../README.md) and [`CLAUDE.md`](../CLAUDE.md).
+start with [`README.md`](../README.md) and [`AGENTS.md`](../AGENTS.md).
 
 ## Before you start
 

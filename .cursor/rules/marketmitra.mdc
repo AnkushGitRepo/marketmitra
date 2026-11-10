@@ -1,0 +1,23 @@
+---
+description: MarketMitra project rules — always on. The full rulebook is AGENTS.md.
+alwaysApply: true
+---
+
+# MarketMitra
+
+Before doing anything, read **`AGENTS.md`** (rules, workflow, safety, commands) and
+**`docs/HANDOFF.md`** (current state, open work, environment, gotchas). `AGENTS.md` is authoritative;
+this file is only a summary so the essentials are always in context.
+
+- **Issue first** → branch `fix|feat|chore|docs/<issue#>-slug` → PR from `.github/PULL_REQUEST_TEMPLATE.md`
+  with `Closes #N` → squash-merge when the required checks are green. Never commit to `main`.
+- Conventional commits (`feat: …`, `fix: …`) that reference the issue (`#N`).
+- **Never** deploy to production, run production migrations, or touch secrets without the maintainer's go-ahead.
+- Next.js here is **v16 with breaking changes** — read `node_modules/next/dist/docs/` before writing Next code;
+  middleware is `src/proxy.ts`.
+- CSS Modules + `styles/tokens.css` only (no Tailwind). Every feature ships UI **and** a documented API route
+  (`public/openapi.json`). No paid tier, ever. Respect `isHosted()`.
+- Immutability, small files, Zod/Pydantic validation at boundaries, tests first (≥80% on new logic), no `console.log`.
+- Run before opening a PR: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
+  (+ `pytest` in `services/fundamentals-api` if it changed).
+- Report faithfully: say what was verified and what was not.

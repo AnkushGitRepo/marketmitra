@@ -206,7 +206,7 @@ re-deriving context from scratch:
 - **[Wiki](../../wiki)** — the readable guide: getting started, features, the screener, Mitra,
   deployment, operations, security. Its source is [`docs/wiki/`](docs/wiki/) and it is
   published automatically from `main`.
-- **[`CLAUDE.md`](CLAUDE.md)** — entry point: current status, stack constraints, pointers to
+- **[`AGENTS.md`](AGENTS.md)** — entry point for any coding agent (Cursor, Antigravity, Claude Code, …): rules, workflow, stack constraints, pointers to
   everything below.
 - **[`/docs/architecture.md`](docs/architecture.md)** — current system architecture: routes,
   component structure, data flow.

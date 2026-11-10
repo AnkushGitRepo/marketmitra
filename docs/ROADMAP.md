@@ -1,6 +1,6 @@
 # MarketMitra v2 — Master Build Roadmap
 
-This is the entry-point document for building MarketMitra v2 across many sessions and many days. Read this first in any new chat, alongside `CLAUDE.md`. This document tracks *what phase we're in and what's left in it* — `CLAUDE.md` stays a short pointer, `/docs/architecture.md` describes the system as it stands, and this file is the actual working checklist.
+This is the entry-point document for building MarketMitra v2 across many sessions and many days. Read this first in any new chat, alongside `AGENTS.md` and `docs/HANDOFF.md`. This document tracks *what phase we're in and what's left in it* — `CLAUDE.md` stays a short pointer, `/docs/architecture.md` describes the system as it stands, and this file is the actual working checklist.
 
 ## How to use this document
 

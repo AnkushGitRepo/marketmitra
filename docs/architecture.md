@@ -2,7 +2,7 @@
 
 Current system architecture for MarketMitra v2. Kept in sync with reality — when a feature
 ships and is signed off, its detailed build notes move to `/docs/archive/<feature-name>.md`
-and only a short summary stays here (see the context maintenance protocol in `/CLAUDE.md`).
+and only a short summary stays here (see the context maintenance protocol in `/AGENTS.md`).
 
 ## Status: Phases 0–11 signed off and live in production
 

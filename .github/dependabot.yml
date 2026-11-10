@@ -21,7 +21,7 @@ updates:
         update-types: [minor, patch]
     ignore:
       # Major bumps of the framework core are deliberate migrations (this repo
-      # runs a Next.js with breaking changes — see CLAUDE.md), not a weekly PR.
+      # runs a Next.js with breaking changes — see AGENTS.md), not a weekly PR.
       - dependency-name: next
         update-types: ["version-update:semver-major"]
       - dependency-name: react
