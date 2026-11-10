@@ -34,7 +34,8 @@ export const mongoWelcomeStore: WelcomeStore = {
     return res.modifiedCount === 1;
   },
 
-  async setStatus(userId, status: WelcomeStatus, now) {
-    await (await collection()).updateOne({ userId }, { $set: { status, updatedAt: now } });
+  async setStatus(userId, status: WelcomeStatus, now, error) {
+    const col = await collection();
+    await col.updateOne({ userId }, error ? { $set: { status, updatedAt: now, lastError: error } } : { $set: { status, updatedAt: now }, $unset: { lastError: '' } });
   },
 };

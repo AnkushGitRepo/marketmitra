@@ -30,9 +30,9 @@ function memoryStore(initial: WelcomeRecord[] = []): WelcomeStore & { rows: Map<
       rows.set(id, next);
       return true;
     },
-    async setStatus(id, status: WelcomeStatus, now) {
+    async setStatus(id, status: WelcomeStatus, now, error?: string) {
       const cur = rows.get(id);
-      if (cur) rows.set(id, { ...cur, status, updatedAt: now });
+      if (cur) rows.set(id, { ...cur, status, updatedAt: now, lastError: error });
     },
   };
 }
@@ -78,7 +78,7 @@ describe('claimWelcome', () => {
 describe('runWelcome', () => {
   it('sends once, records "sent", and never sends again', async () => {
     const store = memoryStore();
-    const send = vi.fn(async () => true);
+    const send = vi.fn(async () => ({ ok: true as const }));
     expect(await runWelcome('u1', { store, now: () => T0, send })).toBe('sent');
     expect(await runWelcome('u1', { store, now: () => later(1e9), send })).toBe('not-claimed');
     expect(send).toHaveBeenCalledTimes(1);
@@ -87,7 +87,7 @@ describe('runWelcome', () => {
 
   it('records a failed send, does not retry immediately, and retries after the back-off', async () => {
     const store = memoryStore();
-    const send = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    const send = vi.fn().mockResolvedValueOnce({ ok: false, error: 'domain not verified' }).mockResolvedValueOnce({ ok: true });
     expect(await runWelcome('u1', { store, now: () => T0, send })).toBe('failed');
     expect(await runWelcome('u1', { store, now: () => later(1000), send })).toBe('not-claimed');
     expect(await runWelcome('u1', { store, now: () => later(RETRY_AFTER_FAILURE_MS + 1), send })).toBe('sent');
@@ -101,10 +101,21 @@ describe('runWelcome', () => {
     });
     expect(await runWelcome('u1', { store, now: () => T0, send })).toBe('failed');
     expect(store.rows.get('u1')?.status).toBe('failed');
+    expect(store.rows.get('u1')?.lastError).toBe('boom');
+  });
+
+  it('records the provider reason on a failed send and clears it once a retry succeeds', async () => {
+    const store = memoryStore();
+    const send = vi.fn().mockResolvedValueOnce({ ok: false, error: 'You can only send testing emails to your own address' }).mockResolvedValueOnce({ ok: true });
+    await runWelcome('u1', { store, now: () => T0, send });
+    expect(store.rows.get('u1')?.lastError).toMatch(/only send testing emails/);
+    await runWelcome('u1', { store, now: () => later(RETRY_AFTER_FAILURE_MS + 1), send });
+    expect(store.rows.get('u1')?.status).toBe('sent');
+    expect(store.rows.get('u1')?.lastError).toBeUndefined();
   });
 
   it('returns failed (never throws) when the store itself breaks', async () => {
     const broken: WelcomeStore = { ...memoryStore(), insertClaim: async () => { throw new Error('db down'); } };
-    expect(await runWelcome('u1', { store: broken, now: () => T0, send: async () => true })).toBe('failed');
+    expect(await runWelcome('u1', { store: broken, now: () => T0, send: async () => ({ ok: true }) })).toBe('failed');
   });
 });

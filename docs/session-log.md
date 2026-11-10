@@ -951,3 +951,8 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - Phone screenshot showed an empty chart with the legend over the range buttons. Fixed the mobile layout (explicit non-flex height), added a fallback SVG chart (triggered by no canvas / throw / collapsed / nothing painted), client-side price recovery with retry/back-off via new `GET /api/stock/{ticker}/prices`, an error boundary, and `DataUnavailable` (auto re-check + button) for the stock and Markets pages. **Verified in Chromium** including forced failures (my first fail-safe missed the async no-canvas case; fixed). **Not verified:** real iOS Safari, so the root-cause claim (Safari resolving `flex: 1` to 0) is a strong hypothesis, not a reproduction.
 
+## 2026-11-10 — Welcome email not delivered (#63)
+
+- Likely cause on production: `ALERT_EMAIL_FROM` unset, so Resend's shared sender only delivers to the account owner; failures were silent. Added visible failure logging, a pure diagnosis, an admin status panel and **Send test / Send all** for the 10 designs (see ADR 0040). **Not verified:** a real send: the local `ALERT_EMAIL_TO` is empty and I did not use the maintainer's address from my context without being told to; nothing was emailed. Production cause is therefore a strong inference from config, to be confirmed by the status panel / a test send after deploy.
+- **Incident:** the local `.env.local` has a malformed `ALERT_EMAIL_FROM` line that contains another variable's name and value (`SETTINGS_ENC_KEY=…`); my first status page printed it, exposing that key in the session output. Fixed so the diagnosis never echoes a non-address value (tested with a fake secret). The maintainer should fix that `.env.local` line and consider that key exposed.
+
