@@ -931,3 +931,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - #36 added an app-wide footer (Status, API, Privacy, Terms) when the request was a Status link in the **landing page** footer (which already had one). Removed the app footer, its status-dot helper and tests, and gave the chat page its height back. Measured at 1280×800 and 390×844: no footer on app pages, chat and dashboard still clear the mobile bar, landing footer still links to `/status`. Earlier log entries describing the footer are history.
 
+## 2026-11-10 — Account & security in Settings (#53)
+
+- New first Settings section: Manage (Clerk profile dialog), Sign out, accounts on this device (switch / add / per-account sign out / sign out of all); self-host shows a note. Read-only look at the Clerk dashboard showed **Multi-session handling OFF** and **Authenticator app / Backup codes OFF**, so switching and 2FA need the maintainer to enable them there (not done by me). Verified: self-host renders the section (HTTP check), logic unit-tested, types/lint/build. **Not verified:** the hosted Clerk flows (I cannot sign in): sign out, Manage dialog, add/switch accounts.
+
