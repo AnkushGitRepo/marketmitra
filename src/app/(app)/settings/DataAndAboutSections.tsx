@@ -92,6 +92,7 @@ export function AboutSection({ hosted, isAdmin }: AboutProps) {
         <Link className={styles.btnLink} href="/privacy">Privacy</Link>
         <Link className={styles.btnLink} href="/terms">Terms</Link>
         {isAdmin && <Link className={styles.btnLink} href="/system">System (admin)</Link>}
+        {isAdmin && <Link className={styles.btnLink} href="/system/emails">Email designs (admin)</Link>}
       </div>
     </section>
   );

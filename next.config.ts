@@ -52,6 +52,9 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // The designed email templates are read from disk at runtime (src/emails/render.ts), so they must be
+  // bundled into every serverless function that can send mail.
+  outputFileTracingIncludes: { '/**': ['./src/emails/templates/**/*.html'] },
   // Dev-only route indicator badge — not part of the brand, off entirely.
   devIndicators: false,
   // Don't advertise the framework.
