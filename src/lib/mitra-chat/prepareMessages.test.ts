@@ -68,6 +68,14 @@ describe('prepareModelMessages', () => {
     expect(JSON.stringify(m.parts)).toContain('no longer available');
   });
 
+  it('uses a placeholder for kinds the current model cannot read', async () => {
+    const { store, put, withFile } = await setup();
+    const clip = await put('call.mp3', 'audio/mpeg', 'audio', enc('ID3....'));
+    const [m] = await prepareModelMessages([withFile(clip)], { store, userId: 'u1', canRead: (k) => k !== 'audio' });
+    expect(m.parts.some((p) => p.type === 'file')).toBe(false);
+    expect(JSON.stringify(m.parts)).toContain('cannot be read by the model');
+  });
+
   it('respects the byte budget', async () => {
     const { store, put, withFile } = await setup();
     const big = await put('big.png', 'image/png', 'image', new Uint8Array(INLINE_ATTACHMENT_BYTE_BUDGET + 1));

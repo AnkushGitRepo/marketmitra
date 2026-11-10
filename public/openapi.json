@@ -3577,6 +3577,440 @@
           }
         }
       }
+    },
+    "/api/mitra/conversations": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "List Mitra conversations",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Newest first. `q` filters by title. On a user's first visit the old single widget thread is migrated into a first conversation \"Earlier chat\".",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope with Conversation[]."
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Create a Mitra conversation",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 80
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Conversation limit (200) reached."
+          },
+          "422": {
+            "description": "Invalid body."
+          }
+        }
+      }
+    },
+    "/api/mitra/conversations/{id}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get a conversation and its messages",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Returns the conversation and its stored AI SDK UI messages (text, file and tool parts), oldest first.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope with { conversation, messages }."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Rename a conversation",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Renamed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          },
+          "422": {
+            "description": "Invalid body."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Delete a conversation",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Deletes the conversation, its messages and its stored attachments.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          }
+        }
+      }
+    },
+    "/api/mitra/conversations/{id}/messages": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Send a message to a conversation (streamed)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Server-authoritative history: send only the new user message. Attachments are references (`/api/mitra/files/{id}`) returned by the upload endpoint and must belong to the caller and this conversation. Streams the AI SDK UI-message format (SSE), runs the investing-focused agentic loop (same read-only tool allow-list and guardrail as the widget), and persists both turns. Long conversations are windowed, with older turns folded into a stored summary. Rate limited (ai tier).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "role",
+                      "parts"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "user"
+                        ]
+                      },
+                      "parts": {
+                        "type": "array",
+                        "maxItems": 7,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "text",
+                                "file"
+                              ]
+                            },
+                            "text": {
+                              "type": "string",
+                              "maxLength": 8000
+                            },
+                            "url": {
+                              "type": "string",
+                              "example": "/api/mitra/files/0123456789abcdef01234567"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An AI SDK UI message stream."
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Conversation not found."
+          },
+          "409": {
+            "description": "Conversation is full."
+          },
+          "422": {
+            "description": "Invalid message, a missing/foreign attachment, or attachment_unsupported (e.g. audio on a Claude key)."
+          },
+          "429": {
+            "description": "Rate limited."
+          }
+        }
+      }
+    },
+    "/api/mitra/files": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Upload a chat attachment",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "multipart/form-data with `file` and `conversationId`. Allowed: images (PNG/JPEG/GIF/WebP), PDF, audio (MP3/WAV/OGG/FLAC/M4A/WebM) and .txt/.csv/.md. The type is decided from the file's bytes, not its name. Max 4 MB per file, 50 MB per user.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "conversationId"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "conversationId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored. Envelope with { id, url, filename, mediaType, kind, size }."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Conversation not found."
+          },
+          "413": {
+            "description": "Too large or storage full."
+          },
+          "415": {
+            "description": "Unsupported file type."
+          },
+          "422": {
+            "description": "Invalid request or empty file."
+          },
+          "429": {
+            "description": "Rate limited."
+          }
+        }
+      }
+    },
+    "/api/mitra/files/{id}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Download an attachment",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Owner-only. Supports `Range` requests (206) so audio can seek. Served with nosniff and a sandbox CSP.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file bytes."
+          },
+          "206": {
+            "description": "Partial content."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          },
+          "416": {
+            "description": "Range not satisfiable."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Delete an unsent attachment",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Only for files not yet part of a sent message.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found, not owned, or already attached."
+          }
+        }
+      }
     }
   }
 }

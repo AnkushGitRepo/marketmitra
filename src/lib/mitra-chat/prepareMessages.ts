@@ -5,6 +5,7 @@ import {
   INLINE_ATTACHMENT_MESSAGES,
   INLINE_TEXT_FILE_CHARS,
 } from './limits';
+import type { AttachmentKind } from './attachments';
 import type { FileStore } from './types';
 
 type Part = UIMessage['parts'][number];
@@ -38,7 +39,12 @@ const toBase64 = (bytes: Uint8Array): string => Buffer.from(bytes).toString('bas
  */
 export async function prepareModelMessages(
   messages: readonly UIMessage[],
-  deps: { readonly store: FileStore; readonly userId: string }
+  deps: {
+    readonly store: FileStore;
+    readonly userId: string
+    /** False for kinds the configured model cannot read (e.g. audio on Claude) — they become placeholders. */
+    readonly canRead?: (kind: AttachmentKind) => boolean
+  }
 ): Promise<UIMessage[]> {
   const recentWithFiles = new Set<number>();
   for (let i = messages.length - 1; i >= 0 && recentWithFiles.size < INLINE_ATTACHMENT_MESSAGES; i--) {
@@ -67,6 +73,8 @@ export async function prepareModelMessages(
       const stored = id ? await deps.store.read(deps.userId, id) : null;
       if (!stored) {
         parts.push(placeholder(part, 'is no longer available'));
+      } else if (deps.canRead && !deps.canRead(stored.meta.kind)) {
+        parts.push(placeholder(part, 'cannot be read by the model currently selected in Settings'));
       } else if (stored.meta.kind === 'text') {
         const body = new TextDecoder().decode(stored.bytes).slice(0, INLINE_TEXT_FILE_CHARS);
         parts.push(textPart(`Attachment "${stored.meta.filename}":\n${body}`));

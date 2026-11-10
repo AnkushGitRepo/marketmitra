@@ -66,7 +66,7 @@ export function sniffAttachment(bytes: Uint8Array, filename: string): SniffedAtt
 
 export interface ModelRef {
   readonly provider: AiProvider;
-  readonly model?: string;
+  readonly model?: string | null;
 }
 
 /** Whether the configured model can natively read this kind of attachment. */

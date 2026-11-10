@@ -13,11 +13,10 @@ import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
 import { CHAT_SYSTEM_AGENTIC } from '@/lib/ai/prompts';
 import { buildChatTools } from '@/lib/ai/chatTools';
-import { formatChatContext, formatPageContext, mergeNews } from '@/lib/ai/chatContext';
+import { formatPageContext } from '@/lib/ai/chatContext';
+import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
 import { appendTurn, clearHistory, recentUserQuestions } from '@/lib/chat/chatHistory';
 import { syncRecentChat } from '@/lib/rag/userSync';
-import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
-import { getNews } from '@/lib/dashboard/newsApi';
 import { logEvent } from '@/lib/system/eventLog';
 import { prepareAdvisorChat } from '@/lib/advisor/behaviour/chat';
 import type { PageContextValue } from '@/lib/dashboard/pageContextTypes';
@@ -62,21 +61,6 @@ function lastUserText(messages: UIMessage[]): string {
   return last ? textFromParts(last) : '';
 }
 
-// A small always-present seed: the portfolio summary + a few headlines.
-// The model reaches for `search_context` / the data tools for anything
-// beyond this.
-async function buildContext(userId: string): Promise<string> {
-  const holdings = await getEnrichedHoldings(userId).catch(() => []);
-  const symbols = holdings.map((h) => h.symbol);
-  const [specific, broad] = await Promise.all([
-    symbols.length
-      ? getNews({ symbols, limit: 6 })
-      : Promise.resolve({ items: [], next_cursor: null }),
-    getNews({ limit: 4 }),
-  ]);
-  return formatChatContext(holdings, mergeNews(specific.items, broad.items));
-}
-
 /** A fixed assistant reply, streamed in the same shape as a model reply. */
 function textReply(text: string): Response {
   const stream = createUIMessageStream({
@@ -110,7 +94,7 @@ async function handlePOST(request: Request) {
     );
   }
 
-  const context = await buildContext(userId);
+  const context = await buildPortfolioContext(userId);
   const pageContextLine = formatPageContext(parsed.data.pageContext ?? null);
   const lastUserMessage = lastUserText(uiMessages);
 

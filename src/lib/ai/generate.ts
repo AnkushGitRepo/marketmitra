@@ -57,6 +57,8 @@ export interface StreamChatOptions {
    *  (Phase 10 / ADR 0020). `maxSteps` bounds the loop. */
   tools?: ToolSet;
   maxSteps?: number;
+  /** Overrides the default output cap (long-form surfaces such as the Mitra workspace). */
+  maxOutputTokens?: number;
   /** Called once the full assistant reply is known (after any tool
    *  steps) — used to persist the turn. Must not throw. */
   onFinish?: (result: { text: string }) => void | Promise<void>;
@@ -85,7 +87,7 @@ export function streamChat(
     system,
     messages,
     temperature: 0.4,
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
+    maxOutputTokens: opts.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
     ...(hasTools
       ? { tools: opts.tools, stopWhen: stepCountIs(opts.maxSteps ?? 5) }
       : {}),
