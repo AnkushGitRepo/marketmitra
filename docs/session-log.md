@@ -834,3 +834,27 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   already pinned floors in requirements.txt). Non-provider patterns and
   validity checks are paid GitHub features and stay off.
 
+
+## 2026-11-10 — Mitra Advisor, IPO fixes, deploy, project process, agent portability
+
+- **Mitra Advisor** (#22/#13, [ADR 0035](./decisions/0035-mitra-advisor.md)): local-only, rules-first
+  decision support built in five phases, one commit each — flag + disclaimer + policy + monthly plan; pure
+  quality screen (unknown data blocks eligibility); citation-enforced LLM research memos (verbatim-quote
+  validator, one repair attempt, rejected memos never stored); decision journal + kill-criteria alerts through the
+  existing notification pipeline; paper-trading vs a Nifty 50 fund + behaviour guard (policy-based replies in market
+  stress, "buy the dip" cooldown). Verified in a browser (flag on, scratch DB) and through the real chat endpoint.
+  **Not verified:** a memo from a real annual report (BSE 403s the downloader), a real kill-criterion firing.
+  Promoter pledge has no data source → the pledge gate is always `unknown`.
+- **IPO tracker:** every IPO showed as Mainboard because the scraper matched an exact "SME" badge while the source
+  uses "BSE SME"/"NSE SME" (#20/#18; regression fixture of real rows + backfill migration `d3f8b2a61c47`). Added
+  status/type filters and pagination (#21/#19). Production verified after a manual `refresh-ipos` run: 7 mainboard / 9 SME.
+  Open observation: production holds 16 IPOs vs ~25 on the source page.
+- **Dependencies:** four Dependabot PRs merged (filelock, 8 minor/patch updates, framer-motion 14, unpdf 2 — unpdf
+  checked against a real PDF on both versions; Vercel runs Node 24).
+- **Deployed to production 2026-11-10** from `main` (`c84fd46`): fundamentals-api, then the app; smoke test 4/4; Advisor
+  routes confirmed 404 on production.
+- **Process (#23–#26):** `v2` retired, `main` is the only branch (auto-delete of merged branches on); issue-first
+  workflow with branch/commit/PR conventions; GitHub Project "MarketMitra" + milestones + 10 built-in project workflows.
+- **Agent portability (#27):** `AGENTS.md` is now the single tool-neutral rulebook (Cursor and Antigravity read it);
+  `CLAUDE.md`/`GEMINI.md`/`.cursor/rules/` are thin pointers; new `docs/HANDOFF.md` holds current state, open work,
+  environment, deploy steps and gotchas — written so the project can continue in another coding agent.
