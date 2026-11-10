@@ -9,9 +9,8 @@
 #
 # ACTIVATION (two one-time steps):
 #   1. GitHub only runs `schedule:` triggers from the repository's DEFAULT
-#      branch. This repo's app currently lives on `v2` — until that's the
-#      default branch (or merged to `main`), the schedule will not fire.
-#      `workflow_dispatch` (the "Run workflow" button) works from any branch.
+#      branch, which is `main`. `workflow_dispatch` (the "Run workflow"
+#      button) works from any branch.
 #   2. Add the repo secret:  gh secret set CRON_SECRET
 #      (same value as the CRON_SECRET env var on the Vercel project).
 #   Optionally override the target with a repo variable CRON_TARGET_URL.

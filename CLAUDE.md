@@ -18,7 +18,7 @@ MarketMitra is a financial dashboard (Indian markets: indices, stocks, IPOs, new
 
 **Still open** (non-blocking): one real alert fire + one real IPO-alert fire in market hours; pre-bundle the `bge-small` embedding model (kills a ~18s cold-instance download); filings-in-corpus needs an un-blocked PDF host (BSE 403s Vercel's IP). Optional Resend verified domain in `ALERT_EMAIL_FROM`; rotate the Resend + `re_…` keys pasted in chat.
 
-**`main` = `v2`** — merged 2026-09-06 so the GitHub Actions `schedule:` triggers fire; every commit since is pushed to both. Start new feature work from a fresh branch off `main`.
+**`main` is the only long-lived branch.** The old `v2` mirror (kept so the GitHub Actions `schedule:` triggers would fire) was retired 2026-11-10 — it held nothing `main` lacked. Start work from a short-lived `fix/…` or `feat/…` branch off `main`, one per issue; the branch is deleted automatically when its PR merges.
 
 ## Stack (non-negotiable constraints)
 
