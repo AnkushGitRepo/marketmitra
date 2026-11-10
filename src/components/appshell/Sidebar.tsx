@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSyncExternalStore } from 'react';
-import { ADVISOR_NAV_ITEM, NAV_ITEMS, isNavActive } from './navItems';
+import { buildNavSections, isNavActive } from './navItems';
 import { NAV_ICONS, ResearchIcon } from './NavIcons';
 import { Logo } from '@/components/landing/Logo';
 import styles from './Sidebar.module.css';
@@ -37,6 +37,7 @@ function ChevronIcon() {
 
 export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }) {
   const pathname = usePathname();
+  const sections = buildNavSections(advisorEnabled);
   const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const toggleCollapsed = () => {
@@ -74,24 +75,39 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
       </div>
 
       <nav className={styles.nav}>
-        {[...NAV_ITEMS, ...(advisorEnabled ? [ADVISOR_NAV_ITEM] : [])].map((item) => {
-          const Icon = NAV_ICONS[item.href as keyof typeof NAV_ICONS] ?? ResearchIcon;
-          const active = isNavActive(pathname, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`${styles.navItem} ${active ? styles.navItemActive : ''}`}
-              aria-current={active ? 'page' : undefined}
-              title={collapsed ? item.label : undefined}
+        {sections.map((section) => (
+          <div
+            key={section.title}
+            className={`${styles.section} ${section.pinnedToBottom ? styles.sectionPinned : ''}`}
+            role="group"
+            aria-labelledby={`nav-section-${section.title}`}
+          >
+            <p
+              id={`nav-section-${section.title}`}
+              className={`${styles.sectionTitle} ${collapsed ? styles.sectionTitleCollapsed : ''}`}
             >
-              <span className={styles.navIcon}>
-                <Icon />
-              </span>
-              {!collapsed && <span className={styles.navLabel}>{item.label}</span>}
-            </Link>
-          );
-        })}
+              <span className={styles.sectionTitleText}>{section.title}</span>
+            </p>
+            {section.items.map((item) => {
+              const Icon = NAV_ICONS[item.href as keyof typeof NAV_ICONS] ?? ResearchIcon;
+              const active = isNavActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`${styles.navItem} ${active ? styles.navItemActive : ''}`}
+                  aria-current={active ? 'page' : undefined}
+                  title={collapsed ? item.label : undefined}
+                >
+                  <span className={styles.navIcon}>
+                    <Icon />
+                  </span>
+                  {!collapsed && <span className={styles.navLabel}>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
     </aside>
   );

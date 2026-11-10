@@ -119,7 +119,8 @@ export function AgentsPageClient() {
         researcher debate it, and a lead writes up a balanced briefing — bull case, bear case,
         where they agree, the open questions, and where the evidence currently leans. It never
         tells you to buy, sell, or hold. Deeper and slower than a{' '}
-        <Link href="/dashboard/research">research brief</Link>.
+        <Link href="/dashboard/research">research brief</Link>. See what Mitra has been doing in the{' '}
+        <Link href="/dashboard/mitra-activity">activity log</Link>.
       </p>
 
       {!run && (

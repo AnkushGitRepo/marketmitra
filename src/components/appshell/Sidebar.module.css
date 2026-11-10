@@ -92,15 +92,58 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 22px;
+}
+
+.section:first-child {
+  margin-top: 14px;
+}
+
+/* margin-top:auto is the flex spacer that anchors Settings to the bottom edge;
+   the 22px padding keeps a gap when the viewport is too short to leave room. */
+.sectionPinned {
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+.sectionTitle {
+  margin: 0;
+  padding: 0 12px 6px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+  white-space: nowrap;
+}
+
+/* Collapsed rail has no room for text: swap the label for a hairline divider. */
+.sectionTitleCollapsed {
+  padding: 0 12px;
+  height: 1px;
+  margin-bottom: 6px;
+  background: var(--app-border);
+}
+
+.sectionTitleCollapsed .sectionTitleText {
+  display: none;
 }
 
 .navItem {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: var(--radius-pill);
   color: var(--app-text-muted);
   font-family: var(--font-sans);
@@ -112,7 +155,7 @@
 
 .sidebarCollapsed .navItem {
   justify-content: center;
-  padding: 10px 0;
+  padding: 9px 0;
 }
 
 @media (hover: hover) and (pointer: fine) {
