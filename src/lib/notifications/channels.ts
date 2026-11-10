@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { replyToFromEnv } from '@/lib/email/replyTo';
 import { isHosted } from '@/lib/deployment-mode';
 import { describeOutboundError, safeOutboundFetch, type OutboundOptions } from '@/lib/security/outbound';
 import type { ChannelResult, NotificationPayload } from './types';
@@ -192,6 +193,7 @@ export async function sendEmail(
       subject,
       html,
       text,
+      replyTo: replyToFromEnv(),
     });
     if (error) {
       return { channel: 'email', status: 'error', detail: error.message || 'resend error' };
