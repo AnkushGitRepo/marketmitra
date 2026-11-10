@@ -4204,6 +4204,84 @@
           }
         }
       }
+    },
+    "/api/system/emails/status": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Email delivery status (admin)",
+        "description": "Operator-only. Whether outgoing email can reach real users: API key, sender address, domains verified in the provider, with plain-language issues. Read-only.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope with { status: ok|warning|error, summary, sender, senderDomain, verifiedDomains, issues[] }."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Not an admin."
+          }
+        }
+      }
+    },
+    "/api/system/emails/test": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Send a test email to yourself (admin)",
+        "description": "Operator-only. Sends one designed email (by sample id) or all of them to the caller's own address, subject prefixed [TEST]. Returns the provider's own error text per email. Rate limited per admin.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "A sample id (welcome, alert-stoploss, alert-drawdown, alert-target, digest, mitra-summary, whats-new, promo, verify-email, password-reset) or \"all\"."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Envelope with { to (masked), results: [{ id, label, ok, error? }] }; success is false if any failed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "409": {
+            "description": "No recipient address available."
+          },
+          "422": {
+            "description": "Invalid body."
+          },
+          "429": {
+            "description": "Too many test emails."
+          }
+        }
+      }
     }
   }
 }

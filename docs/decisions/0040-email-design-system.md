@@ -38,3 +38,19 @@ README of exact variables.
   custom email delivery.
 - Real mail-client testing (Litmus/Email on Acid or real inboxes); the design README notes only a headless Chrome
   check was done, and so was ours.
+
+## Delivery diagnosis and test sending (#63)
+A new user reported no welcome email. Cause on production: `RESEND_API_KEY` was set but `ALERT_EMAIL_FROM` was not, so
+mail went from Resend's shared test sender, which only delivers to the Resend account owner; the failure was swallowed.
+- **Visible failures:** `sendHtmlEmail` returns the provider's real error; a failed welcome email is logged to the event
+  log (`email:welcome`, recipient masked) and the reason is stored on the welcome record (`lastError`, cleared on success).
+- **Diagnosis** (`src/lib/email/diagnosis.ts`, pure): API key, sender address, whether the sender domain is verified in
+  Resend (read-only `domains.list`; a send-only key can't list domains, which is reported as fine), contact line. It
+  **never echoes a configured value that isn't a valid sender address**: a mis-pasted `.env` line once put another variable's
+  secret into `ALERT_EMAIL_FROM`, and a diagnostic UI must not turn that into a leak.
+- **Admin tools** (admin-only, in `/system/emails`): a status panel, **Send test to me** per email and **Send all** (the 10
+  designs) to the caller's *own* address (hosted: verified Clerk email; self-host: `ALERT_EMAIL_TO`), subject prefixed
+  `[TEST]`, provider errors shown verbatim, capped at 30 per 10 minutes. API: `GET /api/system/emails/status`,
+  `POST /api/system/emails/test` (both in OpenAPI).
+- Not done: alert emails still use their own sender and the old format (next piece of work).
+

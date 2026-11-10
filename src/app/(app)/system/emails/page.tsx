@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { isAdminUser } from '@/lib/auth/admin';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { SAMPLE_EMAILS } from '@/emails/samples';
+import { getEmailDiagnosis } from '@/lib/email/status';
+import { EmailTestControls } from './EmailTestControls';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +31,7 @@ export default async function EmailGalleryPage({ searchParams }: Props) {
   const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
   const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
   const mail = selected.build(`${proto}://${host}`);
+  const diagnosis = await getEmailDiagnosis();
 
   const href = (nextId: string, nextWidth: string) => `/system/emails?id=${nextId}&w=${nextWidth}`;
 
@@ -37,8 +40,25 @@ export default async function EmailGalleryPage({ searchParams }: Props) {
       <p className={styles.eyebrow}>Operator preview</p>
       <h1 className={styles.title}>Email designs</h1>
       <p className={styles.note}>
-        Every email in the design system, rendered with <strong>sample data</strong>. Nothing is sent from this page. Dark mode follows your device setting.
+        Every email in the design system, rendered with <strong>sample data</strong>. Nothing is sent unless you press a Send button, and those go only to your own address. Dark mode follows your device setting.
       </p>
+
+      <section className={`${styles.status} ${styles[`status_${diagnosis.status}`]}`} aria-label="Email delivery status">
+        <p className={styles.statusTitle}>
+          {diagnosis.status === 'ok' ? '✓' : diagnosis.status === 'warning' ? '!' : '✗'} {diagnosis.summary}
+        </p>
+        <p className={styles.statusMeta}>
+          Sending as <strong>{diagnosis.sender}</strong>
+          {diagnosis.verifiedDomains && <> · verified in Resend: {diagnosis.verifiedDomains.length > 0 ? diagnosis.verifiedDomains.join(', ') : 'none'}</>}
+        </p>
+        {diagnosis.issues.length > 0 && (
+          <ul className={styles.statusList}>
+            {diagnosis.issues.map((i) => (
+              <li key={i.message} className={styles[`issue_${i.severity}`]}>{i.message}</li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className={styles.layout}>
         <nav className={styles.list} aria-label="Emails">
@@ -72,6 +92,7 @@ export default async function EmailGalleryPage({ searchParams }: Props) {
               ))}
             </div>
           </div>
+          <EmailTestControls selectedId={selected.id} selectedLabel={selected.label} />
           <iframe title={`${selected.label} preview`} srcDoc={mail.html} sandbox="" className={styles.frame} style={{ width: WIDTHS[width] }} />
           <details className={styles.details}>
             <summary>Plain-text version</summary>

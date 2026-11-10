@@ -11,6 +11,8 @@ export interface WelcomeRecord {
   readonly status: WelcomeStatus;
   readonly attempts: number;
   readonly updatedAt: Date;
+  /** Why the last attempt failed (provider text), if it did. */
+  readonly lastError?: string;
 }
 
 export const STALE_SENDING_MS = 10 * 60_000;
@@ -32,7 +34,7 @@ export interface WelcomeStore {
   insertClaim(record: WelcomeRecord): Promise<boolean>;
   /** Re-claims only if the stored `updatedAt` still equals `expected` (compare-and-set). */
   reclaim(userId: string, expected: Date, next: WelcomeRecord): Promise<boolean>;
-  setStatus(userId: string, status: WelcomeStatus, now: Date): Promise<void>;
+  setStatus(userId: string, status: WelcomeStatus, now: Date, error?: string): Promise<void>;
 }
 
 /** True only for the single caller that is allowed to send now. */
@@ -47,9 +49,11 @@ export async function claimWelcome(store: WelcomeStore, userId: string, now: Dat
 export interface WelcomeDeps {
   readonly store: WelcomeStore;
   readonly now: () => Date;
-  /** Returns true when the provider accepted the message. Must not throw. */
-  readonly send: () => Promise<boolean>;
+  /** Whether the provider accepted the message, and why not if it didn't. Must not throw. */
+  readonly send: () => Promise<SendOutcome>;
 }
+
+export type SendOutcome = { readonly ok: true } | { readonly ok: false; readonly error?: string };
 
 export type WelcomeOutcome = 'sent' | 'failed' | 'not-claimed';
 
@@ -57,9 +61,9 @@ export type WelcomeOutcome = 'sent' | 'failed' | 'not-claimed';
 export async function runWelcome(userId: string, deps: WelcomeDeps): Promise<WelcomeOutcome> {
   try {
     if (!(await claimWelcome(deps.store, userId, deps.now()))) return 'not-claimed';
-    const ok = await deps.send().catch(() => false);
-    await deps.store.setStatus(userId, ok ? 'sent' : 'failed', deps.now());
-    return ok ? 'sent' : 'failed';
+    const outcome = await deps.send().catch((e: unknown): SendOutcome => ({ ok: false, error: e instanceof Error ? e.message : 'send threw' }));
+    await deps.store.setStatus(userId, outcome.ok ? 'sent' : 'failed', deps.now(), outcome.ok ? undefined : outcome.error);
+    return outcome.ok ? 'sent' : 'failed';
   } catch {
     return 'failed';
   }
