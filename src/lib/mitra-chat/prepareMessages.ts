@@ -11,10 +11,13 @@ import type { FileStore } from './types';
 type Part = UIMessage['parts'][number];
 type FilePart = Extract<Part, { type: 'file' }>;
 
-const FILE_URL = new RegExp(`^${FILE_URL_PREFIX.replace(/\//g, '\\/')}([a-f0-9]{24})$`);
+const FILE_ID = /^[a-f0-9]{24}$/;
 
+/** The file id of one of our own `/api/mitra/files/<id>` URLs, else null. No regex is built from the prefix. */
 export function fileIdFromUrl(url: string): string | null {
-  return FILE_URL.exec(url)?.[1] ?? null;
+  if (!url.startsWith(FILE_URL_PREFIX)) return null;
+  const id = url.slice(FILE_URL_PREFIX.length);
+  return FILE_ID.test(id) ? id : null;
 }
 
 export function fileUrl(id: string): string {

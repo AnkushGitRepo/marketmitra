@@ -29,6 +29,10 @@ describe('fileIdFromUrl', () => {
     expect(fileIdFromUrl('https://evil.example/api/mitra/files/0123456789abcdef01234567')).toBeNull();
     expect(fileIdFromUrl('/api/mitra/files/../../etc/passwd')).toBeNull();
     expect(fileIdFromUrl('data:text/plain;base64,AAAA')).toBeNull();
+    expect(fileIdFromUrl('/api/mitra/files/')).toBeNull();
+    expect(fileIdFromUrl('/api/mitra/files/0123456789abcdef01234567/extra')).toBeNull();
+    expect(fileIdFromUrl('/api/mitra/files/0123456789abcdef0123456\\')).toBeNull();
+    expect(fileIdFromUrl('\\/api\\/mitra\\/files\\/0123456789abcdef01234567')).toBeNull();
   });
 });
 
