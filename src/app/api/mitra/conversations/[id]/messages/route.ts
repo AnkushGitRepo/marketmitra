@@ -12,7 +12,7 @@ import { logEvent } from '@/lib/system/eventLog';
 import { supportsKind, unsupportedReason } from '@/lib/mitra-chat/attachments';
 import { appendMessages, getConversation, loadMessages, saveSummary } from '@/lib/mitra-chat/conversations';
 import { getFileStore } from '@/lib/mitra-chat/gridFsFileStore';
-import { sanitizeUserMessage } from '@/lib/mitra-chat/messageInput';
+import { isRetryOfLast, sanitizeUserMessage } from '@/lib/mitra-chat/messageInput';
 import { prepareModelMessages } from '@/lib/mitra-chat/prepareMessages';
 import { summariseSlice } from '@/lib/mitra-chat/summarize';
 import { planWindow } from '@/lib/mitra-chat/window';
@@ -71,11 +71,13 @@ async function handleMessage(request: Request, ctx?: unknown) {
   if (reason) return err('attachment_unsupported', 422, { hint: reason });
 
   const history = await loadMessages(userId, id);
-  if (!(await appendMessages(userId, id, [incoming.message]))) {
+  // A client retry (after a provider error) resends the already-stored last user turn.
+  const retry = isRetryOfLast(history, incoming.message);
+  if (!retry && !(await appendMessages(userId, id, [incoming.message]))) {
     return err('This conversation is full. Start a new chat.', 409);
   }
   await store.markAttached(userId, incoming.fileIds);
-  const all = [...history, incoming.message];
+  const all = retry ? [...history] : [...history, incoming.message];
 
   const userText = textOf(incoming.message);
   const advisor = await prepareAdvisorChat(userId, userText, new Date()).catch(() => null);

@@ -9,13 +9,13 @@ describe('buildNavSections', () => {
     expect(labels(false)).toEqual([
       { title: 'Overview', items: ['Dashboard', 'Portfolio'] },
       { title: 'Markets', items: ['Markets', 'Screener', 'IPOs', 'Research', 'News'] },
-      { title: 'AI & Tools', items: ['Agents', 'Alerts', 'Notes'] },
+      { title: 'AI & Tools', items: ['Mitra chat', 'Agents', 'Alerts', 'Notes'] },
       { title: 'Settings', items: ['System', 'API'] },
     ]);
   });
 
   it('adds Advisor to AI & Tools, after Agents, only when enabled', () => {
-    expect(labels(true)[2].items).toEqual(['Agents', 'Advisor', 'Alerts', 'Notes']);
+    expect(labels(true)[2].items).toEqual(['Mitra chat', 'Agents', 'Advisor', 'Alerts', 'Notes']);
     expect(labels(false).flatMap((s) => s.items)).not.toContain('Advisor');
   });
 
@@ -43,6 +43,13 @@ describe('isNavActive', () => {
 
   it('treats stock detail as part of Markets', () => {
     expect(isNavActive('/dashboard/stock/TCS', '/dashboard/markets')).toBe(true);
+  });
+
+  it('matches whole path segments, so Mitra chat is not active on Mitra activity', () => {
+    expect(isNavActive('/dashboard/mitra', '/dashboard/mitra')).toBe(true);
+    expect(isNavActive('/dashboard/mitra/anything', '/dashboard/mitra')).toBe(true);
+    expect(isNavActive('/dashboard/mitra-activity', '/dashboard/mitra')).toBe(false);
+    expect(isNavActive('/dashboard/portfolio-extra', '/dashboard/portfolio')).toBe(false);
   });
 
   it('treats Mitra activity as part of Agents', () => {

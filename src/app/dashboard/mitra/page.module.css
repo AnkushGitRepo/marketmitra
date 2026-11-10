@@ -1,0 +1,9 @@
+.pageRoot {
+  padding-bottom: 34px;
+}
+
+.note {
+  margin: 8px 0 22px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}

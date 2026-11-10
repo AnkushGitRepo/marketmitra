@@ -29,7 +29,7 @@ function AppShellInner({ children, advisorEnabled }: { children: ReactNode; advi
         <AppHeader onToggleMask={toggleMask} />
         <main className={styles.main}>{children}</main>
       </div>
-      <AiWidget section={section} />
+      {pathname !== '/dashboard/mitra' && <AiWidget section={section} />}
       <MobileTabBar />
       <ShortcutsDialog open={helpOpen} isMac={isMac} onClose={closeHelp} />
     </div>

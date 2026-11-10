@@ -242,6 +242,9 @@ function AiPanelBody({ section, onClose }: { section: Section; onClose: () => vo
             <span className={styles.mitraName}>Mitra</span>
           </div>
           <div className={styles.headerActions}>
+            <Link href="/dashboard/mitra" className={styles.clearButton} onClick={onClose}>
+              Open full chat
+            </Link>
             {messages.length > 0 && (
               <button
                 onClick={clearChat}

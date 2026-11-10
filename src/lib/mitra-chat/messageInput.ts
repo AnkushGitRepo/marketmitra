@@ -65,3 +65,13 @@ export async function sanitizeUserMessage(
   const parts: UIMessage['parts'] = [...(text ? [{ type: 'text' as const, text }] : []), ...fileParts];
   return { ok: true, message: { id: parsed.data.id, role: 'user', parts }, fileIds, kinds };
 }
+
+/**
+ * True when `message` is the user turn already stored as the conversation's last
+ * message — i.e. the client is retrying after a provider error. The server then
+ * skips re-saving it, so a retry never duplicates the user's message.
+ */
+export function isRetryOfLast(history: readonly UIMessage[], message: UIMessage): boolean {
+  const last = history.at(-1);
+  return last?.role === 'user' && last.id === message.id;
+}

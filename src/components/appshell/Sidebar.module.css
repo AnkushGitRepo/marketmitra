@@ -115,6 +115,22 @@
   padding-top: 22px;
 }
 
+/* Short viewports: tighter groups so Settings stays above the fold. */
+@media (max-height: 860px) {
+  .section {
+    margin-top: 12px;
+  }
+
+  .section:first-child {
+    margin-top: 10px;
+  }
+
+  .sectionPinned {
+    margin-top: auto;
+    padding-top: 12px;
+  }
+}
+
 .sectionTitle {
   margin: 0;
   padding: 0 12px 6px;

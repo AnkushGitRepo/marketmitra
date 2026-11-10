@@ -1,0 +1,104 @@
+.shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  gap: 16px;
+  height: calc(100dvh - 125px);
+  min-height: 480px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.rail {
+  min-height: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.status {
+  margin: auto;
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--app-text-muted);
+}
+
+.linkButton {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.railToggle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .railToggle {
+    display: inline-flex;
+    justify-self: start;
+    padding: 8px 14px;
+    border: 1px solid var(--app-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--app-ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .rail {
+    display: none;
+    position: absolute;
+    z-index: 5;
+    top: 44px;
+    left: 0;
+    bottom: 0;
+    width: min(320px, 100%);
+  }
+
+  .railOpen {
+    display: block;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    height: calc(100dvh - 176px);
+  }
+}
