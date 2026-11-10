@@ -58,6 +58,19 @@
   font-family: var(--font-sans);
 }
 
+.shortcutHint {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border: 1px solid var(--app-border);
+  border-radius: 7px;
+  background: var(--app-pill-bg);
+  color: var(--app-text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
 .iconButton {
   width: 38px;
   height: 38px;

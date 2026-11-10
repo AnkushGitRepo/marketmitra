@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSyncExternalStore } from 'react';
 import { buildNavSections, isNavActive } from './navItems';
 import { NAV_ICONS, ResearchIcon } from './NavIcons';
+import { shortcutHintFor } from '@/lib/shortcuts/shortcuts';
 import { Logo } from '@/components/landing/Logo';
 import styles from './Sidebar.module.css';
 
@@ -91,13 +92,15 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
             {section.items.map((item) => {
               const Icon = NAV_ICONS[item.href as keyof typeof NAV_ICONS] ?? ResearchIcon;
               const active = isNavActive(pathname, item.href);
+              const hint = shortcutHintFor(item.href);
+              const tooltip = hint ? `${item.label} — ${hint}` : collapsed ? item.label : undefined;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={`${styles.navItem} ${active ? styles.navItemActive : ''}`}
                   aria-current={active ? 'page' : undefined}
-                  title={collapsed ? item.label : undefined}
+                  title={tooltip}
                 >
                   <span className={styles.navIcon}>
                     <Icon />
