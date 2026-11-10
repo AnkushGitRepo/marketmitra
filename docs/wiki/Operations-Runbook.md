@@ -50,6 +50,7 @@ If a full run is cancelled partway, nothing is lost: ingestion is batched, and t
 | Rotate a shared secret | Generate a new value (`openssl rand -hex 32`); update it on **every** component that uses it (both Vercel projects and the GitHub secret); redeploy both projects. A mismatch shows up as `401` from the ingest endpoints. |
 | Run a migration | See [Deployment → Migrations](Deployment#migrations). Always before deploying code that needs it. |
 | Re-run a failed job | Actions → the workflow → *Re-run*, or Run workflow. Jobs are safe to repeat. |
+| Turn on account switching / 2FA | Clerk dashboard: *Sessions* > **Multi-session handling** (add/switch accounts); *User & authentication > Multi-factor* > **Authenticator app** and **Backup codes** (two-factor). Settings > Account & security picks them up automatically. |
 | Add an operator | Add their Clerk user id to `ADMIN_USER_IDS` and redeploy. |
 | Refresh the company list | It reloads when the table is empty or lacks ISINs. |
 
