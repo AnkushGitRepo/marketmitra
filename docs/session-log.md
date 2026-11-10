@@ -914,3 +914,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - `/settings` rebuilt: AI & API keys (existing encrypted form), Mitra chat prefs, display, notifications & alerts (existing cards reused), shortcuts, data & privacy (export JSON, delete all chats, clear widget history), about (admin link to System). Preferences stored in `userPreferences`, validated and defaulted by one schema; applied in the chat route, app layout and Mitra page. Verified live: preferences GET/PATCH (bad patches → 422), export contents (no `userId`, no secrets), platform-access off removes the tool (Mitra then says it cannot fetch). **Not verified:** UI toggles end to end in the browser (hide-values default, shortcuts off, send-key, tool chips, dictation language are wired and type-checked but not exercised), delete-all and widget-clear buttons, hosted mode, mobile.
 
+## 2026-11-10 — Production deploy (`97f9cbe`)
+
+- Deployed the app with `vercel deploy --prod` (Vercel CLI run via `npx`, logged in as the maintainer); fundamentals-api not redeployed (no changes). Status Ready, aliased to `marketmitra-v2.vercel.app`; smoke test 4/4. Production checks and the list of what still needs a signed-in browser are in HANDOFF "Where we are".
+

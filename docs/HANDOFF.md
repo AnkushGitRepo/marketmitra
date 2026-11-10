@@ -18,15 +18,15 @@
 
 ## Where we are (as of 2026-11-10)
 
-**Production** (https://marketmitra-v2.vercel.app and https://marketmitra-fundamentals-api.vercel.app) was
-deployed from `main` on 2026-11-10 (`c84fd46`), smoke test passing. **Repo is clean: 0 open issues, 0 open PRs,
-one branch (`main`).** Always confirm with `git log --oneline -10`, `gh issue list`, `gh pr list` and the project board.
+**Production** (https://marketmitra-v2.vercel.app) was deployed from `main` on 2026-11-10 (`97f9cbe`, app only: `services/fundamentals-api` is unchanged since `c84fd46` and was not redeployed), smoke test 4/4. It includes the Mitra chat workspace (ADR 0036), top-level URLs (ADR 0037) and the Settings rebuild (ADR 0038). **Repo is clean: 0 open issues, 0 open PRs, one branch (`main`).** Always confirm with `git log --oneline -10`, `gh issue list`, `gh pr list` and the project board.
+
+**Verified on production after the deploy:** smoke test; legacy `/dashboard/<page>` URLs 308 to the new ones (query kept); `Permissions-Policy` now `microphone=(self)`; new APIs answer 401 to anonymous callers; `/openapi.json` lists the new routes; a browser-like request to `/portfolio` gets the Clerk sign-in handshake (a bare `curl` sees 404, same as `/dashboard`). **Not verified (needs a signed-in browser):** real sign-in on the new URLs, `/system` as admin and as a non-admin (`ADMIN_USER_IDS` is set), Mitra chat with a real hosted key, attachments on Vercel near the 4 MB cap, microphone permission flow, Settings controls.
 
 **What shipped recently (Sept → Nov 2026)** — newest first:
 
 - **Mitra chat workspace** (#33, [ADR 0036](./decisions/0036-mitra-chat-workspace.md)) — `/mitra`: long
   conversations with history, image/PDF/audio/text attachments (GridFS), investing-tuned model setup, `G` then `C`.
-  Also grouped sidebar (#29) and keyboard shortcuts (#31). **Not deployed to production** — verify before assuming. Not tested with Claude/OpenRouter keys or real speech audio.
+  Also grouped sidebar (#29) and keyboard shortcuts (#31). Deployed 2026-11-10. Not tested with Claude/OpenRouter keys or real speech audio.
 
 - **Project process** (#25, #26): GitHub Project board, milestones, 10 built-in project workflows, issue-first
   workflow, auto-delete of merged branches. `v2` branch retired (#23/#24); `main` is the only long-lived branch.
