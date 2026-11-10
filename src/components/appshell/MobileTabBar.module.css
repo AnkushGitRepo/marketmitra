@@ -12,9 +12,11 @@
     background: rgba(251, 248, 241, 0.94);
     backdrop-filter: blur(16px);
     border-top: 1px solid var(--app-border);
-    padding: 8px 8px 12px;
-    display: flex;
-    justify-content: space-around;
+    /* Clear the iOS home indicator. */
+    /* 6 + 56 + 6 + 1px border = 69px, inside the 4.5rem (72px) the page content reserves. */
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: stretch;
   }
 }
@@ -28,8 +30,8 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 6px 10px;
-  min-width: 60px;
+  padding: 6px 2px;
+  min-width: 0;
   min-height: 48px;
   justify-content: center;
   color: var(--app-text-faint);
@@ -43,4 +45,31 @@
 .tabLabel {
   font-size: 10.5px;
   letter-spacing: 0.01em;
+}
+
+/* Centre anchor: a raised 48x48 orb, the primary way into the Mitra copilot. */
+.chatTab {
+  color: var(--app-ink);
+  overflow: visible;
+}
+
+.chatOrb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-top: -22px;
+  border-radius: 50%;
+  background: var(--app-ink);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(22, 25, 28, 0.28), 0 0 0 4px rgba(251, 248, 241, 0.94);
+}
+
+.chatTabActive .chatOrb {
+  background: var(--app-teal-strong);
+}
+
+.chatTabActive {
+  color: var(--app-teal-strong);
 }

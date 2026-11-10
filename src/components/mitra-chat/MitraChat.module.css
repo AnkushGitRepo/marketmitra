@@ -167,6 +167,7 @@
 
 @media (max-width: 760px) {
   .shell {
-    height: calc(100dvh - 216px);
+    /* mobile header and page padding (95px) + footer (40px) + 4.5rem bottom bar + 1px, plus the safe area */
+    height: calc(100dvh - 208px - env(safe-area-inset-bottom));
   }
 }

@@ -145,9 +145,13 @@ implemented natively with fonts swapped to Manrope / JetBrains Mono.
   of horizontal room. Expanded (240px) / collapsed (76px, icon-only) toggled by a chevron,
   persisted to `localStorage` via `useSyncExternalStore` (avoids a hydration-mismatch flash —
   same pattern as `CookieNotice.tsx`). Active route gets the same dark-pill treatment the old
-  top nav used. Hidden below 760px, where `MobileTabBar`'s existing 5-item bottom bar
-  (Dashboard/Portfolio/Markets/Alerts/News) continues to serve navigation, unchanged — the
-  sidebar is tablet/desktop-only by design.
+  top nav used. Hidden below 760px, where `MobileTabBar` takes over (#47): five slots —
+  Dashboard, Portfolio, **Mitra chat** (elevated centre button), Markets, **More**. "More" opens `MoreSheet`, a
+  native-`<dialog>` bottom sheet (outside-tap, Esc and drag-down dismiss; grouping and the drag rule live in
+  `mobileNav.ts`) holding Screener, IPOs, Research, News, Agents, Advisor (when enabled), Alerts, Notes, Settings and
+  System status. The floating widget bubble is hidden on phones, the header bell goes straight to `/alerts`, and page
+  content reserves `calc(4.5rem + env(safe-area-inset-bottom))` (the root layout sets `viewport-fit=cover` so the
+  safe-area insets are real on iOS). The sidebar is tablet/desktop-only by design.
 - **Shared pieces:** `src/components/dashboard-charts/` (`LineChart`, `PillTabs`, `IndexCard`,
   `MoverPanel`, `CompanyLogo`, `NewsList`, `InsightCard`, `IpoOpenCard`) and
   `src/lib/dashboard/` (`fundamentalsApi.ts`, `newsApi.ts`, `iposApi.ts`, `transforms.ts`,

@@ -102,6 +102,17 @@ export function ResearchIcon() {
   );
 }
 
+export function MoreIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <rect x="3" y="3" width="6.5" height="6.5" rx="2" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="12.5" y="3" width="6.5" height="6.5" rx="2" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3" y="12.5" width="6.5" height="6.5" rx="2" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="12.5" y="12.5" width="6.5" height="6.5" rx="2" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
 export function ChatIcon() {
   return (
     <svg {...ICON_PROPS}>
@@ -184,6 +195,7 @@ export const NAV_ICONS = {
   '/ipos': IposIcon,
   '/research': ResearchIcon,
   '/mitra': ChatIcon,
+  '/status': SystemIcon,
   '/agents': AgentsIcon,
   '/notes': NotesIcon,
   '/api-docs': ApiIcon,

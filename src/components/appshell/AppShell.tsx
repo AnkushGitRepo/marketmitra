@@ -32,7 +32,7 @@ function AppShellInner({ children, advisorEnabled, shortcutsEnabled }: { childre
         <AppFooter />
       </div>
       {pathname !== '/mitra' && <AiWidget section={section} />}
-      <MobileTabBar />
+      <MobileTabBar advisorEnabled={advisorEnabled} />
       <ShortcutsDialog open={helpOpen} isMac={isMac} onClose={closeHelp} />
     </div>
   );
