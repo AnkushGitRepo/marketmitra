@@ -968,3 +968,9 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 ## 2026-11-11 — Markets intelligence hub (#71, [ADR 0044](./decisions/0044-markets-intelligence-hub.md))
 
 - One search field, "Watchlist" wording, delete-confirmation modal and ⋯ row menu, indices + NIFTY 50 breadth bar, 65/35 layout with sector performance (12 NSE sectoral indices) and an opt-in Mitra Market Pulse; new `GET /api/markets/overview` and `POST /api/insights/market` (both in OpenAPI). 12 new unit tests; full suite (1103), types, lint green. **Verified in Chromium** at 1440px and 390px with live data (breadth 21/27/1 of 49 reporting, 12 sectors): delete dialog opens and Esc cancels, row menu offers Remove, nothing was deleted, mobile order and no overflow. **Not verified:** real iOS Safari (hover/touch behaviour of the ⋯ menu), generating a Market Pulse (no AI key exercised), the signed-out and empty-watchlist states visually, hosted path. **Decisions:** FII/DII omitted (no permitted free source), breadth is NIFTY 50 only, sparklines are 1 month (no intraday series).
+
+## 2026-11-11 — Production deploy (`1fbc501`) and duplicate cleanup (#73)
+
+- Deployed (app only) after clearing the stray duplicates: Ready, smoke 4/4, `/api/markets/overview` live (49 of 50 breadth, 12 sectors), new routes in OpenAPI, anonymous 401s, redirect and email assets OK. `ALERT_EMAIL_FROM` is live; `EMAIL_CONTACT_LINE` is not set. **Not verified:** signed-in hosted flows, a real non-owner welcome email, real iOS Safari (see HANDOFF).
+- **Cleanup incident:** deleting duplicates with a repo-wide pattern removed 25,329 files (mostly gitignored, contents unknown), plus 32 `.git/index N` copies and 3 stray reflog files. Git tracked files were unaffected (`git diff` clean) and TypeScript (1103) and Python (225) tests pass. Lesson recorded as HANDOFF gotcha 3.
+
