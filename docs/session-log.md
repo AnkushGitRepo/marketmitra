@@ -943,3 +943,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 - Replaced my rejected welcome design with the maintainer's `marketmitra-emails.zip` system: 8 templates + assets in `src/emails/` and `public/email/`, Handlebars renderer, typed builders, auto plain text, admin gallery `/system/emails`. Welcome now uses it. Closed PR #58/#57 (superseded). 69 tests incl. strict variable coverage and an assets cross-check. **Not done:** alert emails with live data, unsubscribe/preferences, digest/summary/what's-new/promo senders, Clerk's verify/reset (all listed in ADR 0040). **Not verified:** real mail clients/dark mode (only headless Chrome, like the design's own check); I sent no email.
 - Housekeeping: `git pull` was broken by three stray `refs/heads/… 2` duplicate ref files (the known IDE duplicate problem, tips of already-merged branches); removed them. Also removed 158 gitignored `* 2.*` duplicates under `src/` that broke `tsc`.
 
+## 2026-11-10 — Production deploy (`597a712`)
+
+- Deployed (app only). The first attempt **failed on Vercel's type check**: stray `src/lib/welcome/index 2.ts` / `template.test 2.ts` duplicates were uploaded by the CLI and imported the deleted `./template`; local build and CI were green because the files are gitignored. Cleared the duplicates and redeployed: Ready, smoke 4/4, `/email/*.png` 200, legacy redirect 308, `microphone=(self)`, new APIs 401 to anon. Recorded as HANDOFF gotcha 15.
+
