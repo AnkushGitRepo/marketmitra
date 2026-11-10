@@ -9,11 +9,16 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api import deps
-from app.ingestion.tier3_ipo_scraper.scraper import _parse_dmon, _parse_ipo_rows
+from app.ingestion.tier3_ipo_scraper.scraper import (
+    _category_from_badges,
+    _parse_dmon,
+    _parse_ipo_rows,
+)
 from app.main import app
 
 FIXTURE = Path(__file__).parent / "fixtures" / "investorgain_ipo_gmp.html"
 REF = date(2026, 9, 6)  # the day the fixture was saved
+SME_FIXTURE = Path(__file__).parent / "fixtures" / "investorgain_sme_rows.html"
 
 
 @pytest.fixture(scope="module")
@@ -23,6 +28,42 @@ def rows() -> list[dict]:
 
 def _by_name(rows: list[dict], needle: str) -> dict:
     return next(r for r in rows if needle.lower() in r["name"].lower())
+
+
+class TestCategory:
+    """SME vs mainboard comes from the badge beside the name. Regression: the
+    aggregator badges SME issues "BSE SME" / "NSE SME", and an exact-match
+    check on "SME" classified every one of them as mainboard."""
+
+    @pytest.mark.parametrize(
+        ("badges", "expected"),
+        [
+            (["NSE SME"], "sme"),
+            (["BSE SME"], "sme"),
+            (["SME"], "sme"),
+            (["bse sme", "C", "Allotted"], "sme"),
+            (["IPO"], "mainboard"),
+            (["IPO", "U"], "mainboard"),
+            ([], "mainboard"),
+            (["ASMER"], "mainboard"),  # SME must be a word, not a substring
+        ],
+    )
+    def test_category_from_badges(self, badges, expected):
+        assert _category_from_badges(badges) == expected
+
+    def test_real_rows_are_classified_from_their_badges(self):
+        rows = _parse_ipo_rows(SME_FIXTURE.read_text(encoding="utf-8"), ref=date(2026, 11, 10))
+        by = {r["name"]: r["category"] for r in rows}
+        assert by == {
+            "Vedant Poly Fabs": "sme",  # NSE SME
+            "Johnsoncab Electricals": "sme",  # BSE SME
+            "Bombay Coated and Special Steels": "mainboard",  # IPO
+        }
+
+    def test_sme_rows_still_parse_their_numbers(self):
+        rows = _parse_ipo_rows(SME_FIXTURE.read_text(encoding="utf-8"), ref=date(2026, 11, 10))
+        vedant = next(r for r in rows if r["name"] == "Vedant Poly Fabs")
+        assert (vedant["price"], vedant["lot_size"], vedant["ipo_size_cr"]) == (94.0, 1200, 56.68)
 
 
 class TestParser:
@@ -129,8 +170,10 @@ def test_ipos_route_rejects_bad_status(client):
     assert client.get("/ipos?status=pending").status_code == 422
 
 
-def test_ipos_ingest_requires_token(client):
-    # ipo_ingest_token is unset in tests -> 503
+def test_ipos_ingest_requires_token(client, monkeypatch):
+    # no ipo_ingest_token configured -> 503 (set explicitly so a token in the
+    # developer's local .env can't change the outcome)
+    monkeypatch.setattr("app.api.routes.ipos._settings.ipo_ingest_token", "")
     res = client.post("/ipos/ingest", json={"rows": []})
     assert res.status_code == 503
 

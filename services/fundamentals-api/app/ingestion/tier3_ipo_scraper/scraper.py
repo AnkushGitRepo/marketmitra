@@ -131,6 +131,19 @@ def _parse_gmp(row: Selector) -> dict:
     return {"gmp": gmp, "gmp_pct": gmp_pct, "gmp_low": gmp_low, "gmp_high": gmp_high}
 
 
+_SME_BADGE_RE = re.compile(r"\bSME\b", re.IGNORECASE)
+
+
+def _category_from_badges(badges: list[str]) -> str:
+    """`sme` or `mainboard` from the badges beside an IPO's name.
+
+    The aggregator badges a mainboard issue "IPO" and an SME issue by its
+    exchange segment — "BSE SME" or "NSE SME" (never a bare "SME"), so match
+    SME as a word rather than the whole badge. An exact-match check here once
+    sent every SME issue to `mainboard`."""
+    return "sme" if any(_SME_BADGE_RE.search(b) for b in badges) else "mainboard"
+
+
 def _parse_row(row: Selector, ref: date) -> dict | None:
     name_cell = _cell(row, "Name")
     if name_cell is None:
@@ -144,7 +157,7 @@ def _parse_row(row: Selector, ref: date) -> dict | None:
         return None
     name = (anchors[0].attrib.get("title") or anchors[0].get_all_text(strip=True) or "").strip()
     badges = [b.get_all_text(strip=True) for b in name_cell.css("span.badge")]
-    category = "sme" if any(b.upper() == "SME" for b in badges) else "mainboard"
+    category = _category_from_badges(badges)
 
     open_d = _parse_dmon(_cell_text(row, "Open"), ref)
     close_d = _parse_dmon(_cell_text(row, "Close"), ref)
