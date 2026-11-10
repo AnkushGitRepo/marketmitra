@@ -7,6 +7,7 @@ import { ChatThread } from './ChatThread';
 import { ConversationRail } from './ConversationRail';
 import { mitraApi, type ConversationDto } from './api';
 import { useConversations } from './useConversations';
+import { usePersistedFlag } from './usePersistedFlag';
 import styles from './MitraChat.module.css';
 
 type View =
@@ -28,6 +29,7 @@ export function MitraChatClient() {
   const [view, setView] = useState<View>(initialId ? { kind: 'loading', id: initialId } : { kind: 'new', nonce: 0 });
   const [railOpen, setRailOpen] = useState(false);
   const conversations = useConversations();
+  const [railCollapsed, setRailCollapsed] = usePersistedFlag('mm-mitra-rail-collapsed');
   const nonce = useRef(1);
   // Bumped on every navigation so a slow response for an earlier choice cannot overwrite the current view.
   const navTicket = useRef(0);
@@ -87,6 +89,7 @@ export function MitraChatClient() {
   );
 
   const activeId = view.kind === 'ready' || view.kind === 'loading' ? view.id : view.kind === 'new' ? createdId : null;
+  const activeTitle = conversations.items.find((c) => c.id === activeId)?.title ?? 'New chat';
 
   const handleDelete = async (id: string) => {
     await conversations.remove(id);
@@ -94,12 +97,15 @@ export function MitraChatClient() {
   };
 
   return (
-    <div className={styles.shell} data-fill-viewport>
+    <div
+      className={`${styles.shell} ${railCollapsed ? styles.shellCollapsed : ''} ${railCollapsed === null ? styles.shellPending : ''}`}
+      data-fill-viewport
+    >
       <h1 className={styles.srOnly}>Mitra chat</h1>
       <button type="button" className={styles.railToggle} onClick={() => setRailOpen((o) => !o)} aria-expanded={railOpen}>
         {railOpen ? 'Close history' : 'History'}
       </button>
-      <aside className={`${styles.rail} ${railOpen ? styles.railOpen : ''}`}>
+      <aside id="mitra-chat-rail" className={`${styles.rail} ${railOpen ? styles.railOpen : ''}`}>
         <ConversationRail
           items={conversations.items}
           activeId={activeId}
@@ -115,6 +121,24 @@ export function MitraChatClient() {
       </aside>
 
       <div className={styles.main}>
+        <header className={styles.bar}>
+          <button
+            type="button"
+            className={styles.collapseBtn}
+            onClick={() => setRailCollapsed(!railCollapsed)}
+            aria-expanded={!railCollapsed}
+            aria-controls="mitra-chat-rail"
+            aria-label={railCollapsed ? 'Show chat list' : 'Hide chat list'}
+            title={railCollapsed ? 'Show chat list' : 'Hide chat list'}
+          >
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <rect x="2.5" y="3.5" width="15" height="13" rx="3" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M8 3.5v13" stroke="currentColor" strokeWidth="1.6" />
+              {!railCollapsed && <rect x="3.6" y="4.6" width="3.3" height="10.8" rx="1.4" fill="currentColor" opacity="0.25" />}
+            </svg>
+          </button>
+          <span className={styles.barTitle}>{activeTitle}</span>
+        </header>
         {view.kind === 'loading' && <p className={styles.status}>Loading conversation…</p>}
         {view.kind === 'missing' && (
           <div className={styles.status}>
