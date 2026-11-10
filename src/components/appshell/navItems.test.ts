@@ -10,7 +10,7 @@ describe('buildNavSections', () => {
       { title: 'Overview', items: ['Dashboard', 'Portfolio'] },
       { title: 'Markets', items: ['Markets', 'Screener', 'IPOs', 'Research', 'News'] },
       { title: 'AI & Tools', items: ['Mitra chat', 'Agents', 'Alerts', 'Notes'] },
-      { title: 'Settings', items: ['System', 'API'] },
+      { title: 'Settings', items: ['Settings', 'API'] },
     ]);
   });
 
@@ -22,6 +22,12 @@ describe('buildNavSections', () => {
   it('pins only the Settings section to the bottom', () => {
     const pinned = buildNavSections(false).filter((s) => s.pinnedToBottom);
     expect(pinned.map((s) => s.title)).toEqual(['Settings']);
+  });
+
+  it('does not list the operator-only System page for anyone', () => {
+    const hrefs = buildNavSections(true).flatMap((s) => s.items.map((i) => i.href));
+    expect(hrefs).not.toContain('/system');
+    expect(hrefs).toContain('/settings');
   });
 
   it('no longer lists Mitra activity as a primary item', () => {

@@ -10,6 +10,7 @@ export const GO_TO_SHORTCUTS: readonly GoToShortcut[] = [
   { key: 'p', href: '/portfolio', label: 'Portfolio' },
   { key: 'm', href: '/markets', label: 'Markets' },
   { key: 'c', href: '/mitra', label: 'Mitra chat' },
+  { key: 's', href: '/settings', label: 'Settings' },
 ];
 
 /** How long the second key of a chord may lag the first. */

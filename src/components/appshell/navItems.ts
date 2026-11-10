@@ -14,6 +14,7 @@ export interface NavSection {
 // kept out of the static sections so it can never appear by default.
 export const ADVISOR_NAV_ITEM: NavItem = { href: '/advisor', label: 'Advisor' };
 
+// The System page (/system) is operator-only and deliberately has no nav entry; admins reach it from Settings.
 // "Mitra activity" (/mitra-activity) has no entry here: it is linked
 // from the Agents page and highlights Agents while open (see isNavActive).
 const OVERVIEW: NavSection = {
@@ -38,7 +39,7 @@ const MARKETS: NavSection = {
 const SETTINGS: NavSection = {
   title: 'Settings',
   items: [
-    { href: '/system', label: 'System' },
+    { href: '/settings', label: 'Settings' },
     { href: '/api-docs', label: 'API' },
   ],
   pinnedToBottom: true,

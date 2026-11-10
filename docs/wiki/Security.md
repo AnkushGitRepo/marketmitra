@@ -24,7 +24,7 @@ Results appear under the repository's **Security** tab.
 - **Your AI keys are encrypted at rest** (AES-256-GCM) and never returned to the browser after saving. In hosted mode there is no operator key to fall back on.
 - **Outbound requests are guarded.** User-supplied webhook URLs and the PDF downloader reject private, loopback and cloud-metadata addresses, validate every redirect, cap response sizes, and connect to the exact IP that was validated (so DNS can't be rebound between the check and the connection).
 - **Secrets are compared in constant time** — cron and ingest tokens everywhere, in both services — and the protected endpoints **fail closed**: if a token isn't configured, they refuse rather than open up.
-- **Operator data is allowlisted.** The System page's event log requires an id in `ADMIN_USER_IDS`; unset means nobody.
+- **Operator data is allowlisted.** The System page (`/system`, hidden from the sidebar) and its event log require an id in `ADMIN_USER_IDS`; unset means nobody, and non-admins get a 404.
 - **Browser hardening.** A strict Content-Security-Policy, HSTS, `nosniff`, frame protection, a referrer policy and a permissions policy are set on both services.
 - **Cross-site writes are rejected.** State-changing `/api/*` requests from another site are refused (Origin / Sec-Fetch-Site); the anonymous MCP server is the deliberate exception.
 - **Rate limiting** keys on the platform-set client address, not a header the client controls.

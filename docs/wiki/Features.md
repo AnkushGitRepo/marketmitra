@@ -57,7 +57,7 @@ An audit trail of every change Mitra made on your behalf, with the reason it gav
 Your AI provider key (stored encrypted), notification channels and alert guardrails.
 
 ## System — `/system`
-Operator view of service health and the event log. In hosted mode it is limited to users listed in `ADMIN_USER_IDS`; a public status page lives at `/status`.
+Operator view of service health and the event log at `/system`, not in the sidebar. The whole page is admin-only (404 otherwise): in hosted mode limited to users listed in `ADMIN_USER_IDS`; a public status page lives at `/status`.
 
 ## Mitra — the chat widget
 Available on every dashboard page. See [Mitra Assistant](Mitra-Assistant).
