@@ -24,7 +24,7 @@ export function buildPlatformApiTools(ctx: PlatformRequestContext): ToolSet {
   return {
     call_platform_api: tool({
       description:
-        "Fetch data from MarketMitra's own API (read-only GET). Use it for anything about the user's portfolio, alerts, notes, wishlists, notifications, screener results, a stock's fundamentals and prices, news, IPOs and system status — whenever a fact would improve the answer. See the endpoint list in the instructions.",
+        "Fetch data from MarketMitra's own API (read-only GET). Use it for anything about the user's portfolio, alerts, notes, watchlists, notifications, screener results, a stock's fundamentals and prices, news, IPOs and system status — whenever a fact would improve the answer. See the endpoint list in the instructions.",
       inputSchema: z.object({
         path: z.string().describe('Concrete path, e.g. /api/stock/TCS or /api/holdings. No query string here.'),
         query: z.string().optional().describe('URL-encoded query string without the leading ?, e.g. "pe_max=25&sector=Information%20Technology".'),

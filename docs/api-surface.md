@@ -201,6 +201,15 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Errors:** `401` bad/missing token, `503` `CRON_SECRET` unconfigured in production, `500` if the cycle throws.
 - **Note:** the handler degrades gracefully — a symbol with no live quote is skipped (counted in `skippedNoData`), never fired or auto-resolved on stale data.
 
+### `GET /api/markets/overview`
+
+- **Auth:** public. **Purpose:** NIFTY 50 breadth and NSE sectoral index moves for the Markets page.
+- **Response:** `{ success, data: { breadth, sectors, asOf } }`. `breadth` is `{ advances, declines, unchanged, total, advancePct, ratio }` or `null` (fewer than 25 of the 50 constituents priced); `sectors` is `[{ label, changePct }]` best first, empty when the source is down. NIFTY 50 only, not the whole exchange. FII/DII is not offered (no free permitted source).
+
+### `POST /api/insights/market`
+
+- **Auth:** session. **Purpose:** two-sentence Mitra read on today's indices, breadth and sector moves, grounded only in those figures. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when market data is unavailable; `ai` rate tier.
+
 ### `GET /api/news`
 - **Purpose:** Same-origin thin proxy to `services/fundamentals-api`'s `GET /news` (ADR 0015), so `/news` can "load more" and toggle its holdings filter client-side without exposing `FUNDAMENTALS_API_URL` to the browser. Same narrow, deliberate exception as `/api/search`.
 - **Auth:** public — news is public market data. (The holdings filter's symbol list is computed server-side in `/news/page.tsx` and passed to the client, which forwards it here as `?symbols=`.)

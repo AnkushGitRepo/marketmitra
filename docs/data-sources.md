@@ -48,6 +48,14 @@ For each source, record: what it is, the endpoint(s) used, auth/key requirements
 - **Cost:** free
 - **ToS notes:** unofficial API with no SLA — accepted trade-off per ADR 0011. Verified working live during development.
 
+#### Yahoo Finance: sector indices and NIFTY 50 breadth (Markets page, ADR 0044)
+
+Read from the Next app via `yahoo-finance2` (not the fundamentals service). Sector performance uses the NSE sectoral indices
+(`^CNXIT`, `^NSEBANK`, `^CNXPSUBANK`, `^CNXFIN`, `^CNXAUTO`, `^CNXFMCG`, `^CNXPHARMA`, `^CNXMETAL`, `^CNXENERGY`,
+`^CNXREALTY`, `^CNXINFRA`, `^CNXMEDIA`); breadth is computed from one batched quote of the NIFTY 50 constituents. Cached about
+60s per server instance. Delayed/unofficial like all Yahoo data. **FII/DII flows have no free permitted source** (NSE blocks us)
+and are not shown.
+
 ### Screener.in
 - **Type:** scraper (Tier 3, last resort) **and**, separately, the Screener feature's bulk universe source (ADR 0025)
 - **Used for:** named/computed ratios (P/E, ROCE, ROE, etc.) not available as raw data from Tiers 1–2; also a fallback for shareholding pattern and financial statement line items — **and**, via a second, independent access pattern, the entire NSE universe's screener_metrics table (market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, 3y sales/profit growth CAGR, sector/industry)
