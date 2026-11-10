@@ -931,3 +931,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - #36 added an app-wide footer (Status, API, Privacy, Terms) when the request was a Status link in the **landing page** footer (which already had one). Removed the app footer, its status-dot helper and tests, and gave the chat page its height back. Measured at 1280×800 and 390×844: no footer on app pages, chat and dashboard still clear the mobile bar, landing footer still links to `/status`. Earlier log entries describing the footer are history.
 
+## 2026-11-10 — Welcome email (#54, [ADR 0039](./decisions/0039-welcome-email.md))
+
+- Designed HTML + text welcome email (3 first steps, dashboard button, advice disclaimer, legal links), sent once per new hosted user from the app layout via `after()` through the existing Resend setup; exactly-once via an atomic claim record with retry/back-off. Verified: template rendered and reviewed at 760px and 390px, 19 unit tests (template escaping, 10-way concurrent claim, retry, failure handling), types/lint/build. **Not verified:** a real send (not done: it would email a real address), rendering in actual mail clients (Gmail/Outlook/Apple Mail, dark mode), the hosted Clerk lookup, and that `ALERT_EMAIL_FROM` is a Resend-verified domain in production (without it Resend only delivers to the account owner). Existing users will receive it once on their next visit after deploy.
+
