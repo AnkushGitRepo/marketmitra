@@ -927,3 +927,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - Merged #48 and deployed the app (`vercel deploy --prod`; fundamentals-api untouched). Ready, aliased, smoke test 4/4; production spot-checks: legacy redirect 308, `microphone=(self)`, `viewport-fit=cover` served, `/status` 200, chat API 401 to anon.
 
+## 2026-11-10 — App footer removed (#51)
+
+- #36 added an app-wide footer (Status, API, Privacy, Terms) when the request was a Status link in the **landing page** footer (which already had one). Removed the app footer, its status-dot helper and tests, and gave the chat page its height back. Measured at 1280×800 and 390×844: no footer on app pages, chat and dashboard still clear the mobile bar, landing footer still links to `/status`. Earlier log entries describing the footer are history.
+
