@@ -26,3 +26,7 @@ emails) to the user's **verified primary Clerk email**.
 New collection `welcomeEmails`. Existing users get the email once on their next visit after deploy (there is no
 "created recently" cutoff, because Clerk's creation time isn't read); say so if that should be limited. Not built: an
 unsubscribe link (it is a single transactional message, not a mailing list), localisation, re-sending on request.
+
+## Update (#59)
+The template described above was replaced by the supplied design system ([ADR 0040](./0040-email-design-system.md)); this ADR's trigger, exactly-once claim and no-op rules are unchanged.
+

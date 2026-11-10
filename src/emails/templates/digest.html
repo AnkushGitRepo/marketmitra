@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<!--
+  MarketMitra email: Your {{digest_period}} market digest
+  Template syntax: Handlebars ({{var}}, {{#each}}, {{#if}}). Escape user-supplied values.
+
+  Variables:
+  {{digest_period}}  Daily | Weekly
+  {{digest_date}}  e.g. Tue, 10 Nov
+  {{first_name}}  Recipient first name
+  {{nifty50_value / _change / _arrow / _color / _dir}}  Same five fields for sensex, niftybank, vix. _change in words ('up 0.42%'), _arrow &#9650;/&#9660;, _color #0b8266 (gain) / #ba533c (loss) / #16191c (neutral), _dir gain|loss|neutral
+  {{mitra_summary}}  2-3 plain-English lines from Mitra
+  {{mitra_url}}  Mitra chat link
+  {{gainers[] / losers[]}}  {ticker, name, price, change_text } — top 3 each
+  {{ipos[]}}  Optional. { name, dates, price_band, ipo_type } — section hidden when empty
+  {{dashboard_url}}  Dashboard URL
+  {{data_as_of}}  Data timestamp, e.g. 3:30 PM IST
+  {{asset_base_url}}  Base URL where the PNGs in /assets are hosted, no trailing slash
+  {{preferences_url}}  Email preferences page
+  {{unsubscribe_url}}  One-click unsubscribe link
+  {{privacy_url}}  Privacy policy
+  {{contact_line}}  Sender name and physical/contact address line
+-->
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Your {{digest_period}} market digest</title>
+<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+<style>body,table,td,p,a,span,h1,h2,center{font-family:Arial,Helvetica,sans-serif!important;}</style><![endif]-->
+<!--[if !mso]><!--><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"><!--<![endif]-->
+<style>
+
+:root{color-scheme:light dark;supported-color-schemes:light dark;}
+body{margin:0!important;padding:0!important;width:100%!important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+table,td{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;}
+img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;display:block;}
+a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}
+u + #body a{color:inherit;text-decoration:none;}
+@media screen and (max-width:480px){
+.mm-container{width:100%!important;max-width:100%!important;}
+.mm-outer{padding:16px 10px!important;}
+.mm-pad{padding-left:24px!important;padding-right:24px!important;}
+.mm-col{display:block!important;width:100%!important;max-width:100%!important;}
+.mm-step-img{padding:0 0 16px 0!important;}
+.mm-step{padding:20px!important;}
+.mm-h1{font-size:28px!important;line-height:34px!important;}
+.mm-half{display:block!important;width:100%!important;}
+.mm-half-gap{padding:0!important;}
+.mm-fluid{width:100%!important;max-width:100%!important;height:auto!important;}
+.mm-btn-a{display:block!important;}
+.mm-btn{width:100%!important;}
+.mm-hide-m{display:none!important;}
+.mm-stack-r{text-align:left!important;padding-top:4px!important;}
+.mm-mitra{padding:28px 14px!important;}
+}
+@media (prefers-color-scheme:dark){
+.mm-bg{background-color:#071f17!important;}
+.mm-card{background-color:#15171c!important;}
+.mm-text{color:#ffffff!important;}
+.mm-muted{color:#b9bfc6!important;}
+.mm-panel{background-color:#1f2328!important;}
+.mm-border{border-color:#2c3036!important;}
+.mm-rule{background-color:#2c3036!important;}
+.mm-link{color:#7ee2a8!important;}
+.mm-btn-td{background-color:#7ee2a8!important;}
+.mm-btn-a{background-color:#7ee2a8!important;border-color:#7ee2a8!important;color:#16191c!important;}
+.mm-btn2-a{border-color:#7ee2a8!important;color:#7ee2a8!important;}
+.mm-gain{color:#56d39a!important;}
+.mm-loss{color:#ef9a86!important;}
+.mm-neutral{color:#ffffff!important;}
+.mm-tone-loss{background-color:#2a1b18!important;border-color:#5a2e24!important;}
+.mm-tone-warn{background-color:#2a2116!important;border-color:#5a4524!important;}
+.mm-tone-gain{background-color:#16271f!important;border-color:#24503d!important;}
+.mm-tone-loss-fg{color:#ef9a86!important;}
+.mm-tone-warn-fg{color:#f2b37a!important;}
+.mm-tone-gain-fg{color:#7ee2a8!important;}
+.mm-light-only{display:none!important;}
+.mm-dark-only{display:block!important;max-height:none!important;overflow:visible!important;}
+}
+/* Outlook.com dark mode */
+[data-ogsc] .mm-bg{background-color:#071f17!important;}
+[data-ogsc] .mm-card{background-color:#15171c!important;}
+[data-ogsc] .mm-text{color:#ffffff!important;}
+[data-ogsc] .mm-muted{color:#b9bfc6!important;}
+[data-ogsc] .mm-panel{background-color:#1f2328!important;}
+[data-ogsc] .mm-border{border-color:#2c3036!important;}
+[data-ogsc] .mm-rule{background-color:#2c3036!important;}
+[data-ogsc] .mm-link{color:#7ee2a8!important;}
+[data-ogsc] .mm-btn-td{background-color:#7ee2a8!important;}
+[data-ogsc] .mm-btn-a{background-color:#7ee2a8!important;border-color:#7ee2a8!important;color:#16191c!important;}
+[data-ogsc] .mm-btn2-a{border-color:#7ee2a8!important;color:#7ee2a8!important;}
+[data-ogsc] .mm-gain{color:#56d39a!important;}
+[data-ogsc] .mm-loss{color:#ef9a86!important;}
+[data-ogsc] .mm-neutral{color:#ffffff!important;}
+[data-ogsc] .mm-tone-loss{background-color:#2a1b18!important;border-color:#5a2e24!important;}
+[data-ogsc] .mm-tone-warn{background-color:#2a2116!important;border-color:#5a4524!important;}
+[data-ogsc] .mm-tone-gain{background-color:#16271f!important;border-color:#24503d!important;}
+[data-ogsc] .mm-tone-loss-fg{color:#ef9a86!important;}
+[data-ogsc] .mm-tone-warn-fg{color:#f2b37a!important;}
+[data-ogsc] .mm-tone-gain-fg{color:#7ee2a8!important;}
+[data-ogsc] .mm-light-only{display:none!important;}
+[data-ogsc] .mm-dark-only{display:block!important;max-height:none!important;overflow:visible!important;}
+
+</style>
+</head>
+<body id="body" class="mm-bg" style="margin:0;padding:0;background-color:#0d3b2c;">
+<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">{{digest_period}} snapshot: NIFTY 50 {{nifty50_change}}, plus what moved your holdings.&#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; </div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="mm-bg" bgcolor="#0d3b2c" style="border-collapse:collapse;background-color:#0d3b2c;"><tbody>
+<tr><td align="center" class="mm-outer" style="padding:32px 16px;"><!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]--><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="mm-container" align="center" style="border-collapse:collapse;width:600px;max-width:600px;"><tbody>
+<tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="mm-card" style="border-collapse:collapse;background-color:#ffffff;border-radius:16px;"><tbody>
+<tr><td height="0" style="height:0px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="center" style="padding:0 40px;padding-top:36px;padding-bottom:28px;">
+<table role="presentation" width="" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;"><tbody>
+<tr><td valign="middle" style="padding-right:10px;"><img class="mm-light-only" src="{{asset_base_url}}/mm-logo-mark.png" width="28" height="28" alt="" style="display:block;width:28px;height:28px;"><!--[if !mso]><!--><div class="mm-dark-only" style="display:none;max-height:0;overflow:hidden;mso-hide:all;"><img src="{{asset_base_url}}/mm-logo-mark-dark.png" width="28" height="28" alt="" style="display:block;width:28px;height:28px;"></div><!--<![endif]--></td><td valign="middle"><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:19px;line-height:28px;font-weight:800;color:#16191c;letter-spacing:-0.02em;">MarketMitra</p></td></tr>
+</tbody></table>
+</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<p class="mm-link" style="margin:0;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:16px;font-weight:800;color:#0b7e63;letter-spacing:0.08em;text-transform:uppercase;text-align:left;">{{digest_period}} digest &middot; {{digest_date}}</p>
+</td></tr><tr><td height="8" style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<h1 class="mm-h1 mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:34px;line-height:40px;font-weight:800;color:#16191c;letter-spacing:-0.02em;text-align:left;">Your market snapshot</h1>
+</td></tr><tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:24px;font-weight:400;color:#4b5057;text-align:left;">Hi {{first_name}}, here is how the market and your watchlist closed.</p>
+</td></tr><tr><td height="24" style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="mm-border" style="border-collapse:collapse;border-collapse:separate;border:1px solid #ede9de;border-left:0;border-radius:14px;"><tbody>
+<tr><td class="mm-half" width="50%" valign="top"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+<tr><td width="50%" valign="top" class="mm-border" style="padding:14px 12px 14px 16px;border-left:1px solid #ede9de;"><p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:16px;font-weight:700;color:#606870;letter-spacing:0.06em;text-transform:uppercase;">NIFTY 50</p><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:19px;line-height:26px;font-weight:800;color:#16191c;padding-top:4px;letter-spacing:-0.01em;">{{nifty50_value}}</p><p class="mm-{{nifty50_dir}}" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:700;color:{{nifty50_color}};padding-top:2px;">{{nifty50_arrow}} {{nifty50_change}}</p></td><td width="50%" valign="top" class="mm-border" style="padding:14px 12px 14px 16px;border-left:1px solid #ede9de;"><p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:16px;font-weight:700;color:#606870;letter-spacing:0.06em;text-transform:uppercase;">SENSEX</p><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:19px;line-height:26px;font-weight:800;color:#16191c;padding-top:4px;letter-spacing:-0.01em;">{{sensex_value}}</p><p class="mm-{{sensex_dir}}" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:700;color:{{sensex_color}};padding-top:2px;">{{sensex_arrow}} {{sensex_change}}</p></td></tr>
+</tbody></table></td><td class="mm-half" width="50%" valign="top"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+<tr><td width="50%" valign="top" class="mm-border" style="padding:14px 12px 14px 16px;border-left:1px solid #ede9de;"><p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:16px;font-weight:700;color:#606870;letter-spacing:0.06em;text-transform:uppercase;">NIFTY BANK</p><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:19px;line-height:26px;font-weight:800;color:#16191c;padding-top:4px;letter-spacing:-0.01em;">{{niftybank_value}}</p><p class="mm-{{niftybank_dir}}" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:700;color:{{niftybank_color}};padding-top:2px;">{{niftybank_arrow}} {{niftybank_change}}</p></td><td width="50%" valign="top" class="mm-border" style="padding:14px 12px 14px 16px;border-left:1px solid #ede9de;"><p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:16px;font-weight:700;color:#606870;letter-spacing:0.06em;text-transform:uppercase;">INDIA VIX</p><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:19px;line-height:26px;font-weight:800;color:#16191c;padding-top:4px;letter-spacing:-0.01em;">{{vix_value}}</p><p class="mm-{{vix_dir}}" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:700;color:{{vix_color}};padding-top:2px;">{{vix_arrow}} {{vix_change}}</p></td></tr>
+</tbody></table></td></tr>
+</tbody></table>
+</td></tr><tr><td height="32" style="height:32px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+<tr><td class="mm-panel" style="background-color:#f6f3ea;border-radius:14px;padding:20px 22px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+<tr><td valign="middle" width="36"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td width="26" height="26" align="center" style="width:26px;height:26px;border-radius:8px;background-color:#16191c;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:800;color:#7ee2a8;">M</td></tr></tbody></table></td><td valign="middle"><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:22px;font-weight:800;color:#16191c;">What moved your holdings</p></td></tr>
+</tbody></table><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;font-weight:400;color:#16191c;padding-top:12px;">{{mitra_summary}}</p><p style="margin:0;padding-top:12px;"><a href="{{mitra_url}}" class="mm-link" style="display:inline-block;padding:11px 0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;font-weight:700;color:#0b7e63;text-decoration:underline;text-underline-offset:3px;">Ask Mitra a follow-up</a><span class="mm-link" style="font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#0b7e63;"> &rsaquo;</span></p></td></tr>
+</tbody></table>
+</td></tr><tr><td height="32" style="height:32px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;line-height:24px;font-weight:800;color:#16191c;letter-spacing:-0.01em;">Top gainers on your watchlist</p>
+</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+{{#each gainers}}<tr><td class="mm-border" style="padding:12px 0;border-top:1px solid #ede9de;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+<tr><td valign="top"><p class="mm-text" style="margin:0;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;line-height:22px;font-weight:700;color:#16191c;">{{ticker}}</p><p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:400;color:#606870;">{{name}}</p></td><td valign="top" align="right" style="text-align:right;padding-left:12px;"><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;font-weight:700;color:#16191c;">{{price}}</p><p class="mm-gain" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:700;color:#0b8266;">&#9650; {{change_text}}</p></td></tr>
+</tbody></table></td></tr>{{/each}}
+</tbody></table>
+</td></tr><tr><td height="24" style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;line-height:24px;font-weight:800;color:#16191c;letter-spacing:-0.01em;">Top losers on your watchlist</p>
+</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+{{#each losers}}<tr><td class="mm-border" style="padding:12px 0;border-top:1px solid #ede9de;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+<tr><td valign="top"><p class="mm-text" style="margin:0;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;line-height:22px;font-weight:700;color:#16191c;">{{ticker}}</p><p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:400;color:#606870;">{{name}}</p></td><td valign="top" align="right" style="text-align:right;padding-left:12px;"><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;font-weight:700;color:#16191c;">{{price}}</p><p class="mm-loss" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:700;color:#ba533c;">&#9660; {{change_text}}</p></td></tr>
+</tbody></table></td></tr>{{/each}}
+</tbody></table>
+</td></tr><tr><td height="24" style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>{{#if ipos}}<tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;line-height:24px;font-weight:800;color:#16191c;letter-spacing:-0.01em;">Upcoming IPOs</p>
+</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+{{#each ipos}}<tr><td class="mm-border" style="padding:12px 0;border-top:1px solid #ede9de;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"  style="border-collapse:collapse;"><tbody>
+<tr><td valign="top"><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;font-weight:700;color:#16191c;">{{name}}</p><p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:400;color:#606870;">{{dates}}</p></td><td valign="top" align="right" style="text-align:right;padding-left:12px;"><p class="mm-text" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;font-weight:700;color:#16191c;">{{price_band}}</p><p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:700;color:#606870;">{{ipo_type}}</p></td></tr>
+</tbody></table></td></tr>{{/each}}
+</tbody></table>
+</td></tr><tr><td height="24" style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>{{/if}}<tr><td height="8" style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="center" style="padding:0 40px;">
+<table role="presentation" width="" cellpadding="0" cellspacing="0" border="0" align="center" class="mm-btn" style="border-collapse:collapse;"><tbody>
+<tr><td align="center" class="mm-btn-td" bgcolor="#16191c" style="border-radius:999px;background-color:#16191c;"><!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{dashboard_url}}" style="height:50px;v-text-anchor:middle;width:238px;" arcsize="50%" fillcolor="#16191c" stroke="f" ><w:anchorlock/><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Open your dashboard</center></v:roundrect><![endif]--><!--[if !mso]><!--><a href="{{dashboard_url}}" class="mm-btn-a" style="display:inline-block;padding:14px 30px;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;background-color:#16191c;border:1.5px solid #16191c;text-align:center;mso-hide:all;">Open your dashboard</a><!--<![endif]--></td></tr>
+</tbody></table>
+</td></tr><tr><td height="24" style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="left" style="padding:0 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="mm-rule" height="1" style="height:1px;line-height:1px;font-size:0;background-color:#ede9de;">&nbsp;</td></tr></tbody></table>
+</td></tr><tr><td height="18" style="height:18px;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td class="mm-pad" align="center" style="padding:0 40px;">
+<p class="mm-muted" style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;font-weight:400;color:#606870;text-align:center;">Index values and prices are as of {{data_as_of}} and may be delayed. This summary is for information only.</p>
+</td></tr><tr><td height="40" style="height:40px;font-size:0;line-height:0;">&nbsp;</td></tr>
+</tbody></table></td></tr><tr><td class="mm-pad" align="center" style="padding:28px 40px 8px 40px;"><p style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:22px;font-weight:400;color:#c9ddd3;text-align:center;">MarketMitra provides data and tools for informational and educational purposes only. It is not investment advice.</p><p style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:22px;font-weight:400;color:#c9ddd3;text-align:center;padding-top:2px;"><a href="{{preferences_url}}" style="display:inline-block;padding:11px 2px;color:#ffffff;text-decoration:underline;font-weight:700;">Email preferences</a><span style="color:#c9ddd3;">&nbsp;&middot;&nbsp;</span><a href="{{unsubscribe_url}}" style="display:inline-block;padding:11px 2px;color:#ffffff;text-decoration:underline;font-weight:700;">Unsubscribe</a><span style="color:#c9ddd3;">&nbsp;&middot;&nbsp;</span><a href="https://github.com/AnkushGitRepo/marketmitra" style="display:inline-block;padding:11px 2px;color:#ffffff;text-decoration:underline;font-weight:700;">Open source repo</a><span style="color:#c9ddd3;">&nbsp;&middot;&nbsp;</span><a href="{{privacy_url}}" style="display:inline-block;padding:11px 2px;color:#ffffff;text-decoration:underline;font-weight:700;">Privacy</a></p><p style="margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:22px;font-weight:400;color:#c9ddd3;text-align:center;padding-top:2px;">{{contact_line}}</p></td></tr>
+</tbody></table><!--[if mso]></td></tr></table><![endif]--></td></tr>
+</tbody></table>
+</body>
+</html>

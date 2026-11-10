@@ -1,8 +1,8 @@
 import { isHosted } from '@/lib/deployment-mode';
+import { buildWelcomeEmail } from '@/emails/emails';
 import { isEmailConfigured, sendHtmlEmail } from '@/lib/email/send';
 import { runWelcome } from './sendOnce';
 import { mongoWelcomeStore } from './store';
-import { renderWelcomeEmail } from './template';
 
 // Per warm instance: once a user has been dealt with (sent, or not ours to send) don't touch the database
 // again for them on every page load.
@@ -31,7 +31,7 @@ export async function maybeSendWelcome(userId: string | null): Promise<void> {
     send: async () => {
       const recipient = await lookupRecipient(userId);
       if (!recipient) return false;
-      const mail = renderWelcomeEmail({ name: recipient.name, appUrl: process.env.NEXT_PUBLIC_APP_URL || '' });
+      const mail = buildWelcomeEmail({ firstName: recipient.name, appUrl: process.env.NEXT_PUBLIC_APP_URL || '', contactLine: process.env.EMAIL_CONTACT_LINE });
       return sendHtmlEmail({ to: recipient.email, ...mail });
     },
   });

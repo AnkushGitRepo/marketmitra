@@ -938,3 +938,8 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - New first Settings section: Manage (Clerk profile dialog), Sign out, accounts on this device (switch / add / per-account sign out / sign out of all); self-host shows a note. Read-only look at the Clerk dashboard showed **Multi-session handling OFF** and **Authenticator app / Backup codes OFF**, so switching and 2FA need the maintainer to enable them there (not done by me). Verified: self-host renders the section (HTTP check), logic unit-tested, types/lint/build. **Not verified:** the hosted Clerk flows (I cannot sign in): sign out, Manage dialog, add/switch accounts.
 
+## 2026-11-10 — Supplied email design system adopted (#59, [ADR 0040](./decisions/0040-email-design-system.md))
+
+- Replaced my rejected welcome design with the maintainer's `marketmitra-emails.zip` system: 8 templates + assets in `src/emails/` and `public/email/`, Handlebars renderer, typed builders, auto plain text, admin gallery `/system/emails`. Welcome now uses it. Closed PR #58/#57 (superseded). 69 tests incl. strict variable coverage and an assets cross-check. **Not done:** alert emails with live data, unsubscribe/preferences, digest/summary/what's-new/promo senders, Clerk's verify/reset (all listed in ADR 0040). **Not verified:** real mail clients/dark mode (only headless Chrome, like the design's own check); I sent no email.
+- Housekeeping: `git pull` was broken by three stray `refs/heads/… 2` duplicate ref files (the known IDE duplicate problem, tips of already-merged branches); removed them. Also removed 158 gitignored `* 2.*` duplicates under `src/` that broke `tsc`.
+
