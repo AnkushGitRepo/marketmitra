@@ -139,7 +139,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
         <div className={styles.error} role="alert">
           <span>
             {failure.text}{' '}
-            {failure.needsKey && <Link href="/dashboard/settings">Open Settings</Link>}
+            {failure.needsKey && <Link href="/settings">Open Settings</Link>}
           </span>
           {!failure.needsKey && (
             <button type="button" className={styles.retry} onClick={() => void regenerate()}>

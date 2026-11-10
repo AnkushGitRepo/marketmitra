@@ -27,7 +27,7 @@ export function ActivityCard({ items, title = 'Recent activity' }: ActivityCardP
     <div className={styles.card}>
       <div className={styles.head}>
         <p className={styles.title}>{title}</p>
-        <Link href="/dashboard/alerts" className={styles.viewAll}>
+        <Link href="/alerts" className={styles.viewAll}>
           View all alerts →
         </Link>
       </div>

@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation';
 import styles from './advisor.module.css';
 
 const LINKS = [
-  { href: '/dashboard/advisor', label: 'This month' },
-  { href: '/dashboard/advisor/screen', label: 'Screen' },
-  { href: '/dashboard/advisor/research', label: 'Research' },
-  { href: '/dashboard/advisor/journal', label: 'Journal' },
-  { href: '/dashboard/advisor/performance', label: 'Performance' },
-  { href: '/dashboard/advisor/policy', label: 'Policy' },
+  { href: '/advisor', label: 'This month' },
+  { href: '/advisor/screen', label: 'Screen' },
+  { href: '/advisor/research', label: 'Research' },
+  { href: '/advisor/journal', label: 'Journal' },
+  { href: '/advisor/performance', label: 'Performance' },
+  { href: '/advisor/policy', label: 'Policy' },
 ] as const;
 
 export function AdvisorSubNav() {

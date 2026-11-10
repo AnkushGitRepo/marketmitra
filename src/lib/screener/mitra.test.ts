@@ -17,12 +17,12 @@ describe('screenerUrl', () => {
       offset: 40,
     });
     expect(url).toBe(
-      '/dashboard/screener?sales_growth_3y_cagr_min=15&roe_min=15&sort_by=profit_growth_3y_cagr',
+      '/screener?sales_growth_3y_cagr_min=15&roe_min=15&sort_by=profit_growth_3y_cagr',
     );
   });
 
   it('still carries a sort for an empty screen so the page shows the whole market', () => {
-    expect(screenerUrl({})).toBe('/dashboard/screener?sort_by=market_cap');
+    expect(screenerUrl({})).toBe('/screener?sort_by=market_cap');
   });
 
   it('round-trips through the page parser', async () => {

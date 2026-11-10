@@ -135,7 +135,7 @@ export function InsightCard({ label, endpoint, body, initial, hasKey }: InsightC
           <span className={styles.heroLabel}>{label}</span>
           {!hasKey || error === 'no_ai_key' ? (
             <p className={styles.empty} style={{ textAlign: 'center' }}>
-              <Link href="/dashboard/settings" className={styles.link}>
+              <Link href="/settings" className={styles.link}>
                 Add your AI provider key
               </Link>{' '}
               {hasKey ? 'in Settings to generate this.' : 'to generate insights. Nothing is charged by MarketMitra.'}

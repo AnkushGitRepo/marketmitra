@@ -1,7 +1,7 @@
 // Shared by Mitra's `run_screener` (data) and `open_screener` (navigation +
 // data) tools (ADR 0034): runs a screen and shapes the result for a language
 // model — compact rows, the true match count, and an honest coverage note —
-// plus the deep link that opens the same screen on /dashboard/screener.
+// plus the deep link that opens the same screen on /screener.
 
 import { getScreenerStats, runScreenerPage } from '@/lib/dashboard/screener';
 import {
@@ -31,7 +31,7 @@ export function usesFundamentals(filters: ScreenerFilters): boolean {
   );
 }
 
-/** `/dashboard/screener?...` showing exactly these filters. Paging is dropped
+/** `/screener?...` showing exactly these filters. Paging is dropped
  * (the page starts at 1); an empty filter set still carries a sort so the page
  * shows the whole market instead of its default preset. */
 export function screenerUrl(filters: ScreenerFilters): string {
@@ -39,7 +39,7 @@ export function screenerUrl(filters: ScreenerFilters): string {
   void _limit;
   void _offset;
   const query = buildScreenerQuery(Object.keys(rest).length > 0 ? rest : { sort_by: 'market_cap' });
-  return `/dashboard/screener?${query}`;
+  return `/screener?${query}`;
 }
 
 export interface CompactScreenRow {

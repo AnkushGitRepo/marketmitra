@@ -9,10 +9,10 @@ export function MobileTabBar() {
   const router = useRouter();
 
   const isDash = pathname === '/dashboard';
-  const isPort = pathname.startsWith('/dashboard/portfolio');
-  const isMarkets = pathname.startsWith('/dashboard/markets') || pathname.startsWith('/dashboard/stock');
-  const isAlerts = pathname.startsWith('/dashboard/alerts');
-  const isNews = pathname.startsWith('/dashboard/news');
+  const isPort = pathname.startsWith('/portfolio');
+  const isMarkets = pathname.startsWith('/markets') || pathname.startsWith('/stock');
+  const isAlerts = pathname.startsWith('/alerts');
+  const isNews = pathname.startsWith('/news');
 
   const tabClass = (active: boolean) => `${styles.tabItem} ${active ? styles.tabItemActive : ''}`;
 
@@ -22,19 +22,19 @@ export function MobileTabBar() {
         <DashboardIcon />
         <span className={styles.tabLabel}>Dashboard</span>
       </button>
-      <button className={tabClass(isPort)} onClick={() => router.push('/dashboard/portfolio')} type="button">
+      <button className={tabClass(isPort)} onClick={() => router.push('/portfolio')} type="button">
         <PortfolioIcon />
         <span className={styles.tabLabel}>Portfolio</span>
       </button>
-      <button className={tabClass(isMarkets)} onClick={() => router.push('/dashboard/markets')} type="button">
+      <button className={tabClass(isMarkets)} onClick={() => router.push('/markets')} type="button">
         <MarketsIcon />
         <span className={styles.tabLabel}>Markets</span>
       </button>
-      <button className={tabClass(isAlerts)} onClick={() => router.push('/dashboard/alerts')} type="button">
+      <button className={tabClass(isAlerts)} onClick={() => router.push('/alerts')} type="button">
         <AlertsIcon />
         <span className={styles.tabLabel}>Alerts</span>
       </button>
-      <button className={tabClass(isNews)} onClick={() => router.push('/dashboard/news')} type="button">
+      <button className={tabClass(isNews)} onClick={() => router.push('/news')} type="button">
         <NewsIcon />
         <span className={styles.tabLabel}>News</span>
       </button>

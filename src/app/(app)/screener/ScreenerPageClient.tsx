@@ -32,7 +32,7 @@ interface ScreenerPageClientProps {
   fundamentalsReady: boolean;
 }
 
-const PAGE_PATH = '/dashboard/screener';
+const PAGE_PATH = '/screener';
 // What "Clear all" returns to: every company, biggest first.
 const CLEARED: ScreenerFilters = { sort_by: 'market_cap' };
 

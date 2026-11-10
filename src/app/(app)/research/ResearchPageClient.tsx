@@ -78,7 +78,7 @@ export function ResearchPageClient() {
         A longer, structured read on a company, a theme, your whole portfolio, or a
         head-to-head — synthesised from fundamentals, filings, and indexed news. Neutral,
         never a buy/sell call. Not saved: generate a fresh one whenever, or paste it into a{' '}
-        <Link href="/dashboard/notes">note</Link> to keep it.
+        <Link href="/notes">note</Link> to keep it.
       </p>
 
       <div className={styles.card}>
@@ -168,7 +168,7 @@ export function ResearchPageClient() {
 
           {noKey && (
             <p className={styles.hint}>
-              Mitra needs your AI provider key. <Link href="/dashboard/settings">Add it in Settings</Link> — it
+              Mitra needs your AI provider key. <Link href="/settings">Add it in Settings</Link> — it
               stays on this deployment and nothing is charged by MarketMitra.
             </p>
           )}

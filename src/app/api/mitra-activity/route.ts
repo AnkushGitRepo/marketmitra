@@ -5,7 +5,7 @@ import { listMitraActions } from '@/lib/mitra/activityLog';
 // Read-only history of every alert Mitra has created or changed on its
 // own — the guardrail hook (src/lib/alerts/guardrails.ts) and its own
 // chat tools (src/lib/ai/chatTools.ts) — each with a required reason
-// (ADR 0030 §4). Backs /dashboard/mitra-activity.
+// (ADR 0030 §4). Backs /mitra-activity.
 
 export async function GET() {
   const userId = await getCurrentUserId();

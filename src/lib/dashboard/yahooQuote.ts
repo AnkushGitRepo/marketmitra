@@ -36,7 +36,7 @@ function toYahooSymbol(symbol: string): string {
 }
 
 /** The 4 index names the app tracks (dashboard/markets cards, search,
- * `/dashboard/index/[name]`) — the display name, not the Yahoo ticker. */
+ * `/index/[name]`) — the display name, not the Yahoo ticker. */
 export const TRACKED_INDEX_NAMES = Object.keys(TRACKED_INDICES);
 
 export function isTrackedIndexName(name: string): boolean {

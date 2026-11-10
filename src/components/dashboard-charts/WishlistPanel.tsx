@@ -276,7 +276,7 @@ export function WishlistPanel({ wishlists, quotes }: WishlistPanelProps) {
                       <button
                         type="button"
                         className={styles.rowMain}
-                        onClick={() => router.push(`/dashboard/stock/${symbol.toLowerCase()}`)}
+                        onClick={() => router.push(`/stock/${symbol.toLowerCase()}`)}
                       >
                         <div className={styles.avatar}>
                           <CompanyLogo symbol={symbol} size={20} />

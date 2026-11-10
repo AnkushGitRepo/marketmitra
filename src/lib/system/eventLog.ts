@@ -1,6 +1,6 @@
 // System event log (ADR 0029) — a small, best-effort record of operational
 // events: cron job runs today, more sources later if they earn it. Backs
-// the "Logs" feed on /dashboard/system. Deliberately not a general-purpose
+// the "Logs" feed on /system. Deliberately not a general-purpose
 // app log: writing here must never be able to break the caller (see
 // `logEvent`'s catch-and-drop), and the collection self-prunes via a TTL
 // index so it can't grow unbounded.

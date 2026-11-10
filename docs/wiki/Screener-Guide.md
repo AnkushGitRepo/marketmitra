@@ -1,6 +1,6 @@
 # Screener Guide
 
-The screener filters the NSE universe (about 2,600 main-board companies) by size, valuation, profitability, leverage and growth. Open it at `/dashboard/screener`, or ask [Mitra](Mitra-Assistant) to build a screen for you.
+The screener filters the NSE universe (about 2,600 main-board companies) by size, valuation, profitability, leverage and growth. Open it at `/screener`, or ask [Mitra](Mitra-Assistant) to build a screen for you.
 
 ## Filtering
 

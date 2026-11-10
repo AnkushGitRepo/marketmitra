@@ -23,7 +23,7 @@ export function IpoOpenCard({ openIpos }: { openIpos: Ipo[] }) {
     <div className={styles.card}>
       <div className={styles.head}>
         <p className={styles.label}>IPOs open now</p>
-        <Link href="/dashboard/ipos" className={styles.link}>
+        <Link href="/ipos" className={styles.link}>
           All IPOs →
         </Link>
       </div>
@@ -34,7 +34,7 @@ export function IpoOpenCard({ openIpos }: { openIpos: Ipo[] }) {
         <ul className={styles.list}>
           {openIpos.slice(0, 5).map((ipo) => (
             <li key={ipo.slug} className={styles.row}>
-              <Link href="/dashboard/ipos" className={styles.name}>
+              <Link href="/ipos" className={styles.name}>
                 {ipo.name}
                 <span className={styles.tag}>{ipo.category === 'sme' ? 'SME' : 'MB'}</span>
               </Link>

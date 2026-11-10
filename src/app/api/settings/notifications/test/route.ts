@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     kind: 'system' as const,
     title: 'Test notification',
     body: 'If you can see this, MarketMitra can reach you on this channel.',
-    href: '/dashboard/alerts',
+    href: '/alerts',
   };
 
   const { channel } = parsed.data;

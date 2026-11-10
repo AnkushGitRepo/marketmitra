@@ -6,7 +6,7 @@ Every feature in MarketMitra ships with a documented API endpoint next to its UI
 
 | Resource | What it is |
 | --- | --- |
-| **`/dashboard/api`** | An in-app API explorer: endpoints grouped by tag, parameter tables, example responses, cURL / JavaScript / Python samples, and a "Try it out" form that calls the deployment with your session. |
+| **`/api-docs`** | An in-app API explorer: endpoints grouped by tag, parameter tables, example responses, cURL / JavaScript / Python samples, and a "Try it out" form that calls the deployment with your session. |
 | **`/openapi.json`** | The machine-readable OpenAPI spec. A test checks it against the real route handlers, so an undocumented route fails CI. |
 | **[`docs/api-surface.md`](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/api-surface.md)** | The written endpoint reference. |
 | **`/llms.txt`** | A pointer file that tells an AI agent where everything is. |

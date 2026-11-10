@@ -44,9 +44,9 @@ const SUGGESTIONS: Record<Section, string[]> = {
 export type Section = 'dashboard' | 'portfolio' | 'markets' | 'stock';
 
 export function sectionFromPathname(pathname: string): Section {
-  if (pathname.startsWith('/dashboard/portfolio')) return 'portfolio';
-  if (pathname.startsWith('/dashboard/stock')) return 'stock';
-  if (pathname.startsWith('/dashboard/markets')) return 'markets';
+  if (pathname.startsWith('/portfolio')) return 'portfolio';
+  if (pathname.startsWith('/stock')) return 'stock';
+  if (pathname.startsWith('/markets')) return 'markets';
   return 'dashboard';
 }
 
@@ -58,8 +58,8 @@ type KeyState = 'unknown' | 'present' | 'absent';
 // tool output directly, so the client's own routing intent is explicit.
 const NAVIGATION_ROUTES: Record<string, string> = {
   'tool-navigate_to_dashboard': '/dashboard',
-  'tool-navigate_to_portfolio': '/dashboard/portfolio',
-  'tool-navigate_to_markets': '/dashboard/markets',
+  'tool-navigate_to_portfolio': '/portfolio',
+  'tool-navigate_to_markets': '/markets',
 };
 
 const BENTO_TILES = Array.from({ length: 9 });
@@ -242,7 +242,7 @@ function AiPanelBody({ section, onClose }: { section: Section; onClose: () => vo
             <span className={styles.mitraName}>Mitra</span>
           </div>
           <div className={styles.headerActions}>
-            <Link href="/dashboard/mitra" className={styles.clearButton} onClick={onClose}>
+            <Link href="/mitra" className={styles.clearButton} onClick={onClose}>
               Open full chat
             </Link>
             {messages.length > 0 && (
@@ -318,7 +318,7 @@ function AiPanelBody({ section, onClose }: { section: Section; onClose: () => vo
 
         {keyState === 'absent' && (
           <p className={styles.keyHint}>
-            Mitra needs your AI provider key. <Link href="/dashboard/settings">Add it in Settings</Link> — it
+            Mitra needs your AI provider key. <Link href="/settings">Add it in Settings</Link> — it
             stays on this deployment and nothing is charged by MarketMitra.
           </p>
         )}

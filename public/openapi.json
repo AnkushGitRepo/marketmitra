@@ -2660,7 +2660,7 @@
           "System"
         ],
         "summary": "Live system health snapshot",
-        "description": "Public. Checks MongoDB, the fundamentals API, the MCP tool registry, the Upstash rate limiter, and Clerk auth configuration in real time (no persisted history), plus the most recent event-log entry per cron job. Backs both the public /status page and the admin /dashboard/system page.",
+        "description": "Public. Checks MongoDB, the fundamentals API, the MCP tool registry, the Upstash rate limiter, and Clerk auth configuration in real time (no persisted history), plus the most recent event-log entry per cron job. Backs both the public /status page and the admin /system page.",
         "responses": {
           "200": {
             "description": "{ data: { checkedAt, overall, components[], crons[] } }"

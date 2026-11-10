@@ -896,3 +896,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   accepted in ADR 0036. **Not done:** the maintainer's wording was "all API endpoints"; writes/settings were
   deliberately left out (see ADR) — say if you want a confirmation-gated write path.
 
+## 2026-11-10 — App pages moved to top-level routes (#39, [ADR 0037](./decisions/0037-top-level-app-routes.md))
+
+- `/dashboard/<page>` → `/<page>` (home stays `/dashboard`, API reference → `/api-docs`) via a `(app)` route group, a route registry, 308 redirects for old URLs and the proxy matcher. Entries above this one still use the old URLs.
+

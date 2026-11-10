@@ -209,7 +209,7 @@ function buildIpoWatchPayload(hit: IpoWatchHit): NotificationPayload {
     kind: 'ipo',
     title: line[kind].replace(/\.$/, ''),
     body: `${line[kind]}${gmpNote}`,
-    href: '/dashboard/ipos',
+    href: '/ipos',
     meta: { ipoSlug: ipo.slug, watchKind: kind },
   };
 }
@@ -225,7 +225,7 @@ function buildIpoAlertPayload(params: IpoAlertParams, ipo: Ipo | undefined): Not
     kind: 'ipo',
     title: `${name} — ${what}`,
     body: `Your IPO alert for ${name}: ${what}${gmpNote}.`,
-    href: '/dashboard/ipos',
+    href: '/ipos',
     meta: { ipoSlug: params.ipoSlug, trigger: params.trigger },
   };
 }
@@ -340,7 +340,7 @@ function evaluateOne(
 
 function buildPayload(alert: Alert, result: EvalResult): NotificationPayload {
   const meta = { alertId: alert.id, alertType: alert.type, observedValue: result.observedValue, source: alert.source };
-  const href = alert.symbol ? `/dashboard/stock/${alert.symbol}` : '/dashboard/portfolio';
+  const href = alert.symbol ? `/stock/${alert.symbol}` : '/portfolio';
   const sym = alert.symbol ?? '';
 
   switch (alert.type) {

@@ -72,7 +72,7 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
 
           <div className={styles.actions}>
             <NotificationBell />
-            <Link href="/dashboard/settings" title="Settings" className={styles.iconButton}>
+            <Link href="/settings" title="Settings" className={styles.iconButton}>
               <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <circle cx="10" cy="10" r="2.6" stroke="currentColor" strokeWidth="1.6" />
                 <path

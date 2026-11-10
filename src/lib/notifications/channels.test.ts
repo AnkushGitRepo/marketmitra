@@ -23,7 +23,7 @@ const payload: NotificationPayload = {
   kind: 'alert',
   title: 'RELIANCE crossed ₹2,500',
   body: 'Your "above ₹2,500" alert fired. Last price ₹2,512.',
-  href: '/dashboard/stock/RELIANCE',
+  href: '/stock/RELIANCE',
 };
 
 beforeEach(() => {
@@ -54,7 +54,7 @@ describe('sendEmail', () => {
     expect(arg.to).toBe('u@example.com');
     expect(arg.subject).toBe('[MarketMitra] RELIANCE crossed ₹2,500');
     expect(arg.from).toContain('onboarding@resend.dev'); // default when ALERT_EMAIL_FROM unset
-    expect(arg.text).toContain('/dashboard/stock/RELIANCE');
+    expect(arg.text).toContain('/stock/RELIANCE');
     expect(arg.text).toContain('Not investment advice');
     expect(arg.html).toContain('Open MarketMitra');
   });
@@ -161,7 +161,7 @@ describe('sendSlack', () => {
     const body = sentBody();
     expect(body.text).toContain(payload.title);
     expect(body.text).toContain(payload.body);
-    expect(body.text).toContain('/dashboard/stock/RELIANCE');
+    expect(body.text).toContain('/stock/RELIANCE');
   });
 
   it('pins Slack to hooks.slack.com when hosted', async () => {

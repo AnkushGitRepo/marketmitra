@@ -3,7 +3,7 @@
 // Mitra acting on its own judgment from chat — is recorded here with a
 // required, human-readable `reason`. This is what makes "full autonomy"
 // (the user's own choice for this feature) accountable rather than
-// invisible: /dashboard/mitra-activity reads this collection so nothing
+// invisible: /mitra-activity reads this collection so nothing
 // Mitra does to an alert happens without a paper trail the user can
 // inspect, and undo, at any time.
 //
@@ -97,7 +97,7 @@ export async function logMitraAction(input: LogMitraActionInput): Promise<MitraA
   return toMitraAction(doc);
 }
 
-/** Most recent actions first, for /dashboard/mitra-activity. */
+/** Most recent actions first, for /mitra-activity. */
 export async function listMitraActions(userId: string, limit = 200): Promise<MitraAction[]> {
   const col = await collection();
   const docs = await col

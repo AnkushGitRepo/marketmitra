@@ -51,7 +51,7 @@ export async function runKillReview(asOf: string, userId?: string): Promise<Revi
           kind: 'alert',
           title: `Thesis check: ${entry.symbol}`,
           body: `A kill criterion you set for ${entry.name} has fired — ${rule.description}. Observed: ${check.observed.map((v) => (v === null ? 'n/a' : Number(v.toFixed(2)))).join(', ')}. Review your thesis; nothing has been sold.`,
-          href: '/dashboard/advisor/journal',
+          href: '/advisor/journal',
           meta: { advisor: true, journalId: entry.id, symbol: entry.symbol, key },
         },
         await resolveChannels(entry.userId).catch(() => ({})),

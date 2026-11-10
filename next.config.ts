@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { legacyDashboardRedirects } from './src/lib/routes';
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -53,6 +54,10 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // Don't advertise the framework.
   poweredByHeader: false,
+  // App pages moved from /dashboard/<page> to /<page>; keep old links (alert emails, bookmarks) working.
+  async redirects() {
+    return legacyDashboardRedirects();
+  },
   async headers() {
     return [{ source: '/(.*)', headers: SECURITY_HEADERS }];
   },
