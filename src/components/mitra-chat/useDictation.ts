@@ -84,7 +84,7 @@ async function detectCurrentBrowser(): Promise<Browser> {
  * browser-specific steps, and dictation starts by itself once the user allows it.
  * `supported` is false on the server and in browsers without the API (e.g. Firefox).
  */
-export function useDictation(onFinalText: (text: string) => void) {
+export function useDictation(onFinalText: (text: string) => void, language = 'auto') {
   const supported = useSyncExternalStore(noopSubscribe, () => getCtor() !== null, () => false);
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +100,7 @@ export function useDictation(onFinalText: (text: string) => void) {
     const Ctor = getCtor();
     if (!Ctor) return;
     const rec = new Ctor();
-    rec.lang = navigator.language || 'en-IN';
+    rec.lang = language === 'auto' ? navigator.language || 'en-IN' : language;
     rec.continuous = true;
     rec.interimResults = false;
     rec.onresult = (e) => {
@@ -117,7 +117,7 @@ export function useDictation(onFinalText: (text: string) => void) {
     recognition.current = rec;
     rec.start();
     setListening(true);
-  }, []);
+  }, [language]);
 
   const start = useCallback(async () => {
     if (!getCtor()) return;

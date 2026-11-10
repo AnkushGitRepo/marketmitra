@@ -25,7 +25,7 @@ function navTarget(part: Part): string | null {
   return typeof to === 'string' && to.startsWith('/dashboard') ? to : null;
 }
 
-function PartView({ part, role }: { part: Part; role: UIMessage['role'] }) {
+function PartView({ part, role, showToolActivity }: { part: Part; role: UIMessage['role']; showToolActivity: boolean }) {
   if (part.type === 'text') {
     return role === 'user' ? (
       <p className={styles.userText}>{part.text}</p>
@@ -35,6 +35,7 @@ function PartView({ part, role }: { part: Part; role: UIMessage['role'] }) {
   }
   if (part.type === 'file') return <AttachmentView url={part.url} mediaType={part.mediaType} filename={part.filename} />;
   if (part.type.startsWith('tool-')) {
+    if (!showToolActivity) return null;
     const target = navTarget(part);
     return (
       <span className={styles.toolChip}>
@@ -51,7 +52,7 @@ function PartView({ part, role }: { part: Part; role: UIMessage['role'] }) {
   return null;
 }
 
-export function MessageView({ message, streaming }: { message: UIMessage; streaming: boolean }) {
+export function MessageView({ message, streaming, showToolActivity = true }: { message: UIMessage; streaming: boolean; showToolActivity?: boolean }) {
   const isUser = message.role === 'user';
   const files = message.parts.filter((p) => p.type === 'file');
   const rest = message.parts.filter((p) => p.type !== 'file');
@@ -68,12 +69,12 @@ export function MessageView({ message, streaming }: { message: UIMessage; stream
         {files.length > 0 && (
           <div className={styles.attachments}>
             {files.map((p, i) => (
-              <PartView key={i} part={p} role={message.role} />
+              <PartView key={i} part={p} role={message.role} showToolActivity={showToolActivity} />
             ))}
           </div>
         )}
         {rest.map((p, i) => (
-          <PartView key={i} part={p} role={message.role} />
+          <PartView key={i} part={p} role={message.role} showToolActivity={showToolActivity} />
         ))}
         {!isUser && streaming && !hasText && <span className={styles.typing} aria-label="Mitra is thinking" />}
       </div>

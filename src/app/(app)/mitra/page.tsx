@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { MitraChatClient } from '@/components/mitra-chat/MitraChatClient';
+import { getPreferences } from '@/lib/preferences/store';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -16,9 +17,10 @@ export default async function MitraChatPage() {
       </div>
     );
   }
+  const prefs = await getPreferences(userId);
   return (
     <Suspense fallback={null}>
-      <MitraChatClient />
+      <MitraChatClient chatPrefs={prefs.chat} />
     </Suspense>
   );
 }

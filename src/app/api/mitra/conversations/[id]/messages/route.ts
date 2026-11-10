@@ -7,6 +7,7 @@ import { streamChat } from '@/lib/ai/generate';
 import { MITRA_WORKSPACE_SYSTEM } from '@/lib/ai/prompts';
 import { buildChatTools } from '@/lib/ai/chatTools';
 import { PLATFORM_CATALOG_TEXT, buildPlatformApiTools } from '@/lib/ai/platformApiTools';
+import { getPreferences } from '@/lib/preferences/store';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
 import { prepareAdvisorChat } from '@/lib/advisor/behaviour/chat';
 import { logEvent } from '@/lib/system/eventLog';
@@ -117,10 +118,11 @@ async function handleMessage(request: Request, ctx?: unknown) {
   const hasAttachments = all.slice(keepFrom).some((m) => m.parts.some((p) => p.type === 'file'));
   const modelMessages = await convertToModelMessages(prepared);
 
+  const prefs = await getPreferences(userId);
   const context = await buildPortfolioContext(userId).catch(() => '');
   const system = [
     MITRA_WORKSPACE_SYSTEM,
-    `--- PLATFORM API (call_platform_api, read-only GET) ---\n${PLATFORM_CATALOG_TEXT}`,
+    prefs.chat.platformAccess ? `--- PLATFORM API (call_platform_api, read-only GET) ---\n${PLATFORM_CATALOG_TEXT}` : '',
     `--- PORTFOLIO CONTEXT ---\n${context}`,
     summary ? `--- EARLIER IN THIS CONVERSATION (summary) ---\n${summary}` : '',
     advisor ? advisor.systemAddendum : '',
@@ -130,7 +132,8 @@ async function handleMessage(request: Request, ctx?: unknown) {
   const baseTools = Object.fromEntries(
     Object.entries(buildChatTools(userId)).filter(([name]) => !(hasAttachments && (WRITE_TOOLS as readonly string[]).includes(name)))
   );
-  const platformTools = buildPlatformApiTools({ origin: new URL(request.url).origin, cookie: request.headers.get('cookie') });
+  // Settings > Mitra chat can switch platform data access off; the tool is then not offered at all.
+  const platformTools = !prefs.chat.platformAccess ? {} : buildPlatformApiTools({ origin: new URL(request.url).origin, cookie: request.headers.get('cookie') });
   const tools = advisor
     ? advisor.advisorToolsOnly
       ? advisor.tools

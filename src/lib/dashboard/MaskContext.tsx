@@ -9,8 +9,8 @@ interface MaskContextValue {
 
 const MaskContext = createContext<MaskContextValue | null>(null);
 
-export function MaskProvider({ children }: { children: ReactNode }) {
-  const [masked, setMasked] = useState(false);
+export function MaskProvider({ children, initialMasked = false }: { children: ReactNode; initialMasked?: boolean }) {
+  const [masked, setMasked] = useState(initialMasked);
   return (
     <MaskContext.Provider value={{ masked, toggleMask: () => setMasked((m) => !m) }}>
       {children}

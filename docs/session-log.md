@@ -904,3 +904,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - Root cause of the dead-end "microphone blocked" error: `Permissions-Policy: microphone=()` in `next.config.ts`. Now `microphone=(self)`, with a permission-aware flow and a browser-specific help dialog (auto-resumes on allow). Verified in Chromium: header, `prompt` state, simulated-denied dialog, simulated-allow auto-start. **Not verified:** a real mic and real speech in Chrome/Safari/Edge; Brave's actual behaviour; macOS/Windows OS-level blocks.
 
+## 2026-11-10 — Advanced Settings page (#37, [ADR 0038](./decisions/0038-settings-and-preferences.md))
+
+- `/settings` rebuilt: AI & API keys (existing encrypted form), Mitra chat prefs, display, notifications & alerts (existing cards reused), shortcuts, data & privacy (export JSON, delete all chats, clear widget history), about (admin link to System). Preferences stored in `userPreferences`, validated and defaulted by one schema; applied in the chat route, app layout and Mitra page. Verified live: preferences GET/PATCH (bad patches → 422), export contents (no `userId`, no secrets), platform-access off removes the tool (Mitra then says it cannot fetch). **Not verified:** UI toggles end to end in the browser (hide-values default, shortcuts off, send-key, tool chips, dictation language are wired and type-checked but not exercised), delete-all and widget-clear buttons, hosted mode, mobile.
+

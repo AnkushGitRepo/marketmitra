@@ -12,7 +12,7 @@ import { MaskProvider, useMask } from '@/lib/dashboard/MaskContext';
 import { PageContextProvider } from '@/lib/dashboard/PageContext';
 import styles from './AppShell.module.css';
 
-function AppShellInner({ children, advisorEnabled }: { children: ReactNode; advisorEnabled: boolean }) {
+function AppShellInner({ children, advisorEnabled, shortcutsEnabled }: { children: ReactNode; advisorEnabled: boolean; shortcutsEnabled: boolean }) {
   const { toggleMask } = useMask();
   const pathname = usePathname();
   const section = sectionFromPathname(pathname);
@@ -20,7 +20,7 @@ function AppShellInner({ children, advisorEnabled }: { children: ReactNode; advi
   const [helpOpen, setHelpOpen] = useState(false);
   const toggleHelp = useCallback(() => setHelpOpen((open) => !open), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
-  useKeyboardShortcuts({ helpOpen, onToggleHelp: toggleHelp });
+  useKeyboardShortcuts({ enabled: shortcutsEnabled, helpOpen, onToggleHelp: toggleHelp });
 
   return (
     <div className={styles.shell}>
@@ -36,11 +36,21 @@ function AppShellInner({ children, advisorEnabled }: { children: ReactNode; advi
   );
 }
 
-export function AppShell({ children, advisorEnabled = false }: { children: ReactNode; advisorEnabled?: boolean }) {
+interface AppShellProps {
+  children: ReactNode;
+  advisorEnabled?: boolean;
+  /** Resolved per-user preferences (Settings); defaults apply when omitted. */
+  shortcutsEnabled?: boolean;
+  hideValuesByDefault?: boolean;
+}
+
+export function AppShell({ children, advisorEnabled = false, shortcutsEnabled = true, hideValuesByDefault = false }: AppShellProps) {
   return (
-    <MaskProvider>
+    <MaskProvider initialMasked={hideValuesByDefault}>
       <PageContextProvider>
-        <AppShellInner advisorEnabled={advisorEnabled}>{children}</AppShellInner>
+        <AppShellInner advisorEnabled={advisorEnabled} shortcutsEnabled={shortcutsEnabled}>
+          {children}
+        </AppShellInner>
       </PageContextProvider>
     </MaskProvider>
   );

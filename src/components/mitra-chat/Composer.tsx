@@ -17,6 +17,9 @@ type Pending =
   | { readonly key: string; readonly name: string; readonly size: number; readonly status: 'ready'; readonly file: UploadedFile };
 
 interface ComposerProps {
+  /** Enter sends (default) or, when false, Cmd/Ctrl+Enter sends and Enter adds a new line. */
+  readonly sendOnEnter?: boolean;
+  readonly dictationLanguage?: string;
   readonly busy: boolean;
   readonly disabled: boolean;
   /** Resolves the conversation id, creating the conversation on first use. */
@@ -25,7 +28,7 @@ interface ComposerProps {
   readonly onStop: () => void;
 }
 
-export function Composer({ busy, disabled, ensureConversation, onSend, onStop }: ComposerProps) {
+export function Composer({ sendOnEnter = true, dictationLanguage = 'auto', busy, disabled, ensureConversation, onSend, onStop }: ComposerProps) {
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<readonly Pending[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -34,7 +37,8 @@ export function Composer({ busy, disabled, ensureConversation, onSend, onStop }:
   const fileInput = useRef<HTMLInputElement>(null);
 
   const dictation = useDictation(
-    useCallback((text: string) => setDraft((d) => (d && !d.endsWith(' ') ? `${d} ${text}` : `${d}${text}`)), [])
+    useCallback((text: string) => setDraft((d) => (d && !d.endsWith(' ') ? `${d} ${text}` : `${d}${text}`)), []),
+    dictationLanguage
   );
 
   // Grow with content up to ~8 lines.
@@ -106,7 +110,9 @@ export function Composer({ busy, disabled, ensureConversation, onSend, onStop }:
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    const modifier = e.metaKey || e.ctrlKey;
+    const wantsSend = sendOnEnter ? !e.shiftKey : modifier;
+    if (e.key === 'Enter' && wantsSend && !e.nativeEvent.isComposing) {
       e.preventDefault();
       send();
     }
@@ -200,7 +206,7 @@ export function Composer({ busy, disabled, ensureConversation, onSend, onStop }:
           </button>
         )}
         <span className={styles.hint} role="status">
-          {dictation.error ?? notice ?? 'Enter to send · Shift+Enter for a new line'}
+          {dictation.error ?? notice ?? (sendOnEnter ? 'Enter to send · Shift+Enter for a new line' : 'Ctrl/Cmd+Enter to send · Enter for a new line')}
         </span>
         {busy ? (
           <button type="button" className={styles.sendBtn} onClick={onStop} aria-label="Stop generating">
