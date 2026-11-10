@@ -11,6 +11,7 @@ import {
 } from '@/lib/dashboard/fundamentalsApi';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { getCurrentUserId } from '@/lib/currentUserId';
+import { DataUnavailable } from '@/components/common/DataUnavailable';
 import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCachedInsight } from '@/lib/insights';
 import { pivotFinancials, groupShareholding } from '@/lib/dashboard/transforms';
@@ -67,10 +68,10 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   if (!company) {
     return (
       <div className={styles.pageRoot}>
-        <p className={styles.meta}>
-          Couldn&rsquo;t load data for &ldquo;{symbol}&rdquo; — the fundamentals service may be offline, or
-          this isn&rsquo;t a symbol it recognizes.
-        </p>
+        <DataUnavailable>
+          Couldn&rsquo;t load data for &ldquo;{symbol}&rdquo; — the data service may be temporarily offline, or
+          this isn&rsquo;t a symbol it recognizes. Your portfolio and alerts are unaffected.
+        </DataUnavailable>
       </div>
     );
   }

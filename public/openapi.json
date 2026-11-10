@@ -4156,6 +4156,54 @@
           }
         }
       }
+    },
+    "/api/stock/{ticker}/prices": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Daily price history (chart bars)",
+        "description": "Daily OHLCV bars, oldest first, for one NSE ticker. Public. 502 `price_history_unavailable` means the data source failed (retry); an empty `bars` array means it answered with no rows.",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1mo",
+                "6mo",
+                "1y",
+                "5y"
+              ],
+              "default": "5y"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope with { symbol, period, bars: [{ time, open, high, low, close, volume }] }."
+          },
+          "400": {
+            "description": "invalid_ticker or invalid_period."
+          },
+          "429": {
+            "description": "Rate limited."
+          },
+          "502": {
+            "description": "price_history_unavailable."
+          }
+        }
+      }
     }
   }
 }

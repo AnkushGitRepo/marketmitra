@@ -80,6 +80,7 @@ Write an ADR when a change affects the stack, data sources, security model, publ
 | 0038 | [Settings page and preferences](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0038-settings-and-preferences.md) |
 | 0039 | [Welcome email for new users](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0039-welcome-email.md) |
 | 0040 | [Email design system](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0040-email-design-system.md) |
+| 0041 | [Fail-safe UI for data-dependent views](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0041-data-failsafe-ui.md) |
 
 ### Security, privacy and compliance
 

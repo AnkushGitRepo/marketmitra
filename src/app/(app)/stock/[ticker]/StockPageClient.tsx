@@ -16,6 +16,10 @@ import { formatInr } from '@/lib/dashboard/format';
 import type { CompanyOut, DocumentOut, PeerOut, PricePeriod, RatioOut } from '@/lib/dashboard/fundamentalsApi';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import type { Bar, RangeKey } from '@/lib/chart/bars';
+import { ChartErrorBoundary } from '@/components/pro-chart/ChartErrorBoundary';
+import { ChartFallbackPanel } from '@/components/pro-chart/ChartFallback';
+import { ChartStatus } from '@/components/pro-chart/ChartStatus';
+import { useChartBars } from '@/components/pro-chart/useChartBars';
 import { formatRatioValue, stripCitationMarkers, type FinTable, type ShareholdingSeries } from '@/lib/dashboard/transforms';
 import styles from './page.module.css';
 import { safeHref } from '@/lib/security/safeHref';
@@ -124,6 +128,8 @@ export function StockPageClient({
   const router = useRouter();
   const { setPageContext } = usePageContext();
   const [range, setRange] = useState<PricePeriod>('1y');
+  // Recovers price history client-side when the server render came back empty (#64).
+  const chartData = useChartBars(symbol, bars);
   const [fin, setFin] = useState<StatementKey>('profit_and_loss');
   const [showAllDocs, setShowAllDocs] = useState(false);
 
@@ -212,13 +218,24 @@ export function StockPageClient({
       </div>
 
       <div className={styles.chartRow}>
-        <ProChart
-          key={symbol}
-          symbol={symbol}
-          bars={bars}
-          alertHref={`/alerts?new=1&symbol=${encodeURIComponent(symbol)}`}
-          onRangeChange={(r) => setRange(CONTEXT_PERIOD[r])}
-        />
+        {chartData.status === 'ready' ? (
+          <ChartErrorBoundary
+            key={symbol}
+            fallback={(reset) => (
+              <ChartFallbackPanel symbol={symbol} bars={chartData.bars} reason="The chart hit a problem, so a simple view is shown." onRetry={reset} />
+            )}
+          >
+            <ProChart
+              key={symbol}
+              symbol={symbol}
+              bars={chartData.bars}
+              alertHref={`/alerts?new=1&symbol=${encodeURIComponent(symbol)}`}
+              onRangeChange={(r) => setRange(CONTEXT_PERIOD[r])}
+            />
+          </ChartErrorBoundary>
+        ) : (
+          <ChartStatus status={chartData.status} onRetry={chartData.retry} />
+        )}
       </div>
 
       <div className={styles.insightRow}>

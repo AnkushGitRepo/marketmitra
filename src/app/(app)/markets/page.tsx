@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { IndexCard } from '@/components/dashboard-charts/IndexCard';
 import { WishlistPanel } from '@/components/dashboard-charts/WishlistPanel';
+import { DataUnavailable } from '@/components/common/DataUnavailable';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getIndices } from '@/lib/dashboard/fundamentalsApi';
 import { getQuotes, type Quote } from '@/lib/dashboard/quotes';
@@ -47,7 +48,7 @@ export default async function MarketsPage() {
           <IndexCard key={ix.name} index={ix} />
         ))}
         {(!indices || indices.length === 0) && (
-          <p className={styles.eyebrow}>Index data is temporarily unavailable — the fundamentals service may be offline.</p>
+          <DataUnavailable>Index data is temporarily unavailable — the data service may be offline.</DataUnavailable>
         )}
       </div>
 
