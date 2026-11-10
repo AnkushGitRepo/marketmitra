@@ -858,3 +858,10 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 - **Agent portability (#27):** `AGENTS.md` is now the single tool-neutral rulebook (Cursor and Antigravity read it);
   `CLAUDE.md`/`GEMINI.md`/`.cursor/rules/` are thin pointers; new `docs/HANDOFF.md` holds current state, open work,
   environment, deploy steps and gotchas — written so the project can continue in another coding agent.
+
+## 2026-11-10 — Grouped sidebar navigation (#29)
+
+- Sidebar split from 14 flat items into Overview / Markets / AI & Tools / Settings (Settings pinned to the bottom);
+  section headers become hairline dividers in the collapsed rail. "Mitra activity" left the primary nav and is linked
+  from the Agents page. Pure `buildNavSections()` with unit tests. Verified in a browser (expanded + collapsed).
+  **Not verified:** the mobile tab bar is unchanged and was not re-tested.
