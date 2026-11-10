@@ -144,4 +144,12 @@
   --app-gain: #0b8266;
   --app-loss: #ba533c;
   --app-loss-soft: #d9917f;
+  /* Tints for loss/warning pills and alert borders (dashboard, #67). Text on its tint is >= 5.4:1. */
+  --app-loss-bg: #fbe9e4;
+  --app-loss-border: #f3cfc5;
+  --app-loss-text: #9a3f2b;
+  --app-warn-bg: #fff1dc;
+  --app-warn-border: #f6dfbf;
+  --app-warn-text: #8a4b12;
+  --app-warn-accent: #e3a008;
 }

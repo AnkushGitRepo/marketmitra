@@ -19,6 +19,18 @@ function closeText(iso: string | null): string {
 /** Compact "IPOs open now" card for the dashboard home. GMP shown with the
  * usual "unofficial" caveat (title attr + the page it links to). */
 export function IpoOpenCard({ openIpos }: { openIpos: Ipo[] }) {
+  // Nothing open: a one-line status, not a full empty card.
+  if (openIpos.length === 0) {
+    return (
+      <p className={styles.banner}>
+        <span>No IPOs open for subscription right now.</span>
+        <Link href="/ipos" className={styles.link}>
+          Upcoming IPOs →
+        </Link>
+      </p>
+    );
+  }
+
   return (
     <div className={styles.card}>
       <div className={styles.head}>
@@ -28,10 +40,7 @@ export function IpoOpenCard({ openIpos }: { openIpos: Ipo[] }) {
         </Link>
       </div>
 
-      {openIpos.length === 0 ? (
-        <p className={styles.empty}>No IPOs open for subscription right now.</p>
-      ) : (
-        <ul className={styles.list}>
+      <ul className={styles.list}>
           {openIpos.slice(0, 5).map((ipo) => (
             <li key={ipo.slug} className={styles.row}>
               <Link href="/ipos" className={styles.name}>
@@ -47,8 +56,7 @@ export function IpoOpenCard({ openIpos }: { openIpos: Ipo[] }) {
               <span className={styles.close}>{closeText(ipo.close_date)}</span>
             </li>
           ))}
-        </ul>
-      )}
+      </ul>
     </div>
   );
 }
