@@ -1,0 +1,104 @@
+.sheet {
+  /* Anchored to the bottom edge; a global reset zeroes the UA margin that would otherwise centre it. */
+  margin: auto 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: 82dvh;
+  padding: 0 0 env(safe-area-inset-bottom);
+  border: none;
+  border-radius: 22px 22px 0 0;
+  background: var(--color-surface);
+  color: var(--app-ink);
+  box-shadow: 0 -18px 50px rgba(22, 25, 28, 0.2);
+  font-family: var(--font-sans);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sheet::backdrop {
+  background: rgba(22, 25, 28, 0.4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet[open] {
+    animation: slideUp var(--duration-base) var(--ease-out);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.handleZone {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.handle {
+  width: 40px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--app-border);
+}
+
+.content {
+  padding: 4px 16px 18px;
+}
+
+.sectionTitle {
+  margin: 14px 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-md);
+  background: var(--app-cream);
+  color: var(--app-ink);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.itemActive {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  width: 21px;
+  height: 21px;
+}
+
+.itemLabel {
+  min-width: 0;
+  line-height: 1.25;
+}

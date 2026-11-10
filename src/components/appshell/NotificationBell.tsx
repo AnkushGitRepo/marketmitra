@@ -15,7 +15,8 @@ function relative(iso: string): string {
   return `${Math.round(hrs / 24)}d`;
 }
 
-export function NotificationBell() {
+/** `goTo`: instead of the dropdown, tapping the bell navigates there (mobile header → Alerts). */
+export function NotificationBell({ goTo }: { goTo?: string } = {}) {
   const router = useRouter();
   const { items, unread, reload } = useNotifications();
   const [open, setOpen] = useState(false);
@@ -56,7 +57,7 @@ export function NotificationBell() {
         className={styles.bellButton}
         // The visible badge text ("9+") must appear in the accessible name.
         aria-label={unread > 0 ? `Notifications, ${unread > 9 ? '9+' : unread} unread` : 'Notifications'}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (goTo ? router.push(goTo) : setOpen((v) => !v))}
       >
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
           <path
@@ -70,7 +71,7 @@ export function NotificationBell() {
         {unread > 0 && <span className={styles.badge}>{unread > 9 ? '9+' : unread}</span>}
       </button>
 
-      {open && (
+      {open && !goTo && (
         <div className={styles.panel} role="menu">
           <div className={styles.panelHead}>
             <span className={styles.panelTitle}>Notifications</span>

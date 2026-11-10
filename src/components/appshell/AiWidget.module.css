@@ -9,10 +9,10 @@
   gap: 12px;
 }
 
+/* Phones use the Mitra chat tab in the bottom bar; the floating bubble would collide with content and the bar. */
 @media (max-width: 760px) {
   .wrap {
-    bottom: 92px;
-    right: 16px;
+    display: none;
   }
 }
 

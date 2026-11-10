@@ -97,7 +97,7 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
           <span className={styles.brandNameSmall}>MarketMitra</span>
         </Link>
         <div className={styles.mobileActions}>
-          <NotificationBell />
+          <NotificationBell goTo="/alerts" />
           <button onClick={onToggleMask} className={styles.iconButtonSmall} type="button">
             ₹
           </button>

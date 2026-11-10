@@ -18,6 +18,13 @@
   padding-bottom: 0;
 }
 
+/* Phones: leave room for the fixed 5-slot bottom bar plus the iOS home indicator. */
+@media (max-width: 760px) {
+  .contentArea {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
 .main {
   max-width: 1240px;
   width: 100%;

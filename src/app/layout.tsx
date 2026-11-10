@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Manrope, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -23,6 +23,13 @@ const jetbrainsMono = JetBrains_Mono({
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://marketmitra-v2.vercel.app';
 const DESCRIPTION =
   'Open-source, self-hostable financial dashboard for Indian markets — portfolio, alerts, news, IPOs, and AI-agent analysis. Free, no paid tier.';
+
+// viewport-fit=cover lets the mobile bottom bar and sheet use env(safe-area-inset-bottom) on notched phones.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
