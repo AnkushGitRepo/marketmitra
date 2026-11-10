@@ -90,7 +90,7 @@ uvicorn app.main:app --reload --port 8420
 
 ## Continuous integration
 
-`ci.yml` runs on every push to `main`/`v2` and every pull request: lint, type-check, unit tests and a production build — no secrets needed. Alongside it: **CodeQL** (security analysis) and **Dependency review** (blocks vulnerable new dependencies).
+`ci.yml` runs on every push to `main` and every pull request: lint, type-check, unit tests and a production build — no secrets needed. Alongside it: **CodeQL** (security analysis) and **Dependency review** (blocks vulnerable new dependencies).
 
 ## Decisions and docs
 
