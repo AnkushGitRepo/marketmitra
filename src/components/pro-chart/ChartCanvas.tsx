@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { hasVisibleInk, shouldUseFallback } from '@/lib/chart/fallback';
 import {
   CandlestickSeries,
   ColorType,
@@ -33,6 +34,33 @@ interface ChartCanvasProps {
   range: RangeKey;
   onReady: (handle: ChartHandle | null) => void;
   onHover: (bar: Bar | null) => void;
+  /** Called when the chart can't start, throws, or measures as collapsed, so the page can show its fallback. */
+  onFailure?: (reason: string) => void;
+}
+
+/** Can this browser draw to a 2D canvas at all? (Some locked-down or memory-starved mobile browsers cannot.) */
+function canvasUsable(): boolean {
+  try {
+    return document.createElement('canvas').getContext('2d') !== null;
+  } catch {
+    return false;
+  }
+}
+
+/** Did the chart actually put anything on screen? A chart can "start" and still draw nothing. */
+function paintedAnything(el: HTMLElement): boolean {
+  const canvases = Array.from(el.querySelectorAll('canvas'));
+  if (canvases.length === 0) return false;
+  for (const canvas of canvases) {
+    if (!canvas.width || !canvas.height) continue;
+    try {
+      const ctx = canvas.getContext('2d');
+      if (ctx && hasVisibleInk(ctx.getImageData(0, 0, canvas.width, canvas.height).data)) return true;
+    } catch {
+      return true; // can't inspect the pixels: assume it is fine rather than discard a working chart
+    }
+  }
+  return false;
 }
 
 function cssVar(name: string, fallback: string): string {
@@ -55,7 +83,7 @@ function themeColors() {
 const toPoints = (bars: Bar[], values: Series) =>
   bars.flatMap((b, i) => (values[i] === null ? [] : [{ time: b.time as Time, value: values[i] as number }]));
 
-export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover }: ChartCanvasProps) {
+export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover, onFailure }: ChartCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<SeriesType>[]>([]);
@@ -63,17 +91,26 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover }:
   const barsByTime = useRef<Map<string, Bar>>(new Map());
   const onReadyRef = useRef(onReady);
   const onHoverRef = useRef(onHover);
+  const onFailureRef = useRef(onFailure);
   useEffect(() => {
     onReadyRef.current = onReady;
     onHoverRef.current = onHover;
+    onFailureRef.current = onFailure;
   });
 
   // Create the chart once; theme changes re-skin it in place.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    if (!canvasUsable()) {
+      onFailureRef.current?.('This browser can\u2019t draw the interactive chart.');
+      return;
+    }
     const c = themeColors();
-    const chart = createChart(el, {
+    // Fail-safe: a browser that can't create the chart must fall back, never throw into React or leave a blank box.
+    let chart: IChartApi;
+    try {
+      chart = createChart(el, {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
@@ -91,7 +128,23 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover }:
         horzLine: { color: c.crosshair, style: LineStyle.Dashed, labelBackgroundColor: '#15171c' },
       },
     });
+    } catch {
+      onFailureRef.current?.('The interactive chart couldn\u2019t start on this device.');
+      return;
+    }
     chartRef.current = chart;
+
+    // Fail-safe: if the container still measures as collapsed once layout has settled, say so instead of showing nothing.
+    const collapsedCheck = window.setTimeout(() => {
+      if (shouldUseFallback({ errored: false, measuredHeight: el.clientHeight })) {
+        onFailureRef.current?.('The chart area couldn\u2019t be displayed on this screen.');
+      }
+    }, 600);
+    // Later, once painting has had time to happen (slow phones included), verify something is actually visible.
+    const paintCheck = window.setTimeout(() => {
+      if (!paintedAnything(el)) onFailureRef.current?.('The chart didn\u2019t draw on this device.');
+    }, 2200);
+    const watchdogs = [collapsedCheck, paintCheck];
 
     chart.subscribeCrosshairMove((p) => {
       onHoverRef.current(typeof p.time === 'string' ? (barsByTime.current.get(p.time) ?? null) : null);
@@ -107,6 +160,7 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover }:
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
 
     return () => {
+      watchdogs.forEach((id) => window.clearTimeout(id));
       observer.disconnect();
       onReadyRef.current(null);
       chart.remove();
@@ -120,6 +174,7 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover }:
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
+    try {
     const c = themeColors();
     const timeScale = chart.timeScale();
     const keepRange = timeScale.getVisibleLogicalRange();
@@ -219,6 +274,9 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover }:
 
     if (keepRange) timeScale.setVisibleLogicalRange(keepRange);
     onReadyRef.current({ chart, price: priceRef.current });
+    } catch {
+      onFailureRef.current?.('The chart hit a problem drawing this data.');
+    }
   }, [bars, kind, indicators]);
 
   // Apply the range tab to the visible window.

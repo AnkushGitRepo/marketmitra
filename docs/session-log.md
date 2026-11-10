@@ -947,3 +947,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - Deployed (app only). The first attempt **failed on Vercel's type check**: stray `src/lib/welcome/index 2.ts` / `template.test 2.ts` duplicates were uploaded by the CLI and imported the deleted `./template`; local build and CI were green because the files are gitignored. Cleared the duplicates and redeployed: Ready, smoke 4/4, `/email/*.png` 200, legacy redirect 308, `microphone=(self)`, new APIs 401 to anon. Recorded as HANDOFF gotcha 15.
 
+## 2026-11-10 — Chart fail-safe after the iPhone report (#64, [ADR 0041](./decisions/0041-data-failsafe-ui.md))
+
+- Phone screenshot showed an empty chart with the legend over the range buttons. Fixed the mobile layout (explicit non-flex height), added a fallback SVG chart (triggered by no canvas / throw / collapsed / nothing painted), client-side price recovery with retry/back-off via new `GET /api/stock/{ticker}/prices`, an error boundary, and `DataUnavailable` (auto re-check + button) for the stock and Markets pages. **Verified in Chromium** including forced failures (my first fail-safe missed the async no-canvas case; fixed). **Not verified:** real iOS Safari, so the root-cause claim (Safari resolving `flex: 1` to 0) is a strong hypothesis, not a reproduction.
+

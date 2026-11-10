@@ -184,9 +184,12 @@
 
 .stage {
   position: relative;
-  flex: 1;
+  /* `auto` basis + explicit height + min-height: the chart area keeps its size whatever a browser does with `flex: 1`
+     (iOS Safari collapsed it to 0 in the mobile column layout, #64). */
+  flex: 1 1 auto;
   min-width: 0;
   height: clamp(440px, 64vh, 640px);
+  min-height: 320px;
 }
 .canvas {
   position: absolute;
@@ -350,6 +353,143 @@
     display: none;
   }
   .stage {
+    flex: 0 0 auto;
+    width: 100%;
     height: 420px;
+    min-height: 420px;
+  }
+}
+
+/* ---- Fail-safe states (#64) ---- */
+.fallback {
+  /* In normal flow with its own height, so it can't be taken down by the same failure that triggered it. */
+  position: relative;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.stageFailed {
+  height: auto;
+  min-height: 420px;
+}
+
+.fallbackPanel {
+  position: relative;
+  min-height: 420px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.fallbackNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: var(--app-cream, #fbf8f1);
+  border: 1px solid var(--app-border, #ede9de);
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+}
+
+.fallbackBtn {
+  padding: 5px 14px;
+  border: 1px solid var(--app-border, #ede9de);
+  border-radius: 999px;
+  background: var(--color-surface, #fff);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fallbackSvg {
+  flex: none;
+  width: 100%;
+  height: 300px;
+  margin-top: 10px;
+}
+
+.fallbackLineUp {
+  stroke: var(--app-gain, #0b8266);
+  stroke-width: 2;
+}
+
+.fallbackLineDown {
+  stroke: var(--app-loss, #ba533c);
+  stroke-width: 2;
+}
+
+.fallbackAreaUp {
+  fill: var(--app-gain, #0b8266);
+  opacity: 0.1;
+}
+
+.fallbackAreaDown {
+  fill: var(--app-loss, #ba533c);
+  opacity: 0.1;
+}
+
+.fallbackScale {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 4px 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+}
+
+.statusBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 420px;
+  padding: 24px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 18px;
+  background: var(--color-surface, #fff);
+  text-align: center;
+}
+
+.statusTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.statusText {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid var(--app-border, #ede9de);
+  border-top-color: var(--app-teal, #17c39a);
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spinner {
+    animation: chartSpin 0.8s linear infinite;
+  }
+}
+
+@keyframes chartSpin {
+  to {
+    transform: rotate(360deg);
   }
 }

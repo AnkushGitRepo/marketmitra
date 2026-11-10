@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { RANGE_KEYS, type Bar, type RangeKey } from '@/lib/chart/bars';
 import type { Drawing, DrawingTool } from '@/lib/chart/drawings';
 import { ChartCanvas, type ChartHandle, type ChartKind } from './ChartCanvas';
+import { ChartFallback } from './ChartFallback';
 import { DrawingToolbar } from './DrawingToolbar';
 import { DrawingsOverlay } from './DrawingsOverlay';
 import { IndicatorMenu } from './IndicatorMenu';
@@ -56,6 +57,13 @@ export function ProChart({ symbol, bars, alertHref, onRangeChange }: ProChartPro
   const [drawings, setDrawings] = useState<Drawing[]>(() => readJson<Drawing[]>(drawingsStorageKey(symbol), []));
   const [handle, setHandle] = useState<ChartHandle | null>(null);
   const [hover, setHover] = useState<Bar | null>(null);
+  // Fail-safe: set when the interactive chart can't start / errors / collapses; the stage then shows a simple SVG chart.
+  const [failure, setFailure] = useState<string | null>(null);
+  const [chartKey, setChartKey] = useState(0);
+  const retryInteractive = useCallback(() => {
+    setFailure(null);
+    setChartKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     writeJson(INDICATOR_STORAGE_KEY, indicators);
@@ -118,8 +126,8 @@ export function ProChart({ symbol, bars, alertHref, onRangeChange }: ProChartPro
       <div className={styles.body}>
         <DrawingToolbar tool={tool} onTool={setTool} hasDrawings={drawings.length > 0} onClear={clearDrawings} />
 
-        <div className={styles.stage}>
-          {shown && (
+        <div className={`${styles.stage} ${failure ? styles.stageFailed : ''}`}>
+          {shown && !failure && (
             <div className={`${styles.legend} ${stateClass}`} aria-live="off">
               <span className={styles.legendKey}>O</span>
               {fmt(shown.open)}
@@ -140,15 +148,19 @@ export function ProChart({ symbol, bars, alertHref, onRangeChange }: ProChartPro
             </div>
           )}
 
-          {bars.length > 0 ? (
+          {bars.length > 0 && failure ? (
+            <ChartFallback symbol={symbol} bars={bars} reason={failure} onRetry={retryInteractive} />
+          ) : bars.length > 0 ? (
             <>
               <ChartCanvas
+                key={chartKey}
                 bars={bars}
                 kind={kind}
                 indicators={indicators}
                 range={range}
                 onReady={setHandle}
                 onHover={setHover}
+                onFailure={setFailure}
               />
               <DrawingsOverlay
                 key={tool}
