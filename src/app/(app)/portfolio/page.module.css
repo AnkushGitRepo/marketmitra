@@ -132,133 +132,10 @@
   color: var(--app-loss);
 }
 
-.splitGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.72fr) minmax(0, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-  align-items: stretch;
-}
-
-@media (max-width: 900px) {
-  .splitGrid,
-  .splitGridWide {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-}
-
-.chartCard {
-  background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-xl);
-  padding: 22px 24px 14px;
-  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-  display: flex;
-  flex-direction: column;
-}
-
-.chartHead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.chartLabel {
-  margin: 0 0 6px;
-  font-size: 14px;
-  color: var(--app-text-muted);
-  white-space: nowrap;
-}
-
-.chartValue {
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  color: var(--app-ink);
-}
-
 .chartSub {
   margin: 5px 0 0;
   font-size: 12.5px;
   color: var(--app-text-faint);
-}
-
-.historyNote {
-  margin: 10px 0 0;
-  font-size: 11.5px;
-  color: var(--app-text-subtle);
-}
-
-.sideCol {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.sideCard {
-  background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-xl);
-  padding: 22px 24px;
-  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-  flex: 1;
-}
-
-.sideLabel {
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: var(--app-text-muted);
-}
-
-.allocRow {
-  display: flex;
-  flex-direction: column;
-  gap: 13px;
-}
-
-.allocLine {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.allocPct {
-  font-family: var(--font-mono);
-  color: var(--app-text-muted);
-}
-
-.barTrack {
-  height: 8px;
-  border-radius: var(--radius-pill);
-  background: #f4f1e8;
-  overflow: hidden;
-}
-
-.barFill {
-  height: 100%;
-  border-radius: var(--radius-pill);
-  transform-origin: left;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .barFill {
-    animation: growX 0.8s cubic-bezier(0.3, 0.8, 0.4, 1) both;
-  }
-}
-
-@keyframes growX {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
 }
 
 .holdingsCard {
@@ -268,21 +145,6 @@
   padding: 22px 24px;
   box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
   margin-bottom: 34px;
-}
-
-.holdingsHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.holdingsCount {
-  margin: 0;
-  font-size: 14px;
-  color: var(--app-text-muted);
 }
 
 .tableScroll {
@@ -379,20 +241,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.plLine {
-  margin: 0;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
-.gain {
-  color: var(--app-gain);
-}
-
-.loss {
-  color: var(--app-loss);
-}
-
 .allocCell {
   display: flex;
   align-items: center;
@@ -471,140 +319,37 @@
   color: var(--app-ink);
 }
 
-.splitGridWide {
+/* Value / P&L as pills: muted red on rose for losses, green on mint for gains. */
+.plPill {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plGain {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+.plLoss {
+  background: var(--app-loss-bg);
+  color: var(--app-loss-text);
+}
+
+/* Allocation and Mitra risk side by side on desktop, stacked on tablet and phone. */
+.macroGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 16px;
 }
 
-.diversCard {
-  background: linear-gradient(155deg, #f0faf6, #ffffff 62%);
-  border: 1px solid #e3f1ea;
-  border-radius: var(--radius-xl);
-  padding: 24px;
-  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-}
-
-.factRow {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.fact {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 14px;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid #e9f3ee;
-  border-radius: 14px;
-}
-
-.factLabel {
-  font-size: 12.5px;
-  color: var(--app-text-muted);
-}
-
-.factValue {
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-}
-
-.contribCard {
-  background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-xl);
-  padding: 24px;
-  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-}
-
-.contribLabel {
-  margin: 0 0 4px;
-  font-size: 14px;
-  color: var(--app-text-muted);
-}
-
-.contribSub {
-  margin: 0 0 18px;
-  font-size: 12.5px;
-  color: var(--app-text-subtle);
-}
-
-.contribRows {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.contribRow {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.contribName {
-  width: 128px;
-  flex: none;
-}
-
-.contribNameText {
-  margin: 0;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--app-ink);
-}
-
-.contribTicker {
-  margin: 2px 0 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--app-text-subtle);
-}
-
-.contribBarWrap {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  height: 22px;
-}
-
-.contribBarHalf {
-  width: 50%;
-  display: flex;
-}
-
-.contribBarHalfEnd {
-  width: 50%;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.contribDivider {
-  width: 1px;
-  height: 22px;
-  background: var(--app-border-soft);
-}
-
-.contribBarPos {
-  height: 14px;
-  border-radius: 0 7px 7px 0;
-  background: var(--app-teal);
-  transform-origin: left;
-}
-
-.contribBarNeg {
-  height: 14px;
-  border-radius: 7px 0 0 7px;
-  background: var(--app-loss-soft);
-  transform-origin: right;
-}
-
-.contribValue {
-  font-size: 12.5px;
-  font-variant-numeric: tabular-nums;
-  width: 92px;
-  text-align: right;
+@media (max-width: 1000px) {
+  .macroGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

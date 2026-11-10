@@ -1,0 +1,123 @@
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 20px 22px;
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.badge {
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+.empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--app-text-faint);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Left border carries severity at a glance; the level word repeats it so colour is never the only signal. */
+.item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid;
+  border-left-width: 4px;
+  border-radius: 12px;
+}
+
+.high {
+  background: var(--app-loss-bg);
+  border-color: var(--app-loss-border);
+  border-left-color: var(--app-loss);
+}
+
+.medium {
+  background: var(--app-warn-bg);
+  border-color: var(--app-warn-border);
+  border-left-color: var(--app-warn-accent);
+}
+
+.low,
+.info {
+  background: var(--app-teal-bg);
+  border-color: var(--app-border-soft);
+  border-left-color: var(--app-teal-strong);
+}
+
+.icon {
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.itemTitle {
+  margin: 0 0 2px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.level {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--app-text-muted);
+}
+
+.text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--app-ink);
+}
+
+.disclaimer {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  color: var(--app-text-faint);
+}
+
+.cta {
+  margin-top: auto;
+  padding-top: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--app-teal-strong);
+  text-decoration: none;
+}
+
+.cta:hover {
+  text-decoration: underline;
+}
