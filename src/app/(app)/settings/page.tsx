@@ -6,6 +6,7 @@ import { getPreferences } from '@/lib/preferences/store';
 import { getAiSettingsView, getAutoGuardrailsEnabled, getNotificationChannelSettingsView } from '@/lib/userSettings';
 import { GuardrailsToggle } from '../alerts/GuardrailsToggle';
 import { NotificationChannelsCard } from '../alerts/NotificationChannelsCard';
+import { AccountSection, LocalAccountSection } from './AccountSection';
 import { AboutSection, DataSection } from './DataAndAboutSections';
 import { PreferencesSections } from './PreferencesSections';
 import { SettingsClient } from './SettingsClient';
@@ -17,6 +18,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Settings' };
 
 const SECTIONS = [
+  ['account', 'Account & security'],
   ['ai', 'AI & API keys'],
   ['chat', 'Mitra chat'],
   ['display', 'Display'],
@@ -58,6 +60,8 @@ export default async function SettingsPage() {
         </nav>
 
         <div className={styles.sections}>
+          {isHosted() ? <AccountSection /> : <LocalAccountSection />}
+
           <section id="ai" className={styles.section} aria-labelledby="ai-title">
             <h2 id="ai-title" className={styles.sectionTitle}>AI &amp; API keys</h2>
             <p className={styles.sectionIntro}>

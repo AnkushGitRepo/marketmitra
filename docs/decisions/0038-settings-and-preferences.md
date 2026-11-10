@@ -35,3 +35,17 @@ cannot read or change settings.
 New collection `userPreferences`; new routes `GET|PATCH /api/settings/preferences`, `GET /api/settings/export`,
 `DELETE /api/mitra/conversations` (all in `openapi.json`). The layout now does one extra small read per page load.
 Not built: theme/dark mode, per-device preferences (these are per account), scheduled auto-deletion of chats.
+
+## Account & security section (#53)
+Settings gains an **Account & security** section first. Hosted: identity-aware controls built on Clerk's own components
+rather than re-implementing them: **Manage** opens Clerk's profile dialog (so username, email/phone, password,
+passkeys, two-factor, connected accounts, active devices and account deletion appear exactly as enabled on the Clerk
+instance, with no code change when a feature is switched on), **Sign out**, and **Accounts on this device** (list,
+Switch, per-account sign out, Add account, Sign out of all). Sign out is therefore reachable on phones, where the
+header has no account button. A "secondary" or "family" account is simply another Clerk user: its own MarketMitra
+data, no shared household view (that would be a separate feature). Self-host shows a note (single local user).
+
+**Dashboard prerequisites (code cannot set these):** *Sessions > Multi-session handling* must be on for adding and
+switching accounts (the UI says so when it is off), and *Multi-factor* needs *Authenticator app* (and *Backup codes*)
+enabled for two-factor. SMS two-factor is a Clerk Pro feature and needs phone numbers enabled first.
+
