@@ -6,7 +6,8 @@ import { LineChart } from './LineChart';
 import { formatInr } from '@/lib/dashboard/format';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
-import { computeHero, formatSignedAmount, formatSignedPct, type HeroFigure } from '@/lib/dashboard/heroMetrics';
+import { computeHero } from '@/lib/dashboard/heroMetrics';
+import { ReturnBadge } from './ReturnBadge';
 import { HERO_RANGES, HERO_RANGE_LABELS, seriesForRange, type HeroRange } from '@/lib/dashboard/heroRanges';
 import styles from './HeroPortfolioCard.module.css';
 
@@ -16,23 +17,6 @@ interface HeroPortfolioCardProps {
   readonly todayChange: number;
   readonly history: Record<PricePeriod, RangeSeries>;
   readonly masked: boolean;
-}
-
-const TONE_CLASS = { gain: styles.badgeGain, loss: styles.badgeLoss, flat: styles.badgeFlat } as const;
-const ARROW = { gain: '▲', loss: '▼', flat: '' } as const;
-
-function Badge({ label, figure, masked }: { label: string; figure: HeroFigure; masked: boolean }) {
-  const amount = formatSignedAmount(figure.amount, (n) => formatInr(n, 0, masked));
-  return (
-    // The arrow and sign carry the meaning as well as the colour, so it reads without colour vision.
-    <span className={`${styles.badge} ${TONE_CLASS[figure.tone]}`}>
-      <span className={styles.badgeLabel}>{label}</span>
-      {ARROW[figure.tone] && <span aria-hidden="true">{ARROW[figure.tone]}</span>}
-      <span>
-        {amount} ({formatSignedPct(figure.pct)})
-      </span>
-    </span>
-  );
 }
 
 /** One card for the whole portfolio story: value, today's P&L, total return, and the chart with its timeframes. */
@@ -48,8 +32,8 @@ export function HeroPortfolioCard({ totalValue, invested, todayChange, history, 
           <p className={styles.label}>Portfolio value</p>
           <p className={styles.value}>{formatInr(totalValue, 0, masked)}</p>
           <div className={styles.badges}>
-            <Badge label="Today" figure={metrics.today} masked={masked} />
-            <Badge label="Total return" figure={metrics.total} masked={masked} />
+            <ReturnBadge label="Today" figure={metrics.today} masked={masked} />
+            <ReturnBadge label="Total return" figure={metrics.total} masked={masked} />
           </div>
         </div>
         <div className={styles.tabs}>

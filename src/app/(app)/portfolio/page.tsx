@@ -2,10 +2,7 @@ import type { Metadata } from 'next';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
-import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
-import { getCachedInsight } from '@/lib/insights';
 import { getNews } from '@/lib/dashboard/newsApi';
-import { listNotifications } from '@/lib/notifications/store';
 import { PortfolioPageClient } from './PortfolioPageClient';
 import styles from './page.module.css';
 
@@ -32,33 +29,17 @@ export default async function PortfolioPage() {
 
   const historyByPeriod = await getPortfolioValueHistories(positions);
 
-  const [hasKey, cachedInsight] = await Promise.all([
-    resolveHasAiKey(getUserAiConfig(userId)),
-    getCachedInsight('portfolio', 'portfolio', userId).catch(() => null),
-  ]);
-  const aiInsight = {
-    hasKey,
-    initial: cachedInsight
-      ? { content: cachedInsight.content, generatedAt: cachedInsight.generatedAt.toISOString() }
-      : null,
-  };
-
   // News scoped to the holdings actually in this portfolio — same
   // `/api/news`-backing `getNews()` the News page's "My holdings" filter
   // uses, just always on here since this whole page is holdings-scoped.
   const holdingSymbols = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
   const news = holdingSymbols.length > 0 ? await getNews({ symbols: holdingSymbols, limit: 8 }) : null;
 
-  const { items: notificationItems } = await listNotifications(userId, 20);
-  const activity = notificationItems.filter((n) => n.kind === 'alert' || n.kind === 'system').slice(0, 6);
-
   return (
     <PortfolioPageClient
       holdings={holdings}
       history={historyByPeriod}
-      aiInsight={aiInsight}
       news={news?.items ?? []}
-      activity={activity}
     />
   );
 }

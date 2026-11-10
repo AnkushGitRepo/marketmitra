@@ -959,3 +959,8 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 ## 2026-11-10 — Dashboard hero layout (#67, [ADR 0042](./decisions/0042-dashboard-hero-layout.md))
 
 - Unified hero card (value, Today/Total return pills, range tabs), 4-up indices row (carousel on phones), 70/30 desktop layout with Critical alerts, AI Daily Brief and a one-line IPO banner, red/green pills on movers. 18 new unit tests for the pure logic; full suite, types and lint green. **Verified in Chromium** at 1440px and 390px (no horizontal overflow, carousel scrolls with snap). **Not verified:** real iOS Safari, dark mode (none exists), the empty-holdings and no-alerts variants visually, the hosted (Clerk) path. **Deviations:** no Tailwind, no 1D tab, 6M dropped (see ADR).
+
+## 2026-11-11 — Portfolio page refactor (#69, [ADR 0043](./decisions/0043-portfolio-page-layout.md))
+
+- Hero KPIs + chart, sector donut with concentration pills, three computed Mitra risk cards, All/In Profit/In Loss chips (13/5/8 on the maintainer's data), P&L pills, duplicate bar chart and watchlist activity removed, news limited to held symbols. 16 new unit tests; full suite, types, lint green. **Verified in Chromium** at 1440px and 390px (no overflow, filter works, numbers match the request's example). **Not verified:** real iOS Safari, the empty-holdings and no-news states visually, hosted (Clerk) path. **Deviations:** no Tailwind; AI paragraph replaced by computed cards (see ADR).
+- **Ops, same day:** Resend domain `mail.ankushg.tech` verified (DKIM + two CNAMEs added in Namify); `ALERT_EMAIL_FROM` set in Vercel production. **Not live until the next deploy**; `EMAIL_CONTACT_LINE` still unset (waiting for the maintainer's wording).

@@ -104,11 +104,11 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
             {value !== null ? (
               <>
                 <p className={styles.valueP}>{formatInr(value, 0, masked)}</p>
-                <p className={`${styles.plLine} ${(pl ?? 0) >= 0 ? styles.gain : styles.loss}`}>
-                  {(pl ?? 0) >= 0 ? '+' : ''}
-                  {plPct?.toFixed(1)}% · {(pl ?? 0) >= 0 ? '+' : ''}
+                <span className={`${styles.plPill} ${(pl ?? 0) >= 0 ? styles.plGain : styles.plLoss}`}>
+                  <span aria-hidden="true">{(pl ?? 0) >= 0 ? '▲' : '▼'}</span> {(pl ?? 0) >= 0 ? '+' : '-'}
+                  {Math.abs(plPct ?? 0).toFixed(1)}% · {(pl ?? 0) >= 0 ? '+' : '-'}
                   {formatInr(Math.abs(pl ?? 0), 0, masked)}
-                </p>
+                </span>
               </>
             ) : (
               <p className={styles.valueP}>Price unavailable</p>
