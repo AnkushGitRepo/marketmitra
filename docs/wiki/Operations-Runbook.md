@@ -38,7 +38,7 @@ If a full run is cancelled partway, nothing is lost: ingestion is batched, and t
 
 ## Health checks
 
-- **`/status`** — public status page; **`/system`** — operator view with the event log. It is hidden (no sidebar entry) and returns 404 to everyone but admins (hosted: only users in `ADMIN_USER_IDS`; self-host: the local user). The app footer links to `/status`.
+- **`/status`** — public status page; **`/system`** — operator view with the event log. It is hidden (no sidebar entry) and returns 404 to everyone but admins (hosted: only users in `ADMIN_USER_IDS`; self-host: the local user). The landing page footer links to `/status` ("System status").
 - **`scripts/smoke-test.sh`** — fast external check after a deploy.
 - **`GET <data-service>/health`** — the data service is up.
 - **Event log** — failed cron runs and chat-stream errors are recorded under their source (for example `cron:refresh-screener-quotes`, `api:ai/chat`).

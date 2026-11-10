@@ -3,7 +3,7 @@
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
   gap: 16px;
-  height: calc(100dvh - 165px); /* header + padding + 40px footer */
+  height: calc(100dvh - 125px); /* header + page padding */
   min-height: 480px;
 }
 
@@ -167,7 +167,7 @@
 
 @media (max-width: 760px) {
   .shell {
-    /* mobile header and page padding (95px) + footer (40px) + 4.5rem bottom bar + 1px, plus the safe area */
-    height: calc(100dvh - 208px - env(safe-area-inset-bottom));
+    /* mobile header and page padding (95px) + 4.5rem bottom bar + 1px, plus the safe area */
+    height: calc(100dvh - 168px - env(safe-area-inset-bottom));
   }
 }
