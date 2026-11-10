@@ -1,6 +1,7 @@
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getIpoWatch } from '@/lib/alerts/store';
 import { getIpos } from '@/lib/dashboard/iposApi';
+import { istToday } from '@/lib/dashboard/ipoFilters';
 import { getAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import type { IpoWatchParams } from '@/lib/alerts/types';
 import { IposPageClient } from './IposPageClient';
@@ -35,7 +36,12 @@ export default async function IposPage() {
         <em>unofficial grey-market estimate</em> compiled by a third-party tracker — not from any
         exchange, and not a prediction.
       </p>
-      <IposPageClient ipos={ipos} initialWatch={watch} aiKeyAvailable={aiKeyAvailable} />
+      <IposPageClient
+        ipos={ipos}
+        today={istToday(new Date())}
+        initialWatch={watch}
+        aiKeyAvailable={aiKeyAvailable}
+      />
     </div>
   );
 }

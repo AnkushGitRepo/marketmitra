@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { Ipo } from '@/lib/dashboard/iposApi';
+import { ipoPhase, PHASE_LABEL } from '@/lib/dashboard/ipoFilters';
 import type { IpoTrigger } from '@/lib/alerts/types';
 import { InsightCard } from '@/components/dashboard-charts/InsightCard';
 import styles from './page.module.css';
@@ -33,14 +34,7 @@ function gmpText(ipo: Ipo): { value: string; tone: 'gain' | 'loss' | 'flat' } {
   };
 }
 
-const STATUS_LABEL: Record<Ipo['status'], string> = {
-  upcoming: 'Upcoming',
-  open: 'Open',
-  closed: 'Closed',
-  listed: 'Listed',
-};
-
-export function IpoRow({ ipo, aiKeyAvailable }: { ipo: Ipo; aiKeyAvailable: boolean }) {
+export function IpoRow({ ipo, today, aiKeyAvailable }: { ipo: Ipo; today: string; aiKeyAvailable: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [trigger, setTrigger] = useState<IpoTrigger>('opens');
@@ -49,6 +43,7 @@ export function IpoRow({ ipo, aiKeyAvailable }: { ipo: Ipo; aiKeyAvailable: bool
   const [saved, setSaved] = useState(false);
 
   const gmp = gmpText(ipo);
+  const phase = ipoPhase(ipo, today);
 
   const setAlert = async () => {
     setSaving(true);
@@ -76,7 +71,7 @@ export function IpoRow({ ipo, aiKeyAvailable }: { ipo: Ipo; aiKeyAvailable: bool
         <div className={styles.ipoName}>
           <span className={styles.ipoNameText}>{ipo.name}</span>
           <span className={styles.pill}>{ipo.category === 'sme' ? 'SME' : 'Mainboard'}</span>
-          <span className={`${styles.pill} ${styles[`status_${ipo.status}`]}`}>{STATUS_LABEL[ipo.status]}</span>
+          <span className={`${styles.pill} ${styles[`status_${phase}`]}`}>{PHASE_LABEL[phase]}</span>
         </div>
         <div className={styles.ipoQuick}>
           <span className={`${styles.gmp} ${styles[`gmp_${gmp.tone}`]}`} title="Unofficial grey-market premium — not from any exchange">
