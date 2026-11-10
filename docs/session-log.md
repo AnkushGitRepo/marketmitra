@@ -900,3 +900,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - `/dashboard/<page>` → `/<page>` (home stays `/dashboard`, API reference → `/api-docs`) via a `(app)` route group, a route registry, 308 redirects for old URLs and the proxy matcher. Entries above this one still use the old URLs.
 
+## 2026-11-10 — Settings tab, status footer, admin-only System page (#36)
+
+- Sidebar: Settings replaces System (`G` then `S`). New app footer (Status link with a live health dot from `/api/status`, API, Privacy, Terms). `/system` stays but is hidden and 404s for non-admins (whole page, not just the log). Verified in Chromium on self-host (sidebar, footer, dot, `/system` 200 for the local admin). **Not verified:** the 404 for a non-admin in hosted mode with real Clerk (covered only by the existing `isAdminUser` unit tests); footer on mobile.
+

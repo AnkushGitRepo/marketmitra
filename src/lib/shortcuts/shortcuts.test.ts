@@ -57,6 +57,7 @@ describe('resolveKey — go-to chords', () => {
     ['p', '/portfolio'],
     ['m', '/markets'],
     ['c', '/mitra'],
+    ['s', '/settings'],
   ])('G then %s navigates to %s', (second, href) => {
     expect(chord(second)).toEqual({ type: 'navigate', href });
   });

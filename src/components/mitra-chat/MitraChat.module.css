@@ -3,7 +3,7 @@
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
   gap: 16px;
-  height: calc(100dvh - 125px);
+  height: calc(100dvh - 165px); /* header + padding + 40px footer */
   min-height: 480px;
 }
 
@@ -99,6 +99,6 @@
 
 @media (max-width: 760px) {
   .shell {
-    height: calc(100dvh - 176px);
+    height: calc(100dvh - 216px);
   }
 }
