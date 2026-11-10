@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const wishlist = await addSymbol(userId, id, parsed.data.symbol);
   if (!wishlist) {
     return NextResponse.json(
-      { success: false, error: 'Wishlist not found, or it already has 50 symbols' },
+      { success: false, error: 'Watchlist not found, or it already has 50 symbols' },
       { status: 409 }
     );
   }

@@ -11,7 +11,7 @@ export async function DELETE(
 
   const { id, symbol } = await params;
   const wishlist = await removeSymbol(userId, id, decodeURIComponent(symbol));
-  if (!wishlist) return NextResponse.json({ success: false, error: 'Wishlist not found' }, { status: 404 });
+  if (!wishlist) return NextResponse.json({ success: false, error: 'Watchlist not found' }, { status: 404 });
 
   return NextResponse.json({ success: true, data: wishlist });
 }

@@ -29,8 +29,8 @@
       "description": "Session-scoped. Price / %-move / 52w / portfolio / IPO alerts."
     },
     {
-      "name": "Wishlists",
-      "description": "Session-scoped. The user's own named stock wishlists (Markets page)."
+      "name": "Watchlists",
+      "description": "Session-scoped. The user's own named stock watchlists (Markets page). Paths and stored fields keep the legacy `wishlists` name."
     },
     {
       "name": "Notifications",
@@ -1985,10 +1985,10 @@
     "/api/wishlists": {
       "get": {
         "tags": [
-          "Wishlists"
+          "Watchlists"
         ],
-        "summary": "List wishlists",
-        "description": "The user's wishlists, oldest-created first.",
+        "summary": "List watchlists",
+        "description": "The user's watchlists, oldest-created first.",
         "security": [
           {
             "cookieAuth": []
@@ -1996,7 +1996,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The user's wishlists.",
+            "description": "The user's watchlists.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2040,9 +2040,9 @@
       },
       "post": {
         "tags": [
-          "Wishlists"
+          "Watchlists"
         ],
-        "summary": "Create a wishlist",
+        "summary": "Create a watchlist",
         "security": [
           {
             "cookieAuth": []
@@ -2078,7 +2078,7 @@
             "description": "Not authenticated."
           },
           "409": {
-            "description": "Per-user wishlist limit (20) reached."
+            "description": "Per-user watchlist limit (20) reached."
           },
           "422": {
             "description": "Invalid input."
@@ -2089,9 +2089,9 @@
     "/api/wishlists/{id}": {
       "patch": {
         "tags": [
-          "Wishlists"
+          "Watchlists"
         ],
-        "summary": "Rename a wishlist",
+        "summary": "Rename a watchlist",
         "security": [
           {
             "cookieAuth": []
@@ -2143,9 +2143,9 @@
       },
       "delete": {
         "tags": [
-          "Wishlists"
+          "Watchlists"
         ],
-        "summary": "Delete a wishlist",
+        "summary": "Delete a watchlist",
         "security": [
           {
             "cookieAuth": []
@@ -2177,10 +2177,10 @@
     "/api/wishlists/{id}/symbols": {
       "post": {
         "tags": [
-          "Wishlists"
+          "Watchlists"
         ],
-        "summary": "Add a stock to a wishlist",
-        "description": "Adds an NSE symbol (deduped, capped at 50 per wishlist).",
+        "summary": "Add a stock to a watchlist",
+        "description": "Adds an NSE symbol (deduped, capped at 50 per watchlist).",
         "security": [
           {
             "cookieAuth": []
@@ -2220,7 +2220,7 @@
         },
         "responses": {
           "200": {
-            "description": "The updated wishlist.",
+            "description": "The updated watchlist.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2258,7 +2258,7 @@
             "description": "Not authenticated."
           },
           "409": {
-            "description": "Wishlist not found, or already at the 50-symbol cap."
+            "description": "Watchlist not found, or already at the 50-symbol cap."
           },
           "422": {
             "description": "Invalid input."
@@ -2269,9 +2269,9 @@
     "/api/wishlists/{id}/symbols/{symbol}": {
       "delete": {
         "tags": [
-          "Wishlists"
+          "Watchlists"
         ],
-        "summary": "Remove a stock from a wishlist",
+        "summary": "Remove a stock from a watchlist",
         "security": [
           {
             "cookieAuth": []
@@ -2297,7 +2297,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The updated wishlist.",
+            "description": "The updated watchlist.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4138,7 +4138,7 @@
           "Settings"
         ],
         "summary": "Export my data (JSON download)",
-        "description": "Holdings, notes, alerts, wishlists, Mitra conversations (attachments by reference only) and preferences, as one versioned JSON file. API keys and notification secrets are never included.",
+        "description": "Holdings, notes, alerts, watchlists, Mitra conversations (attachments by reference only) and preferences, as one versioned JSON file. API keys and notification secrets are never included.",
         "security": [
           {
             "cookieAuth": []
@@ -4279,6 +4279,68 @@
           },
           "429": {
             "description": "Too many test emails."
+          }
+        }
+      }
+    },
+    "/api/markets/overview": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Market breadth and sector performance",
+        "description": "NIFTY 50 breadth (advances / declines / unchanged over the constituents that reported; null when fewer than 25 priced) and NSE sectoral index moves, best first. Live Yahoo Finance data, cached about a minute. Breadth covers NIFTY 50 only, not the whole exchange. FII/DII flows are not offered: there is no free permitted source.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { breadth, sectors, asOf } }. Fields are null / empty when the data source is down."
+          }
+        }
+      }
+    },
+    "/api/insights/market": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate / fetch the Mitra market pulse",
+        "description": "Two-sentence neutral read on today's indices, NIFTY 50 breadth and sector moves, grounded only in those figures. Per-user cache, 1h. 503 when market data is unavailable. Rate limited (ai tier).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "force": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Insight text + metadata."
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "429": {
+            "description": "Rate limited."
+          },
+          "503": {
+            "description": "Market data unavailable."
           }
         }
       }

@@ -1,0 +1,194 @@
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 20px 22px 14px;
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.manage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* A visible gap between Rename and Delete, and Delete in the warning colour, so they cannot be mistaken for each other. */
+.divider {
+  width: 1px;
+  height: 16px;
+  background: var(--app-border);
+  margin: 0 6px;
+}
+
+.linkButton,
+.dangerButton {
+  border: none;
+  background: none;
+  padding: 6px 4px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.linkButton {
+  color: var(--app-teal-strong);
+}
+
+.dangerButton {
+  color: var(--app-loss-text);
+}
+
+.dangerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.tab,
+.newTab {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.tabActive {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.tabCount {
+  margin-left: 7px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.newTab {
+  border-style: dashed;
+  color: var(--app-teal-strong);
+}
+
+.createRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.renameInput {
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  width: 170px;
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
+.smallPrimary {
+  border: none;
+  background: var(--app-ink);
+  color: var(--app-cream);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.smallPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--app-loss-text);
+}
+
+.searchWrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyRows {
+  margin: 16px 0;
+  font-size: 13px;
+  color: var(--app-text-faint);
+}
+
+.note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--app-text-faint);
+}
+
+.empty {
+  padding: 24px 8px;
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.emptyText {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+@media (max-width: 520px) {
+  .panel {
+    padding: 16px 14px 10px;
+  }
+}

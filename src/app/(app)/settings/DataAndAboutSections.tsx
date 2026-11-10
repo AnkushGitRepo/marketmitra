@@ -47,7 +47,7 @@ export function DataSection() {
         <div className={styles.row}>
           <div className={styles.rowText}>
             <p className={styles.rowLabel}>Export my data</p>
-            <p className={styles.rowHint}>One JSON file with your holdings, notes, alerts, wishlists, Mitra conversations and preferences. API keys and notification secrets are never included, and chat attachments are listed by reference only.</p>
+            <p className={styles.rowHint}>One JSON file with your holdings, notes, alerts, watchlists, Mitra conversations and preferences. API keys and notification secrets are never included, and chat attachments are listed by reference only.</p>
           </div>
           <a className={styles.btnLink} href="/api/settings/export" download>Download</a>
         </div>

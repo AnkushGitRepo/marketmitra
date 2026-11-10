@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const wishlist = await renameWishlist(userId, id, parsed.data.name);
-  if (!wishlist) return NextResponse.json({ success: false, error: 'Wishlist not found' }, { status: 404 });
+  if (!wishlist) return NextResponse.json({ success: false, error: 'Watchlist not found' }, { status: 404 });
 
   return NextResponse.json({ success: true, data: wishlist });
 }
@@ -29,7 +29,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const ok = await deleteWishlist(userId, id);
-  if (!ok) return NextResponse.json({ success: false, error: 'Wishlist not found' }, { status: 404 });
+  if (!ok) return NextResponse.json({ success: false, error: 'Watchlist not found' }, { status: 404 });
 
   return NextResponse.json({ success: true, data: { id } });
 }

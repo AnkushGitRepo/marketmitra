@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const wishlist = await createWishlist(userId, parsed.data.name);
   if (!wishlist) {
     return NextResponse.json(
-      { success: false, error: 'Wishlist limit reached (20). Delete one first.' },
+      { success: false, error: 'Watchlist limit reached (20). Delete one first.' },
       { status: 409 }
     );
   }

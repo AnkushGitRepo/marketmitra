@@ -1,62 +1,105 @@
 import type { Metadata } from 'next';
-import { IndexCard } from '@/components/dashboard-charts/IndexCard';
-import { WishlistPanel } from '@/components/dashboard-charts/WishlistPanel';
+import { AiBriefCard } from '@/components/dashboard-charts/AiBriefCard';
+import { IndexStrip } from '@/components/dashboard-charts/IndexStrip';
+import { BreadthCard } from '@/components/markets/BreadthCard';
+import { SectorPerformanceCard } from '@/components/markets/SectorPerformanceCard';
+import { WatchlistPanel } from '@/components/markets/WatchlistPanel';
 import { DataUnavailable } from '@/components/common/DataUnavailable';
+import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCurrentUserId } from '@/lib/currentUserId';
-import { getIndices } from '@/lib/dashboard/fundamentalsApi';
+import { getIndices, getPrices } from '@/lib/dashboard/fundamentalsApi';
 import { getQuotes, type Quote } from '@/lib/dashboard/quotes';
+import { getCachedInsight } from '@/lib/insights';
+import { getMarketOverview } from '@/lib/markets/marketOverview';
 import { listWishlists, type UserWishlist } from '@/lib/wishlists/userWishlists';
-import { MarketsSearchBar } from './MarketsSearchBar';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
   title: 'Markets',
-  description: 'Live Indian market indices and your own stock wishlists.',
+  description: 'Indices, market breadth, sector performance and your watchlists.',
 };
 
 export const dynamic = 'force-dynamic';
 
+/** Rows with a trend line. Bounded so a huge watchlist cannot fan out into dozens of price requests. */
+const MAX_SPARKLINES = 40;
+
+async function recentCloses(symbol: string): Promise<readonly number[] | null> {
+  const points = await getPrices(symbol, '1mo').catch(() => null);
+  if (!points) return null;
+  const closes = points.map((p) => (p.close === null ? NaN : Number(p.close))).filter((c) => Number.isFinite(c));
+  return closes.length >= 2 ? closes.reverse() : null; // the API returns newest first
+}
+
 export default async function MarketsPage() {
   const userId = await getCurrentUserId();
 
-  let wishlists: UserWishlist[] = [];
+  let watchlists: UserWishlist[] = [];
   if (userId) {
     try {
-      wishlists = await listWishlists(userId);
+      watchlists = await listWishlists(userId);
     } catch {
-      // Mongo unreachable — render the shell with no wishlists rather than 500.
+      // Mongo unreachable: render the shell with no watchlists rather than 500.
     }
   }
 
-  const allSymbols = Array.from(new Set(wishlists.flatMap((w) => w.symbols)));
-  const [indices, quoteList] = await Promise.all([
+  const allSymbols = Array.from(new Set(watchlists.flatMap((w) => w.symbols)));
+  const [indices, overview, quoteList, sparkEntries, hasKey, cachedPulse] = await Promise.all([
     getIndices(),
+    getMarketOverview(),
     allSymbols.length > 0 ? getQuotes(allSymbols) : Promise.resolve<Quote[]>([]),
+    Promise.all(allSymbols.slice(0, MAX_SPARKLINES).map(async (s) => [s, await recentCloses(s)] as const)),
+    userId ? resolveHasAiKey(getUserAiConfig(userId)) : Promise.resolve(false),
+    userId ? getCachedInsight('market', 'market', userId).catch(() => null) : Promise.resolve(null),
   ]);
   const quotes = Object.fromEntries(quoteList.map((q) => [q.symbol, q]));
+  const sparks = Object.fromEntries(
+    sparkEntries.flatMap(([symbol, closes]) => (closes ? [[symbol, closes] as const] : []))
+  );
 
   return (
     <div className={styles.pageRoot}>
       <div className={styles.head}>
         <p className={styles.eyebrow}>Live market data</p>
         <h1 className={styles.h1}>Markets</h1>
-        <MarketsSearchBar />
       </div>
 
-      <div className={styles.indexGrid}>
-        {(indices ?? []).map((ix) => (
-          <IndexCard key={ix.name} index={ix} />
-        ))}
-        {(!indices || indices.length === 0) && (
-          <DataUnavailable>Index data is temporarily unavailable — the data service may be offline.</DataUnavailable>
-        )}
-      </div>
+      <div className={styles.grid}>
+        <div className={styles.indices}>
+          {indices && indices.length > 0 ? (
+            <IndexStrip indices={indices} showMarketsLink={false} />
+          ) : (
+            <DataUnavailable>Index data is temporarily unavailable. The data service may be offline.</DataUnavailable>
+          )}
+        </div>
 
-      {userId ? (
-        <WishlistPanel wishlists={wishlists} quotes={quotes} />
-      ) : (
-        <p className={styles.eyebrow}>Sign in to build your own stock wishlists.</p>
-      )}
+        <div className={styles.breadth}>
+          <BreadthCard breadth={overview.breadth} />
+        </div>
+
+        <div className={styles.watch}>
+          {userId ? (
+            <WatchlistPanel watchlists={watchlists} quotes={quotes} sparks={sparks} />
+          ) : (
+            <p className={styles.eyebrow}>Sign in to build your own watchlists.</p>
+          )}
+        </div>
+
+        <div className={styles.sectors}>
+          <SectorPerformanceCard sectors={overview.sectors} />
+        </div>
+
+        <div className={styles.pulse}>
+          <AiBriefCard
+            title="Mitra Market Pulse"
+            endpoint="/api/insights/market"
+            initial={cachedPulse?.content ?? null}
+            hasKey={hasKey}
+            emptyText="No read yet. Ask Mitra for two sentences on how the market is trading today."
+            noKeyText="to get a two-sentence read on how the market is trading. MarketMitra charges nothing for it."
+          />
+        </div>
+      </div>
     </div>
   );
 }

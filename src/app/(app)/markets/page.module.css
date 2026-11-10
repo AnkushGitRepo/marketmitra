@@ -47,47 +47,33 @@
   }
 }
 
-.searchWrap {
-  position: relative;
-  max-width: 620px;
-}
-
-.searchBar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--color-surface);
-  border: 1px solid var(--app-border);
-  border-radius: var(--radius-pill);
-  padding: 14px 22px;
-  box-shadow: 0 8px 24px rgba(22, 25, 28, 0.05);
-  transition: box-shadow var(--duration-fast) ease, border-color var(--duration-fast) ease;
-}
-
-.searchBar:focus-within {
-  border-color: var(--app-teal-bg-strong);
-  box-shadow: 0 12px 30px rgba(12, 138, 108, 0.12);
-}
-
-.searchInput {
-  border: none;
-  outline: none;
-  font-size: 15px;
-  background: transparent;
-  width: 100%;
-  color: var(--app-ink);
-  font-family: var(--font-sans);
-}
-
-.indexGrid {
+/* Phone: indices, watchlist first, then sectors, pulse and breadth by scrolling. */
+.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'indices' 'watch' 'sectors' 'pulse' 'breadth';
   gap: 16px;
-  margin-bottom: 16px;
 }
 
-.moverGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
+.indices { grid-area: indices; min-width: 0; }
+.breadth { grid-area: breadth; min-width: 0; }
+.watch { grid-area: watch; min-width: 0; }
+.sectors { grid-area: sectors; min-width: 0; }
+.pulse { grid-area: pulse; min-width: 0; }
+
+/* The breadth card carries its own bottom margin for the desktop bar; the grid gap handles spacing here. */
+.breadth > * { margin-bottom: 0; }
+
+/* Desktop: breadth joins the top bar, then watchlist (65%) beside sectors and Mitra pulse (35%). */
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
+    grid-template-areas:
+      'indices indices'
+      'breadth breadth'
+      'watch sectors'
+      'watch pulse';
+    grid-template-rows: auto auto auto 1fr;
+    align-items: start;
+  }
 }

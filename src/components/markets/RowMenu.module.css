@@ -1,0 +1,64 @@
+.wrap {
+  position: relative;
+  flex: none;
+}
+
+.trigger {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--app-text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Desktop with a real pointer: hidden until the row is hovered or focused. Touch keeps it visible. */
+@media (hover: hover) and (pointer: fine) {
+  .trigger {
+    opacity: 0;
+  }
+
+  :global(.mm-row):hover .trigger,
+  :global(.mm-row):focus-within .trigger,
+  .triggerOpen {
+    opacity: 1;
+  }
+}
+
+.trigger:hover,
+.triggerOpen {
+  background: var(--app-pill-bg);
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(22, 25, 28, 0.14);
+}
+
+.item {
+  width: 100%;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--app-loss-text);
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--app-loss-bg);
+}

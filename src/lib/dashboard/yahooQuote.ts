@@ -103,6 +103,17 @@ export async function fetchYahooQuoteChunk(symbols: string[]): Promise<Record<st
   }
 }
 
+/** Raw quotes for Yahoo tickers used verbatim (e.g. `^CNXIT` sector indices), unlike fetchYahooQuoteChunk which
+ * appends `.NS`. A ticker that fails to resolve is absent from the result. */
+export async function fetchYahooTickerQuotes(tickers: readonly string[]): Promise<Record<string, unknown>[]> {
+  try {
+    const result = await yahooFinance.quote([...tickers], {}, { validateResult: false });
+    return Array.isArray(result) ? (result as Record<string, unknown>[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 const PERIOD_DAYS: Record<PricePeriod, number> = {
   '1mo': 31,
   '6mo': 186,

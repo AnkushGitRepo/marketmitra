@@ -7,7 +7,14 @@ import { orderIndices } from '@/lib/dashboard/indexOrder';
 import styles from './IndexStrip.module.css';
 
 /** NIFTY 50, SENSEX, NIFTY BANK, INDIA VIX in one balanced row; a swipeable carousel on phones. */
-export function IndexStrip({ indices }: { readonly indices: readonly IndexQuoteOut[] }) {
+export function IndexStrip({
+  indices,
+  showMarketsLink = true,
+}: {
+  readonly indices: readonly IndexQuoteOut[];
+  /** Hidden on the Markets page itself, where the link would point at the page you are on. */
+  readonly showMarketsLink?: boolean;
+}) {
   const router = useRouter();
   const ordered = orderIndices(indices);
 
@@ -15,9 +22,11 @@ export function IndexStrip({ indices }: { readonly indices: readonly IndexQuoteO
     <section className={styles.section} aria-label="Today’s market">
       <div className={styles.head}>
         <h2 className={styles.h2}>Today&rsquo;s market</h2>
-        <button type="button" className={styles.link} onClick={() => router.push('/markets')}>
-          Open Markets →
-        </button>
+        {showMarketsLink && (
+          <button type="button" className={styles.link} onClick={() => router.push('/markets')}>
+            Open Markets →
+          </button>
+        )}
       </div>
       {ordered.length > 0 ? (
         // tabIndex so keyboard users can scroll the carousel; the cards themselves are links.
