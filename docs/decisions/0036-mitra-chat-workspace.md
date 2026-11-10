@@ -80,3 +80,13 @@ conversations and deleting a just-created one. **Known and accepted for now:** t
 can fail on every normal turn until a retry or until it leaves the 3-turn window, `Range` requests buffer the whole
 file, two simultaneous first visits could create two "Earlier chat" conversations, and conversation summaries
 persist attachment-derived text in the system prompt.
+
+## Dictation permission handling (#38)
+The site's `Permissions-Policy` originally said `microphone=()`, which disables the mic for every origin: the
+browser never showed a prompt and no per-site setting could help, so dictation always ended in "blocked". It is now
+`microphone=(self)` (camera, geolocation, payment, USB and Bluetooth stay off; a test pins this). Starting dictation
+checks the Permissions API first: undecided → the native prompt is requested; denied → a help dialog shows the
+steps for the detected browser (Chrome/Edge/Brave/Safari, plus the OS-level switch) and starts dictation by itself
+when the permission flips to granted. Insecure contexts, a missing microphone and Brave (no speech service) get their
+own messages. Web pages cannot open the browser's settings screen; guided steps are the closest possible.
+

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ClipboardEvent, type Dra
 import { MAX_FILES_PER_MESSAGE, MAX_FILE_BYTES, MAX_MESSAGE_CHARS } from '@/lib/mitra-chat/limits';
 import { formatBytes } from '@/lib/mitra-chat/uiHelpers';
 import { mitraApi, type UploadedFile } from './api';
+import { MicHelpDialog } from './MicHelpDialog';
 import { useDictation } from './useDictation';
 import styles from './Composer.module.css';
 
@@ -148,6 +149,8 @@ export function Composer({ busy, disabled, ensureConversation, onSend, onStop }:
           ))}
         </ul>
       )}
+
+      <MicHelpDialog help={dictation.help} onRetry={dictation.start} onClose={dictation.dismissHelp} />
 
       <textarea
         ref={textarea}

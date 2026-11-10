@@ -41,7 +41,9 @@ const SECURITY_HEADERS = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()',
+    // microphone=(self): Mitra chat dictation needs it. `microphone=()` blocked it for every origin
+    // (no prompt, no site setting could help). Camera and the rest stay disabled.
+    value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()',
   },
   // allow-popups keeps OAuth/SSO popups (Clerk) working while still isolating the window.
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
