@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { DEFAULT_SENDER } from './diagnosis';
+import { replyToFromEnv } from './replyTo';
 
 // Resend's shared onboarding sender only delivers to the account owner; hosted needs a verified
 // domain in ALERT_EMAIL_FROM (same setting the alert emails use, ADR 0014 amendment). See diagnosis.ts.
@@ -30,6 +31,7 @@ export async function sendHtmlEmail(email: OutgoingEmail): Promise<SendResult> {
       subject: email.subject,
       html: email.html,
       text: email.text,
+      replyTo: replyToFromEnv(),
     });
     if (error) return { ok: false, error: (error.message || error.name || 'provider error').slice(0, MAX_ERROR_CHARS) };
     return { ok: true, id: data?.id ?? null };

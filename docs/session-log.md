@@ -974,3 +974,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 - Deployed (app only) after clearing the stray duplicates: Ready, smoke 4/4, `/api/markets/overview` live (49 of 50 breadth, 12 sectors), new routes in OpenAPI, anonymous 401s, redirect and email assets OK. `ALERT_EMAIL_FROM` is live; `EMAIL_CONTACT_LINE` is not set. **Not verified:** signed-in hosted flows, a real non-owner welcome email, real iOS Safari (see HANDOFF).
 - **Cleanup incident:** deleting duplicates with a repo-wide pattern removed 25,329 files (mostly gitignored, contents unknown), plus 32 `.git/index N` copies and 3 stray reflog files. Git tracked files were unaffected (`git diff` clean) and TypeScript (1103) and Python (225) tests pass. Lesson recorded as HANDOFF gotcha 3.
 
+## 2026-11-11 — Reply-To and contact line (#75)
+
+- Welcome/alert/test emails now carry an optional Reply-To (`EMAIL_REPLY_TO`, validated by a pure helper; bad values are ignored so sending never breaks). `EMAIL_CONTACT_LINE` and `EMAIL_REPLY_TO` set in Vercel production to the maintainer's Gmail (their choice: "make sure it gets to me"). The maintainer confirmed the designed emails arrive. **Not live until the next deploy; not verified:** a real reply landing in the inbox.
+
