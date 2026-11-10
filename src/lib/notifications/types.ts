@@ -10,7 +10,7 @@ export interface NotificationPayload {
   kind: NotificationKind;
   title: string;
   body: string;
-  /** In-app deep link, e.g. `/dashboard/stock/RELIANCE`. */
+  /** In-app deep link, e.g. `/stock/RELIANCE`. */
   href?: string | null;
   /** Free-form context kept for rendering/debugging (alert id, symbol…). */
   meta?: Record<string, unknown>;

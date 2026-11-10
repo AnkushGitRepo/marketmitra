@@ -1,7 +1,7 @@
 'use client';
 
 import { PAGE_SIZES } from '@/lib/dashboard/ipoFilters';
-import { pageCountFor, pageWindow } from '@/app/dashboard/screener/pageMath';
+import { pageCountFor, pageWindow } from '@/app/(app)/screener/pageMath';
 import styles from './page.module.css';
 
 interface IpoPaginationProps {

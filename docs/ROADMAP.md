@@ -50,7 +50,7 @@ Superseded plan: no paid vendor (EODHD dropped), no hosted/self-host split for d
 - [x] Tier 3 fallback built — Scrapling against Screener.in, isolated module, verified against two real companies (Reliance live fetch, Newgen Software saved-page fixture)
 - [x] Serving layer built — FastAPI endpoints for company/ratios/shareholding/financials/prices/documents, `source_tier` visible on every response; 25 tests pass offline (no network/DB)
 - [x] Tier 1 filing-URL discovery step — done 2026-09-06 (after sign-off). `app/ingestion/filing_discovery.py`: NSE `/api/corporates-financial-results` (primary) + BSE `AnnGetData` (fallback) → most-recent results filing → `xbrl_parser` / `pdf_financials` extract it as the latest period; Screener fills the history + is the fallback. Fixture-tested (13 cases), fails safe. See "Post-sign-off follow-ups".
-- [x] Dashboard/Portfolio/Markets/Stock UI built — `/dashboard`, `/dashboard/portfolio`, `/dashboard/markets`, `/dashboard/stock/[ticker]`, from an approved Claude Design import, fonts swapped to project standard (Manrope/JetBrains Mono).
+- [x] Dashboard/Portfolio/Markets/Stock UI built — `/dashboard`, `/portfolio`, `/markets`, `/stock/[ticker]`, from an approved Claude Design import, fonts swapped to project standard (Manrope/JetBrains Mono).
 - [x] UI wired to real data, mock data removed entirely (`src/lib/dashboard/mockData.ts` deleted) — see [ADR 0012](./decisions/0012-portfolio-holdings-and-real-data-wiring.md):
   - Stock detail page: fully real (ratios, financials, shareholding, price history) via fundamentals-api, for any real NSE symbol.
   - Markets/Dashboard: real Indian indices (NIFTY 50, SENSEX, NIFTY BANK, INDIA VIX) via a new fundamentals-api `/indices` endpoint (yfinance); gainers/losers scoped to a real 10-stock watchlist (`src/lib/dashboard/watchlist.ts`), not a market-wide screener (no such data source exists).
@@ -85,8 +85,8 @@ Scoped 2026-09-06 — see [ADR 0014](./decisions/0014-alerts-engine-scope.md) fo
 - [x] ~~Email provider provisioned~~ → **deferred to a follow-up** (ADR 0014 amendment 2026-09-06). `discover --category messaging` returns only Resend, which needs a new third-party integration + a verifiable sending domain (`.vercel.app` can't be verified). v1 ships **in-app + webhook**; webhook covers every "notify me elsewhere" case. `sendEmail` in `src/lib/notifications/channels.ts` stays a config-gated no-throw seam — wiring Resend later is `npm install resend` + the seam + a template + one live test, no engine refactor. Tracked below under "Phase 5 follow-ups".
 
 **Frontend:**
-- [x] `/dashboard/alerts` route in the app shell — `page.tsx` (server, reads `?new=1&symbol=` for the stock-page hand-off), `AlertsPageClient.tsx` (list grouped by status, create/edit inline, pause/resume/re-activate/delete), `AlertForm.tsx` (type-switched param fields, re-arm + cooldown), `alertText.ts` (pure describe/status helpers), `page.module.css`. "Alerts" added to `AppHeader` nav + `isNavActive`.
-- [x] "Set alert" affordance on `/dashboard/stock/[ticker]` — button in the price column → `/dashboard/alerts?new=1&symbol=<sym>`, form opens prefilled.
+- [x] `/alerts` route in the app shell — `page.tsx` (server, reads `?new=1&symbol=` for the stock-page hand-off), `AlertsPageClient.tsx` (list grouped by status, create/edit inline, pause/resume/re-activate/delete), `AlertForm.tsx` (type-switched param fields, re-arm + cooldown), `alertText.ts` (pure describe/status helpers), `page.module.css`. "Alerts" added to `AppHeader` nav + `isNavActive`.
+- [x] "Set alert" affordance on `/stock/[ticker]` — button in the price column → `/alerts?new=1&symbol=<sym>`, form opens prefilled.
 - [x] Notification bell + dropdown in `AppHeader` (`NotificationBell.tsx` + `.module.css`) — polls `/api/notifications` on mount / every 60s / on window focus, unread badge, click-through marks read + navigates to `href`, "Mark all read". Mounted in both the desktop actions and the mobile header; `MobileTabBar`'s dead "Search" tab swapped for "Alerts".
 - [x] Built against `/docs/design-system.md` + the `--app-*` token subset (cards, pills, `linkButton`/`linkButtonDanger`, `formError` all reused from the portfolio page's language). Verified live in selfhost mode via Playwright: empty state, form, created-alert card, and the full create→list→pause→delete API round-trip against real MongoDB; cron `?force=1` ran and degraded gracefully (`skippedNoData`) with fundamentals-api `/quote` not yet deployed.
 
@@ -120,8 +120,8 @@ Scoped 2026-09-06 — see [ADR 0015](./decisions/0015-news-feed-scope.md). v1 = 
 
 **Frontend — Next.js:**
 - [x] `src/lib/dashboard/newsApi.ts` — `getNews({symbols?, limit?, cursor?})` → `{ items, next_cursor }`, returns an empty page on failure. `GET /api/news` thin proxy for client-side pagination/toggle (documented in `/docs/api-surface.md`).
-- [x] `/dashboard/news` — server `page.tsx` (fetches first global page + resolves the user's holding symbols), `NewsFeedClient.tsx` (All markets / My holdings toggle, cursor "Load more", honest empty states), `page.module.css`. Shared `NewsList` + `NewsList.module.css` in `dashboard-charts/` (sentiment dot, source, relative time, links out). "News" added to `AppHeader` nav + `isNavActive`; `MobileTabBar`'s disabled "Profile" tab swapped for "News".
-- [x] "Recent news" card on `/dashboard/stock/[ticker]` — `getNews({symbols:[ticker], limit:6})` in the server component, rendered via `NewsList` (only when items exist).
+- [x] `/news` — server `page.tsx` (fetches first global page + resolves the user's holding symbols), `NewsFeedClient.tsx` (All markets / My holdings toggle, cursor "Load more", honest empty states), `page.module.css`. Shared `NewsList` + `NewsList.module.css` in `dashboard-charts/` (sentiment dot, source, relative time, links out). "News" added to `AppHeader` nav + `isNavActive`; `MobileTabBar`'s disabled "Profile" tab swapped for "News".
+- [x] "Recent news" card on `/stock/[ticker]` — `getNews({symbols:[ticker], limit:6})` in the server component, rendered via `NewsList` (only when items exist).
 - [x] Built against the design system + `--app-*` tokens; sentiment dot uses `--app-gain` / `--app-text-subtle` / `--app-loss`, page intro + dot `title` label it "headline tone… not analysis, and not a signal". Verified live in selfhost mode (Playwright): global feed renders real items with dots/sources, TCS stock page shows a real 6-item news card.
 - [x] `/api/news` thin proxy added (the feed does paginate client-side) — documented in `/docs/api-surface.md`.
 
@@ -129,7 +129,7 @@ Scoped 2026-09-06 — see [ADR 0015](./decisions/0015-news-feed-scope.md). v1 = 
 - [x] Works in both deployment modes — no `isHosted()` gating; `/api/news` is public, the holdings filter uses whatever `getCurrentUserId()` resolves.
 - [x] `tsc` / `lint` / `next build` / `npm test` (78) green; fundamentals-api `pytest` 50/50. Live-verified end-to-end against a local Postgres (migration applied) + local fundamentals-api: `/news` global + `?symbols=` + cursor pagination all return real data; the two Next.js surfaces render correctly.
 - [x] `/docs/architecture.md` "News feed" section added; `/docs/api-surface.md` gets a `GET /api/news` entry.
-- [x] Deployed 2026-09-06: migration `31f04c1b3507` applied to prod Neon (`alembic current` → head); fundamentals-api redeployed — prod `/news` verified serving real data (global + `?symbols=RELIANCE` + cursor). marketmitra-v2 redeployed — prod `/api/news` proxy verified; landing/`/api/search`/`/sign-in` regression-clean. `/dashboard/news` (and every `/dashboard/*`) returns 404 to bare `curl` — that's Clerk's dev-instance `protect-rewrite` for non-browser clients, identical to `/dashboard/portfolio`, not a regression; a real signed-in browser is needed to see the page render in prod.
+- [x] Deployed 2026-09-06: migration `31f04c1b3507` applied to prod Neon (`alembic current` → head); fundamentals-api redeployed — prod `/news` verified serving real data (global + `?symbols=RELIANCE` + cursor). marketmitra-v2 redeployed — prod `/api/news` proxy verified; landing/`/api/search`/`/sign-in` regression-clean. `/news` (and every `/dashboard/*`) returns 404 to bare `curl` — that's Clerk's dev-instance `protect-rewrite` for non-browser clients, identical to `/portfolio`, not a regression; a real signed-in browser is needed to see the page render in prod.
 - [x] Confirmed as done by the user 2026-09-06 (eyeballed signed-in in the Phase 4–8 prod verification pass); archiving protocol run — detail moved to [`/docs/archive/news-feed.md`](./archive/news-feed.md).
 
 **Explicitly out of v1 scope** (ADR 0015): notifications on news, LLM sentiment/summarisation, near-duplicate-story dedup across outlets, full article text / reader view, non-English news, user-configurable sources or per-source muting, per-user saved/read state.
@@ -137,7 +137,7 @@ Scoped 2026-09-06 — see [ADR 0015](./decisions/0015-news-feed-scope.md). v1 = 
 ## Phase 7 — IPO Tracker + GMP Alerts ✅
 **Signed off 2026-09-06.** Full build detail archived to [`/docs/archive/ipo-tracker.md`](./archive/ipo-tracker.md). Follow-ups (GH Actions refresh activation, one real IPO-alert fire) are under "Post-sign-off follow-ups" below.
 
-Scoped 2026-09-06 — see [ADR 0017](./decisions/0017-ipo-tracker-gmp-scope.md). v1 = IPO calendar + subscription + **GMP** (scraped from one aggregator, heavily caveated), ingested in `fundamentals-api` with lazy TTL refresh; alerts reuse Phase 5's engine (two new variants: a per-user `ipo_watch` subscription + per-IPO `ipo` alerts) with four triggers (opens / last day / allotment+listing / GMP threshold); a `/dashboard/ipos` page + a dashboard-home widget. The title's "nodemailer" is superseded by ADR 0014 — IPO alerts go through `deliverNotification` (in-app + webhook).
+Scoped 2026-09-06 — see [ADR 0017](./decisions/0017-ipo-tracker-gmp-scope.md). v1 = IPO calendar + subscription + **GMP** (scraped from one aggregator, heavily caveated), ingested in `fundamentals-api` with lazy TTL refresh; alerts reuse Phase 5's engine (two new variants: a per-user `ipo_watch` subscription + per-IPO `ipo` alerts) with four triggers (opens / last day / allotment+listing / GMP threshold); a `/ipos` page + a dashboard-home widget. The title's "nodemailer" is superseded by ADR 0014 — IPO alerts go through `deliverNotification` (in-app + webhook).
 
 - [x] **GATE — ToS review:** Chittorgarh reviewed 2026-09-06 (terms prohibit content reuse without permission; site 403s bots). **User decision: accept the trade-off** on the same terms as Screener.in — isolated swappable module, GMP caveated + degrades to "unavailable", polite pacing. Recorded in `/docs/data-sources.md` + ADR 0017 amendment.
 
@@ -157,7 +157,7 @@ Scoped 2026-09-06 — see [ADR 0017](./decisions/0017-ipo-tracker-gmp-scope.md).
 
 **Frontend — Next.js:**
 - [x] `src/lib/dashboard/iposApi.ts` client (pt.2). No `/api/ipos` proxy — the page is a Server-Component read; expand/alert actions hit `/api/alerts` directly.
-- [x] `/dashboard/ipos` — `page.tsx` (server; reads the user's `ipo_watch`), `IposPageClient` (Open now / Upcoming / Recently closed-listed sections + "Notify me about IPOs" panel → `ipo_watch` upsert), `IpoRow` (collapsed = name + Mainboard/SME + status + GMP + dates; expand = price/lot/size/sub/allotment/listing/anchor/GMP-range + the "unofficial grey-market estimate" caveat + Source link + inline "Set alert" → per-IPO `ipo`), `page.module.css`. "IPOs" in `AppHeader` nav; not in `MobileTabBar`. **Verified live** (selfhost).
+- [x] `/ipos` — `page.tsx` (server; reads the user's `ipo_watch`), `IposPageClient` (Open now / Upcoming / Recently closed-listed sections + "Notify me about IPOs" panel → `ipo_watch` upsert), `IpoRow` (collapsed = name + Mainboard/SME + status + GMP + dates; expand = price/lot/size/sub/allotment/listing/anchor/GMP-range + the "unofficial grey-market estimate" caveat + Source link + inline "Set alert" → per-IPO `ipo`), `page.module.css`. "IPOs" in `AppHeader` nav; not in `MobileTabBar`. **Verified live** (selfhost).
 - [x] `IpoOpenCard` (`dashboard-charts/`) on `/dashboard` home — compact open-IPO list + "All IPOs →"; `dashboard/page.tsx` fetches `getIpos('open')`.
 - [x] Built against the design system + `--app-*` tokens (card/pill/link patterns from the alerts + news pages).
 
@@ -178,16 +178,16 @@ Scoped 2026-09-06 — see [ADR 0017](./decisions/0017-ipo-tracker-gmp-scope.md).
 ## Phase 8 — AI Insights (stock / portfolio / IPO / Mitra chat) ✅
 **Signed off 2026-09-06.** Full build detail archived to [`/docs/archive/ai-insights.md`](./archive/ai-insights.md) (incl. the two post-deploy fixes: retired Gemini model, and the `getAiConfig` cold-start bug fix arc). Follow-ups (DRHP grounding, scripted-tile replacement) are under "Post-sign-off follow-ups" below.
 
-Scoped 2026-09-06 — see [ADR 0018](./decisions/0018-ai-insights-scope.md). v1 = AI SDK v6 with three BYO provider adapters (Gemini / Anthropic / OpenRouter), a `/dashboard/settings` page storing the user's key AES-256-GCM-encrypted in Mongo (env fallback for self-host), insight cards on the stock / portfolio / IPO surfaces (per-user cache for stock+portfolio, cross-user shared for IPO), and the "Mitra" widget wired to a real streamed chat. Hard guardrail: neutral synthesis only — no buy/sell/hold, no price targets, every insight ends "…not investment advice." Trial-limit counting is moot (no paid tier).
+Scoped 2026-09-06 — see [ADR 0018](./decisions/0018-ai-insights-scope.md). v1 = AI SDK v6 with three BYO provider adapters (Gemini / Anthropic / OpenRouter), a `/settings` page storing the user's key AES-256-GCM-encrypted in Mongo (env fallback for self-host), insight cards on the stock / portfolio / IPO surfaces (per-user cache for stock+portfolio, cross-user shared for IPO), and the "Mitra" widget wired to a real streamed chat. Hard guardrail: neutral synthesis only — no buy/sell/hold, no price targets, every insight ends "…not investment advice." Trial-limit counting is moot (no paid tier).
 
 **Foundation (part 1):**
 - [x] Deps: `ai`@7 + `@ai-sdk/google`@4 + `@ai-sdk/anthropic`@4 + `@openrouter/ai-sdk-provider`@3. `src/lib/ai/` — `providers.ts` (`resolveModel({provider,apiKey,model})`, `DEFAULT_MODELS`/`PROVIDER_LABELS`), `generate.ts` (`generateInsightText` + `validateAiKey` — never throw, `normalizeAiError` maps bad-key/quota/model errors), `prompts.ts` (`GUARDRAIL` + per-surface system prompts). 3 tests (`providers.test.ts`).
 - [x] `src/lib/crypto.ts` — AES-256-GCM `encrypt`/`decrypt` (iv.ct.tag base64url), `isEncKeyConfigured`, 5 tests (round-trip, random IV, tamper-reject, missing/short key). `src/lib/userSettings.ts` — `userSettings` collection, `getAiSettings` (decrypts) / `getAiSettingsView` (key hint only) / `setAiSettings` (encrypts, upsert) / `clearAiSettings`. `src/lib/ai/userAiConfig.ts` — `getAiConfig(userId, {allowEnv})` → stored ▸ env ▸ null (`allowEnv:false` for per-user insights).
-- [x] `/dashboard/settings` (`page.tsx` + `SettingsClient` + `page.module.css`) — provider select w/ per-provider key hints, password key input, optional model, "Test & save" (calls `validateAiKey`), "Remove key", a warning when `SETTINGS_ENC_KEY` is absent, a "Connected · key ends ••••xxxx" row. `GET/PUT/DELETE /api/settings/ai` (Zod, session-scoped; PUT 503s without `SETTINGS_ENC_KEY`, 400 on a rejected key). ⚙ link in the `AppHeader` actions. `.env.local.example` gains `SETTINGS_ENC_KEY` + `AI_PROVIDER`/`AI_API_KEY`/`AI_MODEL`. `tsc`/`lint`/`next build`/`npm test` (101) green; page renders live (selfhost, no-enc-key warning path).
+- [x] `/settings` (`page.tsx` + `SettingsClient` + `page.module.css`) — provider select w/ per-provider key hints, password key input, optional model, "Test & save" (calls `validateAiKey`), "Remove key", a warning when `SETTINGS_ENC_KEY` is absent, a "Connected · key ends ••••xxxx" row. `GET/PUT/DELETE /api/settings/ai` (Zod, session-scoped; PUT 503s without `SETTINGS_ENC_KEY`, 400 on a rejected key). ⚙ link in the `AppHeader` actions. `.env.local.example` gains `SETTINGS_ENC_KEY` + `AI_PROVIDER`/`AI_API_KEY`/`AI_MODEL`. `tsc`/`lint`/`next build`/`npm test` (101) green; page renders live (selfhost, no-enc-key warning path).
 
 **Insights (parts 2–4):**
 - [x] `src/lib/insights.ts` — `hashInput` (stable canonical-JSON sha256), `getCachedInsight` (read-only, for SSR), `getOrGenerate({scope,key,userId,inputHash,ttlMs,generate,force})` over the `insights` Mongo collection (fresh = hash-match + within TTL; else regenerate + upsert; a generate error doesn't write). `src/lib/ai/insightPrompts.ts` — pure `buildStockPrompt`/`buildPortfolioPrompt`/`buildIpoPrompt`. 8 tests (`insights.test.ts`).
-- [x] `POST /api/insights/stock {symbol,force?}` — `getAiConfig(userId,{allowEnv:false})` (no env), 400 `no_ai_key` when null; assembles company/ratios/P&L(last 2 periods)/shareholding/1mo-close/news snapshot; per-user cache `(userId, symbol)` 24h. `<InsightCard label="AI read">` on `/dashboard/stock/[ticker]` (SSR passes cached + hasKey).
+- [x] `POST /api/insights/stock {symbol,force?}` — `getAiConfig(userId,{allowEnv:false})` (no env), 400 `no_ai_key` when null; assembles company/ratios/P&L(last 2 periods)/shareholding/1mo-close/news snapshot; per-user cache `(userId, symbol)` 24h. `<InsightCard label="AI read">` on `/stock/[ticker]` (SSR passes cached + hasKey).
 - [x] `POST /api/insights/portfolio {force?}` — same key rules; input = enriched holdings (name/sector/qty/avg/ltp), per-user cache `(userId,'portfolio')` 6h, 400 when no holdings. `<InsightCard label="Portfolio insight">` under the analysis heading.
 - [x] `POST /api/insights/ipo {slug,force?}` — `getAiConfig(userId,{allowEnv:true})` (operator key allowed), **shared** cache `userId:null` keyed by slug, 12h; input = the IPO row (DRHP text is pt.4, passed null). `<InsightCard label="IPO brief">` in the expanded `IpoRow` (lazy — `initial:null`). `aiKeyAvailable` threaded page → client → row.
 - [→] **DRHP grounding (best-effort, trimmable) — DEFERRED.** The wired GMP source (InvestorGain's "Live IPO GMP" report) carries **zero DRHP links** — confirmed by grep against the saved page. Populating `ipos.drhp_url` would need a second per-IPO SPA scrape (or a SEBI filing-list scrape) — a new fragile job, out of proportion to a feature ADR 0018 marks "best-effort". The IPO brief already runs cleanly without it (`drhpExtract: null`). **Moved to "Post-sign-off follow-ups" below**; `GET /ipos/{slug}/drhp-extract` + `pdfplumber` come with it.
@@ -237,7 +237,7 @@ Carried past sign-off 2026-09-06. Each is small and independent; none gates Phas
 ---
 
 ## Phase 9 — API Surface: MCP server + rate limiting + API explorer ✅
-**Signed off 2026-09-06.** All three parts built, deployed, and prod-verified (MCP `/api/mcp`; Upstash rate limiting live on both services; explorer `/dashboard/api`). Full build detail archived to [`/docs/archive/api-surface.md`](./archive/api-surface.md); `/docs/architecture.md` holds the summary. Remaining follow-ups (scheduler activation, Resend, real fire tests, DRHP) are under "Post-sign-off follow-ups" above.
+**Signed off 2026-09-06.** All three parts built, deployed, and prod-verified (MCP `/api/mcp`; Upstash rate limiting live on both services; explorer `/api-docs`). Full build detail archived to [`/docs/archive/api-surface.md`](./archive/api-surface.md); `/docs/architecture.md` holds the summary. Remaining follow-ups (scheduler activation, Resend, real fire tests, DRHP) are under "Post-sign-off follow-ups" above.
 
 Scoped 2026-09-06 — see [ADR 0019](./decisions/0019-phase-9-api-surface-mcp-rate-limiting.md). Three deliverables, buildable largely in parallel: (1) a **full MCP server** exposing the read-only public data as agent tools (supersedes the original "JSON/Markdown response modes"), (2) **Upstash Redis** (Vercel Marketplace) sliding-window **rate limiting** on `/api/*` + the fundamentals-api public endpoints + the MCP server, (3) a **hosted interactive API explorer** page. Per-user MCP tools, API keys, and monetized tiers are explicitly out of v1.
 
@@ -263,7 +263,7 @@ Scoped 2026-09-06 — see [ADR 0019](./decisions/0019-phase-9-api-surface-mcp-ra
 
 **Part 3 — interactive API explorer:** ✅ built + deployed 2026-09-06.
 - [x] `public/openapi.json` — hand-kept OpenAPI 3.1 covering all 15 `/api/*` operations (+ tags, security schemes, request-body examples). Served at `/openapi.json`. `src/app/dashboard/api/openapi.test.ts` (3 cases) is the CI check: every documented path ↔ a `route.ts`, every documented method exported, no undocumented route.
-- [x] `/dashboard/api` — `page.tsx` (server, reads `openapi.json` + the MCP tool list) + `ApiExplorerClient.tsx` (endpoint list grouped by tag, method chips, per-endpoint panel: path/query param inputs, JSON request-body textarea prefilled from the spec example, "Send" against the real deployment with `credentials: 'include'`, pretty response + status + timing + `RateLimit-*` readout, "Copy as curl") + `page.module.css`. No secret entry.
+- [x] `/api-docs` — `page.tsx` (server, reads `openapi.json` + the MCP tool list) + `ApiExplorerClient.tsx` (endpoint list grouped by tag, method chips, per-endpoint panel: path/query param inputs, JSON request-body textarea prefilled from the spec example, "Send" against the real deployment with `credentials: 'include'`, pretty response + status + timing + `RateLimit-*` readout, "Copy as curl") + `page.module.css`. No secret entry.
 - [x] MCP server card at the top — connection URL (absolute, set after mount to avoid a hydration mismatch), the `{ "url": … }` config block, and the 7-tool list.
 - [x] Built against `/docs/design-system.md` + `--app-*` tokens. "API" added to the `AppHeader` nav. Live-verified in selfhost: `GET /api/search?q=tcs` → 200 with the real TCS row, timing shown.
 
@@ -283,7 +283,7 @@ Scoping session done 2026-09-06 → [ADR 0020](./decisions/0020-phase-10-rag-cha
 - **BYO-key** still required for *generation* only. Graceful fallback to today's prompt-stuffing when no vector index is available (non-Atlas self-host).
 - **DRHP grounding** (deferred Phase 8 follow-up) is absorbed into Phase 10a's IPO-brief surface.
 - **Scoping (resolved):** shared public corpus (`userId: null`, indexed once) + a strictly-filtered per-user private layer for holdings/notes/chat-history. Not full per-user duplication.
-- **Surfaces (resolved):** split — **10a** = plumbing + chat + insight grounding; **10b** = a dedicated `/dashboard/research` page, follow-on phase.
+- **Surfaces (resolved):** split — **10a** = plumbing + chat + insight grounding; **10b** = a dedicated `/research` page, follow-on phase.
 
 ### Phase 10a — retrieval plumbing + grounded chat & insights ✅ deployed + verified live
 
@@ -296,7 +296,7 @@ _Signed off, merged to `main`/`v2`, both projects deployed, RAG verified live on
 - [x] **Corpus indexer (news)** — `POST /api/cron/index-corpus` (`maxDuration` 300, `CRON_SECRET` bearer, `?indexesOnly=1` = ensure-indexes-and-return for self-host setup, `?newsLimit=`). `src/lib/rag/indexer.ts`: `ensureChunksIndexes()` → `getNews()` → `indexTextDocument()` per item (chunk → `embedBatch` in 32s → `replaceSourceChunks` under `userId:null`, no-op on unchanged) → prune news chunks older than `newsRetentionDays` (45). Per-item errors collected, run still finishes. `MAX_WINDOWS_PER_DOC` 400. `.github/workflows/index-corpus.yml` (every 2 h, curl the route like `evaluate-alerts.yml`). `public/openapi.json` entry added. 7 tests.
 - [x] **Corpus indexer (filings)** — `indexFilings()` in `indexer.ts`: per symbol (`RAG_FILING_SYMBOLS` or a 10-name Nifty default), `getDocuments()` → newest annual report → skip if `{source, publishedAt}` already indexed (immutable once filed, no re-fetch) → `fetchPdfText()` (`src/lib/rag/pdfTextClient.ts`, `IPO_INGEST_TOKEN` bearer, returns null on any failure) → `indexTextDocument(filing:<sym>:<url>, {docType:'filing',…}, text)`. `maxFilings` 3/run, `filingMaxPages` 120. Errors collected per filing. 10 tests (6 filings + pdfTextClient).
 - [x] **Per-user corpus sync** — `src/lib/rag/userSync.ts`: `syncUserNote` / `removeUserNote` / `syncUserHoldings` — chunk + `embedBatch` + `replaceSourceChunks` under the caller's `userId` (`note:<id>`, `holdings:<userId>`). Every function swallows its errors and returns a boolean — a sync failure never fails the originating write. Called fire-and-forget (`void`) from the notes routes; `resyncUserHoldings(userId)` (fetch enriched holdings → `syncUserHoldings`) wired `void` into `POST /api/holdings` + `PATCH|DELETE /api/holdings/{id}`. 9 tests.
-- [x] **`userNotes` collection + CRUD + panel** — `src/lib/notes/userNotes.ts` (`userNotes` collection: title/body/optional symbol, trim+truncate, 200/user cap) + `GET|POST /api/notes` + `PATCH|DELETE /api/notes/{id}` (owner-scoped, fire-and-forget corpus sync). `public/openapi.json` entries. `/dashboard/notes` page + `NotesPageClient` (list + inline create/edit/delete, design-system `page.module.css`) + `Notes` nav item in `AppHeader`. 8 tests.
+- [x] **`userNotes` collection + CRUD + panel** — `src/lib/notes/userNotes.ts` (`userNotes` collection: title/body/optional symbol, trim+truncate, 200/user cap) + `GET|POST /api/notes` + `PATCH|DELETE /api/notes/{id}` (owner-scoped, fire-and-forget corpus sync). `public/openapi.json` entries. `/notes` page + `NotesPageClient` (list + inline create/edit/delete, design-system `page.module.css`) + `Notes` nav item in `AppHeader`. 8 tests.
 - [x] **`chatMessages` collection** — `src/lib/chat/chatHistory.ts`: `appendTurn` (stores user+assistant, prunes past a 100/user rolling cap; never throws), `recentUserQuestions`, `clearHistory`. `streamChat` gained an `onFinish` hook; the chat route persists each completed turn and `void syncRecentChat(userId, recentUserQuestions())` re-embeds the user's recent questions as `chat:<userId>` (`docType: 'chat'`). `DELETE /api/ai/chat` clears history + drops the corpus entry. `public/openapi.json` updated. 7 tests. _(A "clear history" control in the chat widget: optional polish, not wired.)_
 - [x] **Retrieval lib** — `src/lib/rag/retrieve.ts`: `retrieve({ query, userId, docTypes?, symbol?, limit?, numCandidates?, minScore? })` → `embedQuery` → `$vectorSearch` (index `chunks_vector`) + `vectorSearchScore` projection over `{ userId: {$in: [null, caller]} }` (+ `docType $in`, + `symbol $or null` under `$and`). `minScore` post-filter. Returns `null` — never throws — on embed failure / empty vector / aggregation error (non-Atlas, missing index). `buildRetrievalFilter` exported + unit-tested. 8 tests.
 - [x] **Agentic chat** — `POST /api/ai/chat` reworked: `src/lib/ai/chatTools.ts` `buildChatTools(userId)` adapts all 7 `src/lib/mcp/tools.ts` entries to AI SDK `tool()` (thrown errors → `{error}`) **plus** `search_context` backed by `retrieve()` (returns `{available:false}` when the corpus is unreachable → model falls back to the data tools). `generate.ts` `streamChat` gains `{tools, maxSteps}` → `stopWhen: stepCountIs(5)`. New `CHAT_SYSTEM_AGENTIC` prompt (guardrail intact: no buy/sell/hold, "not investment advice"). `formatChatContext` kept as a small always-present portfolio seed; `maxDuration` 60→120. `toTextStreamResponse()` unchanged (tool steps internal). 5 tests.
@@ -315,7 +315,7 @@ _Signed off, merged to `main`/`v2`, both projects deployed, RAG verified live on
 
 Scoped in the [ADR 0020 amendment](./decisions/0020-phase-10-rag-chat.md#amendment-2026-09-07-phase-10b-scoped); built on `phase-10b-research`, reviewed, merged to `main`/`v2`, `marketmitra-v2` deployed (`65h11tfyh`). Full detail in [`docs/archive/rag-chat.md`](./archive/rag-chat.md#phase-10b--the-research-surface).
 
-A **structured brief** (fixed markdown sections), **retrieval + synthesis only** (no agentic loop — that's Phase 11), **ephemeral** (not stored). Subjects: company / theme / portfolio / comparison. `POST /api/research` (BYO key, `ai` tier, no cache) + `/dashboard/research` (`ResearchPageClient`, `MarkdownLite` renderer). 272 web tests green at ship.
+A **structured brief** (fixed markdown sections), **retrieval + synthesis only** (no agentic loop — that's Phase 11), **ephemeral** (not stored). Subjects: company / theme / portfolio / comparison. `POST /api/research` (BYO key, `ai` tier, no cache) + `/research` (`ResearchPageClient`, `MarkdownLite` renderer). 272 web tests green at ship.
 
 ## Phase 11 — Multi-agent analytical briefings ✅ deployed
 
@@ -334,7 +334,7 @@ Scoped 2026-09-07 → [ADR 0021](./decisions/0021-phase-11-multi-agent-analysis.
 - [x] `POST /api/agents/tick` — `CRON_SECRET` bearer, `claimNextRun`, `advanceRun` (one phase), `after()` re-invoke until done. `maxDuration` 120. `src/lib/agents/runner.ts` `advanceRun()` + 9 tests.
 - [x] `GET /api/agents/run/[id]` — owner-scoped poll → `toView`.
 - [x] `.github/workflows/agents-tick.yml` — every 5 min, sweeps the oldest stuck run.
-- [x] `/dashboard/agents` — `AgentsPageClient` (symbol input + cost note → phase indicator polling `GET run/[id]` every 4 s → `MarkdownLite` briefing). "Agents" nav item. No run list.
+- [x] `/agents` — `AgentsPageClient` (symbol input + cost note → phase indicator polling `GET run/[id]` every 4 s → `MarkdownLite` briefing). "Agents" nav item. No run list.
 
 ### Part C — reflection loop
 - [x] `POST /api/cron/agents-reflect` + `.github/workflows/agents-reflect.yml` (daily) — `src/lib/agents/reflect.ts` `reflectOnRun()` (price move since the run → owner's model → hindsight lessons; never a verdict). Prunes runs > 120 d. 5 tests.
@@ -371,7 +371,7 @@ Run 2026-09-12 against a 20-item checklist (legal, security, SEO, performance, a
 - [x] **Analytics + cookie notice** — `@vercel/analytics` (hosted-only, confirmed cookieless), `CookieNotice` disclosure bar (not a consent toggle — nothing non-essential to opt into). See ADR 0023.
 - [x] **Security** — `NEXT_PUBLIC_` var audit + a grep of the actual built `.next/static` bundle (not just source) for leaked secrets: clean. HTTPS verified live on the prod domain (HSTS preload active, HTTP→HTTPS 308). README gained a self-host HTTPS-is-your-responsibility note.
 - [x] **SEO** — per-route `generateMetadata`, `icon.tsx`/`apple-icon.tsx`, static + dynamic-per-stock OG images, `sitemap.ts`/`robots.ts`. Sitemap deliberately excludes auth-gated dashboard/stock routes.
-- [x] **Accessibility** — WCAG AA contrast audit of the full token palette (8 tokens fixed), alt-text audit, and a real Lighthouse run against the production build for landing/dashboard/stock — caught and fixed a missing `<main>` landmark and a GitHub link with no accessible name at mobile widths. All three pages now score 1.0 on accessibility.
+- [x] **Accessibility** — WCAG AA contrast audit of the full token palette (8 tokens fixed), alt-text audit, and a real Lighthouse run against the production build for landing/stock — caught and fixed a missing `<main>` landmark and a GitHub link with no accessible name at mobile widths. All three pages now score 1.0 on accessibility.
 - [x] **Mobile pass** — landing, dashboard, portfolio, markets, stock, privacy, terms, 404 checked at 375px: no horizontal overflow anywhere. Found and fixed a real bug: Mitra's chat panel defaulted to open on every page load, covering dashboard content on narrow viewports.
 - [x] **Reliability/UX** — custom `not-found.tsx`, footer link audit (removed every fabricated/`href="#"` link), form validation + spam-protection reviewed and concluded (both existing forms have real Zod server-side validation; no public form exists that needs Turnstile).
 - [x] Full suite (typecheck/lint/test/build) green after all changes.
@@ -420,7 +420,7 @@ reserved as "Phase 12," is dropped — not on the roadmap — freeing this numbe
   MCP tool — wired into Mitra's chat tools with **zero changes to `chatTools.ts`** (its
   existing generic MCP-tool-wrapping loop picks up any new tool automatically). Data tool,
   not a navigation tool: returns up to 20 rows inline, flags truncation.
-- [x] **Part C** — `/dashboard/screener`: default preset (ROE ≥ 15%, Debt/Equity ≤ 1),
+- [x] **Part C** — `/screener`: default preset (ROE ≥ 15%, Debt/Equity ≤ 1),
   paired min/max filter inputs + a sector dropdown, sortable results table linking to the
   existing stock detail page, empty state with reset. Added to `AppHeader`'s nav.
 - [x] **Part D** — confirmed (not assumed) `run_screener` needed no `chatTools.ts`
@@ -449,19 +449,19 @@ navigation-tool counterpart to `run_screener`; exposing `industry` as a UI filte
 
 ---
 
-## Index detail pages (`/dashboard/index/[name]`) ✅ deployed
+## Index detail pages (`/index/[name]`) ✅ deployed
 
 Built 2026-09-13. Clicking an index card or searching an index previously led nowhere
-useful (cards weren't links; search routed to the generic `/dashboard/markets` page).
+useful (cards weren't links; search routed to the generic `/markets` page).
 
 - [x] `fetchIndexHistory()` (`yahooQuote.ts`) — index price history via `yahoo-finance2`'s
   `chart()`, since indices have no Postgres-backed history (fundamentals-api serves index
   quotes live-only, never cached) and aren't company-resolvable. Mapped to the same
   `PricePointOut` shape the stock page's price history uses, so the existing chart
   machinery works unmodified.
-- [x] `/dashboard/index/[name]` — live quote, 52-week hi/lo, period-switchable price
+- [x] `/index/[name]` — live quote, 52-week hi/lo, period-switchable price
   chart, general market news (captioned as not index-specific). `IndexCard` (dashboard
-  home + `/dashboard/markets`) and the header search both route here now.
+  home + `/markets`) and the header search both route here now.
 - [x] `PageContextValue`/`formatPageContext` gained an `'index'` page type so Mitra can
   reference "this index" — no new chat tool added (out of scope for a navigation fix).
 - [x] Deliberately **not** added to `AppHeader`'s nav, per instruction — reachable only

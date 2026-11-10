@@ -88,7 +88,7 @@ A single `isHosted()` helper (`src/lib/deployment-mode.ts`) reads `NEXT_PUBLIC_D
 | **Retrieval (RAG)** | News and filings chunked and embedded (`bge-small-en-v1.5`, 384-dim) into a `chunks` collection with Atlas Vector Search; the chat is an agentic tool-calling loop over it. | ADR 0020 |
 | **Multi-agent analysis** | Four analyst agents → bull/bear debate → synthesis; async checkpointed runs. Stops before any trade decision. | ADR 0021 |
 | **API + MCP** | Every feature has a documented endpoint; public market data is also an MCP server. Hosted mode has fair-use rate limiting. | ADR 0019 |
-| **System status** | Public `/status` and an operator event log at `/dashboard/system`. | ADR 0029 |
+| **System status** | Public `/status` and an operator event log at `/system`. | ADR 0029 |
 
 ## Technology choices
 

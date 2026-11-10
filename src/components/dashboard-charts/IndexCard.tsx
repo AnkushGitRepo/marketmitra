@@ -14,7 +14,7 @@ export function IndexCard({ index }: { index: IndexQuoteOut }) {
   const decimals = value >= 1000 ? 2 : 2;
 
   return (
-    <Link href={`/dashboard/index/${encodeURIComponent(index.name)}`} className={styles.card}>
+    <Link href={`/index/${encodeURIComponent(index.name)}`} className={styles.card}>
       <p className={styles.name}>{index.name}</p>
       <p className={styles.value}>{value.toLocaleString('en-IN', { maximumFractionDigits: decimals })}</p>
       <div className={styles.footer}>

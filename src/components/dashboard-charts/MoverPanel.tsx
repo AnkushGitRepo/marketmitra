@@ -23,7 +23,7 @@ export function MoverPanel({ title, rows }: { title: string; rows: Quote[] }) {
               key={m.symbol}
               type="button"
               className={styles.row}
-              onClick={() => router.push(`/dashboard/stock/${m.symbol.toLowerCase()}`)}
+              onClick={() => router.push(`/stock/${m.symbol.toLowerCase()}`)}
             >
               <div className={styles.avatar}>
                 <CompanyLogo symbol={m.symbol} size={20} />

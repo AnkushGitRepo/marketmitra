@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
-// Deliberately just the public marketing pages. `/dashboard/*` (including
-// stock detail pages) is not listed: in hosted mode it's behind Clerk
+// Deliberately just the public marketing pages. The app pages (including
+// stock detail pages) are not listed: in hosted mode they're behind Clerk
 // auth, so a crawler can't reach it anyway, and a self-hosted instance is
 // a private individual deployment, not something meant to be indexed by
 // search engines. Listing auth-gated URLs in a public sitemap would be

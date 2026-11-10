@@ -58,7 +58,7 @@ export function DashboardPageClient({
           <h1 className={styles.h1}>Dashboard</h1>
         </div>
         <div className={styles.headActions}>
-          <button type="button" className={styles.btnSecondary} onClick={() => router.push('/dashboard/portfolio')}>
+          <button type="button" className={styles.btnSecondary} onClick={() => router.push('/portfolio')}>
             Manage holdings
           </button>
         </div>
@@ -70,7 +70,7 @@ export function DashboardPageClient({
           <p className={styles.statSub}>
             Add a position on the Portfolio page to see live value and P&amp;L here.
           </p>
-          <button type="button" className={styles.btnPrimary} onClick={() => router.push('/dashboard/portfolio')}>
+          <button type="button" className={styles.btnPrimary} onClick={() => router.push('/portfolio')}>
             Go to Portfolio
           </button>
         </div>
@@ -134,7 +134,7 @@ export function DashboardPageClient({
 
       <div className={styles.sectionHead}>
         <h2 className={styles.h2}>Today&rsquo;s market</h2>
-        <button type="button" className={styles.openMarketsLink} onClick={() => router.push('/dashboard/markets')}>
+        <button type="button" className={styles.openMarketsLink} onClick={() => router.push('/markets')}>
           Open Markets →
         </button>
       </div>

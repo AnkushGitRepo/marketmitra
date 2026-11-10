@@ -4,7 +4,7 @@ import { isAdminUser } from '@/lib/auth/admin';
 import { listEvents, type EventLevel } from '@/lib/system/eventLog';
 
 // System event log feed (ADR 0029) — backs the "Logs" panel on
-// /dashboard/system. Operational data (cron results, error messages), not
+// /system. Operational data (cron results, error messages), not
 // per-user, but hosted sign-up is open to anyone — so it is restricted to the
 // operator via ADMIN_USER_IDS (see lib/auth/admin.ts), not just "signed in".
 

@@ -7,9 +7,9 @@ export interface GoToShortcut {
 
 export const GO_TO_SHORTCUTS: readonly GoToShortcut[] = [
   { key: 'd', href: '/dashboard', label: 'Dashboard' },
-  { key: 'p', href: '/dashboard/portfolio', label: 'Portfolio' },
-  { key: 'm', href: '/dashboard/markets', label: 'Markets' },
-  { key: 'c', href: '/dashboard/mitra', label: 'Mitra chat' },
+  { key: 'p', href: '/portfolio', label: 'Portfolio' },
+  { key: 'm', href: '/markets', label: 'Markets' },
+  { key: 'c', href: '/mitra', label: 'Mitra chat' },
 ];
 
 /** How long the second key of a chord may lag the first. */

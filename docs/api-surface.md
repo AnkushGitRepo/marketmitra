@@ -73,7 +73,7 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Note:** this is a thin proxy to fundamentals-api's own `GET /search` (see ADR 0012's amendment) — a deliberate, narrow exception to the "consume fundamentals-api directly from Server Components" rule below, needed only because live-as-you-type search must run client-side and the browser needs a same-origin endpoint. It intentionally doesn't follow this file's usual response envelope convention since it's a pass-through of the Python service's own response shape.
 
 ### `GET /api/screener`
-- **Purpose:** Filter the NSE stock universe by financial criteria (market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, 3y sales/profit growth CAGR, sector/industry) for `/dashboard/screener`. See [ADR 0025](./decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md).
+- **Purpose:** Filter the NSE stock universe by financial criteria (market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, 3y sales/profit growth CAGR, sector/industry) for `/screener`. See [ADR 0025](./decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md).
 - **Auth:** public — no session required.
 - **Request:** query params `<field>_min`/`<field>_max` for each numeric field above, plus `sector`, `industry` (equality), and `limit` (default 100, max 500). Fixed-field min/max + equality only — no free-form query expressions (deliberately deferred, see the ADR).
 - **Response:** `data`-less shape (returns the array directly): `ScreenerMetric[]` — one row per matching company, sorted by market cap descending unless `sort_by` (any filterable field) / `order` (`asc`|`desc`) are given — sorted server-side over the whole matching set, NULLs last. Excludes companies whose last bulk scrape failed.
@@ -113,7 +113,7 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
   - `week52_breach` — `{ type, symbol, params: { edge: "high"|"low", withinPct?: number [0,50] } }`
   - `portfolio_pnl` — `{ type, symbol?: string|null, params: { metric: "total_value"|"unrealized_pnl"|"unrealized_pnl_pct", direction: "above"|"below", threshold: number } }` (`symbol` present = scoped to that one holding; absent = whole book)
   - `ipo_watch` — `{ type, params: { triggers: { opens: bool, lastDay: bool, allotmentListing: bool }, gmpThresholdPct?: number, ipoType: "all"|"mainboard" } }` (ADR 0017). **One per user** — POSTing this upserts the user's IPO-watch subscription (returns `200`, not `201`).
-  - `ipo` — `{ type, params: { ipoSlug: string, trigger: "opens"|"last_day"|"allotment_listing"|"gmp_threshold", gmpThresholdPct?: number, gmpThresholdAbs?: number } }` — a per-IPO alert set from a row on `/dashboard/ipos`.
+  - `ipo` — `{ type, params: { ipoSlug: string, trigger: "opens"|"last_day"|"allotment_listing"|"gmp_threshold", gmpThresholdPct?: number, gmpThresholdAbs?: number } }` — a per-IPO alert set from a row on `/ipos`.
   - `trailing_stop` — `{ type, symbol, params: { trailPct: number (0,50] } }` (ADR 0030). Fires when the price falls `trailPct`% below the highest price observed since the alert was created — the floor ratchets up with the stock, unlike `price_threshold`.
   - `cumulative_drawdown` — `{ type, symbol, params: { windowSessions: int [2,20], pct: number (0,100] } }` (ADR 0030). Fires when the price is down `pct`%+ versus its close `windowSessions` trading sessions ago — catches a slow multi-day slide that a single day's `percent_move` can miss.
   - plus optional `note` (≤200 chars), `rearm` (boolean, default false), `cooldownMinutes` (int 5–1440, default 60)
@@ -137,7 +137,7 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 ### `GET /api/mitra-activity`
 - **Purpose:** List every alert action Mitra has taken on its own — the default-guardrail hook on a new holding, or its own chat tools (ADR 0030) — most recent first, each with the `reason` it gave. A user's own edits made directly through the Alerts page are **not** logged here.
 - **Auth:** required; scoped to the current user.
-- **Response:** `data`: `MitraAction[]` — `{ id, userId, action, alertId, symbol, before, after, reason, source, createdAt }`. `action` ∈ `alert_created | alert_updated | alert_paused | alert_resumed`; `source` ∈ `auto_guardrail | mitra`; `before`/`after` are partial param/status snapshots for the diff shown on `/dashboard/mitra-activity`.
+- **Response:** `data`: `MitraAction[]` — `{ id, userId, action, alertId, symbol, before, after, reason, source, createdAt }`. `action` ∈ `alert_created | alert_updated | alert_paused | alert_resumed`; `source` ∈ `auto_guardrail | mitra`; `before`/`after` are partial param/status snapshots for the diff shown on `/mitra-activity`.
 - **Errors:** `401` unauthenticated.
 
 ### `GET /api/wishlists`
@@ -202,8 +202,8 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Note:** the handler degrades gracefully — a symbol with no live quote is skipped (counted in `skippedNoData`), never fired or auto-resolved on stale data.
 
 ### `GET /api/news`
-- **Purpose:** Same-origin thin proxy to `services/fundamentals-api`'s `GET /news` (ADR 0015), so `/dashboard/news` can "load more" and toggle its holdings filter client-side without exposing `FUNDAMENTALS_API_URL` to the browser. Same narrow, deliberate exception as `/api/search`.
-- **Auth:** public — news is public market data. (The holdings filter's symbol list is computed server-side in `/dashboard/news/page.tsx` and passed to the client, which forwards it here as `?symbols=`.)
+- **Purpose:** Same-origin thin proxy to `services/fundamentals-api`'s `GET /news` (ADR 0015), so `/news` can "load more" and toggle its holdings filter client-side without exposing `FUNDAMENTALS_API_URL` to the browser. Same narrow, deliberate exception as `/api/search`.
+- **Auth:** public — news is public market data. (The holdings filter's symbol list is computed server-side in `/news/page.tsx` and passed to the client, which forwards it here as `?symbols=`.)
 - **Request:** `symbols` (optional, comma-separated), `limit` (1–50, default 20), `cursor` (opaque, from a previous response's `next_cursor`).
 - **Response:** pass-through of the Python service's shape — `{ items: [{ url, title, summary, source, published_at, sentiment, sentiment_score, symbols[] }], next_cursor: string | null }`. Not the `{success,data,error}` envelope (same rationale as `/api/search`).
 - **Errors:** upstream failure yields `{ items: [], next_cursor: null }`, not a 5xx.
@@ -326,7 +326,7 @@ All routes: auth required, envelope `{ success, data, error }` except the stream
 - **Note:** `vectorIndex: 'unavailable'` (non-Atlas MongoDB) is reported as a non-fatal error — writes still succeed; retrieval simply falls back until an Atlas cluster is used.
 
 ### `GET /api/status`  _(system status/logs feature)_
-- **Purpose:** Live health snapshot for MongoDB Atlas, the fundamentals API, the MCP tool registry, the Upstash rate limiter, and Clerk auth configuration — checked in real time on each request (no persisted history for these), plus the most recent event-log entry for each of the 3 crons. Backs both the public `/status` page and the admin `/dashboard/system` page.
+- **Purpose:** Live health snapshot for MongoDB Atlas, the fundamentals API, the MCP tool registry, the Upstash rate limiter, and Clerk auth configuration — checked in real time on each request (no persisted history for these), plus the most recent event-log entry for each of the 3 crons. Backs both the public `/status` page and the admin `/system` page.
 - **Auth:** public.
 - **Response:** `data`: `{ checkedAt, overall: 'operational'|'degraded'|'down', components: [{ id, label, status, detail?, latencyMs? }], crons: [{ id, label, lastRun: SystemEvent|null }] }`. `overall` is the worst of MongoDB / fundamentals-api / MCP (the rate limiter and Clerk report `not_configured` in self-host without affecting `overall`).
 

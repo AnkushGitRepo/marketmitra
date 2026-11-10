@@ -26,7 +26,7 @@ export default async function AdvisorPlanPage() {
         <p className={styles.eyebrow}>This month</p>
         <h1 className={styles.h1}>No policy yet</h1>
         <p className={styles.muted}>
-          The plan is produced from your Investment Policy. <Link href="/dashboard/advisor/policy">Write it first.</Link>
+          The plan is produced from your Investment Policy. <Link href="/advisor/policy">Write it first.</Link>
         </p>
       </div>
     );

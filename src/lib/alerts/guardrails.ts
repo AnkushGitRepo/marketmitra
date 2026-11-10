@@ -81,7 +81,7 @@ export async function createGuardrailAlertsForHolding(
       kind: 'system',
       title: `Guardrail alerts set up for ${sym}`,
       body: `No alert existed for ${sym}, so I added a ${DEFAULT_TRAIL_PCT}% trailing stop and a ${DEFAULT_DRAWDOWN_PCT}% / ${DEFAULT_DRAWDOWN_WINDOW_SESSIONS}-session drawdown watch. See, edit, or remove these anytime on the Alerts page — or turn auto-guardrails off in Settings.`,
-      href: '/dashboard/alerts',
+      href: '/alerts',
       meta: { symbol: sym, source: 'auto_guardrail' },
     };
     const channels = await resolveChannels(userId);

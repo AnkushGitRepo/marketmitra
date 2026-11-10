@@ -58,7 +58,7 @@ export default async function MitraActivityPage() {
         Every alert Mitra has created or changed on its own — whether a default guardrail set up
         automatically on a new holding, or something it decided on its own judgment in chat — with the
         reason it gave. Nothing here was done by you directly; your own edits from the{' '}
-        <a href="/dashboard/alerts">Alerts page</a> don&rsquo;t appear here. Change or undo anything below
+        <a href="/alerts">Alerts page</a> don&rsquo;t appear here. Change or undo anything below
         from that page at any time.
       </p>
 
@@ -74,7 +74,7 @@ export default async function MitraActivityPage() {
                     {ACTION_LABELS[a.action]}
                   </span>
                   {a.symbol && (
-                    <a href={`/dashboard/stock/${encodeURIComponent(a.symbol)}`} className={styles.symbolLink}>
+                    <a href={`/stock/${encodeURIComponent(a.symbol)}`} className={styles.symbolLink}>
                       {a.symbol}
                     </a>
                   )}
@@ -100,7 +100,7 @@ export default async function MitraActivityPage() {
 
               {a.alertId && (
                 <div className={styles.rowActions}>
-                  <a href={`/dashboard/alerts?symbol=${encodeURIComponent(a.symbol ?? '')}`} className={styles.editLink}>
+                  <a href={`/alerts?symbol=${encodeURIComponent(a.symbol ?? '')}`} className={styles.editLink}>
                     View / change this alert →
                   </a>
                 </div>

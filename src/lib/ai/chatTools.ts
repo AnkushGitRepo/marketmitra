@@ -15,7 +15,7 @@
 //     (`set_alert_status` can only pause/resume), every write requires a
 //     real `reason` string enforced at the schema level, every write is
 //     logged to `mitraActions` (`src/lib/mitra/activityLog.ts`) for
-//     `/dashboard/mitra-activity`, and every numeric parameter is checked
+//     `/mitra-activity`, and every numeric parameter is checked
 //     against `src/lib/alerts/mitraBounds.ts` — a second, tighter range
 //     than what a human is allowed to set through the Alerts page UI.
 //
@@ -110,13 +110,13 @@ export function buildChatTools(userId: string | null): ToolSet {
   set.navigate_to_portfolio = tool({
     description: 'Open the portfolio / holdings page.',
     inputSchema: z.object({}),
-    execute: async () => ({ navigated: true, to: '/dashboard/portfolio' }),
+    execute: async () => ({ navigated: true, to: '/portfolio' }),
   });
 
   set.navigate_to_markets = tool({
     description: 'Open the markets page (indices, movers).',
     inputSchema: z.object({}),
-    execute: async () => ({ navigated: true, to: '/dashboard/markets' }),
+    execute: async () => ({ navigated: true, to: '/markets' }),
   });
 
   set.open_stock = tool({
@@ -127,7 +127,7 @@ export function buildChatTools(userId: string | null): ToolSet {
     }),
     execute: async ({ ticker }) => ({
       navigated: true,
-      to: `/dashboard/stock/${encodeURIComponent(ticker.toUpperCase())}`,
+      to: `/stock/${encodeURIComponent(ticker.toUpperCase())}`,
     }),
   });
 

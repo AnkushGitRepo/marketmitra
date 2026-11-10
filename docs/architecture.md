@@ -22,14 +22,14 @@ still needs to happen and be reviewed first).
   dashboard shell. ([archive: landing-page, auth-pages, dashboard-shell](./archive/))
 - **Phase 4:** fundamentals data service (`services/fundamentals-api/`) + the real-data
   dashboard (`/dashboard`, `/portfolio`, `/markets`, `/stock/[ticker]`). ([archive](./archive/fundamentals-data-service.md))
-- **Phase 5:** alerts engine (`/dashboard/alerts`) + generic notification subsystem. ([archive](./archive/alerts-engine.md))
-- **Phase 6:** news feed (`/dashboard/news`). ([archive](./archive/news-feed.md))
-- **Phase 7:** IPO tracker + GMP (`/dashboard/ipos`). ([archive](./archive/ipo-tracker.md))
-- **Phase 8:** AI insights + Mitra chat (`/dashboard/settings` + insight cards + chat). ([archive](./archive/ai-insights.md))
-- **Phase 9:** API surface — MCP server (`/api/mcp`), fair-use rate limiting, interactive explorer (`/dashboard/api`). ([archive](./archive/api-surface.md))
+- **Phase 5:** alerts engine (`/alerts`) + generic notification subsystem. ([archive](./archive/alerts-engine.md))
+- **Phase 6:** news feed (`/news`). ([archive](./archive/news-feed.md))
+- **Phase 7:** IPO tracker + GMP (`/ipos`). ([archive](./archive/ipo-tracker.md))
+- **Phase 8:** AI insights + Mitra chat (`/settings` + insight cards + chat). ([archive](./archive/ai-insights.md))
+- **Phase 9:** API surface — MCP server (`/api/mcp`), fair-use rate limiting, interactive explorer (`/api-docs`). ([archive](./archive/api-surface.md))
 - **Phase 10a:** retrieval (RAG) under chat + insights — `chunks` collection + Atlas Vector Search, embeddings on the fundamentals-api (`/embed`), `/api/cron/index-corpus`, agentic chat, grounded insights, per-user notes/holdings/chat layer. ([archive](./archive/rag-chat.md))
-- **Phase 10b:** `/dashboard/research` — a structured, ephemeral brief (company / theme / portfolio / comparison), retrieval + synthesis only, no agentic loop. ([archive](./archive/rag-chat.md#phase-10b--the-research-surface))
-- **Phase 11:** multi-agent analytical briefings (`/dashboard/agents`) — four analyst agents → bull/bear debate → synthesis, async checkpointed runs, a reflection loop. Deployed. ([archive](./archive/multi-agent-analysis.md))
+- **Phase 10b:** `/research` — a structured, ephemeral brief (company / theme / portfolio / comparison), retrieval + synthesis only, no agentic loop. ([archive](./archive/rag-chat.md#phase-10b--the-research-surface))
+- **Phase 11:** multi-agent analytical briefings (`/agents`) — four analyst agents → bull/bear debate → synthesis, async checkpointed runs, a reflection loop. Deployed. ([archive](./archive/multi-agent-analysis.md))
 
 The repo is a small monorepo: the Next.js app at the root (`src/`) plus a standalone Python
 service under `services/fundamentals-api/`.
@@ -63,14 +63,14 @@ un-blocked PDF host.
 | `/sign-in/[[...sign-in]]`    | Clerk hosted sign-in, on-brand split layout                  | public                                | redirects to `/dashboard`                  |
 | `/sign-up/[[...sign-up]]`    | Clerk hosted sign-up, on-brand split layout                  | public                                | redirects to `/dashboard`                  |
 | `/dashboard`                 | Dashboard home — stats, portfolio chart, indices, movers, open IPOs | protected in `src/proxy.ts`    | open directly, no login                    |
-| `/dashboard/portfolio`       | Holdings, allocation, concentration, per-holding P&L, AI insight | protected                          | open directly                              |
-| `/dashboard/markets`         | Index quotes, user-owned stock wishlists (`WishlistPanel.tsx`, ADR 0028 — replaced the old fixed-watchlist gainers/losers panel here), search | protected | open directly |
-| `/dashboard/stock/[ticker]`  | Stock detail — price chart, ratios, financials, shareholding (100% stacked bar, `ShareholdingBarChart.tsx`), peers, About, docs (capped 4 + "View all"), news, AI read | protected     | open directly                              |
-| `/dashboard/index/[name]`    | Index detail (NIFTY 50/SENSEX/NIFTY BANK/INDIA VIX) — live quote, 52w hi/lo, price chart, general market news. Reached by clicking an index card or searching one — deliberately **not** in the nav (only 4 indices exist; discovery is via search/cards) | protected | open directly |
-| `/dashboard/alerts`          | Price / %-move / 52w / portfolio-P&L alerts + IPO alerts     | protected                              | open directly                              |
-| `/dashboard/news`            | News feed — global stream + "My holdings" toggle             | protected                              | open directly                              |
-| `/dashboard/ipos`            | IPO tracker — calendar, subscription, GMP, per-IPO alerts    | protected                              | open directly                              |
-| `/dashboard/settings`        | BYO AI provider key (encrypted at rest)                      | protected                              | open directly                              |
+| `/portfolio`       | Holdings, allocation, concentration, per-holding P&L, AI insight | protected                          | open directly                              |
+| `/markets`         | Index quotes, user-owned stock wishlists (`WishlistPanel.tsx`, ADR 0028 — replaced the old fixed-watchlist gainers/losers panel here), search | protected | open directly |
+| `/stock/[ticker]`  | Stock detail — price chart, ratios, financials, shareholding (100% stacked bar, `ShareholdingBarChart.tsx`), peers, About, docs (capped 4 + "View all"), news, AI read | protected     | open directly                              |
+| `/index/[name]`    | Index detail (NIFTY 50/SENSEX/NIFTY BANK/INDIA VIX) — live quote, 52w hi/lo, price chart, general market news. Reached by clicking an index card or searching one — deliberately **not** in the nav (only 4 indices exist; discovery is via search/cards) | protected | open directly |
+| `/alerts`          | Price / %-move / 52w / portfolio-P&L alerts + IPO alerts     | protected                              | open directly                              |
+| `/news`            | News feed — global stream + "My holdings" toggle             | protected                              | open directly                              |
+| `/ipos`            | IPO tracker — calendar, subscription, GMP, per-IPO alerts    | protected                              | open directly                              |
+| `/settings`        | BYO AI provider key (encrypted at rest)                      | protected                              | open directly                              |
 
 All `/dashboard*` routes share one layout (`src/app/dashboard/layout.tsx` → `AppShell`).
 
@@ -193,7 +193,7 @@ plain-language coverage table in [`services/fundamentals-api/README.md`](../serv
   — parsers are fixture-tested and every failure collapses to "Tier 1 had nothing", so no
   regression. `financials_tier1_enabled` config flag turns it off.
 
-## Alerts engine (`/dashboard/alerts`)
+## Alerts engine (`/alerts`)
 
 Full detail: [archive/alerts-engine.md](./archive/alerts-engine.md); rationale in
 [ADR 0014](./decisions/0014-alerts-engine-scope.md).
@@ -209,14 +209,14 @@ re-arm, cooldown, hysteresis) in `src/lib/alerts/`, unit-tested with no I/O. The
 (`evaluate.ts`) batches one `GET /quote`, degrades gracefully on missing data
 (`skippedNoData`, never fires). `GET|POST /api/cron/evaluate-alerts` is `CRON_SECRET`-guarded;
 `vercel.json` declares a once-daily cron (Hobby ceiling), real ~10-min cadence needs an
-external scheduler. UI: `/dashboard/alerts` (alert list + a collapsible
+external scheduler. UI: `/alerts` (alert list + a collapsible
 `NotificationChannelsCard` for Slack/Telegram/WhatsApp/webhook setup, each with a real
 "send test" round-trip) + a `NotificationBell` in `AppHeader`. The IPO tracker (Phase 7)
 reuses this engine — see below. **Email transport is a config-gated no-throw stub** pending
 Resend provisioning; Slack/Telegram send through the real Slack/Telegram APIs (ADR 0028);
 WhatsApp relays through a user-supplied webhook — there's no built-in WhatsApp send path.
 
-## User wishlists (`/dashboard/markets`, ADR 0028)
+## User wishlists (`/markets`, ADR 0028)
 
 Replaced the old fixed-`WATCHLIST` gainers/losers panel on the Markets page with
 user-owned wishlists: `userWishlists` MongoDB collection (`{ userId, name, symbols[] }`,
@@ -229,7 +229,7 @@ symbol in every wishlist. **Scoped to the Markets page only** — the dashboard 
 gainers/losers panel still uses the old fixed `WATCHLIST`/`getTopMovers`, deliberately
 untouched.
 
-## News feed (`/dashboard/news`)
+## News feed (`/news`)
 
 Full detail: [archive/news-feed.md](./archive/news-feed.md); rationale in
 [ADR 0015](./decisions/0015-news-feed-scope.md).
@@ -239,11 +239,11 @@ Global stream = 4 broad Indian-markets RSS feeds; stock/portfolio views = Google
 per company name (exact symbol tag). Postgres `news_items` (URL-deduped) + `news_item_symbols`
 (migration `31f04c1b3507`), 30-day retention, keyset cursor pagination. Each item carries a
 VADER **headline-tone** label — shown everywhere as tone, *not a signal*. `GET /news` +
-`GET /api/news` (thin proxy). Surfaces: `/dashboard/news` (with an "All markets / My
+`GET /api/news` (thin proxy). Surfaces: `/news` (with an "All markets / My
 holdings" toggle) and a "Recent news" card on the stock page, both via a shared `NewsList`.
 No `isHosted()` gating. No news notifications in v1 (the subsystem is ready for them).
 
-## IPO tracker + GMP (`/dashboard/ipos`)
+## IPO tracker + GMP (`/ipos`)
 
 Full detail: [archive/ipo-tracker.md](./archive/ipo-tracker.md); rationale in
 [ADR 0017](./decisions/0017-ipo-tracker-gmp-scope.md).
@@ -258,11 +258,11 @@ accepted on the same terms as the Screener scraper). Postgres `ipos` table (migr
 Phase 5's engine** — `ipo_watch` (one per user) + per-IPO `ipo` variants in the same
 `alerts` collection / `evaluateAlerts()` loop, four triggers (opens / last day /
 allotment+listing / GMP threshold), pure logic in `src/lib/alerts/ipoAlerts.ts`. UI:
-`/dashboard/ipos` (`IposPageClient` + `IpoRow`) + an `IpoOpenCard` on the dashboard home.
+`/ipos` (`IposPageClient` + `IpoRow`) + an `IpoOpenCard` on the dashboard home.
 Prod seeded with 39 real IPOs; the GH Actions refresh is inert until its secret + default
 branch are set.
 
-## Screener (`/dashboard/screener`)
+## Screener (`/screener`)
 
 Full detail + the bulk-ingestion pipeline: [ADR 0025](./decisions/0025-screener-bulk-ingestion-and-shared-filter-schema.md).
 
@@ -279,12 +279,12 @@ UI's field list and its Zod schema, and `runScreener()` (`src/lib/dashboard/scre
 one function three callers share — the Screener page, `GET /api/screener`, and Mitra's
 `run_screener` MCP tool — so Mitra structurally cannot express a filter the UI can't. v1 is
 fixed-field min/max + sector-equality only, no custom query/expression builder (deliberately
-deferred). UI: `/dashboard/screener` — paired min/max range inputs + a sector dropdown
+deferred). UI: `/screener` — paired min/max range inputs + a sector dropdown
 (defaulting to ROE ≥ 15% / Debt-Equity ≤ 1 on first load), a sortable results table linking
 each row to the existing stock detail page, an empty state with reset. `run_screener` is a data
 tool, not a navigation tool — returns up to 20 matching rows inline, flags truncation.
 
-## AI Insights + Mitra chat (`/dashboard/settings`, insight cards, chat)
+## AI Insights + Mitra chat (`/settings`, insight cards, chat)
 
 Full detail: [archive/ai-insights.md](./archive/ai-insights.md); rationale in
 [ADR 0018](./decisions/0018-ai-insights-scope.md).
@@ -305,7 +305,7 @@ streams via the AI SDK's UI-message format (`toUIMessageStreamResponse()` /
 `useChat`, ADR 0022 — see below), context from `src/lib/ai/chatContext.ts`. Default Gemini
 model is `gemini-3.6-flash` (2.5-flash is retired for new keys).
 
-## Mitra chat workspace (`/dashboard/mitra`, ADR 0036)
+## Mitra chat workspace (`/mitra`, ADR 0036)
 
 Full-page chat: conversation rail (new/search/rename/delete), streamed markdown replies, attachments (image, PDF,
 audio, text) and mic dictation. History is server-authoritative — the client posts only the new message to
@@ -377,7 +377,7 @@ in [`/docs/api-surface.md`](./api-surface.md). All live in production.
   `userId` else client IP, fails open, no-op when no Upstash creds (self-host). Reads
   `KV_REST_API_*` (Vercel integration) or `UPSTASH_REDIS_REST_*`. Live against an Upstash
   store in `iad1` connected to both Vercel projects.
-- **API reference — `/dashboard/api`** + `public/openapi.json` (CI-checked against the route
+- **API reference — `/api-docs`** + `public/openapi.json` (CI-checked against the route
   handlers). Docs-site layout (2026-09-29 redesign): collapsible sidebar grouped by tag,
   "Build with AI agents" card (copies a full endpoint+MCP-tool context prompt to clipboard),
   and per-endpoint Overview (query/path param tables, request-body schema, response table,
@@ -386,7 +386,7 @@ in [`/docs/api-surface.md`](./api-surface.md). All live in production.
   original live form — fill params, send against the deployment with your session, copy-as-
   curl) tabs.
 
-## System status + event log (`/status`, `/dashboard/system`, ADR 0029)
+## System status + event log (`/status`, `/system`, ADR 0029)
 
 Rationale + scoping decisions: [ADR 0029](./decisions/0029-system-status-and-event-log.md).
 
@@ -405,7 +405,7 @@ Rationale + scoping decisions: [ADR 0029](./decisions/0029-system-status-and-eve
   `level`/`source`/`limit`/`before` filters.
 - **`/status`** — public page (`Navbar`/`Footer`, `--color-*` palette), dot + badge per
   component, cron run history, a client-side refresh button.
-- **`/dashboard/system`** — admin page inside the dashboard shell (`--app-*` palette),
+- **`/system`** — admin page inside the dashboard shell (`--app-*` palette),
   component cards, a scheduled-jobs table, and a filterable/paginated event-log table.
 
 ## Retrieval (RAG) — chat + insights (Phase 10a)
@@ -439,9 +439,9 @@ unavailable.
 - **Grounded insights** — `retrieveInsightGrounding()` folded into the stock / portfolio /
   IPO insight routes; retrieved passages go into the hashed cache key so a re-index
   invalidates stale insights.
-- **Per-user sync** — `src/lib/rag/userSync.ts` + `/api/notes` CRUD + `/dashboard/notes`
+- **Per-user sync** — `src/lib/rag/userSync.ts` + `/api/notes` CRUD + `/notes`
   panel + `resyncUserHoldings` on every holdings mutation. All fire-and-forget.
-- **Research surface (Phase 10b)** — `POST /api/research` + `/dashboard/research`: a longer
+- **Research surface (Phase 10b)** — `POST /api/research` + `/research`: a longer
   **structured** brief (fixed markdown sections) on a company / theme / portfolio /
   comparison. Retrieval + synthesis only — no agentic loop (that's Phase 11). Ephemeral (not
   stored). `src/lib/ai/researchPrompts.ts` (pure) + `RESEARCH_SYSTEM`; `MarkdownLite`
@@ -454,7 +454,7 @@ Four analyst agents (fundamentals / news+sentiment+retrieval / technical / macro
 uncertainties / what would change it / where the evidence currently leans) — ports the
 analytical half of TradingAgents as our own TS code, stopping before any trade decision.
 Async, checkpointed runs (`agentRuns` collection is the checkpoint) via
-`/api/agents/run` → `/api/agents/tick` → `/dashboard/agents`; a daily reflection loop
+`/api/agents/run` → `/api/agents/tick` → `/agents`; a daily reflection loop
 writes hindsight lessons per user. Merged to `main`/`v2`, tested, verified with a real
 live run, and deployed to production. Full detail: [archive/multi-agent-analysis.md](./archive/multi-agent-analysis.md).
 
@@ -470,4 +470,4 @@ live run, and deployed to production. Full detail: [archive/multi-agent-analysis
 - **AI insights + Mitra chat (Phase 8)** — [archive/ai-insights.md](./archive/ai-insights.md)
 - **API surface: MCP server + rate limiting + explorer (Phase 9)** — [archive/api-surface.md](./archive/api-surface.md)
 
-- **Stock chart workspace** ([ADR 0031](./decisions/0031-stock-chart-workspace-lightweight-charts.md)) — `src/components/pro-chart/` (lightweight-charts engine, indicator panes, SVG drawing overlay) with pure logic in `src/lib/chart/`; used on `/dashboard/stock/[ticker]`.
+- **Stock chart workspace** ([ADR 0031](./decisions/0031-stock-chart-workspace-lightweight-charts.md)) — `src/components/pro-chart/` (lightweight-charts engine, indicator panes, SVG drawing overlay) with pure logic in `src/lib/chart/`; used on `/stock/[ticker]`.

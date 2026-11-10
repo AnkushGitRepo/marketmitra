@@ -265,7 +265,7 @@ export function PortfolioPageClient({ holdings, history, aiInsight, news, activi
 
       <div className={styles.sectionHeadRow}>
         <h2 className={styles.h2}>News for your holdings</h2>
-        <Link href="/dashboard/news" className={styles.btnSecondary}>
+        <Link href="/news" className={styles.btnSecondary}>
           View all news
         </Link>
       </div>

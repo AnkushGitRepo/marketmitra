@@ -76,6 +76,7 @@ Write an ADR when a change affects the stack, data sources, security model, publ
 | 0034 | [Mitra as a screening assistant](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0034-mitra-screener-assistant.md) |
 | 0035 | [Mitra Advisor](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0035-mitra-advisor.md) |
 | 0036 | [Full-page Mitra chat](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0036-mitra-chat-workspace.md) |
+| 0037 | [App pages at /[page]](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0037-top-level-app-routes.md) |
 
 ### Security, privacy and compliance
 

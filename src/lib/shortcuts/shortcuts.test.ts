@@ -54,15 +54,15 @@ describe('resolveKey — go-to chords', () => {
 
   it.each([
     ['d', '/dashboard'],
-    ['p', '/dashboard/portfolio'],
-    ['m', '/dashboard/markets'],
-    ['c', '/dashboard/mitra'],
+    ['p', '/portfolio'],
+    ['m', '/markets'],
+    ['c', '/mitra'],
   ])('G then %s navigates to %s', (second, href) => {
     expect(chord(second)).toEqual({ type: 'navigate', href });
   });
 
   it('is case-insensitive (caps lock)', () => {
-    expect(chord('P')).toEqual({ type: 'navigate', href: '/dashboard/portfolio' });
+    expect(chord('P')).toEqual({ type: 'navigate', href: '/portfolio' });
   });
 
   it('expires after the timeout', () => {
@@ -128,12 +128,12 @@ describe('isEditableTarget', () => {
 
 describe('shortcutHintFor', () => {
   it('gives the chord text for routes that have one', () => {
-    expect(shortcutHintFor('/dashboard/portfolio')).toBe('G then P');
+    expect(shortcutHintFor('/portfolio')).toBe('G then P');
     expect(shortcutHintFor('/dashboard')).toBe('G then D');
   });
 
   it('is undefined for routes without a shortcut', () => {
-    expect(shortcutHintFor('/dashboard/news')).toBeUndefined();
+    expect(shortcutHintFor('/news')).toBeUndefined();
   });
 });
 

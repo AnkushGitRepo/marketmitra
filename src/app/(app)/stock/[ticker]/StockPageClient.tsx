@@ -174,7 +174,7 @@ export function StockPageClient({
           <button
             type="button"
             className={styles.setAlertButton}
-            onClick={() => router.push(`/dashboard/alerts?new=1&symbol=${encodeURIComponent(symbol)}`)}
+            onClick={() => router.push(`/alerts?new=1&symbol=${encodeURIComponent(symbol)}`)}
           >
             + Set alert
           </button>
@@ -216,7 +216,7 @@ export function StockPageClient({
           key={symbol}
           symbol={symbol}
           bars={bars}
-          alertHref={`/dashboard/alerts?new=1&symbol=${encodeURIComponent(symbol)}`}
+          alertHref={`/alerts?new=1&symbol=${encodeURIComponent(symbol)}`}
           onRangeChange={(r) => setRange(CONTEXT_PERIOD[r])}
         />
       </div>
@@ -309,7 +309,7 @@ export function StockPageClient({
                       {p.is_target ? (
                         p.name
                       ) : (
-                        <Link href={`/dashboard/stock/${p.symbol}`} className={styles.peerLink}>
+                        <Link href={`/stock/${p.symbol}`} className={styles.peerLink}>
                           {p.name}
                         </Link>
                       )}

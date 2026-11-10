@@ -1,5 +1,5 @@
 // Live component health checks backing /api/status (public) and
-// /dashboard/system (ADR 0029). Every check is best-effort and time-boxed —
+// /system (ADR 0029). Every check is best-effort and time-boxed —
 // a slow/unreachable dependency reports 'down', it never hangs the page.
 
 import { getDb } from '@/lib/mongodb';

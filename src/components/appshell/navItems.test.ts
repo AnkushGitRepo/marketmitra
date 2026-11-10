@@ -26,7 +26,7 @@ describe('buildNavSections', () => {
 
   it('no longer lists Mitra activity as a primary item', () => {
     const hrefs = buildNavSections(true).flatMap((s) => s.items.map((i) => i.href));
-    expect(hrefs).not.toContain('/dashboard/mitra-activity');
+    expect(hrefs).not.toContain('/mitra-activity');
   });
 
   it('has no duplicate hrefs', () => {
@@ -38,21 +38,21 @@ describe('buildNavSections', () => {
 describe('isNavActive', () => {
   it('keeps Dashboard exact-match only', () => {
     expect(isNavActive('/dashboard', '/dashboard')).toBe(true);
-    expect(isNavActive('/dashboard/news', '/dashboard')).toBe(false);
+    expect(isNavActive('/news', '/dashboard')).toBe(false);
   });
 
   it('treats stock detail as part of Markets', () => {
-    expect(isNavActive('/dashboard/stock/TCS', '/dashboard/markets')).toBe(true);
+    expect(isNavActive('/stock/TCS', '/markets')).toBe(true);
   });
 
   it('matches whole path segments, so Mitra chat is not active on Mitra activity', () => {
-    expect(isNavActive('/dashboard/mitra', '/dashboard/mitra')).toBe(true);
-    expect(isNavActive('/dashboard/mitra/anything', '/dashboard/mitra')).toBe(true);
-    expect(isNavActive('/dashboard/mitra-activity', '/dashboard/mitra')).toBe(false);
-    expect(isNavActive('/dashboard/portfolio-extra', '/dashboard/portfolio')).toBe(false);
+    expect(isNavActive('/mitra', '/mitra')).toBe(true);
+    expect(isNavActive('/mitra/anything', '/mitra')).toBe(true);
+    expect(isNavActive('/mitra-activity', '/mitra')).toBe(false);
+    expect(isNavActive('/dashboard/portfolio-extra', '/portfolio')).toBe(false);
   });
 
   it('treats Mitra activity as part of Agents', () => {
-    expect(isNavActive('/dashboard/mitra-activity', '/dashboard/agents')).toBe(true);
+    expect(isNavActive('/mitra-activity', '/agents')).toBe(true);
   });
 });

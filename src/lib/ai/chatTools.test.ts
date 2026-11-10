@@ -111,18 +111,18 @@ describe('buildChatTools', () => {
     });
     await expect((set.navigate_to_portfolio as unknown as ExecTool).execute({})).resolves.toEqual({
       navigated: true,
-      to: '/dashboard/portfolio',
+      to: '/portfolio',
     });
     await expect((set.navigate_to_markets as unknown as ExecTool).execute({})).resolves.toEqual({
       navigated: true,
-      to: '/dashboard/markets',
+      to: '/markets',
     });
   });
 
   it('open_stock uppercases the ticker and builds the stock route', async () => {
     const set = buildChatTools('u1');
     const out = await (set.open_stock as unknown as ExecTool).execute({ ticker: 'tcs' });
-    expect(out).toEqual({ navigated: true, to: '/dashboard/stock/TCS' });
+    expect(out).toEqual({ navigated: true, to: '/stock/TCS' });
   });
 
   it('open_screener runs the screen and returns a deep link plus the matches', async () => {
@@ -141,7 +141,7 @@ describe('buildChatTools', () => {
     expect(screenForModel).toHaveBeenCalledWith(filters);
     expect(out).toMatchObject({
       navigated: true,
-      to: '/dashboard/screener?sales_growth_3y_cagr_min=15&roe_min=15&sort_by=profit_growth_3y_cagr',
+      to: '/screener?sales_growth_3y_cagr_min=15&roe_min=15&sort_by=profit_growth_3y_cagr',
       count: 42,
     });
   });

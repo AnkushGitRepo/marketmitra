@@ -4,7 +4,27 @@ import { isHosted } from '@/lib/deployment-mode';
 import { isCrossSiteWrite } from '@/lib/security/csrf';
 import { checkRateLimit, rateLimitResponse, rateLimitHeaders } from '@/lib/rateLimit';
 
-const isProtectedRoute = createRouteMatcher(['/dashboard(.*)']);
+// App pages live at the top level (see src/lib/routes.ts); keep this list in sync (a test enforces it).
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/portfolio(.*)',
+  '/markets(.*)',
+  '/screener(.*)',
+  '/ipos(.*)',
+  '/news(.*)',
+  '/research(.*)',
+  '/agents(.*)',
+  '/notes(.*)',
+  '/alerts(.*)',
+  '/mitra(.*)',
+  '/mitra-activity(.*)',
+  '/advisor(.*)',
+  '/settings(.*)',
+  '/system(.*)',
+  '/stock(.*)',
+  '/index(.*)',
+  '/api-docs(.*)',
+]);
 
 // API routes covered by the shared `default` rate-limit tier. Excluded:
 //   - /api/mcp*      — governed by the stricter/public `mcp` tier in its own route
@@ -19,10 +39,10 @@ const isRateLimitExempt = createRouteMatcher([
 ]);
 
 // Only wraps the request in Clerk's middleware when running in hosted mode —
-// in selfhost mode every request passes through untouched, so /dashboard is
+// in selfhost mode every request passes through untouched, so the app pages are
 // open directly with no login (and nothing is rate limited).
 const hostedProxy = clerkMiddleware(async (auth, req) => {
-  // Rate-limited API routes are never under /dashboard, so handle them and return.
+  // Rate-limited API routes are never app pages, so handle them and return.
   if (isDefaultRateLimited(req) && !isRateLimitExempt(req)) {
     const { userId } = await auth();
     const result = await checkRateLimit(req, 'default', { userId });
@@ -68,6 +88,23 @@ export default function proxy(req: NextRequest, event: NextFetchEvent) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/portfolio/:path*',
+    '/markets/:path*',
+    '/screener/:path*',
+    '/ipos/:path*',
+    '/news/:path*',
+    '/research/:path*',
+    '/agents/:path*',
+    '/notes/:path*',
+    '/alerts/:path*',
+    '/mitra/:path*',
+    '/mitra-activity/:path*',
+    '/advisor/:path*',
+    '/settings/:path*',
+    '/system/:path*',
+    '/stock/:path*',
+    '/index/:path*',
+    '/api-docs/:path*',
     '/api/:path*',
     '/trpc/:path*',
     '/__clerk/:path*',

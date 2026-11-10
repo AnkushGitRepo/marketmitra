@@ -156,7 +156,7 @@ export function ScreenerResults({
               <tr key={row.symbol} className={styles.row}>
                 <td className={styles.rowLabel} style={{ textAlign: 'left' }}>
                   <Link
-                    href={`/dashboard/stock/${encodeURIComponent(row.symbol)}`}
+                    href={`/stock/${encodeURIComponent(row.symbol)}`}
                     className={styles.rowLink}
                   >
                     {row.name}

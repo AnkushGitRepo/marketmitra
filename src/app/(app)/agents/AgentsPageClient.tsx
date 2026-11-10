@@ -119,8 +119,8 @@ export function AgentsPageClient() {
         researcher debate it, and a lead writes up a balanced briefing — bull case, bear case,
         where they agree, the open questions, and where the evidence currently leans. It never
         tells you to buy, sell, or hold. Deeper and slower than a{' '}
-        <Link href="/dashboard/research">research brief</Link>. See what Mitra has been doing in the{' '}
-        <Link href="/dashboard/mitra-activity">activity log</Link>.
+        <Link href="/research">research brief</Link>. See what Mitra has been doing in the{' '}
+        <Link href="/mitra-activity">activity log</Link>.
       </p>
 
       {!run && (
@@ -149,7 +149,7 @@ export function AgentsPageClient() {
           </p>
           {noKey && (
             <p className={styles.hint}>
-              This needs your AI provider key. <Link href="/dashboard/settings">Add it in Settings</Link> — it
+              This needs your AI provider key. <Link href="/settings">Add it in Settings</Link> — it
               stays on this deployment and nothing is charged by MarketMitra.
             </p>
           )}
