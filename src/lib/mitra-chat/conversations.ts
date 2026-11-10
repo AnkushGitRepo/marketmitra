@@ -50,8 +50,24 @@ const toConversation = (d: ConversationDoc): Conversation => ({
   updatedAt: d.updatedAt,
 });
 
+let indexesReady: Promise<unknown> | undefined;
+
 async function cols() {
   const db = await getDb();
+  // Created once per process; keeps list/load/usage queries off collection scans.
+  indexesReady ??= (async () => {
+    try {
+      await Promise.all([
+        db.collection('mitraConversations').createIndex({ userId: 1, updatedAt: -1 }),
+        db.collection('mitraMessages').createIndex({ conversationId: 1, seq: 1 }),
+        db.collection('mitraMessages').createIndex({ userId: 1, conversationId: 1 }),
+        db.collection('mitraFiles.files').createIndex({ 'metadata.userId': 1, 'metadata.conversationId': 1 }),
+      ]);
+    } catch {
+      // Indexes only affect speed; never fail a request over them.
+    }
+  })();
+  await indexesReady;
   return {
     conversations: db.collection<ConversationDoc>('mitraConversations'),
     messages: db.collection<MessageDoc>('mitraMessages'),

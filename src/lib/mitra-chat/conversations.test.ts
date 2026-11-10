@@ -22,6 +22,7 @@ function fakeCollection(rows: Row[]) {
   };
   return {
     rows,
+    createIndex: async () => 'ok',
     countDocuments: async (f: Record<string, unknown>) => rows.filter((r) => matches(r, f)).length,
     insertOne: async (d: Row) => void rows.push(d),
     insertMany: async (ds: Row[]) => void rows.push(...ds),
@@ -70,7 +71,7 @@ const stores = {
   chatMessages: fakeCollection([]),
 };
 vi.mock('@/lib/mongodb', () => ({
-  getDb: async () => ({ collection: (name: keyof typeof stores) => stores[name] }),
+  getDb: async () => ({ collection: (name: string) => stores[name as keyof typeof stores] ?? fakeCollection([]) }),
 }));
 
 const repo = await import('./conversations');

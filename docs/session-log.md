@@ -889,4 +889,10 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   speech; dictation (needs a mic); mobile layout; a file near the 4 MB limit on Vercel; production (not deployed).
 - **Mistakes worth knowing:** I ran `next build` while `next dev` was running (gotcha 4) and corrupted the dev cache;
   recovering, I killed a browser helper process because `lsof -ti:3000` also lists *clients* (gotcha 14).
+- **Follow-up (same day):** at the maintainer's request Mitra chat can fetch platform data via a read-only
+  `call_platform_api` tool (all documented GETs minus settings/cron/advisor/own storage; a test pins the exclusions
+  to the real `openapi.json`). Verified live: it called `/api/notes` and `list_alerts` and answered from real data.
+  An independent security review found no cross-user access; its HIGH/MEDIUM items were fixed or are listed as
+  accepted in ADR 0036. **Not done:** the maintainer's wording was "all API endpoints"; writes/settings were
+  deliberately left out (see ADR) — say if you want a confirmation-gated write path.
 

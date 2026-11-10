@@ -70,7 +70,13 @@ export async function prepareModelMessages(
         continue;
       }
       const id = fileIdFromUrl(part.url);
-      const stored = id ? await deps.store.read(deps.userId, id) : null;
+      // Check the size from metadata first so an over-budget file is never read into memory.
+      const meta = id ? await deps.store.getMeta(deps.userId, id) : null;
+      if (meta && meta.kind !== 'text' && meta.size > budget) {
+        parts.push(placeholder(part, 'was too large to include alongside the other attachments'));
+        continue;
+      }
+      const stored = meta && id ? await deps.store.read(deps.userId, id) : null;
       if (!stored) {
         parts.push(placeholder(part, 'is no longer available'));
       } else if (deps.canRead && !deps.canRead(stored.meta.kind)) {

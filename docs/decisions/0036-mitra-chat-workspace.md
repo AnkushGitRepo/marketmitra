@@ -47,6 +47,18 @@ widget (7 read-only data tools, `search_context`, navigation, screener — nothi
 actions) and attachment rules (cite where in a file a claim comes from, never invent figures). Output cap 4096
 tokens. The Advisor's behaviour guard (local-only, ADR 0035) is applied exactly as in the widget.
 
+**Platform data access.** The full-page chat gets `call_platform_api`: GET-only access to every documented
+endpoint in `public/openapi.json` (run server-side as the signed-in user, same-origin, 10 s timeout, response capped
+at 12k chars). The catalog is derived from the spec, so a newly documented GET route becomes reachable
+automatically; the endpoint list is injected into the system prompt. **Deliberately excluded:** every non-GET
+(writes/deletes), `/api/settings/*` (key and channel config), `/api/cron/*`, `/api/advisor/*` (local-only, own gated
+tools), `/api/mitra/*`, `/api/system/logs`, exports, `/api/mcp`, `/api/ai/*`. This keeps ADR 0022's invariant (no
+tool for settings/security/billing/destructive actions) and a test asserts it against the real spec. Path and
+query are re-validated against the catalog (segment charset, declared params only), so the tool cannot be steered
+to another host or an undocumented route. On any turn that has an attachment in context the existing alert-write
+tools (`create_alert`, `update_alert_params`, `set_alert_status`) are withheld, and the prompt tells the model to
+treat attachment content as data, never instructions (prompt-injection hardening).
+
 **Rendering.** `MarkdownLite` gains pipe tables, numbered lists, fenced/inline code and rules. It still emits only
 React text nodes — no links, images or HTML — so model output cannot inject markup.
 
@@ -58,3 +70,13 @@ React text nodes — no links, images or HTML — so model output cannot inject 
 - The widget's `chatMessages` store and `POST /api/ai/chat` are unchanged (they still feed retrieval).
 - Not built: PDF text extraction for attachments that have scrolled out of the 3-turn window (they become a
   placeholder), resumable streams after a refresh, message editing/branching, sharing.
+
+## Review follow-ups (independent review, 2026-11-10)
+Fixed: write tools withheld on attachment turns; only completed replies are stored (so a retry is detected and
+never duplicated); a retry resends attachments as text-only placeholders; file size checked from metadata before
+bytes are read; upload rejected from `Content-Length` before buffering; indexes created; client race when switching
+conversations and deleting a just-created one. **Known and accepted for now:** the 50 MB quota check is not atomic
+(parallel uploads can overshoot it), self-host has no rate limiting without Upstash, a malformed-but-plausible file
+can fail on every normal turn until a retry or until it leaves the 3-turn window, `Range` requests buffer the whole
+file, two simultaneous first visits could create two "Earlier chat" conversations, and conversation summaries
+persist attachment-derived text in the system prompt.

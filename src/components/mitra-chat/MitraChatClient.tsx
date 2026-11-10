@@ -29,17 +29,23 @@ export function MitraChatClient() {
   const [railOpen, setRailOpen] = useState(false);
   const conversations = useConversations();
   const nonce = useRef(1);
+  // Bumped on every navigation so a slow response for an earlier choice cannot overwrite the current view.
+  const navTicket = useRef(0);
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   // Promise chain (not async/await) so the state updates happen in callbacks, which is
   // what the effect below needs to stay free of synchronous setState.
   const load = useCallback((id: string) => {
+    const ticket = ++navTicket.current;
     return mitraApi
       .get(id)
       .then(({ messages }) => {
+        if (ticket !== navTicket.current) return;
         setView({ kind: 'ready', id, messages });
         syncUrl(id);
       })
       .catch(() => {
+        if (ticket !== navTicket.current) return;
         setView({ kind: 'missing' });
         syncUrl(null);
       });
@@ -62,6 +68,8 @@ export function MitraChatClient() {
   }, []);
 
   const startNew = useCallback(() => {
+    navTicket.current += 1;
+    setCreatedId(null);
     setView({ kind: 'new', nonce: nonce.current++ });
     setRailOpen(false);
     syncUrl(null);
@@ -69,6 +77,7 @@ export function MitraChatClient() {
 
   const handleCreated = useCallback(
     (c: ConversationDto) => {
+      setCreatedId(c.id);
       conversations.add(c);
       syncUrl(c.id);
     },
@@ -77,7 +86,7 @@ export function MitraChatClient() {
     [conversations.add]
   );
 
-  const activeId = view.kind === 'ready' || view.kind === 'loading' ? view.id : null;
+  const activeId = view.kind === 'ready' || view.kind === 'loading' ? view.id : view.kind === 'new' ? createdId : null;
 
   const handleDelete = async (id: string) => {
     await conversations.remove(id);

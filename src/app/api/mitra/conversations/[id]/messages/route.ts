@@ -6,6 +6,7 @@ import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
 import { MITRA_WORKSPACE_SYSTEM } from '@/lib/ai/prompts';
 import { buildChatTools } from '@/lib/ai/chatTools';
+import { PLATFORM_CATALOG_TEXT, buildPlatformApiTools } from '@/lib/ai/platformApiTools';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
 import { prepareAdvisorChat } from '@/lib/advisor/behaviour/chat';
 import { logEvent } from '@/lib/system/eventLog';
@@ -23,6 +24,10 @@ export const maxDuration = 120;
 
 const MAX_TOOL_STEPS = 9;
 const MAX_OUTPUT_TOKENS = 4096;
+
+// Tools that change the user's data. They are withheld on any turn where an attachment is in play,
+// so text hidden inside a document cannot talk the model into editing alerts (prompt injection).
+const WRITE_TOOLS = ['create_alert', 'update_alert_params', 'set_alert_status'] as const;
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -102,27 +107,35 @@ async function handleMessage(request: Request, ctx?: unknown) {
     }
   }
 
+  // On a retry the previous attempt failed — possibly because the provider could not read an
+  // attachment — so resend text only rather than looping on the same bytes.
   const prepared = await prepareModelMessages(all.slice(keepFrom), {
     store,
     userId,
-    canRead: (kind) => supportsKind(aiConfig, kind),
+    canRead: (kind) => (retry ? kind === 'text' : supportsKind(aiConfig, kind)),
   });
+  const hasAttachments = all.slice(keepFrom).some((m) => m.parts.some((p) => p.type === 'file'));
   const modelMessages = await convertToModelMessages(prepared);
 
   const context = await buildPortfolioContext(userId).catch(() => '');
   const system = [
     MITRA_WORKSPACE_SYSTEM,
+    `--- PLATFORM API (call_platform_api, read-only GET) ---\n${PLATFORM_CATALOG_TEXT}`,
     `--- PORTFOLIO CONTEXT ---\n${context}`,
     summary ? `--- EARLIER IN THIS CONVERSATION (summary) ---\n${summary}` : '',
     advisor ? advisor.systemAddendum : '',
   ]
     .filter(Boolean)
     .join('\n\n');
+  const baseTools = Object.fromEntries(
+    Object.entries(buildChatTools(userId)).filter(([name]) => !(hasAttachments && (WRITE_TOOLS as readonly string[]).includes(name)))
+  );
+  const platformTools = buildPlatformApiTools({ origin: new URL(request.url).origin, cookie: request.headers.get('cookie') });
   const tools = advisor
     ? advisor.advisorToolsOnly
       ? advisor.tools
-      : { ...buildChatTools(userId), ...advisor.tools }
-    : buildChatTools(userId);
+      : { ...baseTools, ...platformTools, ...advisor.tools }
+    : { ...baseTools, ...platformTools };
 
   try {
     const result = streamChat(aiConfig, system, modelMessages, {
@@ -134,8 +147,9 @@ async function handleMessage(request: Request, ctx?: unknown) {
     void result.consumeStream();
     return result.toUIMessageStreamResponse({
       originalMessages: all,
-      onEnd: async ({ responseMessage }) => {
-        if (!textOf(responseMessage)) return;
+      onEnd: async ({ responseMessage, isAborted, finishReason }) => {
+        // Only a completed reply is stored: a partial one would make a client retry look like a new turn.
+        if (isAborted || finishReason === 'error' || !textOf(responseMessage)) return;
         await appendMessages(userId, id, [responseMessage]).catch(() => false);
       },
       onError: (error) => {

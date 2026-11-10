@@ -9,11 +9,19 @@ import { processUpload } from '@/lib/mitra-chat/upload';
 
 export const dynamic = 'force-dynamic';
 
+const MULTIPART_OVERHEAD_BYTES = 100_000;
+
 const err = (error: string, status: number) => NextResponse.json({ success: false, data: null, error }, { status });
 
 async function handlePOST(request: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return err('Not authenticated', 401);
+
+  // Reject an oversized body from its declared length before buffering any of it (self-host has no platform cap).
+  const declared = Number(request.headers.get('content-length') ?? 0);
+  if (declared > MAX_FILE_BYTES + MULTIPART_OVERHEAD_BYTES) {
+    return err(`Files can be at most ${Math.floor(MAX_FILE_BYTES / 1_000_000)} MB.`, 413);
+  }
 
   const form = await request.formData().catch(() => null);
   const file = form?.get('file');
