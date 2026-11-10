@@ -923,3 +923,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 - Below 760px: 5-slot bottom bar (Dashboard, Portfolio, Mitra chat centre orb, Markets, More) + a More bottom sheet; floating bubble hidden on phones; mobile bell → `/alerts`; safe-area padding and `viewport-fit=cover`. Verified at 390×844 in Chromium: layout, sheet, drag (short snaps back, long closes), outside tap, Esc, focus return, navigation, More-active state, content clears the bar (measured; first pass overlapped by 1–8px and was fixed), desktop unchanged. **Not verified:** a real phone, iOS home-indicator inset (headless reports 0), touch gestures (mouse-simulated), landscape, tablet widths near 760px.
 - Differences from the written spec: breakpoint stays at the project's 760px (not 768); colours use the design tokens (`--app-ink`, `--app-teal-strong`) rather than #0F172A/#10B981; "API Keys" is labelled "Settings & API keys" and "System Status" links to the public `/status` (the System page is admin-only).
 
+## 2026-11-10 — Production deploy (`4462c5d`, mobile navigation)
+
+- Merged #48 and deployed the app (`vercel deploy --prod`; fundamentals-api untouched). Ready, aliased, smoke test 4/4; production spot-checks: legacy redirect 308, `microphone=(self)`, `viewport-fit=cover` served, `/status` 200, chat API 401 to anon.
+
