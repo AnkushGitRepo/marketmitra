@@ -74,6 +74,8 @@ Write an ADR when a change affects the stack, data sources, security model, publ
 | 0021 | [Phase 11 — multi-agent analytical briefings (TradingAgents-pattern, in-house)](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0021-phase-11-multi-agent-analysis.md) |
 | 0022 | [Mitra page-aware navigation + file-based portfolio import](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0022-mitra-navigation-and-file-import.md) |
 | 0034 | [Mitra as a screening assistant](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0034-mitra-screener-assistant.md) |
+| 0035 | [Mitra Advisor](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0035-mitra-advisor.md) |
+| 0036 | [Full-page Mitra chat](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0036-mitra-chat-workspace.md) |
 
 ### Security, privacy and compliance
 

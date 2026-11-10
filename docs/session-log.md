@@ -873,3 +873,20 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   Playwright on macOS: chord navigation, Cmd+K focus, `?` dialog, Esc, tooltips.
   **Not verified:** Windows/Linux `Ctrl K` in a real browser (covered by unit tests only), typing-in-a-field
   suppression via real key events (unit-tested; the browser check used `fill`, which sends no key events), mobile.
+
+## 2026-11-10 — Full-page Mitra chat (#33, [ADR 0036](./decisions/0036-mitra-chat-workspace.md))
+
+- `/dashboard/mitra`: conversation rail (new/search/rename/delete), streamed markdown replies, image/PDF/audio/text
+  attachments (GridFS behind a `FileStore` interface, validated by magic bytes, owner-only, Range-capable), mic
+  dictation, `G` then `C` shortcut. Server-authoritative history with a sliding window + stored running summary;
+  the widget stays and links to the full page; its old thread migrates into "Earlier chat". `MarkdownLite` gained
+  tables, numbered lists, code and rules. 9 new API routes, all in `openapi.json`.
+- **Verified for real** (self-host, Gemini key, local DB): image read ("Red"), PDF read (cited the 12% pledge to
+  page 1), WAV described, history + attachments survive reload via `?c=` deep link, delete cascades to files, legacy
+  thread migrated (10 messages), and a 17-turn conversation where the turn-1 facts had left the verbatim window and
+  were recalled from the stored summary.
+- **Not verified:** Claude/OpenRouter keys end-to-end (only the capability table is unit-tested); audio with actual
+  speech; dictation (needs a mic); mobile layout; a file near the 4 MB limit on Vercel; production (not deployed).
+- **Mistakes worth knowing:** I ran `next build` while `next dev` was running (gotcha 4) and corrupted the dev cache;
+  recovering, I killed a browser helper process because `lsof -ti:3000` also lists *clients* (gotcha 14).
+

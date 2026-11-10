@@ -261,6 +261,19 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Response:** the AI SDK's **UI-message stream** (`streamText().toUIMessageStreamResponse()`, ADR 0022 — was a plain `text/plain` token stream before), not the `{success,data,error}` envelope. Tool-call parts (including the navigation tools) are part of the stream; the client (`AiWidget.tsx`, via `useChat`) reacts to a navigation tool part by calling `router.push`.
 - **Errors:** `422` bad body, `400` `no_ai_key`, `502` if the stream can't start.
 
+### Mitra chat workspace  _(ADR 0036, #33)_
+All routes: auth required, envelope `{ success, data, error }` except the streaming and file-download responses. A conversation, its messages and its files are only ever visible to their owner.
+
+- **`GET /api/mitra/conversations?q=`** — the caller's conversations, newest first; `q` filters titles (literal match). On a first visit with none, the widget's old single thread is migrated into "Earlier chat".
+- **`POST /api/mitra/conversations`** — `{ title? }` (≤80 chars) → `201` conversation; `409` at the 200-conversation cap.
+- **`GET /api/mitra/conversations/{id}`** — `{ conversation, messages }` (stored AI SDK `UIMessage`s, oldest first). `404` if not found or not yours.
+- **`PATCH /api/mitra/conversations/{id}`** — `{ title }` rename.
+- **`DELETE /api/mitra/conversations/{id}`** — deletes the conversation, its messages and its stored files.
+- **`POST /api/mitra/conversations/{id}/messages`** — send one message; the **AI SDK UI-message stream** comes back. Request `{ message: { id, role: 'user', parts: [{type:'text', text} | {type:'file', url:'/api/mitra/files/<id>'}] } }` (text ≤8000 chars, ≤6 files, each file must be your own upload for this conversation). History is loaded server-side. Same `getUserAiConfig` key rules as the widget (`400 no_ai_key`); `422 attachment_unsupported` when the model cannot read an attachment (e.g. audio on a Claude key); `409` when the conversation is full; `429` (ai tier).
+- **`POST /api/mitra/files`** — `multipart/form-data` `file` + `conversationId` → `201 { id, url, filename, mediaType, kind, size }`. Images (PNG/JPEG/GIF/WebP), PDF, audio (MP3/WAV/OGG/FLAC/M4A/WebM), `.txt/.csv/.md`; type decided from the bytes; ≤4 MB per file, 50 MB per user. `413`/`415`/`422`/`404` on rejection.
+- **`GET /api/mitra/files/{id}`** — the file (owner only), `Range` supported (`206`/`416`), `nosniff` + sandbox CSP.
+- **`DELETE /api/mitra/files/{id}`** — remove an attachment that was never sent (`404` once part of a message).
+
 ### `POST /api/portfolio-import/extract`  _(ADR 0022)_
 - **Purpose:** Extract candidate holdings from an uploaded broker screenshot/XLSX/CSV/DOCX/PDF, match each against the company database, and diff against the caller's existing holdings. **Writes nothing** — this is the preview step.
 - **Auth:** required. CSV/XLSX need no AI key (deterministic parsing); image/PDF/DOCX use the per-user key (`getUserAiConfig`, `400 no_ai_key` when none). `ai` rate-limit tier.

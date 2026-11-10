@@ -305,6 +305,17 @@ streams via the AI SDK's UI-message format (`toUIMessageStreamResponse()` /
 `useChat`, ADR 0022 — see below), context from `src/lib/ai/chatContext.ts`. Default Gemini
 model is `gemini-3.6-flash` (2.5-flash is retired for new keys).
 
+## Mitra chat workspace (`/dashboard/mitra`, ADR 0036)
+
+Full-page chat: conversation rail (new/search/rename/delete), streamed markdown replies, attachments (image, PDF,
+audio, text) and mic dictation. History is server-authoritative — the client posts only the new message to
+`/api/mitra/conversations/{id}/messages`; `src/lib/mitra-chat/` loads stored `UIMessage`s (`mitraMessages`), plans
+the context window (`window.ts`: newest ≤30 messages/60k chars, older turns folded into a stored summary by
+`summarize.ts`), resolves file references to bytes (`prepareMessages.ts`, newest 3 attachment turns, 10 MB budget)
+and streams through `streamChat` with `MITRA_WORKSPACE_SYSTEM` + the widget's tool allow-list. Files live in GridFS
+behind the `FileStore` interface; uploads are validated by magic bytes (`attachments.ts`, `upload.ts`) and scoped
+to owner + conversation. UI in `src/components/mitra-chat/`. The widget stays and links to the full page.
+
 ## Mitra navigation + file-based portfolio import (ADR 0022)
 
 Built (Parts A-D), deployed to production 2026-09-12, not yet archived — this section is
