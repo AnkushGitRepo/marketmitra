@@ -903,4 +903,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 ## 2026-11-10 — Collapsible Mitra chat list (#35)
 
 - Toggle in the chat header (desktop) hides/shows the conversation list; remembered in `localStorage` (`mm-mitra-rail-collapsed`); the shell stays hidden until the stored value is known so a collapsed list never flashes open. Below 900px the existing History drawer is unchanged. Verified in Chromium (toggle, reload persistence, SSR hidden state). **Not verified:** screen-reader announcement, mobile.
+## 2026-11-10 — Dictation permission fix (#38)
+
+- Root cause of the dead-end "microphone blocked" error: `Permissions-Policy: microphone=()` in `next.config.ts`. Now `microphone=(self)`, with a permission-aware flow and a browser-specific help dialog (auto-resumes on allow). Verified in Chromium: header, `prompt` state, simulated-denied dialog, simulated-allow auto-start. **Not verified:** a real mic and real speech in Chrome/Safari/Edge; Brave's actual behaviour; macOS/Windows OS-level blocks.
 
