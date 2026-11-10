@@ -938,3 +938,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - New first Settings section: Manage (Clerk profile dialog), Sign out, accounts on this device (switch / add / per-account sign out / sign out of all); self-host shows a note. Read-only look at the Clerk dashboard showed **Multi-session handling OFF** and **Authenticator app / Backup codes OFF**, so switching and 2FA need the maintainer to enable them there (not done by me). Verified: self-host renders the section (HTTP check), logic unit-tested, types/lint/build. **Not verified:** the hosted Clerk flows (I cannot sign in): sign out, Manage dialog, add/switch accounts.
 
+## 2026-11-10 — Welcome email redesign (#57)
+
+- Maintainer rejected the first welcome email (design and logo). Replaced the placeholder glyph with the real mark as a PNG (`public/brand/marketmitra-logo.png`), redesigned to match the landing page, stacked the buttons on phones, and added an admin-only preview at `/system/welcome-preview`. Verified: rendered and reviewed at desktop and 390px, measured stacked buttons (single-line, full width), 22 template tests. **Not verified:** real mail clients (Gmail/Outlook/Apple Mail), image blocking, dark mode; the logo URL only works after this is deployed. The maintainer has not yet said what exactly they disliked, so this is my best reading of "site-matching"; their feedback on the preview page decides the next iteration.
+

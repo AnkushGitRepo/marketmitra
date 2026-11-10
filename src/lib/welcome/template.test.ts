@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { escapeHtml, greetingName, normaliseAppUrl, renderWelcomeEmail } from './template';
+import { LOGO_PATH, escapeHtml, greetingName, normaliseAppUrl, renderWelcomeEmail } from './template';
 
 const APP = 'https://app.example.com';
 
@@ -13,7 +13,8 @@ describe('renderWelcomeEmail', () => {
   });
 
   it('greets by name and links every call to action to the configured app URL', () => {
-    expect(mail.html).toContain('Hi Asha, you&rsquo;re all set.');
+    expect(mail.html).toContain('Welcome, Asha.');
+    expect(mail.html).toContain('See your whole portfolio clearly.');
     for (const path of ['/dashboard', '/portfolio', '/settings#ai', '/mitra', '/privacy', '/terms', '/status']) {
       expect(mail.html, path).toContain(`href="${APP}${path}"`);
       expect(mail.text, path).toContain(`${APP}${path}`);
@@ -26,12 +27,30 @@ describe('renderWelcomeEmail', () => {
     expect(mail.text).toMatch(/not|nothing here is investment advice/);
   });
 
-  it('is mobile friendly and dark-mode aware, and loads nothing remote', () => {
+  it('is mobile friendly and runs no scripts', () => {
     expect(mail.html).toContain('name="viewport"');
     expect(mail.html).toContain('max-width: 620px');
-    expect(mail.html).toContain('color-scheme');
-    expect(mail.html).not.toMatch(/<img\b/i);
     expect(mail.html).not.toMatch(/<script\b/i);
+  });
+
+  it('shows the real logo as its only image: absolute URL, size and alt text for blocked-image clients', () => {
+    const imgs = mail.html.match(/<img\b[^>]*>/gi) ?? [];
+    expect(imgs).toHaveLength(1);
+    expect(imgs[0]).toContain(`src="${APP}${LOGO_PATH}"`);
+    expect(imgs[0]).toContain('alt="MarketMitra"');
+    expect(imgs[0]).toMatch(/width="30"\s+height="30"/);
+    expect(LOGO_PATH).toBe('/brand/marketmitra-logo.png');
+  });
+
+  it('puts the wordmark beside the logo and never uses the old placeholder glyph', () => {
+    expect(mail.html).toContain('>MarketMitra</td>');
+    expect(mail.html).not.toContain('&#8599;');
+  });
+
+  it('gives both a primary and a secondary call to action, plus all three steps', () => {
+    expect(mail.html).toContain('Open your dashboard');
+    expect(mail.html).toContain('Add your holdings');
+    for (const step of ['Add your holdings', 'Connect your AI key', 'Ask Mitra anything']) expect(mail.html).toContain(step);
   });
 });
 

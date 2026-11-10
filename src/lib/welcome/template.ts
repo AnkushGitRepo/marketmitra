@@ -23,11 +23,16 @@ const COLOR = {
   faint: '#8a9099',
   border: '#ede9de',
   tint: '#f2f7f4',
-  teal: '#17c39a',
+  mint: '#7ee2a8',
+  mintBg: '#d9f7e6',
   tealStrong: '#0b7e63',
 } as const;
 
 const FONT = "Manrope, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+
+/** Where the real logo PNG is served from (public/brand/marketmitra-logo.png). */
+export const LOGO_PATH = '/brand/marketmitra-logo.png';
 
 export function escapeHtml(value: string): string {
   return value
@@ -57,9 +62,9 @@ interface Step {
 }
 
 const STEPS: readonly Step[] = [
-  { title: 'Add your holdings', body: 'Type them in, or upload a broker statement or screenshot and Mitra will read it for you. You confirm before anything is saved.', path: '/portfolio', cta: 'Open portfolio' },
-  { title: 'Connect your AI key', body: 'MarketMitra is free: the AI runs on your own Gemini, Claude or OpenRouter key, stored encrypted. Nothing is ever charged by us.', path: '/settings#ai', cta: 'Add your key' },
-  { title: 'Ask Mitra anything', body: 'Compare stocks, read an annual report, or sanity-check your portfolio. Mitra can look up live data and cite where an answer came from.', path: '/mitra', cta: 'Start a chat' },
+  { title: 'Add your holdings', body: 'Type them in, or upload a broker statement or screenshot and Mitra reads it for you. You confirm before anything is saved.', path: '/portfolio', cta: 'Open portfolio' },
+  { title: 'Connect your AI key', body: 'MarketMitra is free. The AI runs on your own Gemini, Claude or OpenRouter key, stored encrypted. We never charge for it.', path: '/settings#ai', cta: 'Add your key' },
+  { title: 'Ask Mitra anything', body: 'Compare stocks, read an annual report, or sanity-check your portfolio. Mitra looks up live data and shows where an answer came from.', path: '/mitra', cta: 'Start a chat' },
 ];
 
 export function renderWelcomeEmail({ name, appUrl }: WelcomeInput): RenderedEmail {
@@ -68,26 +73,18 @@ export function renderWelcomeEmail({ name, appUrl }: WelcomeInput): RenderedEmai
   const safeWho = escapeHtml(who);
   const url = (path: string) => `${base}${path}`;
   const subject = 'Welcome to MarketMitra';
-  const preheader = 'Three quick steps to get your portfolio, the markets and an AI research partner in one place.';
+  const preheader = 'See your whole portfolio clearly. Here are three quick steps to make MarketMitra yours.';
 
   const stepRows = STEPS.map(
     (s, i) => `
-          <tr>
-            <td style="padding:0 0 14px 0;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.tint};border:1px solid ${COLOR.border};border-radius:14px;">
-                <tr>
-                  <td width="48" valign="top" style="padding:18px 0 18px 18px;">
-                    <div style="width:30px;height:30px;line-height:30px;border-radius:15px;background:${COLOR.ink};color:#ffffff;font:700 14px/30px ${FONT};text-align:center;">${i + 1}</div>
-                  </td>
-                  <td valign="top" style="padding:18px 18px 18px 6px;">
-                    <div style="font:700 15px/1.3 ${FONT};color:${COLOR.ink};">${escapeHtml(s.title)}</div>
-                    <div style="margin-top:4px;font:400 14px/1.55 ${FONT};color:${COLOR.muted};">${escapeHtml(s.body)}</div>
-                    <a href="${escapeHtml(url(s.path))}" style="display:inline-block;margin-top:8px;font:700 13.5px/1.4 ${FONT};color:${COLOR.tealStrong};text-decoration:none;">${escapeHtml(s.cta)} &rarr;</a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>`
+              <tr>
+                <td valign="top" width="52" style="padding:20px 0;${i > 0 ? `border-top:1px solid ${COLOR.border};` : ''}font:700 13px/1.6 ${MONO};letter-spacing:0.04em;color:${COLOR.tealStrong};">0${i + 1}</td>
+                <td valign="top" style="padding:20px 0;${i > 0 ? `border-top:1px solid ${COLOR.border};` : ''}">
+                  <div style="font:700 16px/1.35 ${FONT};letter-spacing:-0.01em;color:${COLOR.ink};">${escapeHtml(s.title)}</div>
+                  <div style="margin-top:4px;font:400 14.5px/1.6 ${FONT};color:${COLOR.muted};">${escapeHtml(s.body)}</div>
+                  <a href="${escapeHtml(url(s.path))}" style="display:inline-block;margin-top:8px;font:700 14px/1.4 ${FONT};color:${COLOR.ink};text-decoration:none;border-bottom:2px solid ${COLOR.mint};">${escapeHtml(s.cta)} &rarr;</a>
+                </td>
+              </tr>`
   ).join('');
 
   const html = `<!DOCTYPE html>
@@ -95,14 +92,17 @@ export function renderWelcomeEmail({ name, appUrl }: WelcomeInput): RenderedEmai
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>${escapeHtml(subject)}</title>
   <style>
     @media only screen and (max-width: 620px) {
       .container { width: 100% !important; }
-      .px { padding-left: 20px !important; padding-right: 20px !important; }
-      .h1 { font-size: 26px !important; }
+      .px { padding-left: 22px !important; padding-right: 22px !important; }
+      .h1 { font-size: 34px !important; }
+      .btn { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; margin: 0 0 10px !important; }
+      .btn-cell { display: block !important; width: 100% !important; padding: 0 0 10px 0 !important; }
+      .nav-cta { display: none !important; }
     }
   </style>
 </head>
@@ -110,39 +110,64 @@ export function renderWelcomeEmail({ name, appUrl }: WelcomeInput): RenderedEmai
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:${COLOR.bg};">${escapeHtml(preheader)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bg};">
     <tr>
-      <td align="center" style="padding:32px 16px 40px;">
+      <td align="center" style="padding:28px 14px 36px;">
         <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;">
+
+          <!-- Nav pill, like the site -->
           <tr>
-            <td class="px" style="padding:0 8px 20px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <td style="padding-bottom:14px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.card};border:1px solid ${COLOR.border};border-radius:999px;">
                 <tr>
-                  <td valign="middle" style="padding-right:10px;">
-                    <div style="width:30px;height:30px;border-radius:9px;background:${COLOR.ink};text-align:center;font:700 16px/30px ${FONT};color:${COLOR.teal};">&#8599;</div>
+                  <td style="padding:10px 12px 10px 14px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td valign="middle" style="padding-right:10px;"><img src="${escapeHtml(url(LOGO_PATH))}" width="30" height="30" alt="MarketMitra" style="display:block;width:30px;height:30px;border:0;border-radius:9px;"></td>
+                        <td valign="middle" style="font:700 18px/1 ${FONT};letter-spacing:-0.02em;color:${COLOR.ink};">MarketMitra</td>
+                      </tr>
+                    </table>
                   </td>
-                  <td valign="middle" style="font:700 19px/1 ${FONT};letter-spacing:-0.02em;color:${COLOR.ink};">MarketMitra</td>
+                  <td align="right" class="nav-cta" style="padding:8px 8px 8px 0;">
+                    <a href="${escapeHtml(url('/dashboard'))}" style="display:inline-block;padding:10px 18px;border-radius:999px;background:${COLOR.ink};font:700 13.5px/1 ${FONT};color:#ffffff;text-decoration:none;">Dashboard</a>
+                  </td>
                 </tr>
               </table>
             </td>
           </tr>
+
+          <!-- Hero -->
           <tr>
-            <td class="px" style="background:${COLOR.card};border:1px solid ${COLOR.border};border-radius:22px;padding:36px 36px 28px;">
-              <div style="font:600 11px/1 ${FONT};letter-spacing:0.08em;text-transform:uppercase;color:${COLOR.tealStrong};">Welcome</div>
-              <h1 class="h1" style="margin:12px 0 0;font:700 30px/1.15 ${FONT};letter-spacing:-0.025em;color:${COLOR.ink};">Hi ${safeWho}, you&rsquo;re all set.</h1>
-              <p style="margin:14px 0 26px;font:400 15.5px/1.6 ${FONT};color:${COLOR.muted};">MarketMitra brings your Indian-market portfolio, live data, news, IPOs and an AI research partner into one calm place. Here is the quickest way to make it yours.</p>
+            <td class="px" align="center" bgcolor="#f6faf6" style="background:#f6faf6;background-image:radial-gradient(circle at 8% 0%, #ffe6d2 0, rgba(255,230,210,0) 46%),radial-gradient(circle at 94% 0%, #e6e3ff 0, rgba(230,227,255,0) 46%),radial-gradient(circle at 50% 38%, #d9f7e6 0, rgba(217,247,230,0) 58%);border:1px solid ${COLOR.border};border-radius:28px 28px 0 0;padding:44px 36px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                <tr>
+                  <td style="background:${COLOR.card};border:1px solid ${COLOR.border};border-radius:999px;padding:7px 14px;font:600 11px/1 ${MONO};letter-spacing:0.08em;text-transform:uppercase;color:${COLOR.muted};">
+                    <span style="display:inline-block;width:7px;height:7px;border-radius:4px;background:#34c17c;margin-right:8px;vertical-align:middle;"></span>Welcome aboard
+                  </td>
+                </tr>
+              </table>
+              <h1 class="h1" style="margin:22px 0 0;font:800 44px/1.04 ${FONT};letter-spacing:-0.04em;color:${COLOR.ink};">Welcome, ${safeWho}.<br>See your whole portfolio clearly.</h1>
+              <p style="margin:18px auto 28px;max-width:430px;font:400 16px/1.6 ${FONT};color:${COLOR.muted};">MarketMitra brings every holding into one calm dashboard, keeps it live, and explains what actually moved your money today.</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                <tr>
+                  <td class="btn-cell" style="padding:0 5px 0 0;"><a class="btn" href="${escapeHtml(url('/dashboard'))}" style="display:inline-block;padding:15px 26px;border-radius:999px;background:${COLOR.ink};font:700 15px/1 ${FONT};color:#ffffff;text-decoration:none;">Open your dashboard</a></td>
+                  <td class="btn-cell" style="padding:0 0 0 5px;"><a class="btn" href="${escapeHtml(url('/portfolio'))}" style="display:inline-block;padding:14px 24px;border-radius:999px;background:${COLOR.card};border:1px solid ${COLOR.border};font:700 15px/1 ${FONT};color:${COLOR.ink};text-decoration:none;">Add your holdings</a></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- First steps -->
+          <tr>
+            <td class="px" style="background:${COLOR.card};border:1px solid ${COLOR.border};border-top:0;border-radius:0 0 28px 28px;padding:30px 36px 30px;">
+              <div style="font:600 11px/1 ${MONO};letter-spacing:0.1em;text-transform:uppercase;color:${COLOR.faint};padding-bottom:6px;">Your first three steps</div>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${stepRows}
               </table>
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:10px 0 4px;">
-                <tr>
-                  <td style="border-radius:999px;background:${COLOR.ink};">
-                    <a href="${escapeHtml(url('/dashboard'))}" style="display:inline-block;padding:14px 28px;font:700 15px/1 ${FONT};color:#ffffff;text-decoration:none;border-radius:999px;">Open your dashboard</a>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:22px 0 0;padding-top:18px;border-top:1px solid ${COLOR.border};font:400 12.5px/1.55 ${FONT};color:${COLOR.faint};">MarketMitra summarises public data. It does not give buy, sell or hold advice, and nothing here is investment advice. Prices can be delayed.</p>
+              <p style="margin:12px 0 0;padding-top:20px;border-top:1px solid ${COLOR.border};font:400 12.5px/1.6 ${FONT};color:${COLOR.faint};">MarketMitra summarises public data. It does not give buy, sell or hold advice, and nothing here is investment advice. Prices can be delayed.</p>
             </td>
           </tr>
+
+          <!-- Footer -->
           <tr>
-            <td class="px" align="center" style="padding:20px 12px 0;font:400 12.5px/1.7 ${FONT};color:${COLOR.faint};">
+            <td class="px" align="center" style="padding:22px 12px 0;font:400 12.5px/1.8 ${FONT};color:${COLOR.faint};">
               You&rsquo;re receiving this one-time message because you created a MarketMitra account.<br>
               <a href="${escapeHtml(url('/privacy'))}" style="color:${COLOR.muted};text-decoration:underline;">Privacy</a> &nbsp;&middot;&nbsp;
               <a href="${escapeHtml(url('/terms'))}" style="color:${COLOR.muted};text-decoration:underline;">Terms</a> &nbsp;&middot;&nbsp;
@@ -157,13 +182,17 @@ export function renderWelcomeEmail({ name, appUrl }: WelcomeInput): RenderedEmai
 </html>`;
 
   const text = [
-    `Hi ${who}, you're all set.`,
+    `Welcome, ${who}.`,
+    'See your whole portfolio clearly.',
     '',
-    'MarketMitra brings your Indian-market portfolio, live data, news, IPOs and an AI research partner into one calm place. Three quick steps:',
+    'MarketMitra brings every holding into one calm dashboard, keeps it live, and explains what actually moved your money today.',
     '',
-    ...STEPS.flatMap((s, i) => [`${i + 1}. ${s.title}`, `   ${s.body}`, `   ${s.cta}: ${url(s.path)}`, '']),
     `Open your dashboard: ${url('/dashboard')}`,
+    `Add your holdings: ${url('/portfolio')}`,
     '',
+    'YOUR FIRST THREE STEPS',
+    '',
+    ...STEPS.flatMap((s, i) => [`0${i + 1}  ${s.title}`, `    ${s.body}`, `    ${s.cta}: ${url(s.path)}`, '']),
     'MarketMitra summarises public data. It does not give buy, sell or hold advice, and nothing here is investment advice.',
     '',
     `Privacy: ${url('/privacy')}`,
