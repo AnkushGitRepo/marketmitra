@@ -54,7 +54,7 @@ In **hosted** mode there is no operator fallback: every user must bring their ow
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk application keys. |
 | `NEXT_PUBLIC_CLERK_SIGN_IN_URL`, `NEXT_PUBLIC_CLERK_SIGN_UP_URL`, `NEXT_PUBLIC_CLERK_*_FALLBACK_REDIRECT_URL` | Sign-in/up routing (`/sign-in`, `/sign-up`, `/dashboard`). |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL/TOKEN`) | Upstash Redis for fair-use rate limiting. Unset = no throttling. |
-| `ADMIN_USER_IDS` | Comma-separated Clerk user ids allowed to see the System page's event log. Unset = nobody can (closed by default). Find yours with `window.Clerk.user.id` while signed in. |
+| `ADMIN_USER_IDS` | Comma-separated Clerk user ids allowed to open the (hidden) System page and its event log; everyone else gets a 404. Unset = nobody can (closed by default). Find yours with `window.Clerk.user.id` while signed in. |
 
 ## Data service (`services/fundamentals-api/.env`)
 

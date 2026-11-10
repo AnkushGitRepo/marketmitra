@@ -187,6 +187,6 @@ export const NAV_ICONS = {
   '/agents': AgentsIcon,
   '/notes': NotesIcon,
   '/api-docs': ApiIcon,
-  '/system': SystemIcon,
+  '/settings': SystemIcon,
   '/mitra-activity': MitraActivityIcon,
 } as const;

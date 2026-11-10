@@ -31,3 +31,8 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1_000_000) return `${(bytes / 1000).toFixed(bytes < 10_000 ? 1 : 0)} KB`;
   return `${(bytes / 1_000_000).toFixed(1)} MB`;
 }
+
+/** Parses a persisted on/off flag; anything but an explicit "1" is off. */
+export function parseStoredFlag(raw: string | null): boolean {
+  return raw === '1';
+}

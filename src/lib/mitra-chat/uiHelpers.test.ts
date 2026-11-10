@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBytes, groupByRecency } from './uiHelpers';
+import { formatBytes, groupByRecency, parseStoredFlag } from './uiHelpers';
 import { isRetryOfLast } from './messageInput';
 import type { UIMessage } from 'ai';
 
@@ -43,5 +43,14 @@ describe('isRetryOfLast', () => {
     expect(isRetryOfLast([m('user', 'u1'), m('assistant', 'a1')], m('user', 'u1'))).toBe(false);
     expect(isRetryOfLast([m('user', 'u1')], m('user', 'u2'))).toBe(false);
     expect(isRetryOfLast([], m('user', 'u1'))).toBe(false);
+  });
+});
+
+describe('parseStoredFlag', () => {
+  it('is on only for an explicit "1"', () => {
+    expect(parseStoredFlag('1')).toBe(true);
+    expect(parseStoredFlag('0')).toBe(false);
+    expect(parseStoredFlag('true')).toBe(false);
+    expect(parseStoredFlag(null)).toBe(false);
   });
 });

@@ -3,8 +3,68 @@
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
   gap: 16px;
-  height: calc(100dvh - 125px);
+  height: calc(100dvh - 165px); /* header + padding + 40px footer */
   min-height: 480px;
+}
+
+.shellCollapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Desktop only: below 900px the History drawer takes over and must stay usable. */
+@media (min-width: 901px) {
+  .shellCollapsed .rail {
+    display: none;
+  }
+}
+
+/* Hidden (not removed) until the remembered collapse state is known, so a collapsed list never flashes open. */
+.shellPending {
+  visibility: hidden;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--app-border-soft);
+}
+
+.barTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.collapseBtn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.collapseBtn:hover {
+  background: var(--app-pill-bg);
+  color: var(--app-ink);
+}
+
+.collapseBtn:focus-visible {
+  outline: 2px solid var(--app-teal);
+  outline-offset: 1px;
 }
 
 .srOnly {
@@ -62,6 +122,14 @@
 }
 
 @media (max-width: 900px) {
+  .collapseBtn {
+    display: none;
+  }
+
+  .shellCollapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .shell {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -99,6 +167,6 @@
 
 @media (max-width: 760px) {
   .shell {
-    height: calc(100dvh - 176px);
+    height: calc(100dvh - 216px);
   }
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { AppFooter } from './AppFooter';
 import { AppHeader } from './AppHeader';
 import { AiWidget, sectionFromPathname } from './AiWidget';
 import { MobileTabBar } from './MobileTabBar';
@@ -28,6 +29,7 @@ function AppShellInner({ children, advisorEnabled, shortcutsEnabled }: { childre
       <div className={styles.contentArea}>
         <AppHeader onToggleMask={toggleMask} />
         <main className={styles.main}>{children}</main>
+        <AppFooter />
       </div>
       {pathname !== '/mitra' && <AiWidget section={section} />}
       <MobileTabBar />
