@@ -24,6 +24,10 @@ one branch (`main`).** Always confirm with `git log --oneline -10`, `gh issue li
 
 **What shipped recently (Sept → Nov 2026)** — newest first:
 
+- **Mitra chat workspace** (#33, [ADR 0036](./decisions/0036-mitra-chat-workspace.md)) — `/dashboard/mitra`: long
+  conversations with history, image/PDF/audio/text attachments (GridFS), investing-tuned model setup, `G` then `C`.
+  Also grouped sidebar (#29) and keyboard shortcuts (#31). **Not deployed to production** — verify before assuming. Not tested with Claude/OpenRouter keys or real speech audio.
+
 - **Project process** (#25, #26): GitHub Project board, milestones, 10 built-in project workflows, issue-first
   workflow, auto-delete of merged branches. `v2` branch retired (#23/#24); `main` is the only long-lived branch.
 - **Agent portability** (#27): this handoff, `AGENTS.md`, `GEMINI.md`, `.cursor/rules/` — so the project moves
@@ -125,6 +129,7 @@ Each has `workflow_dispatch`, so "Run workflow" (or `gh workflow run <file>`) tr
 11. **New outbound fetches** in the Python service must reuse the SSRF-safe helpers in `app/security.py` (`resolve_public_target`, `PinnedTarget`) and `log_safe` for user-controlled log values (ADR 0032).
 12. **GitHub board:** project workflows can only be enabled in the web UI (the API can only delete them); setting Status = Done closes the issue; the `project` token scope is needed for `gh project …`.
 13. **Squash merges** make `git rev-list main..branch` report unique commits after a branch is merged — compare file contents against `origin/main` instead.
+14. **`lsof -ti:3000` lists browser *clients* as well as the server.** Use `lsof -nP -iTCP:3000 -sTCP:LISTEN` before killing anything. (A killed browser helper is how this was learned.)
 
 ## Using different coding agents on this repo
 

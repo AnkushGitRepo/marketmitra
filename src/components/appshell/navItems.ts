@@ -48,6 +48,7 @@ export function buildNavSections(advisorEnabled: boolean): readonly NavSection[]
   const aiAndTools: NavSection = {
     title: 'AI & Tools',
     items: [
+      { href: '/dashboard/mitra', label: 'Mitra chat' },
       { href: '/dashboard/agents', label: 'Agents' },
       ...(advisorEnabled ? [ADVISOR_NAV_ITEM] : []),
       { href: '/dashboard/alerts', label: 'Alerts' },
@@ -59,7 +60,8 @@ export function buildNavSections(advisorEnabled: boolean): readonly NavSection[]
 
 export function isNavActive(pathname: string, href: string): boolean {
   if (href === '/dashboard') return pathname === '/dashboard';
-  if (pathname.startsWith(href)) return true;
+  // Whole-segment match, so /dashboard/mitra does not also light up for /dashboard/mitra-activity.
+  if (pathname === href || pathname.startsWith(`${href}/`)) return true;
   // The stock detail page reads as part of "Markets" — it's reached from
   // there and has no nav entry of its own.
   if (href === '/dashboard/markets' && pathname.startsWith('/dashboard/stock')) return true;

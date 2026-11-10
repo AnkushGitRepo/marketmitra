@@ -102,6 +102,17 @@ export function ResearchIcon() {
   );
 }
 
+export function ChatIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h9A2.5 2.5 0 0 1 18 5.5v6a2.5 2.5 0 0 1-2.5 2.5H10l-3.5 3v-3h0A2.5 2.5 0 0 1 4 11.5v-6Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <circle cx="8" cy="8.5" r="1" fill="currentColor" />
+      <circle cx="11" cy="8.5" r="1" fill="currentColor" />
+      <circle cx="14" cy="8.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function AgentsIcon() {
   return (
     <svg {...ICON_PROPS}>
@@ -172,6 +183,7 @@ export const NAV_ICONS = {
   '/dashboard/news': NewsIcon,
   '/dashboard/ipos': IposIcon,
   '/dashboard/research': ResearchIcon,
+  '/dashboard/mitra': ChatIcon,
   '/dashboard/agents': AgentsIcon,
   '/dashboard/notes': NotesIcon,
   '/dashboard/api': ApiIcon,

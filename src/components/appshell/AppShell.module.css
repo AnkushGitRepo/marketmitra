@@ -14,6 +14,10 @@
   padding-bottom: 120px;
 }
 
+.contentArea:has([data-fill-viewport]) {
+  padding-bottom: 0;
+}
+
 .main {
   max-width: 1240px;
   width: 100%;

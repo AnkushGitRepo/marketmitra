@@ -46,3 +46,66 @@ describe('parseMarkdownLite', () => {
     expect(parseMarkdownLite('* starred').map((x) => x.kind)).toEqual(['ul']);
   });
 });
+
+describe('parseInline code', () => {
+  it('splits `code` spans out of text', () => {
+    expect(parseInline('use `P/E` here')).toEqual([
+      { t: 'text', v: 'use ' },
+      { t: 'code', v: 'P/E' },
+      { t: 'text', v: ' here' },
+    ]);
+  });
+});
+
+describe('parseMarkdownLite — chat additions', () => {
+  it('parses numbered lists and keeps them separate from bullets', () => {
+    const b = parseMarkdownLite('1. one\n2) two\n- bullet');
+    expect(b.map((x) => x.kind)).toEqual(['ol', 'ul']);
+    expect(b[0].kind === 'ol' && b[0].items).toHaveLength(2);
+  });
+
+  it('parses a pipe table with header and rows', () => {
+    const b = parseMarkdownLite('| Stock | P/E |\n|---|:--:|\n| TCS | 28 |\n| INFY | 24 |\n\nafter');
+    expect(b[0]).toEqual({
+      kind: 'table',
+      head: [[{ t: 'text', v: 'Stock' }], [{ t: 'text', v: 'P/E' }]],
+      rows: [
+        [[{ t: 'text', v: 'TCS' }], [{ t: 'text', v: '28' }]],
+        [[{ t: 'text', v: 'INFY' }], [{ t: 'text', v: '24' }]],
+      ],
+    });
+    expect(b[1].kind).toBe('p');
+  });
+
+  it('does not treat a lone pipe line without a separator row as a table', () => {
+    expect(parseMarkdownLite('| a | b |')[0].kind).toBe('p');
+  });
+
+  it('parses fenced code verbatim, including markdown-looking lines', () => {
+    const b = parseMarkdownLite('```\n## not a heading\n- not a bullet\n```');
+    expect(b).toEqual([{ kind: 'pre', text: '## not a heading\n- not a bullet' }]);
+  });
+
+  it('treats a single # as a top-level heading and tolerates an unclosed fence', () => {
+    expect(parseMarkdownLite('# Title')[0].kind).toBe('h2');
+    expect(parseMarkdownLite('```\ncode')[0]).toEqual({ kind: 'pre', text: 'code' });
+  });
+
+  it('never produces markup from HTML-looking text', () => {
+    const b = parseMarkdownLite('<script>alert(1)</script>');
+    expect(b[0]).toEqual({ kind: 'p', tokens: [{ t: 'text', v: '<script>alert(1)</script>' }] });
+  });
+});
+
+describe('parseMarkdownLite — rules', () => {
+  it('parses --- / *** / ___ as a horizontal rule, not a bullet or paragraph', () => {
+    for (const rule of ['---', '***', '___', '- - -']) {
+      expect(parseMarkdownLite(`above\n\n${rule}\n\nbelow`).map((b) => b.kind)).toEqual(['p', 'hr', 'p']);
+    }
+  });
+
+  it('still treats a table separator row and a normal bullet correctly', () => {
+    expect(parseMarkdownLite('| a |\n|---|\n| 1 |')[0].kind).toBe('table');
+    expect(parseMarkdownLite('- item')[0].kind).toBe('ul');
+  });
+});
