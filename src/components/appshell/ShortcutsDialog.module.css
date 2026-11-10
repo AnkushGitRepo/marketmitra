@@ -1,0 +1,96 @@
+.dialog {
+  /* A global reset zeroes the UA margin that centres modal dialogs. */
+  margin: auto;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--app-ink);
+  box-shadow: var(--shadow-card-lg);
+  padding: 22px 24px 20px;
+  width: min(420px, calc(100vw - 32px));
+  font-family: var(--font-sans);
+}
+
+.dialog::backdrop {
+  background: rgba(22, 25, 28, 0.32);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  color: var(--app-text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sectionLabel {
+  margin: 18px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+  font-size: 14px;
+  color: var(--app-text-muted);
+}
+
+.keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.keyGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.then {
+  font-size: 12px;
+  color: var(--app-text-faint);
+}
+
+.kbd {
+  min-width: 24px;
+  padding: 2px 7px;
+  border: 1px solid var(--app-border);
+  border-radius: 7px;
+  background: var(--app-pill-bg);
+  color: var(--app-ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+}

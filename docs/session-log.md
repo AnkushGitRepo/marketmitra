@@ -865,3 +865,11 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
   section headers become hairline dividers in the collapsed rail. "Mitra activity" left the primary nav and is linked
   from the Agents page. Pure `buildNavSections()` with unit tests. Verified in a browser (expanded + collapsed).
   **Not verified:** the mobile tab bar is unchanged and was not re-tested.
+
+## 2026-11-10 — Keyboard shortcuts (#31)
+
+- Cmd/Ctrl+K focuses header search (with a `⌘K`/`Ctrl K` hint), G-then-D/P/M navigation, `?` help dialog, chord
+  hints in sidebar hover tooltips. Pure `resolveKey()` reducer with 23 unit tests. Verified in Chrome-family
+  Playwright on macOS: chord navigation, Cmd+K focus, `?` dialog, Esc, tooltips.
+  **Not verified:** Windows/Linux `Ctrl K` in a real browser (covered by unit tests only), typing-in-a-field
+  suppression via real key events (unit-tested; the browser check used `fill`, which sends no key events), mobile.

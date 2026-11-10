@@ -131,6 +131,12 @@ implemented natively with fonts swapped to Manrope / JetBrains Mono.
   its own compact header with brand mark), `AiWidget` (floating "Mitra" assistant), and
   `MobileTabBar`. Real Next.js routes per page — not the design's client-state single-page
   switcher — so back/bookmarks work.
+- **Keyboard shortcuts** (#31) — pure reducer `resolveKey()` in `src/lib/shortcuts/shortcuts.ts`
+  (one shared definition of the go-to chords, used by the hook, the sidebar tooltips and the help
+  dialog); `useKeyboardShortcuts` attaches one `keydown` listener in `AppShell`. `Cmd/Ctrl+K` focuses
+  the header search (marked `data-global-search`; `⌘K`/`Ctrl K` hint inside it), `G` then `D`/`P`/`M`
+  navigates (1.2 s chord window), `?` toggles `ShortcutsDialog` (native `<dialog>`). Ignored while
+  typing in a field or when Ctrl/Cmd/Alt is held; shown only in sidebar hover tooltips, never as text.
 - **Sidebar navigation** ([ADR 0026](./decisions/0026-collapsible-sidebar-navigation.md)) —
   `Sidebar.tsx` renders the nav in four labelled sections — Overview, Markets, AI & Tools, and
   Settings (pinned to the bottom with a flex spacer) — from `buildNavSections()`/`isNavActive`

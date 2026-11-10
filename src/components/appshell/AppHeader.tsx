@@ -9,6 +9,7 @@ import { Logo } from '@/components/landing/Logo';
 import { HostedUserBadge } from './HostedUserBadge';
 import { NotificationBell } from './NotificationBell';
 import { NotificationsProvider } from './NotificationsProvider';
+import { SEARCH_INPUT_ATTR, useIsMac } from './useKeyboardShortcuts';
 import styles from './AppHeader.module.css';
 
 interface AppHeaderProps {
@@ -18,6 +19,7 @@ interface AppHeaderProps {
 export function AppHeader({ onToggleMask }: AppHeaderProps) {
   const { query, setQuery, results, loading, selectResult, activeIndex, handleKeyDown } = useSymbolSearch();
   const [focused, setFocused] = useState(false);
+  const isMac = useIsMac();
 
   const userBadge = isHosted() ? (
     <HostedUserBadge />
@@ -48,7 +50,14 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
                 onBlur={() => setFocused(false)}
                 placeholder="Search stocks, ISIN or indices"
                 className={styles.searchInput}
+                {...{ [SEARCH_INPUT_ATTR]: '' }}
+                aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
               />
+              {!focused && query === '' && (
+                <kbd className={styles.shortcutHint} aria-hidden="true">
+                  {isMac ? '⌘K' : 'Ctrl K'}
+                </kbd>
+              )}
             </div>
             {focused && (
               <SearchResultsDropdown
