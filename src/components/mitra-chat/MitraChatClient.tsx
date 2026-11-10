@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { ChatThread } from './ChatThread';
 import { ConversationRail } from './ConversationRail';
 import { mitraApi, type ConversationDto } from './api';
+import type { Preferences } from '@/lib/preferences/schema';
 import { useConversations } from './useConversations';
 import { usePersistedFlag } from './usePersistedFlag';
 import styles from './MitraChat.module.css';
@@ -24,7 +25,7 @@ function syncUrl(id: string | null) {
   window.history.replaceState(null, '', url);
 }
 
-export function MitraChatClient() {
+export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] }) {
   const initialId = useSearchParams().get('c');
   const [view, setView] = useState<View>(initialId ? { kind: 'loading', id: initialId } : { kind: 'new', nonce: 0 });
   const [railOpen, setRailOpen] = useState(false);
@@ -155,6 +156,7 @@ export function MitraChatClient() {
             initialMessages={[]}
             onConversationCreated={handleCreated}
             onActivity={conversations.refresh}
+            chatPrefs={chatPrefs}
           />
         )}
         {view.kind === 'ready' && (
@@ -164,6 +166,7 @@ export function MitraChatClient() {
             initialMessages={view.messages}
             onConversationCreated={handleCreated}
             onActivity={conversations.refresh}
+            chatPrefs={chatPrefs}
           />
         )}
       </div>

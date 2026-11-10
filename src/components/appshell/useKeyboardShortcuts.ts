@@ -34,11 +34,13 @@ function focusSearch(): boolean {
 }
 
 interface UseKeyboardShortcutsOptions {
+  /** Settings > Keyboard shortcuts can turn every shortcut off. */
+  readonly enabled?: boolean;
   readonly helpOpen: boolean;
   readonly onToggleHelp: () => void;
 }
 
-export function useKeyboardShortcuts({ helpOpen, onToggleHelp }: UseKeyboardShortcutsOptions): void {
+export function useKeyboardShortcuts({ enabled = true, helpOpen, onToggleHelp }: UseKeyboardShortcutsOptions): void {
   const router = useRouter();
   const isMac = useIsMac();
   const chord = useRef<ChordState>(IDLE_STATE);
@@ -49,6 +51,7 @@ export function useKeyboardShortcuts({ helpOpen, onToggleHelp }: UseKeyboardShor
   });
 
   useEffect(() => {
+    if (!enabled) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.isComposing || e.repeat) return;
       const { helpOpen: help, onToggleHelp: toggle, router: r, isMac: mac } = latest.current;
@@ -88,5 +91,5 @@ export function useKeyboardShortcuts({ helpOpen, onToggleHelp }: UseKeyboardShor
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [enabled]);
 }

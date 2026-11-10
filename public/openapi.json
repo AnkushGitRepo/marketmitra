@@ -3649,6 +3649,29 @@
             "description": "Invalid body."
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Delete all my Mitra conversations",
+        "description": "Deletes every conversation with its messages and stored attachments.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope with { removed }."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "500": {
+            "description": "Failed."
+          }
+        }
       }
     },
     "/api/mitra/conversations/{id}": {
@@ -4008,6 +4031,128 @@
           },
           "404": {
             "description": "Not found, not owned, or already attached."
+          }
+        }
+      }
+    },
+    "/api/settings/preferences": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get my preferences",
+        "description": "Chat, display and shortcut preferences. Always complete (defaults fill anything unset).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope with Preferences."
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update my preferences",
+        "description": "Send any subset; unknown fields are rejected so typos are not silently dropped.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chat": {
+                    "type": "object",
+                    "properties": {
+                      "platformAccess": {
+                        "type": "boolean"
+                      },
+                      "sendOnEnter": {
+                        "type": "boolean"
+                      },
+                      "showToolActivity": {
+                        "type": "boolean"
+                      },
+                      "dictationLanguage": {
+                        "type": "string",
+                        "enum": [
+                          "auto",
+                          "en-IN",
+                          "en-US",
+                          "en-GB",
+                          "hi-IN"
+                        ]
+                      }
+                    }
+                  },
+                  "display": {
+                    "type": "object",
+                    "properties": {
+                      "hideValuesByDefault": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "shortcuts": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated preferences."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "422": {
+            "description": "Invalid preferences."
+          }
+        }
+      }
+    },
+    "/api/settings/export": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Export my data (JSON download)",
+        "description": "Holdings, notes, alerts, wishlists, Mitra conversations (attachments by reference only) and preferences, as one versioned JSON file. API keys and notification secrets are never included.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "application/json attachment."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "500": {
+            "description": "Export failed."
           }
         }
       }

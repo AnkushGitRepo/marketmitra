@@ -6,6 +6,7 @@ import { DefaultChatTransport, type UIMessage } from 'ai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Composer } from './Composer';
 import { MessageView } from './MessageView';
+import type { Preferences } from '@/lib/preferences/schema';
 import { chatErrorMessage, mitraApi, type ConversationDto, type UploadedFile } from './api';
 import styles from './Chat.module.css';
 
@@ -22,9 +23,10 @@ interface ChatThreadProps {
   readonly onConversationCreated: (conversation: ConversationDto) => void;
   /** Called after each completed reply so the rail can refresh titles and ordering. */
   readonly onActivity: () => void;
+  readonly chatPrefs: Preferences['chat'];
 }
 
-export function ChatThread({ initialConversationId, initialMessages, onConversationCreated, onActivity }: ChatThreadProps) {
+export function ChatThread({ initialConversationId, initialMessages, onConversationCreated, onActivity, chatPrefs }: ChatThreadProps) {
   // The id can appear mid-thread (a new chat creates its conversation on first send/attach),
   // so it lives in a ref the transport reads at request time rather than in the URL.
   const [session] = useState<{ id: string | null; creating: Promise<string> | null }>(() => ({
@@ -121,7 +123,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
         ) : (
           <div className={styles.messages}>
             {messages.map((m, i) => (
-              <MessageView key={m.id} message={m} streaming={busy && i === messages.length - 1 && m.role === 'assistant'} />
+              <MessageView key={m.id} message={m} showToolActivity={chatPrefs.showToolActivity} streaming={busy && i === messages.length - 1 && m.role === 'assistant'} />
             ))}
             {status === 'submitted' && last?.role === 'user' && (
               <article className={`${styles.message} ${styles.messageAssistant}`} aria-label="Mitra">
@@ -149,7 +151,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
         </div>
       )}
 
-      <Composer busy={busy} disabled={false} ensureConversation={ensureConversation} onSend={(t, f) => void send(t, f)} onStop={stop} />
+      <Composer sendOnEnter={chatPrefs.sendOnEnter} dictationLanguage={chatPrefs.dictationLanguage} busy={busy} disabled={false} ensureConversation={ensureConversation} onSend={(t, f) => void send(t, f)} onStop={stop} />
       <p className={styles.disclaimer}>Mitra synthesises data; it is not investment advice.</p>
     </section>
   );

@@ -275,6 +275,14 @@ All routes: auth required, envelope `{ success, data, error }` except the stream
 - **`GET /api/mitra/files/{id}`** — the file (owner only), `Range` supported (`206`/`416`), `nosniff` + sandbox CSP.
 - **`DELETE /api/mitra/files/{id}`** — remove an attachment that was never sent (`404` once part of a message).
 
+### Settings: preferences, export, bulk chat delete  _(ADR 0038, #37)_
+All require auth. `/api/settings/*` is never reachable by Mitra's `call_platform_api` tool.
+
+- **`GET /api/settings/preferences`** — `{ chat: { platformAccess, sendOnEnter, showToolActivity, dictationLanguage }, display: { hideValuesByDefault }, shortcuts: { enabled } }`, always complete (defaults fill anything unset).
+- **`PATCH /api/settings/preferences`** — send any subset; unknown groups/fields or wrong types → `422`.
+- **`GET /api/settings/export`** — a JSON attachment of your holdings, notes, alerts, wishlists, Mitra conversations (attachments by reference) and preferences. Never includes API keys or notification secrets.
+- **`DELETE /api/mitra/conversations`** — deletes all of your Mitra conversations with their messages and files → `{ removed }`.
+
 ### `POST /api/portfolio-import/extract`  _(ADR 0022)_
 - **Purpose:** Extract candidate holdings from an uploaded broker screenshot/XLSX/CSV/DOCX/PDF, match each against the company database, and diff against the caller's existing holdings. **Writes nothing** — this is the preview step.
 - **Auth:** required. CSV/XLSX need no AI key (deterministic parsing); image/PDF/DOCX use the per-user key (`getUserAiConfig`, `400 no_ai_key` when none). `ai` rate-limit tier.
