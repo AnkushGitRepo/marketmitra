@@ -28,7 +28,7 @@
     "csv-parse": "^7.0.3",
     "exceljs": "^4.4.0",
     "fastest-levenshtein": "^1.0.16",
-    "framer-motion": "^13.2.0",
+    "framer-motion": "^14.10.1",
     "lightweight-charts": "^5.2.1",
     "mammoth": "^1.13.0",
     "mcp-handler": "^2.3.1",
