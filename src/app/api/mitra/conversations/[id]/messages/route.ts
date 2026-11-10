@@ -48,7 +48,7 @@ const textOf = (m: UIMessage): string =>
     .join('\n')
     .trim();
 
-async function handlePOST(request: Request, ctx?: unknown) {
+async function handleMessage(request: Request, ctx?: unknown) {
   const userId = await getCurrentUserId();
   if (!userId) return err('Not authenticated', 401);
   const { id } = await (ctx as Ctx).params;
@@ -144,6 +144,17 @@ async function handlePOST(request: Request, ctx?: unknown) {
     });
   } catch {
     return err('The AI request failed. Please try again.', 502);
+  }
+}
+
+async function handlePOST(request: Request, ctx?: unknown) {
+  try {
+    return await handleMessage(request, ctx);
+  } catch (error) {
+    const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    void logEvent({ level: 'error', source: 'api:mitra/messages', message: `Mitra chat request failed: ${detail.slice(0, 400)}` });
+    // Detail is only echoed outside production; users get a generic message.
+    return err('Mitra could not process that message. Please try again.', 500, process.env.NODE_ENV === 'production' ? {} : { detail });
   }
 }
 
