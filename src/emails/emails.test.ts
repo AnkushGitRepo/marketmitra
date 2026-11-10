@@ -154,6 +154,13 @@ describe('text conversion', () => {
     expect(decodeEntities('&#9660; &#x25B2; &middot; &amp; &bogus;')).toBe('▼ ▲ · & &bogus;');
   });
 
+  it('cannot be tricked by nested or malformed markup into leaving a tag behind', () => {
+    const nasty = '<<script>script>alert(1)<</script>/script> <!<!---->-- hidden --> ok <scr<script></script>ipt>x</scr<script></script>ipt>';
+    const text = htmlToText(nasty);
+    expect(text).not.toMatch(/<script|<!--|<\/script/i);
+    expect(text).toContain('ok');
+  });
+
   it('does not dump unsafe-looking hrefs as links', () => {
     expect(htmlToText('<a href="javascript:alert(1)">click</a>')).toBe('click');
   });

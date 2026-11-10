@@ -22,15 +22,26 @@ export function extractTitle(html: string): string {
   return m ? decodeEntities(m[1]).replace(/\s+/g, ' ').trim() : '';
 }
 
+/** Applies a removal until the string stops changing, so nested input like `<<script>script>` cannot leave a tag behind. */
+function removeUntilStable(input: string, pattern: RegExp): string {
+  let previous: string;
+  let current = input;
+  do {
+    previous = current;
+    current = current.replace(pattern, '');
+  } while (current !== previous);
+  return current;
+}
+
 export function htmlToText(html: string): string {
-  let s = html
-    .replace(/<!--[\s\S]*?-->/g, '') // comments, including Outlook conditionals
-    .replace(/<head[\s\S]*?<\/head>/gi, '')
-    .replace(/<(script|style|noscript)[\s\S]*?<\/\1>/gi, '')
-    // Hidden preheader / spacer blocks repeat the body and would read as noise.
-    .replace(/<div[^>]*display:\s*none[^>]*>[\s\S]*?<\/div>/gi, '')
+  let s = removeUntilStable(html, /<!--[\s\S]*?-->/g); // comments, including Outlook conditionals
+  s = removeUntilStable(s, /<head[\s\S]*?<\/head>/gi);
+  s = removeUntilStable(s, /<(script|style|noscript)[\s\S]*?<\/\1>/gi);
+  // Hidden preheader / spacer blocks repeat the body and would read as noise.
+  s = removeUntilStable(s, /<div[^>]*display:\s*none[^>]*>[\s\S]*?<\/div>/gi);
+  s = s
     .replace(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, inner: string) => {
-      const label = decodeEntities(inner.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+      const label = decodeEntities(removeUntilStable(inner, /<[^>]+>/g)).replace(/\s+/g, ' ').trim();
       const url = decodeEntities(href).trim();
       if (!label) return '';
       if (!/^https?:/i.test(url) || label === url) return label;
@@ -38,8 +49,8 @@ export function htmlToText(html: string): string {
     })
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|div|tr|h[1-6]|li|table|section)>/gi, '\n')
-    .replace(/<\/t[dh]>/gi, ' ')
-    .replace(/<[^>]+>/g, '');
+    .replace(/<\/t[dh]>/gi, ' ');
+  s = removeUntilStable(s, /<[^>]+>/g);
   s = decodeEntities(s);
   return s
     .split('\n')
