@@ -978,3 +978,7 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - Welcome/alert/test emails now carry an optional Reply-To (`EMAIL_REPLY_TO`, validated by a pure helper; bad values are ignored so sending never breaks). `EMAIL_CONTACT_LINE` and `EMAIL_REPLY_TO` set in Vercel production to the maintainer's Gmail (their choice: "make sure it gets to me"). The maintainer confirmed the designed emails arrive. **Not live until the next deploy; not verified:** a real reply landing in the inbox.
 
+## 2026-11-11 — Screener refactor (#77, [ADR 0045](./decisions/0045-screener-live-filters-and-mobile-cards.md))
+
+- Compact filter toolbar with a "More filters" accordion, live 300 ms-debounced results (no Apply), sticky header and company column, tinted/promoted screened columns, ↕ sort arrows, phone bottom bar + full-height filter sheet, card results with the screened metrics, info (i) for the long notes. 15 new unit tests; full suite (1127), types, lint green. **Verified in Chromium** at 1440px and 390px: typing updates count, chip and URL with no Apply button; a preset promotes and tints ROE/ROCE/D-E; the sheet opens and shows a live count; no horizontal overflow; table hidden and cards shown on phones. **Not verified:** real iOS Safari (sheet, 16px inputs, bar over the tab bar), the sticky header while scrolling a long result list (local data has only a handful of companies), keyboard-only use of the sheet, screen-reader announcements. **Deviation:** no day-change % on cards (no such field).
+
