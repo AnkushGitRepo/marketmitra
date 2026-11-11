@@ -210,6 +210,10 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 - **Auth:** session. **Purpose:** two-sentence Mitra read on today's indices, breadth and sector moves, grounded only in those figures. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when market data is unavailable; `ai` rate tier.
 
+### `POST /api/insights/news`
+
+- **Auth:** session. **Purpose:** two-sentence Mitra read on the dominant themes in the latest 20 headlines, grounded only in them. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when no headlines are available; `ai` rate tier.
+
 ### `GET /api/news`
 - **Purpose:** Same-origin thin proxy to `services/fundamentals-api`'s `GET /news` (ADR 0015), so `/news` can "load more" and toggle its holdings filter client-side without exposing `FUNDAMENTALS_API_URL` to the browser. Same narrow, deliberate exception as `/api/search`.
 - **Auth:** public — news is public market data. (The holdings filter's symbol list is computed server-side in `/news/page.tsx` and passed to the client, which forwards it here as `?symbols=`.)

@@ -2,23 +2,6 @@
   padding-bottom: 34px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .pageRoot {
-    animation: pageRise 0.34s ease both;
-  }
-}
-
-@keyframes pageRise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 .eyebrow {
   margin: 0 0 6px;
   font-family: var(--font-mono);
@@ -37,58 +20,6 @@
   color: var(--app-ink);
 }
 
-@media (max-width: 760px) {
-  .h1 {
-    font-size: 25px;
-  }
-}
-
-.introNote {
-  margin: 8px 0 22px;
-  font-size: 13px;
-  color: var(--app-text-muted);
-  max-width: 64ch;
-}
-
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-xl);
-  padding: 8px 24px 22px;
-  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-}
-
-.toggleRow {
-  display: flex;
-  gap: 6px;
-  padding: 14px 0 4px;
-  border-bottom: 1px solid var(--app-border-soft);
-  margin-bottom: 4px;
-}
-
-.toggle {
-  border: 1px solid var(--app-border);
-  background: var(--color-surface);
-  color: var(--app-text-muted);
-  border-radius: var(--radius-pill);
-  padding: 7px 16px;
-  font-size: 13px;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
-}
-
-.toggleActive {
-  background: var(--app-ink);
-  color: var(--app-cream);
-  border-color: var(--app-ink);
-}
-
-.toggle:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .loadMore {
   margin-top: 18px;
   width: 100%;
@@ -102,7 +33,85 @@
   cursor: pointer;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .pageRoot {
+    animation: pageRise 0.34s ease both;
+  }
+}
+
+@keyframes pageRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .loadMore:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .h1 {
+    font-size: 25px;
+  }
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.stories {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty {
+  margin: 0;
+  padding: 24px 4px;
+  font-size: 14px;
+  color: var(--app-text-muted);
+}
+
+.error {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--app-loss-text);
+}
+
+/* Phone: trending pills, then the Mitra pulse, then the stories. */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'trending' 'pulse' 'feed';
+  gap: 16px;
+}
+
+.trending { grid-area: trending; min-width: 0; }
+.pulse { grid-area: pulse; min-width: 0; }
+.feed { grid-area: feed; min-width: 0; }
+
+/* Desktop: stories (about 65%, a readable line length) beside the trending and Mitra rail (about 35%). */
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
+    grid-template-areas:
+      'feed trending'
+      'feed pulse'
+      'feed .';
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+    gap: 20px;
+  }
 }

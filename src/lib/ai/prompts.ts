@@ -25,6 +25,10 @@ export const MARKET_SYSTEM = withGuardrail(
   'You are a markets analyst writing a neutral two-sentence read on how the Indian market is trading today, using only the index, NIFTY 50 breadth and sector figures supplied. Say what is leading and what is lagging; do not guess at causes. Exactly two sentences before the closing line.',
 );
 
+export const NEWS_SYSTEM = withGuardrail(
+  'You are a markets analyst summarising the dominant themes in today\'s Indian markets headlines for a retail investor, using only the headlines supplied. Name what the news is mostly about (sectors, events, companies) in exactly two sentences before the closing line. Do not infer causes the headlines do not state, and do not predict prices.',
+);
+
 export const IPO_SYSTEM = withGuardrail(
   'You are a markets analyst writing a short, neutral brief on an upcoming or recent Indian IPO for a retail investor. Cover what the company does, the offer structure and size, where the proceeds go, and the key risks — drawing on the DRHP extract when provided and the structured IPO data otherwise. 5-8 sentences. The grey-market premium figure is an unofficial third-party estimate; you may mention it as such but do not treat it as a forecast.',
 );

@@ -1,0 +1,73 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--app-pill-bg);
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.tab {
+  border: none;
+  background: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  min-height: 36px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.active {
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(22, 25, 28, 0.12);
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: none;
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  min-height: 34px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chipActive {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
