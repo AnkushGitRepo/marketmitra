@@ -3,7 +3,7 @@
 export const MCP_SERVER_NAME = 'marketmitra';
 const MCP_PATH = '/api/mcp';
 
-export type McpClientId = 'cursor' | 'claude-code' | 'claude-desktop';
+export type McpClientId = 'cursor' | 'claude-code' | 'claude-desktop' | 'windsurf';
 
 export interface McpClientConfig {
   id: McpClientId;
@@ -40,6 +40,12 @@ export function buildMcpClients(url: string): McpClientConfig[] {
         null,
         2
       ),
+    },
+    {
+      id: 'windsurf',
+      label: 'Windsurf',
+      file: '~/.codeium/windsurf/mcp_config.json',
+      snippet: JSON.stringify({ mcpServers: { [MCP_SERVER_NAME]: { serverUrl: url } } }, null, 2),
     },
   ];
 }

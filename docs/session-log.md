@@ -1019,3 +1019,8 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - Try it and MCP "Run example" now take optional checks (status, header contains, JSON path exists/equals) and show per-check pass/fail. Pure evaluator with 14 unit tests.
 - **Verified:** lint, typecheck, 1301 tests; browser run showed a pass, a deliberate failure (`definitely.missing not found`) and a passing MCP card. **Not verified:** production. Removed four stray gitignored `.next/types/* 2.ts` duplicates that broke `tsc`.
+
+## 2026-11-11 — MCP tool catalog, master-detail (#100, [ADR 0052](./decisions/0052-api-reference-redesign.md))
+
+- The MCP tab is now a sticky tool list plus an inspector (badges, parameter table with defaults, example, checks, live response); a select on mobile. Added a Windsurf preset, Copy URL and a measured reachability indicator.
+- **Verified:** lint, typecheck, unit tests; in a browser: reachable indicator, 9 tools, `run_screener` (25 params) scrolls inside its section, live `get_quote` passes its checks, mobile shows the select with no horizontal overflow. **Not verified:** the Windsurf config against a real Windsurf install; no syntax highlighting was added (plain pre).

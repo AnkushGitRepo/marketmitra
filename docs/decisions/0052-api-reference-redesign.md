@@ -27,6 +27,10 @@ server under a card, and gave an agent no copy-paste way to connect. The REST AP
 - **Checks on Try it (#98):** an optional pass/fail list per request (status equals, header contains, JSON path exists/equals),
   defaulting to the first documented 2xx status; MCP cards default to status 200 plus `result.content`. Evaluated by a pure
   function (`src/lib/api-docs/checks.ts`) on the received response, per session, nothing stored.
+- **MCP catalog (#100):** the tool cards became a master-detail view (sticky tool list, inspector with badges, parameter table
+  with defaults, example request, checks and the live response; a select on mobile). Long schemas such as `run_screener` scroll
+  inside a capped parameter section so the page does not stretch. A Windsurf preset (`serverUrl`), Copy URL, and a reachability
+  indicator from a real `tools/list` call were added. No sample output is invented; the response is always a live call.
 
 ## Consequences
 

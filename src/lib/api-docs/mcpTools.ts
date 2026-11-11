@@ -9,12 +9,15 @@ export interface McpParamDoc {
   type: string;
   required: boolean;
   description: string;
+  default?: unknown;
 }
 
 export interface McpToolDoc {
   name: string;
   title: string;
   description: string;
+  /** First sentence of the description, for the catalog list. */
+  summary: string;
   params: McpParamDoc[];
   exampleArgs: Record<string, unknown>;
 }
@@ -32,12 +35,19 @@ export const MCP_EXAMPLE_ARGS: Readonly<Record<string, Record<string, unknown>>>
   get_screener_options: {},
 };
 
+/** First sentence (a dot followed by whitespace), capped with an ellipsis. */
+export function firstSentence(text: string, max = 110): string {
+  const m = text.match(/^[\s\S]*?[.!?](?=\s|$)/);
+  const sentence = (m ? m[0] : text).trim();
+  return sentence.length > max ? `${sentence.slice(0, max - 1).trimEnd()}…` : sentence;
+}
+
 interface JsonSchemaNode {
   type?: string | string[];
   enum?: unknown[];
   items?: JsonSchemaNode;
   anyOf?: JsonSchemaNode[];
-  properties?: Record<string, JsonSchemaNode & { description?: string }>;
+  properties?: Record<string, JsonSchemaNode & { description?: string; default?: unknown }>;
   required?: string[];
 }
 
@@ -57,6 +67,7 @@ function paramsOf(schema: z.ZodTypeAny): McpParamDoc[] {
     type: typeLabel(node),
     required: required.has(name),
     description: node.description ?? '',
+    ...(node.default !== undefined ? { default: node.default } : {}),
   }));
 }
 
@@ -65,6 +76,7 @@ export function describeTools(defs: ReadonlyArray<McpToolDef<z.ZodTypeAny>>): Mc
     name: t.name,
     title: t.config.title,
     description: t.config.description,
+    summary: firstSentence(t.config.description),
     params: paramsOf(t.config.inputSchema),
     exampleArgs: MCP_EXAMPLE_ARGS[t.name] ?? {},
   }));

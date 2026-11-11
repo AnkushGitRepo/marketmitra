@@ -14,10 +14,20 @@ describe('mcpUrl', () => {
 });
 
 describe('buildMcpClients', () => {
-  const [cursor, claudeCode, desktop] = buildMcpClients(URL_);
+  const [cursor, claudeCode, desktop, windsurf] = buildMcpClients(URL_);
 
-  it('lists Cursor, Claude Code and Claude Desktop in that order', () => {
-    expect([cursor.id, claudeCode.id, desktop.id]).toEqual(['cursor', 'claude-code', 'claude-desktop']);
+  it('lists Cursor, Claude Code, Claude Desktop and Windsurf in that order', () => {
+    expect([cursor.id, claudeCode.id, desktop.id, windsurf.id]).toEqual([
+      'cursor',
+      'claude-code',
+      'claude-desktop',
+      'windsurf',
+    ]);
+  });
+
+  it('Windsurf uses serverUrl in its own config file', () => {
+    expect(JSON.parse(windsurf.snippet)).toEqual({ mcpServers: { marketmitra: { serverUrl: URL_ } } });
+    expect(windsurf.file).toBe('~/.codeium/windsurf/mcp_config.json');
   });
 
   it('Cursor uses the mcpServers shape with the deployment url', () => {
