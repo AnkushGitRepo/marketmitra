@@ -5,6 +5,8 @@ export interface GenerateResult {
   ok: true;
   text: string;
   model: string;
+  /** Why the model stopped ("stop", "length" when it hit the token cap, ...). Useful when a reply cannot be parsed. */
+  finishReason?: string;
 }
 
 export interface GenerateError {
@@ -45,7 +47,7 @@ export async function generateInsightText(
         error: `The model returned no text (finish reason: ${finishReason}). Try a different model.`,
       };
     }
-    return { ok: true, text: clean, model: config.model?.trim() || `${config.provider} (default)` };
+    return { ok: true, text: clean, model: config.model?.trim() || `${config.provider} (default)`, finishReason };
   } catch (err) {
     console.error('[ai] generation failed:', err);
     return { ok: false, error: normalizeAiError(err) };
