@@ -4,13 +4,16 @@
 export type Check =
   | { kind: 'status'; equals: number }
   | { kind: 'header'; name: string; contains: string }
-  | { kind: 'jsonPath'; path: string; mode: 'exists' | 'equals'; value?: string };
+  | { kind: 'jsonPath'; path: string; mode: 'exists' | 'equals'; value?: string }
+  | { kind: 'latency'; maxMs: number };
 
 export interface CheckTarget {
   status: number;
   /** Header names lower-cased. */
   headers: Record<string, string>;
   body: string;
+  /** Round-trip time in ms, when measured. */
+  ms?: number;
 }
 
 export interface CheckResult {
@@ -70,6 +73,11 @@ function evaluateOne(check: Check, target: CheckTarget, json: unknown): CheckRes
       if (actual === undefined) return { check, passed: false, detail: `header "${check.name}" is missing` };
       const passed = actual.includes(check.contains);
       return { check, passed, detail: passed ? `"${check.name}" contains "${check.contains}"` : `"${check.name}" is "${actual}"` };
+    }
+    case 'latency': {
+      if (target.ms === undefined) return { check, passed: false, detail: 'latency was not measured' };
+      const passed = target.ms <= check.maxMs;
+      return { check, passed, detail: passed ? `latency ${target.ms}ms < ${check.maxMs}ms` : `latency ${target.ms}ms, limit ${check.maxMs}ms` };
     }
     case 'jsonPath': {
       if (json === undefined) return { check, passed: false, detail: 'response body is not JSON' };

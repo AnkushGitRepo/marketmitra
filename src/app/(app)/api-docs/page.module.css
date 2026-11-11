@@ -520,8 +520,7 @@
   gap: 10px;
 }
 
-.mcpConnect .pre,
-.toolCard .pre {
+.mcpConnect .pre {
   align-self: stretch;
 }
 
@@ -530,29 +529,6 @@
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--app-text-faint);
-}
-
-.toolCards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
-  gap: 16px;
-}
-
-.toolCard {
-  background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-lg);
-  padding: 18px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.toolCard .tableWrap,
-.toolCard .result {
-  align-self: stretch;
 }
 
 .toolHead {
@@ -588,7 +564,7 @@
 }
 
 .outputPre {
-  max-height: 340px;
+  max-height: 288px;
   overflow: auto;
 }
 
@@ -689,14 +665,46 @@
   }
 }
 
-/* --- Try it checks --- */
+/* --- Try it checks + run output --- */
+
+.checksEditor {
+  align-self: stretch;
+  margin-top: 8px;
+}
+
+.checksSummary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+  margin-bottom: 8px;
+}
 
 .checkRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   align-items: center;
+}
+
+.checkInput {
+  height: 32px;
+  flex: 1 1 110px;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--app-bg-mid);
+  color: var(--app-ink);
+}
+
+.checkOp {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--app-text-faint);
 }
 
 .checkRemove {
@@ -713,27 +721,201 @@
   color: var(--app-ink);
 }
 
-.checkReport {
-  margin-top: 10px;
+.kbdHint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.runOutput {
+  align-self: stretch;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.runStrip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  align-items: flex-start;
 }
 
-.checkList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-size: 12.5px;
-  line-height: 1.6;
+.pill {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
 }
 
-.checkPass {
+.pillPass {
+  background: var(--app-pill-bg);
+  color: var(--app-teal-strong);
+  border-color: var(--app-border-soft);
+}
+
+.pillFail {
+  background: var(--app-loss-bg);
+  color: var(--app-loss-text);
+  border-color: var(--app-loss-border);
+  font-weight: 600;
+}
+
+.runMeta {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
   color: var(--app-text-muted);
 }
 
-.checkFail {
-  color: var(--app-ink);
+.viewerHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.viewerHead .docSectionTitle {
+  margin: 0;
+}
+
+.viewerTools {
+  display: flex;
+  gap: 4px;
+}
+
+/* --- MCP master-detail catalog --- */
+
+.endpointRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  align-self: stretch;
+}
+
+.reach {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+}
+
+.reach[data-state='live'] {
+  color: var(--app-teal-strong);
+}
+
+.catalog {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.toolNav {
+  position: sticky;
+  top: 16px;
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolNavRow {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolNavRow:hover {
+  background: var(--app-pill-bg);
+}
+
+.toolNavActive,
+.toolNavActive:hover {
+  background: var(--app-pill-bg);
+  box-shadow: inset 2px 0 0 var(--app-teal-strong);
+}
+
+.toolNavName {
+  font-family: var(--font-mono);
+  font-size: 13px;
   font-weight: 600;
+  color: var(--app-ink);
+}
+
+.toolNavSummary {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+}
+
+.inspector {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.inspector .pre,
+.inspector .tableWrap,
+.inspector .result,
+.inspector details {
+  align-self: stretch;
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--app-pill-bg);
+  color: var(--app-text-muted);
+}
+
+/* Long schemas (run_screener) scroll inside the section instead of stretching the page. */
+.paramScroll {
+  max-height: 320px;
+  overflow: auto;
+}
+
+@media (max-width: 767px) {
+  .catalog {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .catalog .toolNav {
+    display: none;
+  }
 }
