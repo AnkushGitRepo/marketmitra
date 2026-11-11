@@ -5,19 +5,18 @@ import { useMemo, useState } from 'react';
 import type { Ipo } from '@/lib/dashboard/iposApi';
 import type { IpoWatchParams } from '@/lib/alerts/types';
 import {
+  defaultGroup,
   filterIpos,
+  groupCounts,
   ipoQueryString,
-  IPO_PHASES,
   paginate,
   parseIpoQuery,
-  PHASE_LABEL,
-  phaseCounts,
-  TYPE_LABEL,
   typeCounts,
   type IpoQuery,
 } from '@/lib/dashboard/ipoFilters';
+import { IpoCard } from '@/components/ipos/IpoCard';
+import { IpoFilterBar } from '@/components/ipos/IpoFilterBar';
 import { IpoPagination } from './IpoPagination';
-import { IpoRow } from './IpoRow';
 import styles from './page.module.css';
 
 interface IposPageClientProps {
@@ -46,22 +45,20 @@ export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable }: Ip
   // bar in sync without a server round-trip (the data is already on the page).
   const [query, setQuery] = useState<IpoQuery>(() => parseIpoQuery(searchParams));
   const update = (next: Partial<IpoQuery>) => {
-    // Changing a filter or the page size always returns to the first page.
-    const resetsPage = 'phase' in next || 'type' in next || 'pageSize' in next;
+    // Changing a tab, the type or the page size always returns to the first page.
+    const resetsPage = 'group' in next || 'type' in next || 'pageSize' in next;
     const merged: IpoQuery = { ...query, ...(resetsPage ? { page: 0 } : {}), ...next };
     setQuery(merged);
     const qs = ipoQueryString(merged);
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
   };
 
-  const filtered = useMemo(
-    () => filterIpos(ipos, { phase: query.phase, type: query.type }, today),
-    [ipos, query.phase, query.type, today],
-  );
-  const phases = useMemo(() => phaseCounts(ipos, query.type, today), [ipos, query.type, today]);
-  const types = useMemo(() => typeCounts(ipos, query.phase, today), [ipos, query.phase, today]);
+  const groups = useMemo(() => groupCounts(ipos, query.type, today), [ipos, query.type, today]);
+  // Open on the first tab that has IPOs, so the page is never an empty "Live" list while issues exist elsewhere.
+  const group = query.group ?? defaultGroup(groups);
+  const types = useMemo(() => typeCounts(ipos, group, today), [ipos, group, today]);
+  const filtered = useMemo(() => filterIpos(ipos, { group, type: query.type }, today), [ipos, group, query.type, today]);
   const paged = paginate(filtered, query.page, query.pageSize);
-  const filtering = query.phase !== 'all' || query.type !== 'all';
 
   const saveWatch = async () => {
     setSaving(true);
@@ -85,33 +82,35 @@ export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable }: Ip
 
   return (
     <>
-      <div className={styles.watchBar}>
+      <div className={styles.header}>
+        <div>
+          <p className={styles.eyebrow}>IPOs</p>
+          <h1 className={styles.h1}>IPO tracker</h1>
+        </div>
         <button
           type="button"
           className={`${styles.watchToggle} ${watchOn ? styles.watchToggleOn : ''}`}
+          aria-expanded={watchOpen}
           onClick={() => setWatchOpen((v) => !v)}
         >
-          {watchOn ? '🔔 IPO alerts on' : 'Notify me about IPOs'}
+          {watchOn ? '🔔 IPO alerts on' : '🔔 Notify me'}
         </button>
       </div>
+      <p className={styles.introNote}>
+        Calendar, subscription, and grey-market premium for mainboard &amp; SME IPOs. GMP is an{' '}
+        <em>unofficial grey-market estimate</em> compiled by a third-party tracker: not from any exchange, and not a
+        prediction.
+      </p>
 
       {watchOpen && (
         <div className={styles.watchPanel}>
           <p className={styles.watchPanelTitle}>Notify me when an IPO…</p>
           <label className={styles.check}>
-            <input
-              type="checkbox"
-              checked={watch.triggers.opens}
-              onChange={(e) => setTrigger('opens', e.target.checked)}
-            />
+            <input type="checkbox" checked={watch.triggers.opens} onChange={(e) => setTrigger('opens', e.target.checked)} />
             opens for subscription
           </label>
           <label className={styles.check}>
-            <input
-              type="checkbox"
-              checked={watch.triggers.lastDay}
-              onChange={(e) => setTrigger('lastDay', e.target.checked)}
-            />
+            <input type="checkbox" checked={watch.triggers.lastDay} onChange={(e) => setTrigger('lastDay', e.target.checked)} />
             is on its last day to apply
           </label>
           <label className={styles.check}>
@@ -141,55 +140,36 @@ export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable }: Ip
       {ipos.length === 0 ? (
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No IPO data right now</p>
-          <p className={styles.emptyText}>
-            The tracker refreshes periodically — check back shortly.
-          </p>
+          <p className={styles.emptyText}>The tracker refreshes periodically. Check back shortly.</p>
         </div>
       ) : (
         <>
-          <div className={styles.filters} role="group" aria-label="Filter IPOs">
-            <div className={styles.filterRow}>
-              <FilterChip label="All" count={phases.all} active={query.phase === 'all'} onClick={() => update({ phase: 'all' })} />
-              {IPO_PHASES.map((p) => (
-                <FilterChip
-                  key={p}
-                  label={PHASE_LABEL[p]}
-                  count={phases[p]}
-                  active={query.phase === p}
-                  onClick={() => update({ phase: p })}
-                />
-              ))}
-            </div>
-            <div className={styles.filterRow}>
-              {(['all', 'mainboard', 'sme'] as const).map((t) => (
-                <FilterChip
-                  key={t}
-                  label={TYPE_LABEL[t]}
-                  count={types[t]}
-                  active={query.type === t}
-                  onClick={() => update({ type: t })}
-                />
-              ))}
-            </div>
-          </div>
+          <IpoFilterBar
+            group={group}
+            type={query.type}
+            groupCounts={groups}
+            typeCounts={types}
+            onGroup={(g) => update({ group: g })}
+            onType={(t) => update({ type: t })}
+          />
 
           {paged.total === 0 ? (
             <div className={styles.emptyCard}>
-              <p className={styles.emptyTitle}>No IPOs match these filters</p>
+              <p className={styles.emptyTitle}>No IPOs here</p>
               <p className={styles.emptyText}>
-                {filtering ? 'Try a different status or type, or clear the filters.' : 'Nothing to show right now.'}
+                {query.type !== 'all' ? 'Try a different type or tab.' : 'Nothing to show in this tab right now.'}
               </p>
-              {filtering && (
-                <button type="button" className={styles.btnSmall} onClick={() => update({ phase: 'all', type: 'all' })}>
-                  Clear filters
+              {query.type !== 'all' && (
+                <button type="button" className={styles.btnSmall} onClick={() => update({ type: 'all' })}>
+                  Show all types
                 </button>
               )}
             </div>
           ) : (
             <>
-              <ul className={styles.ipoList}>
+              <ul className={styles.list}>
                 {paged.items.map((ipo) => (
-                  <IpoRow key={ipo.slug} ipo={ipo} today={today} aiKeyAvailable={aiKeyAvailable} />
+                  <IpoCard key={ipo.slug} ipo={ipo} today={today} aiKeyAvailable={aiKeyAvailable} />
                 ))}
               </ul>
               <IpoPagination
@@ -204,28 +184,5 @@ export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable }: Ip
         </>
       )}
     </>
-  );
-}
-
-function FilterChip({
-  label,
-  count,
-  active,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`${styles.chip} ${active ? styles.chipActive : ''}`}
-      aria-pressed={active}
-      onClick={onClick}
-    >
-      {label} <span className={styles.chipCount}>{count}</span>
-    </button>
   );
 }

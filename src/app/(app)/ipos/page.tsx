@@ -29,19 +29,7 @@ export default async function IposPage() {
 
   return (
     <div className={styles.pageRoot}>
-      <p className={styles.eyebrow}>IPOs</p>
-      <h1 className={styles.h1}>IPO tracker</h1>
-      <p className={styles.introNote}>
-        Calendar, subscription, and grey-market premium for mainboard &amp; SME IPOs. GMP is an{' '}
-        <em>unofficial grey-market estimate</em> compiled by a third-party tracker — not from any
-        exchange, and not a prediction.
-      </p>
-      <IposPageClient
-        ipos={ipos}
-        today={istToday(new Date())}
-        initialWatch={watch}
-        aiKeyAvailable={aiKeyAvailable}
-      />
+      <IposPageClient ipos={ipos} today={istToday(new Date())} initialWatch={watch} aiKeyAvailable={aiKeyAvailable} />
     </div>
   );
 }

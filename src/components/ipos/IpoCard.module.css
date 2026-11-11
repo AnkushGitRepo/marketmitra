@@ -1,0 +1,186 @@
+.card {
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 18px 20px;
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.title {
+  min-width: 0;
+}
+
+.name {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.type {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--app-pill-bg);
+  color: var(--app-text-muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.status {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status_open {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+.status_closing {
+  background: var(--app-warn-bg);
+  color: var(--app-warn-text);
+}
+
+.status_upcoming {
+  background: #e8f0fb;
+  color: #25497a;
+}
+
+.status_closed,
+.status_allotted,
+.status_listed {
+  background: var(--app-pill-bg);
+  color: var(--app-text-muted);
+}
+
+/* The premium is the anchor: sized up and solid, so a high-momentum issue is visible at a glance. */
+.gmp {
+  flex: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.gmp_gain {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+.gmp_hot {
+  background: var(--app-teal-strong);
+  color: #fff;
+}
+
+.gmp_loss {
+  background: var(--app-loss-bg);
+  color: var(--app-loss-text);
+}
+
+.gmp_flat,
+.gmp_none {
+  background: var(--app-pill-bg);
+  color: var(--app-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.stats {
+  margin: 16px 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.stats dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.stats dd {
+  margin: 4px 0 0;
+  font-size: 14.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+
+.over {
+  color: var(--app-teal-strong);
+  font-weight: 700;
+}
+
+.under {
+  color: var(--app-warn-text);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--app-border-softer);
+}
+
+.more {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  min-height: 38px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .card {
+    padding: 16px;
+  }
+
+  .head {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gmp {
+    align-self: flex-start;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .more {
+    width: 100%;
+  }
+}

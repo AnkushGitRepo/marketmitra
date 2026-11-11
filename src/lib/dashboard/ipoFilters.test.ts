@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  defaultGroup,
   filterIpos,
+  groupCounts,
+  groupOf,
   ipoPhase,
   ipoQueryString,
   istToday,
   paginate,
   parseIpoQuery,
-  phaseCounts,
   typeCounts,
+  visibleGroups,
 } from './ipoFilters';
 import type { Ipo } from './iposApi';
 
@@ -23,16 +26,17 @@ function ipo(over: Partial<Ipo> & { slug: string }): Ipo {
 }
 
 const sample: Ipo[] = [
-  ipo({ slug: 'listed-mb', status: 'listed' }),
-  ipo({ slug: 'open-sme', status: 'open', category: 'sme' }),
-  ipo({ slug: 'closed-waiting', status: 'closed', allotment_date: '2026-11-12' }),
-  ipo({ slug: 'allotted-sme', status: 'closed', category: 'sme', allotment_date: '2026-11-09' }),
-  ipo({ slug: 'upcoming-mb', status: 'upcoming' }),
-  ipo({ slug: 'open-mb', status: 'open' }),
-  ipo({ slug: 'closed-no-date', status: 'closed' }),
+  ipo({ slug: 'listed-old', status: 'listed', listing_date: '2026-10-01' }),
+  ipo({ slug: 'open-late', status: 'open', category: 'sme', close_date: '2026-11-14' }),
+  ipo({ slug: 'closed-waiting', status: 'closed', allotment_date: '2026-11-12', close_date: '2026-11-09' }),
+  ipo({ slug: 'allotted-sme', status: 'closed', category: 'sme', allotment_date: '2026-11-09', close_date: '2026-11-05' }),
+  ipo({ slug: 'upcoming-later', status: 'upcoming', open_date: '2026-11-20' }),
+  ipo({ slug: 'upcoming-soon', status: 'upcoming', open_date: '2026-11-12' }),
+  ipo({ slug: 'open-soon', status: 'open', close_date: '2026-11-11' }),
+  ipo({ slug: 'listed-new', status: 'listed', listing_date: '2026-11-05' }),
 ];
 
-describe('ipoPhase', () => {
+describe('ipoPhase / groupOf', () => {
   it('derives "allotted" from a passed allotment date on a closed issue', () => {
     expect(ipoPhase({ status: 'closed', allotment_date: '2026-11-09' }, TODAY)).toBe('allotted');
     expect(ipoPhase({ status: 'closed', allotment_date: TODAY }, TODAY)).toBe('allotted');
@@ -41,55 +45,70 @@ describe('ipoPhase', () => {
     expect(ipoPhase({ status: 'closed', allotment_date: '2026-11-12' }, TODAY)).toBe('closed');
     expect(ipoPhase({ status: 'closed', allotment_date: null }, TODAY)).toBe('closed');
   });
-  it('passes other statuses through, whatever the allotment date', () => {
+  it('treats an issue still marked open after its close date as closed (the source lagged)', () => {
+    expect(ipoPhase({ status: 'open', allotment_date: '2026-11-12', close_date: '2026-11-09' }, TODAY)).toBe('closed');
+    expect(ipoPhase({ status: 'open', allotment_date: '2026-11-09', close_date: '2026-11-05' }, TODAY)).toBe('allotted');
+    expect(ipoPhase({ status: 'open', allotment_date: null, close_date: TODAY }, TODAY)).toBe('open');
+  });
+  it('treats an upcoming issue past its close date as closed, and one inside its bidding window as open', () => {
+    expect(ipoPhase({ status: 'upcoming', open_date: '2026-11-01', close_date: '2026-11-05', allotment_date: null }, TODAY)).toBe('closed');
+    expect(ipoPhase({ status: 'upcoming', open_date: '2026-11-09', close_date: '2026-11-12', allotment_date: null }, TODAY)).toBe('open');
+    expect(ipoPhase({ status: 'upcoming', open_date: '2026-11-12', close_date: '2026-11-15', allotment_date: null }, TODAY)).toBe('upcoming');
+    expect(ipoPhase({ status: 'upcoming', open_date: '2026-11-09', close_date: null, allotment_date: null }, TODAY)).toBe('upcoming');
+  });
+  it('passes other statuses through', () => {
     expect(ipoPhase({ status: 'open', allotment_date: '2026-01-01' }, TODAY)).toBe('open');
-    expect(ipoPhase({ status: 'listed', allotment_date: '2026-01-01' }, TODAY)).toBe('listed');
-    expect(ipoPhase({ status: 'upcoming', allotment_date: null }, TODAY)).toBe('upcoming');
+    expect(ipoPhase({ status: 'listed', allotment_date: null }, TODAY)).toBe('listed');
+  });
+  it('puts open and upcoming in Live, closed and allotted in Closed, listed in Listed', () => {
+    expect(['open', 'upcoming', 'closed', 'allotted', 'listed'].map((p) => groupOf(p as never))).toEqual(['live', 'live', 'closed', 'closed', 'listed']);
   });
 });
 
 describe('filterIpos', () => {
   const slugs = (f: Parameters<typeof filterIpos>[1]) => filterIpos(sample, f, TODAY).map((i) => i.slug);
 
-  it('orders all by phase, keeping source order within a phase', () => {
-    expect(slugs({ phase: 'all', type: 'all' })).toEqual([
-      'open-sme', 'open-mb', 'upcoming-mb', 'closed-waiting', 'closed-no-date', 'allotted-sme', 'listed-mb',
-    ]);
+  it('Live: open issues first (closing soonest), then upcoming by opening date', () => {
+    expect(slugs({ group: 'live', type: 'all' })).toEqual(['open-soon', 'open-late', 'upcoming-soon', 'upcoming-later']);
   });
-  it('filters by phase', () => {
-    expect(slugs({ phase: 'open', type: 'all' })).toEqual(['open-sme', 'open-mb']);
-    expect(slugs({ phase: 'allotted', type: 'all' })).toEqual(['allotted-sme']);
-    expect(slugs({ phase: 'closed', type: 'all' })).toEqual(['closed-waiting', 'closed-no-date']);
+  it('Closed: newest close first, covering closed and allotted', () => {
+    expect(slugs({ group: 'closed', type: 'all' })).toEqual(['closed-waiting', 'allotted-sme']);
   });
-  it('filters by type', () => {
-    expect(slugs({ phase: 'all', type: 'sme' })).toEqual(['open-sme', 'allotted-sme']);
+  it('Listed: most recently listed first', () => {
+    expect(slugs({ group: 'listed', type: 'all' })).toEqual(['listed-new', 'listed-old']);
   });
-  it('combines phase and type', () => {
-    expect(slugs({ phase: 'open', type: 'sme' })).toEqual(['open-sme']);
-    expect(slugs({ phase: 'listed', type: 'sme' })).toEqual([]);
+  it('combines with the type filter', () => {
+    expect(slugs({ group: 'live', type: 'sme' })).toEqual(['open-late']);
+    expect(slugs({ group: 'listed', type: 'sme' })).toEqual([]);
   });
-  it('does not mutate its input', () => {
-    const before = sample.map((i) => i.slug);
-    filterIpos(sample, { phase: 'all', type: 'all' }, TODAY);
-    expect(sample.map((i) => i.slug)).toEqual(before);
+  it('puts issues with a missing date last and keeps source order on ties, without mutating the input', () => {
+    const list = [ipo({ slug: 'a', status: 'upcoming' }), ipo({ slug: 'b', status: 'upcoming', open_date: '2026-12-01' }), ipo({ slug: 'c', status: 'upcoming' })];
+    const before = list.map((i) => i.slug);
+    expect(filterIpos(list, { group: 'live', type: 'all' }, TODAY).map((i) => i.slug)).toEqual(['b', 'a', 'c']);
+    expect(list.map((i) => i.slug)).toEqual(before);
   });
 });
 
-describe('counts', () => {
-  it('phase counts respect the type filter and add up', () => {
-    const all = phaseCounts(sample, 'all', TODAY);
-    expect(all).toEqual({ all: 7, open: 2, upcoming: 1, closed: 2, allotted: 1, listed: 1 });
-    const sme = phaseCounts(sample, 'sme', TODAY);
-    expect(sme).toEqual({ all: 2, open: 1, upcoming: 0, closed: 0, allotted: 1, listed: 0 });
+describe('counts and tabs', () => {
+  it('group counts respect the type filter', () => {
+    expect(groupCounts(sample, 'all', TODAY)).toEqual({ live: 4, closed: 2, listed: 2 });
+    expect(groupCounts(sample, 'sme', TODAY)).toEqual({ live: 1, closed: 1, listed: 0 });
   });
-  it('type counts respect the phase filter', () => {
-    expect(typeCounts(sample, 'all', TODAY)).toEqual({ all: 7, mainboard: 5, sme: 2 });
-    expect(typeCounts(sample, 'open', TODAY)).toEqual({ all: 2, mainboard: 1, sme: 1 });
+  it('type counts respect the tab', () => {
+    expect(typeCounts(sample, 'live', TODAY)).toEqual({ all: 4, mainboard: 3, sme: 1 });
+    expect(typeCounts(sample, 'listed', TODAY)).toEqual({ all: 2, mainboard: 2, sme: 0 });
   });
-  it('count what filterIpos returns', () => {
-    for (const phase of ['open', 'closed', 'allotted'] as const) {
-      expect(filterIpos(sample, { phase, type: 'all' }, TODAY)).toHaveLength(phaseCounts(sample, 'all', TODAY)[phase]);
+  it('counts match what filterIpos returns', () => {
+    for (const group of ['live', 'closed', 'listed'] as const) {
+      expect(filterIpos(sample, { group, type: 'all' }, TODAY)).toHaveLength(groupCounts(sample, 'all', TODAY)[group]);
     }
+  });
+  it('hides empty tabs unless active, and opens on the first non-empty one', () => {
+    expect(visibleGroups({ live: 0, closed: 0, listed: 14 }, 'listed')).toEqual(['listed']);
+    expect(visibleGroups({ live: 0, closed: 0, listed: 14 }, 'live')).toEqual(['live', 'listed']);
+    expect(defaultGroup({ live: 0, closed: 3, listed: 14 })).toBe('closed');
+    expect(defaultGroup({ live: 2, closed: 0, listed: 14 })).toBe('live');
+    expect(defaultGroup({ live: 0, closed: 0, listed: 0 })).toBe('live');
   });
 });
 
@@ -111,26 +130,32 @@ describe('paginate', () => {
 
 describe('URL query', () => {
   const read = (qs: string) => parseIpoQuery(new URLSearchParams(qs));
-  it('defaults when empty', () => {
-    expect(read('')).toEqual({ phase: 'all', type: 'all', pageSize: 10, page: 0 });
+  it('defaults when empty (group not chosen)', () => {
+    expect(read('')).toEqual({ group: null, type: 'all', pageSize: 10, page: 0 });
   });
-  it('reads filters, and treats the page as 1-based', () => {
-    expect(read('status=allotted&type=sme&size=20&page=3')).toEqual({ phase: 'allotted', type: 'sme', pageSize: 20, page: 2 });
+  it('reads the view, and treats the page as 1-based', () => {
+    expect(read('group=closed&type=sme&size=20&page=3')).toEqual({ group: 'closed', type: 'sme', pageSize: 20, page: 2 });
+  });
+  it('maps old ?status= links onto the new tabs', () => {
+    expect(read('status=open').group).toBe('live');
+    expect(read('status=upcoming').group).toBe('live');
+    expect(read('status=allotted').group).toBe('closed');
+    expect(read('status=listed').group).toBe('listed');
+    expect(read('status=all').group).toBeNull();
   });
   it('ignores junk', () => {
-    expect(read('status=pending&type=bond&size=7&page=-2')).toEqual({ phase: 'all', type: 'all', pageSize: 10, page: 0 });
+    expect(read('group=pending&type=bond&size=7&page=-2')).toEqual({ group: null, type: 'all', pageSize: 10, page: 0 });
     expect(read('page=abc')).toMatchObject({ page: 0 });
   });
   it('round-trips, omitting defaults', () => {
-    expect(ipoQueryString({ phase: 'all', type: 'all', pageSize: 10, page: 0 })).toBe('');
-    const q = { phase: 'open', type: 'sme', pageSize: 20, page: 2 } as const;
+    expect(ipoQueryString({ group: null, type: 'all', pageSize: 10, page: 0 })).toBe('');
+    const q = { group: 'live', type: 'sme', pageSize: 20, page: 2 } as const;
     expect(read(ipoQueryString(q))).toEqual(q);
   });
 });
 
 describe('istToday', () => {
   it('uses the Indian date, not UTC', () => {
-    // 20:00 UTC on the 9th is already 01:30 on the 10th in India.
     expect(istToday(new Date('2026-11-09T20:00:00Z'))).toBe('2026-11-10');
     expect(istToday(new Date('2026-11-10T10:00:00Z'))).toBe('2026-11-10');
   });
