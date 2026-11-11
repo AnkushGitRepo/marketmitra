@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "MarketMitra API",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "Public + session-scoped HTTP API for the MarketMitra dashboard. For automated / agent access to public market data, prefer the MCP server at /api/mcp (see /llms.txt and docs/api-surface.md). Session-scoped endpoints authenticate via the Clerk session cookie in hosted mode; in self-host mode they resolve to a single local user with no login."
   },
   "servers": [
