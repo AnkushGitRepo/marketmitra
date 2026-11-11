@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SearchResultsDropdown } from '@/components/dashboard-charts/SearchResultsDropdown';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { WatchlistNameDialog } from '@/components/watchlists/WatchlistNameDialog';
 import type { SearchResultOut } from '@/lib/dashboard/fundamentalsApi';
 import type { Quote } from '@/lib/dashboard/quotes';
 import type { UserWishlist } from '@/lib/wishlists/userWishlists';
+import { sortSymbols, withHoldingsList, type SortMode } from '@/lib/wishlists/view';
 import { WatchlistRow } from './WatchlistRow';
 import styles from './WatchlistPanel.module.css';
 
@@ -17,7 +19,11 @@ interface WatchlistPanelProps {
   readonly quotes: Record<string, Quote>;
   /** symbol -> recent closes for the row sparkline (about a month; there is no intraday source). */
   readonly sparks: Record<string, readonly number[]>;
+  /** The user's holdings; they form the managed "Holdings" list. */
+  readonly holdings: readonly { symbol: string }[];
 }
+
+const SORT_LABEL: Record<SortMode, string> = { default: 'Added order', gain: 'Top gainers', loss: 'Top losers' };
 
 const DEBOUNCE_MS = 250;
 
@@ -26,13 +32,16 @@ async function errorOf(res: Response, fallback: string): Promise<string> {
   return data?.error ?? fallback;
 }
 
-export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelProps) {
+export function WatchlistPanel({ watchlists, quotes, sparks, holdings }: WatchlistPanelProps) {
   const router = useRouter();
-  const [activeId, setActiveId] = useState<string | null>(watchlists[0]?.id ?? null);
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
+  const lists = withHoldingsList(
+    watchlists.map((w) => ({ id: w.id, name: w.name, symbols: w.symbols, managed: false })),
+    holdings
+  );
+  const [activeId, setActiveId] = useState<string | null>(lists[0]?.id ?? null);
+  const [dialog, setDialog] = useState<{ mode: 'create' } | { mode: 'rename'; target: { id: string; name: string } } | null>(null);
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortMode>('default');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,49 +74,51 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
   const displayLoading = trimmedQuery.length === 0 ? false : searchLoading;
 
   // The server-component prop is the source of truth (refreshed after every mutation); fall back to the first list if the active one is gone.
-  const active = watchlists.find((w) => w.id === activeId) ?? watchlists[0] ?? null;
+  const active = lists.find((l) => l.id === activeId) ?? lists[0] ?? null;
+  const userLists = lists.filter((l) => !l.managed);
+  const shownSymbols = active ? sortSymbols(active.symbols, quotes, sort) : [];
 
-  const submitCreate = async () => {
-    if (!newName.trim()) return;
+  const submitDialog = async (name: string) => {
+    if (!dialog) return;
     setBusy(true);
-    setError(null);
+    setDialogError(null);
     try {
-      const res = await fetch('/api/watchlists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim() }),
-      });
-      const data = (await res.json().catch(() => null)) as { data?: UserWishlist; error?: string } | null;
-      if (!res.ok || !data?.data) {
-        setError(data?.error ?? 'Could not create the watchlist.');
-        return;
+      if (dialog.mode === 'create') {
+        const res = await fetch('/api/watchlists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        const data = (await res.json().catch(() => null)) as { data?: UserWishlist; error?: string } | null;
+        if (!res.ok || !data?.data) {
+          setDialogError(data?.error ?? 'Could not create the watchlist.');
+          return;
+        }
+        setActiveId(data.data.id);
+      } else {
+        const res = await fetch(`/api/watchlists/${dialog.target.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        if (!res.ok) {
+          setDialogError(await errorOf(res, 'Could not rename the watchlist.'));
+          return;
+        }
       }
-      setActiveId(data.data.id);
-      setCreating(false);
-      setNewName('');
+      setDialog(null);
       router.refresh();
+    } catch {
+      setDialogError('Could not reach the server. Try again.');
     } finally {
       setBusy(false);
     }
   };
 
-  const submitRename = async (id: string) => {
-    const name = renameValue.trim();
-    setRenamingId(null);
-    if (!name || name === watchlists.find((w) => w.id === id)?.name) return;
-    setBusy(true);
+  const openDialog = (next: NonNullable<typeof dialog>) => {
     setError(null);
-    try {
-      const res = await fetch(`/api/watchlists/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
-      if (res.ok) router.refresh();
-      else setError(await errorOf(res, 'Could not rename the watchlist.'));
-    } finally {
-      setBusy(false);
-    }
+    setDialogError(null);
+    setDialog(next);
   };
 
   const deleteActive = async () => {
@@ -156,9 +167,9 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
     <section className={styles.panel} aria-label="Watchlists">
       <div className={styles.header}>
         <h2 className={styles.title}>Watchlists</h2>
-        {active && (
+        {active && !active.managed && (
           <div className={styles.manage}>
-            <button type="button" className={styles.linkButton} onClick={() => { setRenamingId(active.id); setRenameValue(active.name); }}>
+            <button type="button" className={styles.linkButton} onClick={() => openDialog({ mode: 'rename', target: { id: active.id, name: active.name } })}>
               Rename
             </button>
             <span className={styles.divider} aria-hidden="true" />
@@ -170,65 +181,24 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
       </div>
 
       <div className={styles.tabs} role="tablist" aria-label="Your watchlists">
-        {watchlists.map((w) =>
-          renamingId === w.id ? (
-            <input
-              key={w.id}
-              autoFocus
-              className={styles.renameInput}
-              value={renameValue}
-              maxLength={60}
-              aria-label="Watchlist name"
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void submitRename(w.id);
-                if (e.key === 'Escape') setRenamingId(null);
-              }}
-              onBlur={() => void submitRename(w.id)}
-            />
-          ) : (
-            <button
-              key={w.id}
-              type="button"
-              role="tab"
-              aria-selected={w.id === active?.id}
-              className={`${styles.tab} ${w.id === active?.id ? styles.tabActive : ''}`}
-              onClick={() => setActiveId(w.id)}
-              onDoubleClick={() => { setRenamingId(w.id); setRenameValue(w.name); }}
-              title="Double-click to rename"
-            >
-              {w.name}
-              <span className={styles.tabCount}>{w.symbols.length}</span>
-            </button>
-          )
-        )}
-        {creating ? (
-          <span className={styles.createRow}>
-            <input
-              autoFocus
-              className={styles.renameInput}
-              value={newName}
-              maxLength={60}
-              placeholder="Watchlist name"
-              aria-label="New watchlist name"
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void submitCreate();
-                if (e.key === 'Escape') setCreating(false);
-              }}
-            />
-            <button type="button" className={styles.smallPrimary} disabled={busy || !newName.trim()} onClick={() => void submitCreate()}>
-              Create
-            </button>
-            <button type="button" className={styles.linkButton} onClick={() => setCreating(false)}>
-              Cancel
-            </button>
-          </span>
-        ) : (
-          <button type="button" className={styles.newTab} onClick={() => { setError(null); setCreating(true); }}>
-            + New Watchlist
+        {lists.map((w) => (
+          <button
+            key={w.id}
+            type="button"
+            role="tab"
+            aria-selected={w.id === active?.id}
+            className={`${styles.tab} ${w.id === active?.id ? styles.tabActive : ''}`}
+            onClick={() => setActiveId(w.id)}
+            onDoubleClick={w.managed ? undefined : () => openDialog({ mode: 'rename', target: { id: w.id, name: w.name } })}
+            title={w.managed ? 'Follows your portfolio' : 'Double-click to rename'}
+          >
+            {w.name}
+            <span className={styles.tabCount}>{w.symbols.length}</span>
           </button>
-        )}
+        ))}
+        <button type="button" className={styles.newTab} onClick={() => openDialog({ mode: 'create' })}>
+          + New Watchlist
+        </button>
       </div>
 
       {error && (
@@ -239,6 +209,23 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
 
       {active ? (
         <>
+          {active.symbols.length > 1 && (
+            <div className={styles.sortRow}>
+              <label className={styles.sortLabel} htmlFor="wl-sort">
+                Sort
+              </label>
+              <select id="wl-sort" className={styles.sortSelect} value={sort} onChange={(e) => setSort(e.target.value as SortMode)}>
+                {(Object.keys(SORT_LABEL) as SortMode[]).map((m) => (
+                  <option key={m} value={m}>
+                    {SORT_LABEL[m]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {active.managed ? (
+            <p className={styles.note}>Follows your portfolio automatically. Add or remove holdings on the Portfolio page.</p>
+          ) : (
           <div className={styles.searchWrap}>
             <input
               className={styles.searchInput}
@@ -253,33 +240,45 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
               <SearchResultsDropdown results={displayResults} loading={displayLoading} onSelect={addSymbol} query={query} />
             )}
           </div>
+          )}
 
           <div className={styles.rows}>
             {active.symbols.length === 0 && <p className={styles.emptyRows}>Nothing here yet. Add a symbol above.</p>}
-            {active.symbols.map((symbol) => (
+            {shownSymbols.map((symbol) => (
               <WatchlistRow
                 key={symbol}
                 symbol={symbol}
                 quote={quotes[symbol]}
                 spark={sparks[symbol]}
                 listName={active.name}
-                onRemove={(s) => void removeSymbol(s)}
+                onRemove={active.managed ? undefined : (s) => void removeSymbol(s)}
               />
             ))}
           </div>
           {active.symbols.length > 0 && <p className={styles.note}>Trend lines show the last month.</p>}
         </>
       ) : (
-        !creating && (
+        (
           <div className={styles.empty}>
             <p className={styles.emptyTitle}>No watchlists yet</p>
             <p className={styles.emptyText}>Create a watchlist and add any NSE stock to it: a sector, a set of names, anything on your radar.</p>
-            <button type="button" className={styles.smallPrimary} onClick={() => setCreating(true)}>
+            <button type="button" className={styles.smallPrimary} onClick={() => openDialog({ mode: 'create' })}>
               Create your first watchlist
             </button>
           </div>
         )
       )}
+
+      <WatchlistNameDialog
+        open={dialog !== null}
+        mode={dialog?.mode ?? 'create'}
+        target={dialog?.mode === 'rename' ? dialog.target : undefined}
+        existing={userLists}
+        busy={busy}
+        serverError={dialogError}
+        onSubmit={(name) => void submitDialog(name)}
+        onCancel={() => setDialog(null)}
+      />
 
       <ConfirmDialog
         open={confirmDelete}

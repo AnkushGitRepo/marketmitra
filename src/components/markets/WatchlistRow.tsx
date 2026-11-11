@@ -12,7 +12,8 @@ interface WatchlistRowProps {
   readonly quote: Quote | undefined;
   readonly spark: readonly number[] | undefined;
   readonly listName: string;
-  readonly onRemove: (symbol: string) => void;
+  /** Omitted for managed lists (Holdings), which follow the portfolio and cannot be edited by hand. */
+  readonly onRemove?: (symbol: string) => void;
 }
 
 export function WatchlistRow({ symbol, quote, spark, listName, onRemove }: WatchlistRowProps) {
@@ -47,11 +48,9 @@ export function WatchlistRow({ symbol, quote, spark, listName, onRemove }: Watch
           </span>
         )}
       </button>
-      <RowMenu
-        label={`More actions for ${symbol}`}
-        actionLabel={`Remove from ${listName}`}
-        onAction={() => onRemove(symbol)}
-      />
+      {onRemove && (
+        <RowMenu label={`More actions for ${symbol}`} actionLabel={`Remove from ${listName}`} onAction={() => onRemove(symbol)} />
+      )}
     </div>
   );
 }

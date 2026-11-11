@@ -2170,7 +2170,8 @@
           "422": {
             "description": "Invalid input."
           }
-        }
+        },
+        "description": "The name `Holdings` (any casing) is reserved for the list derived from the portfolio and returns 422."
       }
     },
     "/api/watchlists/{id}": {
@@ -2229,7 +2230,8 @@
           "422": {
             "description": "Invalid input."
           }
-        }
+        },
+        "description": "The name `Holdings` (any casing) is reserved for the list derived from the portfolio and returns 422."
       },
       "delete": {
         "tags": [

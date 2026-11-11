@@ -440,3 +440,8 @@ Using a token: `Authorization: Bearer <token>`. `read` allows GET/HEAD/OPTIONS, 
 ## Stock brief (ADR 0054)
 
 - `POST /api/insights/stock-brief` — body `{ symbol, force? }`. Up to 2 strengths and 1 watchpoint for a stock, from public data, with the caller's own AI key (`no_ai_key` 400 if none). Cached 24 h per user, symbol and mode. Response `data: { brief: { strengths[], watchpoints[], valuation?, entry? }, mode, generatedAt }`; `valuation` / `entry` appear only in unrestricted mode, which exists only on local / self-host instances and is off by default.
+
+
+## Watchlist names (ADR 0055)
+
+`POST /api/watchlists` and `PATCH /api/watchlists/{id}` (and the deprecated `/api/wishlists` aliases) return `422` for the reserved name `Holdings` (any casing). The Holdings list shown on Markets is derived from the portfolio and is not returned by `GET /api/watchlists`.
