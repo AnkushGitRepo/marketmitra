@@ -125,3 +125,13 @@ export function latestChangelogVersion(changelog: string): string | null {
 export function versionFromReleaseSubject(subject: string): string | null {
   return /^chore\(release\): v(\d+\.\d+\.\d+)(?:\s+\(#\d+\))?\s*$/.exec(subject.trim())?.[1] ?? null;
 }
+
+/**
+ * Sets `info.version` in the OpenAPI document as TEXT, touching nothing else. (Round-tripping through JSON.parse/stringify would
+ * reorder integer-like keys such as "201" and "404" and turn every release into a noisy diff.)
+ */
+export function setSpecVersion(specText: string, version: string): string {
+  const pattern = /("info":\s*\{[^}]*?"version":\s*")[^"]*(")/;
+  if (!pattern.test(specText)) throw new Error('openapi.json has no info.version to update');
+  return specText.replace(pattern, `$1${version}$2`);
+}
