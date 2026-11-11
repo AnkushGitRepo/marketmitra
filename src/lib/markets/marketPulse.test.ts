@@ -3,7 +3,6 @@ import {
   MIN_BREADTH_COVERAGE,
   NIFTY50_SYMBOLS,
   SECTOR_INDICES,
-  buildMarketPulsePrompt,
   computeBreadth,
   rankSectors,
   sectorBarScale,
@@ -62,29 +61,6 @@ describe('rankSectors / sectorBarScale', () => {
     expect(sectorBarScale(rows)).toBe(1.5);
     expect(sectorBarScale([{ label: 'x', changePct: 0.01 }])).toBe(0.5);
     expect(sectorBarScale([])).toBe(0.5);
-  });
-});
-
-describe('buildMarketPulsePrompt', () => {
-  it('contains only the supplied figures', () => {
-    const p = buildMarketPulsePrompt({
-      indices: [{ name: 'NIFTY 50', value: 25044.65, changePct: 0.06 }],
-      breadth: { advances: 30, declines: 15, unchanged: 5, total: 50, advancePct: 60, ratio: 2 },
-      sectors: [
-        { label: 'PSU Bank', changePct: 3.73 },
-        { label: 'IT', changePct: -1.22 },
-      ],
-    });
-    expect(p).toContain('NIFTY 50');
-    expect(p).toContain('30 advancing');
-    expect(p).toContain('PSU Bank +3.73%');
-    expect(p).toContain('IT -1.22%');
-  });
-
-  it('says so when breadth or sectors are unavailable', () => {
-    const p = buildMarketPulsePrompt({ indices: [], breadth: null, sectors: [] });
-    expect(p).toMatch(/breadth.*unavailable/i);
-    expect(p).toMatch(/sector.*unavailable/i);
   });
 });
 

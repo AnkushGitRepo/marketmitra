@@ -1,4 +1,4 @@
-import { AiBriefCard } from '@/components/dashboard-charts/AiBriefCard';
+import { StructuredBriefCard } from '@/components/dashboard-charts/StructuredBriefCard';
 import { InfoPopover } from '@/components/common/InfoPopover';
 import { TrendingTickers, type TrendingRow } from '@/components/news/TrendingTickers';
 import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
@@ -71,13 +71,15 @@ export default async function NewsPage() {
           <TrendingTickers rows={rows} />
         </div>
         <div className={styles.pulse}>
-          <AiBriefCard
+          <StructuredBriefCard
+            surface="news"
             title="Mitra news pulse"
             endpoint="/api/insights/news"
             initial={cachedPulse?.content ?? null}
             hasKey={hasKey}
-            emptyText="No read yet. Ask Mitra for two sentences on what today's headlines are mostly about."
-            noKeyText="to get a two-sentence read on today's headlines. MarketMitra charges nothing for it."
+            emptyText="No read yet. Ask Mitra for the day's earnings, policy and sector themes."
+            noKeyText="to get a three-theme read on today's headlines. MarketMitra charges nothing for it."
+            chatPrompt="What are the most important themes in today's market headlines, and which companies are involved?"
           />
         </div>
         <div className={styles.feed}>

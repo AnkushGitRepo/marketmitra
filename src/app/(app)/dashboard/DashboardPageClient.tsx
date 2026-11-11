@@ -6,7 +6,7 @@ import { IndexStrip } from '@/components/dashboard-charts/IndexStrip';
 import { MoverPanel } from '@/components/dashboard-charts/MoverPanel';
 import { IpoOpenCard } from '@/components/dashboard-charts/IpoOpenCard';
 import { CriticalAlertsCard } from '@/components/dashboard-charts/CriticalAlertsCard';
-import { AiBriefCard } from '@/components/dashboard-charts/AiBriefCard';
+import { StructuredBriefCard } from '@/components/dashboard-charts/StructuredBriefCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
 import type { IndexQuoteOut, PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { Ipo } from '@/lib/dashboard/iposApi';
@@ -98,7 +98,16 @@ export function DashboardPageClient({
             <CriticalAlertsCard items={alerts} now={now} />
           </div>
           <div className={styles.briefSlot}>
-            <AiBriefCard initial={insight} hasKey={hasAiKey} />
+            <StructuredBriefCard
+              surface="dashboard"
+              title="AI Daily Brief"
+              endpoint="/api/insights/portfolio"
+              initial={insight}
+              hasKey={hasAiKey}
+              emptyText="No brief yet. Ask Mitra for today's return driver, exposure and risk trigger."
+              noKeyText="to get a three-point brief of what moved your portfolio. MarketMitra charges nothing for it."
+              chatPrompt="Walk me through what moved my portfolio today and which holdings matter most."
+            />
           </div>
           <div className={styles.ipoSlot}>
             <IpoOpenCard openIpos={openIpos} />
