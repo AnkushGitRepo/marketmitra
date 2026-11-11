@@ -210,6 +210,12 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 - **Auth:** session. **Purpose:** two-sentence Mitra read on today's indices, breadth and sector moves, grounded only in those figures. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when market data is unavailable; `ai` rate tier.
 
+### `GET /api/settings/email-alerts` and `PUT /api/settings/email-alerts`
+
+- **Auth:** session. **Purpose:** whether a triggered alert is also emailed (on by default; `PUT { enabled }`), whether an email can actually be sent right now, and the last outcome.
+- **Response:** `{ success, data: { enabled, deliverable, blockedBy, blockedText, maskedTo, last } }`. `blockedBy` is `disabled`, `provider_missing` or `no_address`; `blockedText` is the reason with the fix for this deployment; `maskedTo` is the masked address; `last` is `{ at, status: sent|failed|skipped, detail }` or null.
+- `POST /api/settings/notifications/test` also accepts `channel: "email"`: a real test email through the same route (409 with the reason when it cannot be sent).
+
 ### `GET /api/mitra/context`
 
 - **Auth:** session. **Purpose:** the signed-in user's first name (hosted accounts) and holdings with live prices, to personalise the Mitra chat greeting and starter prompts. Own data only; unpriced holdings have `ltp: null`. Returns `{ success, data: { firstName, holdings[] }, error }`.

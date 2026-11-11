@@ -58,7 +58,19 @@ interface UserSettingsDoc {
    * newly added holding gets a default trailing-stop + drawdown-watch pair
    * unless the user explicitly turns this off. */
   autoGuardrailsEnabled?: boolean;
+  /** Whether a triggered alert is also emailed. Default true: an absent field reads as on. */
+  emailAlertsEnabled?: boolean;
+  /** The outcome of the most recent alert email attempt, so the user can see why one did not arrive. */
+  lastAlertEmail?: { at: Date; status: AlertEmailStatus; detail: string | null };
   updatedAt: Date;
+}
+
+export type AlertEmailStatus = 'sent' | 'failed' | 'skipped';
+
+export interface AlertEmailResult {
+  readonly at: Date;
+  readonly status: AlertEmailStatus;
+  readonly detail: string | null;
 }
 
 async function collection() {
@@ -222,4 +234,46 @@ export async function clearNotificationChannel(
   await (
     await collection()
   ).updateOne({ userId }, { $unset: unset, $set: { channelsUpdatedAt: new Date(), updatedAt: new Date() } });
+}
+
+
+// --- Email alerts -----------------------------------------------------------
+
+/** The "email me when an alert triggers" setting (on by default) and the last attempt's outcome. */
+export async function getEmailAlertSettings(userId: string): Promise<{ enabled: boolean; last: AlertEmailResult | null }> {
+  const doc = await (await collection()).findOne({ userId });
+  return { enabled: doc?.emailAlertsEnabled ?? true, last: doc?.lastAlertEmail ?? null };
+}
+
+export async function setEmailAlertsEnabled(userId: string, enabled: boolean): Promise<void> {
+  await (
+    await collection()
+  ).updateOne(
+    { userId },
+    { $set: { emailAlertsEnabled: enabled, updatedAt: new Date() }, $setOnInsert: { userId } },
+    { upsert: true }
+  );
+}
+
+const MAX_DETAIL_CHARS = 300;
+
+/** Stores the latest alert-email outcome. Best-effort: never throws, because recording must not lose a notification. */
+export async function recordAlertEmailResult(userId: string, result: { status: AlertEmailStatus; detail?: string | null }): Promise<void> {
+  try {
+    await (
+      await collection()
+    ).updateOne(
+      { userId },
+      {
+        $set: {
+          lastAlertEmail: { at: new Date(), status: result.status, detail: result.detail?.slice(0, MAX_DETAIL_CHARS) ?? null },
+          updatedAt: new Date(),
+        },
+        $setOnInsert: { userId },
+      },
+      { upsert: true }
+    );
+  } catch {
+    /* best-effort only */
+  }
 }

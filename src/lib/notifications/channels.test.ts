@@ -26,6 +26,8 @@ const payload: NotificationPayload = {
   href: '/stock/RELIANCE',
 };
 
+const noSleep = async () => {};
+
 beforeEach(() => {
   send.mockReset();
   vi.unstubAllEnvs();
@@ -77,8 +79,37 @@ describe('sendEmail', () => {
   it('catches an SDK throw', async () => {
     vi.stubEnv('RESEND_API_KEY', 're_test');
     send.mockRejectedValue(new Error('network down'));
-    const r = await sendEmail('u@example.com', payload);
+    const r = await sendEmail('u@example.com', payload, { sleep: noSleep });
     expect(r).toEqual({ channel: 'email', status: 'error', detail: 'network down' });
+  });
+
+  it('retries a transient failure and reports "sent" when a later attempt succeeds', async () => {
+    vi.stubEnv('RESEND_API_KEY', 're_test');
+    send
+      .mockResolvedValueOnce({ data: null, error: { message: 'slow down', name: 'rate_limit_exceeded', statusCode: 429 } })
+      .mockResolvedValueOnce({ data: null, error: { message: 'oops', name: 'application_error', statusCode: 500 } })
+      .mockResolvedValueOnce({ data: { id: 'e_ok' }, error: null });
+    const waits: number[] = [];
+    const r = await sendEmail('u@example.com', payload, { sleep: async (ms) => void waits.push(ms) });
+    expect(r).toEqual({ channel: 'email', status: 'sent' });
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(waits).toEqual([400, 1200]);
+  });
+
+  it('gives up after the last attempt and reports the provider\'s reason', async () => {
+    vi.stubEnv('RESEND_API_KEY', 're_test');
+    send.mockResolvedValue({ data: null, error: { message: 'Resend is down', name: 'internal_server_error', statusCode: 503 } });
+    const r = await sendEmail('u@example.com', payload, { sleep: noSleep });
+    expect(r).toEqual({ channel: 'email', status: 'error', detail: 'Resend is down' });
+    expect(send).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not retry a permanent failure such as an unverified sender', async () => {
+    vi.stubEnv('RESEND_API_KEY', 're_test');
+    send.mockResolvedValue({ data: null, error: { message: 'The domain is not verified', name: 'validation_error', statusCode: 403 } });
+    const r = await sendEmail('u@example.com', payload, { sleep: noSleep });
+    expect(r.status).toBe('error');
+    expect(send).toHaveBeenCalledTimes(1);
   });
 
   it('escapes HTML in the payload', async () => {

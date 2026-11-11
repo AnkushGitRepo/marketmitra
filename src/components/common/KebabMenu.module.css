@@ -1,0 +1,66 @@
+.wrap {
+  position: relative;
+  flex: none;
+}
+
+.trigger {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--app-text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.trigger:hover:not(:disabled),
+.trigger[aria-expanded='true'] {
+  background: var(--app-pill-bg);
+  color: var(--app-ink);
+}
+
+.trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 150px;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(22, 25, 28, 0.14);
+}
+
+.item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.item:hover:not(:disabled) {
+  background: var(--app-pill-bg);
+}
+
+.danger {
+  color: var(--app-loss-text);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--app-loss-bg);
+}
