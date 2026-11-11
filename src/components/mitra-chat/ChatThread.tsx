@@ -22,9 +22,11 @@ interface ChatThreadProps {
   readonly chatPrefs: Preferences['chat'];
   /** Greeting context for the empty state (first name and live-priced holdings). */
   readonly contextState: ChatContextState;
+  /** Text to place in the composer on first render (not sent). */
+  readonly initialDraft?: string;
 }
 
-export function ChatThread({ initialConversationId, initialMessages, onConversationCreated, onActivity, chatPrefs, contextState }: ChatThreadProps) {
+export function ChatThread({ initialConversationId, initialMessages, onConversationCreated, onActivity, chatPrefs, contextState, initialDraft }: ChatThreadProps) {
   // The id can appear mid-thread (a new chat creates its conversation on first send/attach),
   // so it lives in a ref the transport reads at request time rather than in the URL.
   const [session] = useState<{ id: string | null; creating: Promise<string> | null }>(() => ({
@@ -67,6 +69,11 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
   const busy = status === 'submitted' || status === 'streaming';
 
   const composer = useRef<ComposerHandle>(null);
+  useEffect(() => {
+    if (!initialDraft) return;
+    composer.current?.setDraft(initialDraft);
+    composer.current?.focus();
+  }, [initialDraft]);
   // Files can be dropped anywhere on the conversation. dragenter/leave fire for every child, so count depth.
   const [dropping, setDropping] = useState(false);
   const dragDepth = useRef(0);

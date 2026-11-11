@@ -1,0 +1,136 @@
+.placeholder {
+  height: 560px;
+  border-radius: 18px;
+  border: 1px solid var(--border-hairline);
+  background: var(--color-surface);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 14px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--app-text-muted);
+}
+
+.tabActive {
+  background: var(--app-pill-bg);
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+.change {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 220px;
+  /* Vertical pans scroll the page; the chart is not interactive here, so it must never trap a swipe. */
+  touch-action: pan-y;
+}
+
+.areaUp {
+  fill: var(--app-gain);
+  opacity: 0.12;
+}
+
+.areaDown {
+  fill: var(--app-loss);
+  opacity: 0.12;
+}
+
+.lineUp {
+  stroke: var(--app-gain);
+  stroke-width: 2;
+}
+
+.lineDown {
+  stroke: var(--app-loss);
+  stroke-width: 2;
+}
+
+.empty {
+  margin: 24px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.fullBtn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dialog {
+  /* The app's global reset zeroes margins, which would pin a modal <dialog> to the top-left. */
+  margin: auto;
+  padding: 0;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: none;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog:not([open]) {
+  display: none;
+}
+
+.closeBtn {
+  align-self: flex-end;
+  margin: 10px 12px 4px;
+  padding: 8px 16px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dialogBody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 8px 8px;
+}

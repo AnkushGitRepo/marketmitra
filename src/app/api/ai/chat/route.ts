@@ -12,6 +12,8 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
 import { CHAT_SYSTEM_AGENTIC } from '@/lib/ai/prompts';
+import { promptForMode } from '@/lib/ai/promptMode';
+import { resolvePromptMode } from '@/lib/ai/promptModeStore';
 import { buildChatTools } from '@/lib/ai/chatTools';
 import { formatPageContext } from '@/lib/ai/chatContext';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
@@ -103,7 +105,9 @@ async function handlePOST(request: Request) {
   const advisor = await prepareAdvisorChat(userId, lastUserMessage, new Date()).catch(() => null);
   if (advisor?.blockedReply) return textReply(advisor.blockedReply);
 
-  const system = `${CHAT_SYSTEM_AGENTIC}\n\n--- PORTFOLIO CONTEXT ---\n${context}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
+  // Guarded unless a local user opted in (ADR 0054); the hosted site is always guarded.
+  const promptMode = await resolvePromptMode(userId);
+  const system = `${promptForMode(CHAT_SYSTEM_AGENTIC, promptMode)}\n\n--- PORTFOLIO CONTEXT ---\n${context}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
   const tools = advisor
     ? advisor.advisorToolsOnly
       ? advisor.tools

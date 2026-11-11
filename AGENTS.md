@@ -33,7 +33,7 @@ open-source; maintainer: `AnkushGitRepo`.
 - **Every feature ships UI + a documented API endpoint together** (`public/openapi.json` must list every route — a test enforces it)
 - **Deployment-mode gate** ([0010](./docs/decisions/0010-deployment-mode-gate.md)): respect `isHosted()` (`NEXT_PUBLIC_DEPLOYMENT_MODE=hosted` in prod); feature backends gate on their own config env vars, never on `isHosted()`. Self-host = single local user (`getCurrentUserId()` returns `'local'`).
 - Never invent metrics, user counts or "battle-tested" language in README or copy. This is a fresh v2 — say so plainly.
-- AI: Vercel AI SDK v7, bring-your-own key (Gemini / Anthropic / OpenRouter). Mitra/insights never give investment advice (see `GUARDRAIL` in `src/lib/ai/prompts.ts`).
+- AI: Vercel AI SDK v7, bring-your-own key (Gemini / Anthropic / OpenRouter). Mitra/insights never give investment advice by default (see `GUARDRAIL` in `src/lib/ai/prompts.ts`); the only exception is the **local-only, opt-in, off-by-default** unrestricted mode ([0054](./docs/decisions/0054-unrestricted-mitra-local-only.md)), enforced server-side and impossible on the hosted site.
 
 ## Working agreement (how work is done here)
 
@@ -116,7 +116,7 @@ production.
   make it pass. Use Playwright for end-to-end flows.
 - **No `console.log`** in committed code. No hardcoded secrets or magic values.
 - Docs move with code: update `docs/` (architecture, api-surface, data-sources, ADR) and add an
-  ADR (next number: 0054) for a real decision. ADRs are never pruned.
+  ADR (next number: 0055) for a real decision. ADRs are never pruned.
 
 ## Commands
 
@@ -138,7 +138,7 @@ More (deploying, production migrations, scheduled jobs, environment) in `docs/HA
 - [`docs/HANDOFF.md`](./docs/HANDOFF.md) — **current state**, open work, environment, deploy, gotchas
 - `docs/architecture.md` — current system architecture (routes, components, data flow)
 - `docs/design-system.md` — colors/type/spacing/component patterns
-- `docs/decisions/` — ADRs, one per decision, numbered, **never pruned** (latest: 0053 personal access tokens)
+- `docs/decisions/` — ADRs, one per decision, numbered, **never pruned** (latest: 0054 unrestricted Mitra, local only)
 - `docs/data-sources.md` — every external API/scraper: endpoint, auth, rate limits, cost, ToS
 - `docs/api-surface.md` and `public/openapi.json` — public API for agent consumers
 - `docs/session-log.md` — rolling log of what happened, session by session

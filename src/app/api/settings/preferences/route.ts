@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/currentUserId';
+import { isHosted } from '@/lib/deployment-mode';
 import { preferencesPatchSchema } from '@/lib/preferences/schema';
 import { getPreferences, updatePreferences } from '@/lib/preferences/store';
 
@@ -18,6 +19,8 @@ export async function PATCH(request: Request) {
   if (!userId) return err('Not authenticated', 401);
   const parsed = preferencesPatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return err('Invalid preferences', 422);
+  // Unrestricted Mitra exists only on a local instance (ADR 0054). It is also ignored when read back on the hosted site.
+  if (isHosted() && parsed.data.chat?.unrestricted === true) return err('Unrestricted Mitra is not available on the hosted site', 403);
   try {
     return NextResponse.json({ success: true, data: await updatePreferences(userId, parsed.data), error: null });
   } catch {

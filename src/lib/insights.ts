@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { getDb } from '@/lib/mongodb';
 
-export type InsightScope = 'stock' | 'portfolio' | 'ipo' | 'market' | 'news';
+export type InsightScope = 'stock' | 'stock_brief' | 'portfolio' | 'ipo' | 'market' | 'news';
 
 export interface Insight {
   content: string;
