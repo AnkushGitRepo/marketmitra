@@ -13,10 +13,18 @@ interface AnalystDetail {
   journal: JournalEntry[];
 }
 
+type Tab = 'thesis' | 'journal' | 'governance';
+const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
+  { id: 'thesis', label: 'Investment thesis' },
+  { id: 'journal', label: 'Living journal' },
+  { id: 'governance', label: 'Governance & management' },
+];
+
 type Load = { state: 'loading' } | { state: 'none' } | { state: 'error' } | { state: 'ready'; detail: AnalystDetail };
 
 /** The analyst's living dossier and journal, read-only. Used by the roster modal and the stock page's Agent Journal tab. */
-export function DossierReader({ symbol }: { readonly symbol: string }) {
+export function DossierReader({ symbol, tabbed = false }: { readonly symbol: string; readonly tabbed?: boolean }) {
+  const [tab, setTab] = useState<Tab>('thesis');
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   // Captured once so server and client render the same relative times.
   const [now] = useState(() => new Date());
@@ -45,8 +53,8 @@ export function DossierReader({ symbol }: { readonly symbol: string }) {
   if (load.state === 'error') return <p className={styles.note}>Could not load this analyst right now.</p>;
 
   const { dossier, journal, statusNote } = load.detail;
-  return (
-    <div className={styles.root}>
+  const thesis = (
+    <>
       {!dossier ? (
         <p className={styles.note}>{statusNote ?? 'The dossier is being built. It appears here once the analyst has finished the first review.'}</p>
       ) : (
@@ -83,28 +91,69 @@ export function DossierReader({ symbol }: { readonly symbol: string }) {
           {dossier.notAvailable.length > 0 && <p className={styles.note}>Not assessed (not in our data): {dossier.notAvailable.join(', ')}.</p>}
         </>
       )}
+    </>
+  );
 
-      <section>
-        <h3 className={styles.h}>Journal</h3>
-        {journal.length === 0 ? (
-          <p className={styles.note}>Nothing logged yet. The analyst writes an entry when something material happens: a big price move, a volume spike, new news or a filing, or new results.</p>
-        ) : (
-          <ol className={styles.journal}>
-            {journal.map((e) => (
-              <li key={e.id} className={styles.entry} data-alert={e.alert}>
-                <div className={styles.entryHead}>
-                  <span className={styles.kind}>{kindLabel(e.kind)}</span>
-                  {e.impact && <span className={`${styles.impact} ${styles[`impact_${e.impact}`]}`}>{e.impact}</span>}
-                  <span className={styles.when}>{agoLabel(e.ts, now)}</span>
-                </div>
-                <p className={styles.entryTitle}>{e.title}</p>
-                {e.body && <p className={styles.text}>{e.body}</p>}
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
-      <p className={styles.note}>AI-generated notes from public data, not investment advice.</p>
+  const journalSection = (
+    <section>
+      <h3 className={styles.h}>Journal</h3>
+      {journal.length === 0 ? (
+        <p className={styles.note}>Nothing logged yet. The analyst writes an entry when something material happens: a big price move, a volume spike, new news or a filing, or new results.</p>
+      ) : (
+        <ol className={styles.journal}>
+          {journal.map((e) => (
+            <li key={e.id} className={styles.entry} data-alert={e.alert}>
+              <div className={styles.entryHead}>
+                <span className={styles.kind}>{kindLabel(e.kind)}</span>
+                {e.impact && <span className={`${styles.impact} ${styles[`impact_${e.impact}`]}`}>{e.impact}</span>}
+                <span className={styles.when}>{agoLabel(e.ts, now)}</span>
+              </div>
+              <p className={styles.entryTitle}>{e.title}</p>
+              {e.body && <p className={styles.text}>{e.body}</p>}
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+
+  const governance = (
+    <section>
+      <h3 className={styles.h}>Governance &amp; management</h3>
+      <p className={styles.note}>
+        Not available in our data. We do not have structured information on management track record, board composition, related-party dealings or promoter pledging, so the analyst does
+        not assess them and will not guess.
+      </p>
+    </section>
+  );
+
+  const disclaimer = <p className={styles.note}>AI-generated notes from public data, not investment advice.</p>;
+
+  if (!tabbed) {
+    return (
+      <div className={styles.root}>
+        {thesis}
+        {journalSection}
+        {disclaimer}
+      </div>
+    );
+  }
+  return (
+    <div className={styles.root}>
+      <p className={styles.banner}>This dossier is maintained autonomously by the analyst. It updates when something material happens, and you cannot edit it.</p>
+      <div className={styles.tabs} role="tablist" aria-label="Dossier sections">
+        {TABS.map((t) => (
+          <button key={t.id} type="button" role="tab" id={`dossier-tab-${t.id}`} aria-selected={tab === t.id} aria-controls="dossier-panel" className={styles.tab} onClick={() => setTab(t.id)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div id="dossier-panel" role="tabpanel" aria-labelledby={`dossier-tab-${tab}`} className={styles.panel}>
+        {tab === 'thesis' && thesis}
+        {tab === 'journal' && journalSection}
+        {tab === 'governance' && governance}
+      </div>
+      {disclaimer}
     </div>
   );
 }

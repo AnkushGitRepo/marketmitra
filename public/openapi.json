@@ -5318,7 +5318,7 @@
           "AI"
         ],
         "summary": "List your stock analysts",
-        "description": "The Analyst Desk roster (ADR 0058): one analyst per holding, plus any watchers. Each has a status, the last check, the newest journal entry and whether its dossier is built. Also returns `auto` (the master switch for automatic analysts) and today's AI-call usage against the daily cap. Browser session only, because these endpoints control unattended use of your own AI key.",
+        "description": "The Analyst Desk roster (ADR 0058): one analyst per holding, plus any watchers. Each has a status, the last check, the newest journal entry, the number of events logged, a live quote when one is available and whether its dossier is built. Also returns `auto` (the master switch for automatic analysts) and today's AI-call usage against the daily cap. Browser session only, because these endpoints control unattended use of your own AI key.",
         "security": [
           {
             "cookieAuth": []
@@ -5326,7 +5326,7 @@
         ],
         "responses": {
           "200": {
-            "description": "{ success, data: { auto, usage: { used, cap }, analysts: [{ symbol, source, status, statusNote, hasDossier, summary, lastCheckedAt, latest }] } }",
+            "description": "{ success, data: { auto, usage: { used, cap }, analysts: [{ symbol, source, status, statusNote, hasDossier, summary, createdAt, lastCheckedAt, latest, eventCount, quote: { price, changePct } | null }] } }",
             "content": {
               "application/json": {
                 "schema": {
