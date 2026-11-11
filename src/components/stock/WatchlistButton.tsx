@@ -12,19 +12,17 @@ interface WatchlistRef {
 }
 
 type Lists = { readonly status: 'idle' | 'loading' | 'error' } | { readonly status: 'ready'; readonly value: readonly WatchlistRef[] };
-type DialogState = { readonly mode: 'create' } | { readonly mode: 'rename'; readonly target: WatchlistRef } | null;
-
 async function errorOf(res: Response, fallback: string): Promise<string> {
   const data = (await res.json().catch(() => null)) as { error?: string } | null;
   return data?.error ?? fallback;
 }
 
-/** "+ Watchlist": add this stock to a list, create a new list (in a modal) or rename one. */
+/** "+ Watchlist": add this stock to a list, or create a new list (in a modal). Renaming lives on the Markets page. */
 export function WatchlistButton({ symbol }: { readonly symbol: string }) {
   const [open, setOpen] = useState(false);
   const [lists, setLists] = useState<Lists>({ status: 'idle' });
   const [message, setMessage] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<DialogState>(null);
+  const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const wrap = useRef<HTMLSpanElement>(null);
@@ -33,7 +31,7 @@ export function WatchlistButton({ symbol }: { readonly symbol: string }) {
   useEffect(() => {
     if (!open) return;
     const close = (e: Event) => {
-      if (dialog) return;
+      if (creating) return;
       if (e instanceof KeyboardEvent ? e.key === 'Escape' : !wrap.current?.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('pointerdown', close);
@@ -42,7 +40,7 @@ export function WatchlistButton({ symbol }: { readonly symbol: string }) {
       document.removeEventListener('pointerdown', close);
       document.removeEventListener('keydown', close);
     };
-  }, [open, dialog]);
+  }, [open, creating]);
 
   const toggle = () => {
     const next = !open;
@@ -78,54 +76,34 @@ export function WatchlistButton({ symbol }: { readonly symbol: string }) {
     }
   };
 
-  const submitDialog = async (name: string) => {
-    if (!dialog) return;
+  const submitCreate = async (name: string) => {
     setBusy(true);
     setServerError(null);
     try {
-      if (dialog.mode === 'create') {
-        const res = await fetch('/api/watchlists', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name }),
-        });
-        const created = (await res.json().catch(() => null)) as { data?: WatchlistRef; error?: string } | null;
-        if (!res.ok || !created?.data) {
-          setServerError(created?.error ?? 'Could not create the watchlist.');
-          return;
-        }
-        const added = await fetch(`/api/watchlists/${created.data.id}/symbols`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol }),
-        });
-        update([...current, { ...created.data, symbols: added.ok ? [symbol] : [] }]);
-        setMessage(added.ok ? `Created “${name}” and added ${symbol}.` : `Created “${name}”, but could not add ${symbol}.`);
-      } else {
-        const res = await fetch(`/api/watchlists/${dialog.target.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name }),
-        });
-        if (!res.ok) {
-          setServerError(await errorOf(res, 'Could not rename the watchlist.'));
-          return;
-        }
-        update(current.map((l) => (l.id === dialog.target.id ? { ...l, name } : l)));
-        setMessage(`Renamed to “${name}”.`);
+      const res = await fetch('/api/watchlists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const created = (await res.json().catch(() => null)) as { data?: WatchlistRef; error?: string } | null;
+      if (!res.ok || !created?.data) {
+        setServerError(created?.error ?? 'Could not create the watchlist.');
+        return;
       }
-      setDialog(null);
+      const added = await fetch(`/api/watchlists/${created.data.id}/symbols`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol }),
+      });
+      update([...current, { ...created.data, symbols: added.ok ? [symbol] : [] }]);
+      setMessage(added.ok ? `Created “${name}” and added ${symbol}.` : `Created “${name}”, but could not add ${symbol}.`);
+      setCreating(false);
       setOpen(false);
     } catch {
       setServerError('Could not reach the server. Try again.');
     } finally {
       setBusy(false);
     }
-  };
-
-  const openDialog = (next: DialogState) => {
-    setServerError(null);
-    setDialog(next);
   };
 
   return (
@@ -141,20 +119,20 @@ export function WatchlistButton({ symbol }: { readonly symbol: string }) {
           {current.map((l) => {
             const has = l.symbols.includes(symbol);
             return (
-              <div key={l.id} className={styles.itemRow}>
+              <div key={l.id}>
                 <button type="button" role="menuitem" className={styles.item} disabled={has} onClick={() => void addTo(l)}>
                   <span>{l.name}</span>
                   {has && <span className={styles.added}>✓ Added</span>}
-                </button>
-                <button type="button" className={styles.rename} aria-label={`Rename ${l.name}`} onClick={() => openDialog({ mode: 'rename', target: l })}>
-                  Rename
                 </button>
               </div>
             );
           })}
           {lists.status === 'ready' && (
             <>
-              <button type="button" role="menuitem" className={styles.newItem} onClick={() => openDialog({ mode: 'create' })}>
+              <button type="button" role="menuitem" className={styles.newItem} onClick={() => {
+                  setServerError(null);
+                  setCreating(true);
+                }}>
                 + New watchlist…
               </button>
               <Link href="/markets" className={styles.manage}>
@@ -170,14 +148,13 @@ export function WatchlistButton({ symbol }: { readonly symbol: string }) {
         </span>
       )}
       <WatchlistNameDialog
-        open={dialog !== null}
-        mode={dialog?.mode ?? 'create'}
-        target={dialog?.mode === 'rename' ? dialog.target : undefined}
+        open={creating}
+        mode="create"
         existing={current}
         busy={busy}
         serverError={serverError}
-        onSubmit={(name) => void submitDialog(name)}
-        onCancel={() => setDialog(null)}
+        onSubmit={(name) => void submitCreate(name)}
+        onCancel={() => setCreating(false)}
       />
     </span>
   );
