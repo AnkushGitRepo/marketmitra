@@ -12,7 +12,8 @@ import { getOrGenerate, hashInput } from '@/lib/insights';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// A thinking model can take 35 to 100 s for one brief; 300 s is this plan's maximum, so a slow generation still finishes and is cached (#162).
+export const maxDuration = 300;
 
 const TTL_MS = 6 * 60 * 60 * 1000;
 const bodySchema = z.object({ force: z.boolean().optional() }).optional();
