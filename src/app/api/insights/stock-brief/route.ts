@@ -13,7 +13,8 @@ import { getOrGenerate, hashInput } from '@/lib/insights';
 import { withRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// A thinking model can take 35 to 100 s for one brief; 300 s is this plan's maximum, so a slow generation still finishes and is cached (#162).
+export const maxDuration = 300;
 
 /** A brief is reused for 24 hours per user, symbol and mode, so coming back to the page costs no tokens. */
 const TTL_MS = 24 * 60 * 60 * 1000;

@@ -12,7 +12,8 @@ import { promptForMode } from '@/lib/ai/promptMode';
 import { resolvePromptMode } from '@/lib/ai/promptModeStore';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// A thinking model can take 35 to 100 s for one brief; 300 s is this plan's maximum, so a slow generation still finishes and is cached (#162).
+export const maxDuration = 300;
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 const bodySchema = z.object({ symbol: z.string().trim().min(1).max(20), force: z.boolean().optional() });

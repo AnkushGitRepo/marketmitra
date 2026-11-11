@@ -12,7 +12,8 @@ import { retrieveInsightGrounding } from '@/lib/rag/insightContext';
 import { getIpos } from '@/lib/dashboard/iposApi';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// A thinking model can take 35 to 100 s for one brief; 300 s is this plan's maximum, so a slow generation still finishes and is cached (#162).
+export const maxDuration = 300;
 
 const TTL_MS = 12 * 60 * 60 * 1000;
 const bodySchema = z.object({ slug: z.string().trim().min(1).max(160), force: z.boolean().optional() });

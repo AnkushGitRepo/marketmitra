@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { UNRESTRICTED_DISCLAIMER, type PromptMode } from '@/lib/ai/promptMode';
 import { BRIEF_TABS, pointsForTab, tabCounts, type BriefTab } from '@/lib/ai/briefTabs';
 import { POINT_TITLES, chipPrompts, signalLabel, type StockBrief } from '@/lib/ai/stockBrief';
+import { generationError } from '@/lib/http/generationError';
 import { emphasizeNumbers } from '@/lib/stock/sensitivity';
 import type { StockSignals } from '@/lib/stock/signals';
 import { SensitivityCard } from './SensitivityCard';
@@ -55,13 +56,13 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals }: MitraBrie
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbol, force }),
       });
-      const json = (await res.json()) as { success: boolean; data?: BriefData; error?: string };
-      if (!res.ok || !json.success || !json.data) {
-        throw new Error(json.error === 'no_ai_key' ? 'Add your AI key in Settings first.' : (json.error ?? 'Could not generate the brief.'));
-      }
+      // A reply that is not JSON (a platform timeout page, a login redirect) must not surface the parser's own error.
+      const json = (await res.json().catch(() => null)) as { success?: boolean; data?: BriefData; error?: string } | null;
+      if (!res.ok || !json?.success || !json.data) throw new Error(generationError(res.status, json?.error));
       setData(json.data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not generate the brief.');
+      // A thrown network error (TypeError: Load failed / Failed to fetch) is a connection problem, not a message to show raw.
+      setError(e instanceof TypeError ? 'The connection dropped while the brief was being written. Try again: a finished brief is kept for 24 hours, so it shows straight away.' : e instanceof Error ? e.message : 'Could not generate the brief.');
     } finally {
       setLoading(false);
     }
