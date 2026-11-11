@@ -1,4 +1,5 @@
-import { generateText, stepCountIs, streamText, type ModelMessage, type ToolSet } from 'ai';
+import { generateText, Output, stepCountIs, streamText, type ModelMessage, type ToolSet } from 'ai';
+import type { z } from 'zod';
 import { resolveModel, type AiConfig } from './providers';
 
 export interface GenerateResult {
@@ -50,6 +51,42 @@ export async function generateInsightText(
     return { ok: true, text: clean, model: config.model?.trim() || `${config.provider} (default)`, finishReason };
   } catch (err) {
     console.error('[ai] generation failed:', err);
+    return { ok: false, error: normalizeAiError(err) };
+  }
+}
+
+export interface ObjectResult<T> {
+  ok: true;
+  object: T;
+  model: string;
+  finishReason?: string;
+}
+
+/**
+ * One generation constrained to a schema (the provider is asked for JSON that matches it), for replies the app must parse. Plain
+ * "reply with JSON" instructions are not reliable: a model can answer with a markdown report instead (seen with the analyst dossier, #128).
+ * Never throws; a provider that cannot do structured output comes back as `{ ok: false, error }` so the caller can fall back to text.
+ */
+export async function generateInsightObject<S extends z.ZodTypeAny>(
+  config: AiConfig,
+  system: string,
+  prompt: string,
+  schema: S,
+  opts: { maxOutputTokens?: number } = {}
+): Promise<ObjectResult<z.infer<S>> | GenerateError> {
+  try {
+    const model = resolveModel(config);
+    const { output, finishReason } = await generateText({
+      model,
+      system,
+      prompt,
+      temperature: 0.4,
+      maxOutputTokens: opts.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
+      output: Output.object({ schema }),
+    });
+    return { ok: true, object: output as z.infer<S>, model: config.model?.trim() || `${config.provider} (default)`, finishReason };
+  } catch (err) {
+    console.error('[ai] structured generation failed:', err);
     return { ok: false, error: normalizeAiError(err) };
   }
 }

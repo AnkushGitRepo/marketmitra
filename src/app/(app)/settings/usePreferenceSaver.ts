@@ -18,6 +18,7 @@ export function usePreferences(initial: Preferences) {
         chat: { ...prefs.chat, ...patch.chat },
         display: { ...prefs.display, ...patch.display },
         shortcuts: { ...prefs.shortcuts, ...patch.shortcuts },
+        agents: { ...prefs.agents, ...patch.agents },
       });
       try {
         const res = await fetch('/api/settings/preferences', {
