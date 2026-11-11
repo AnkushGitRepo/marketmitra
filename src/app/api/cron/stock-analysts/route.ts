@@ -4,12 +4,12 @@ import { isHosted } from '@/lib/deployment-mode';
 import { heartbeat, initiate } from '@/lib/analysts/engine';
 import { ensureAnalystIndexes, listDueForHeartbeat, listHoldingPairs, listInitializing, spawnAnalyst, setStatus } from '@/lib/analysts/store';
 import { getPreferences } from '@/lib/preferences/store';
-import { bearerMatches } from '@/lib/security/secrets';
+import { authorizeCron } from '@/lib/security/cronAuth';
 import { logEvent } from '@/lib/system/eventLog';
 
 const SOURCE = 'cron:stock-analysts';
 
-// Analyst Desk (#128, ADR 0058). Machine-to-machine: bearer CRON_SECRET (dev-open, prod-503), driven by
+// Analyst Desk (#128, ADR 0058). Machine-to-machine: bearer CRON_SECRET, required everywhere except a non-hosted dev instance on localhost, driven by
 // `.github/workflows/stock-analysts.yml`. Each run: (1) gives every holding an analyst, (2) builds pending dossiers,
 // (3) runs the end-of-day check for analysts that are due. Bounded per run; the per-user daily AI cap is enforced inside the engine.
 
@@ -20,18 +20,8 @@ const MAX_HOLDING_PAIRS = 500;
 const MAX_INITIATIONS = 4;
 const MAX_HEARTBEATS = 12;
 
-function authorize(request: Request): { ok: true } | { ok: false; status: number; error: string } {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === 'production') return { ok: false, status: 503, error: 'CRON_SECRET is not configured' };
-    return { ok: true };
-  }
-  if (!bearerMatches(request.headers.get('authorization'), secret)) return { ok: false, status: 401, error: 'Unauthorized' };
-  return { ok: true };
-}
-
 async function handle(request: Request) {
-  const auth = authorize(request);
+  const auth = authorizeCron(request, { secret: process.env.CRON_SECRET, nodeEnv: process.env.NODE_ENV, hosted: isHosted() });
   if (!auth.ok) return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
   const started = Date.now();
   const deps = realDeps();
