@@ -440,3 +440,7 @@ Using a token: `Authorization: Bearer <token>`. `read` allows GET/HEAD/OPTIONS, 
 ## Stock brief (ADR 0054, ADR 0056)
 
 - `POST /api/insights/stock-brief` — body `{ symbol, force? }`. Up to five points (`quality`, `growth`, `valuation`, `ownership`, `risk`), each `{ key, signal: strength|neutral|concern, text }`, written from computed figures (ROCE/ROE, debt/equity, free cash flow, CAGRs, peer-median P/E, promoter/FII/DII change, headline tone, distance from the 52-week high and 200-day average) with the caller's own AI key (`no_ai_key` 400 if none). Cached 12 h per user, symbol and mode. Response `data: { brief: { points[], valuation?, entry? }, mode, generatedAt }`; `valuation` / `entry` appear only in unrestricted mode, which exists only on local / self-host instances and is off by default. The figures themselves are shown on the stock page without calling this endpoint.
+
+## Structured widget briefs (ADR 0057)
+
+`POST /api/insights/portfolio` (dashboard), `/api/insights/market`, `/api/insights/news` and `/api/insights/ipo` now return `data.content` as JSON, `{ "items": [{ "key", "tone", "text" }] }`, instead of a paragraph. Keys: dashboard `return` / `exposure` / `risk`; market `breadth` / `leaders` / `catalyst`; news `earnings` / `macro` / `sector`; IPO `listing` / `offer` / `business` / `risk`. `tone` is `positive`, `neutral` or `warning`. The figures are computed on the server and given to the model; a `[TICKER]` tag appears only for a ticker present in the data. Older cached prose briefs are ignored and regenerated on request.

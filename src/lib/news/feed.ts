@@ -86,8 +86,3 @@ export function filterByTopic<T extends Pick<NewsItem, 'title'>>(items: readonly
   return topic === null ? [...items] : items.filter((i) => classifyTopic(i) === topic);
 }
 
-/** The only facts the news pulse may use: the headlines on the page, with their source and tone. */
-export function buildNewsPulsePrompt(items: readonly Pick<NewsItem, 'title' | 'source' | 'sentiment'>[], limit = 20): string {
-  const lines = items.slice(0, limit).map((i) => `- ${i.title} (${i.source}, ${i.sentiment} tone)`);
-  return lines.length > 0 ? `Latest Indian markets headlines:\n${lines.join('\n')}` : 'No headlines are available.';
-}

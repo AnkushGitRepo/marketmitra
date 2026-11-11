@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { RangeSeries } from './chartMath';
-import { briefFromInsight, splitSentences, stripMarkdown } from './briefText';
 import { alertSeverity, selectCriticalAlerts, type AlertLike } from './criticalAlerts';
 import { computeHero, formatSignedAmount, formatSignedPct } from './heroMetrics';
 import { HERO_RANGES, WEEK_POINTS, lastPoints, seriesForRange } from './heroRanges';
@@ -93,34 +92,6 @@ describe('orderIndices', () => {
     expect(orderIndices(input).map((i) => i.name)).toEqual(['NIFTY 50', 'SENSEX']);
     expect(input.map((i) => i.name)).toEqual(['SENSEX', 'NIFTY 50']);
     expect(orderIndices([])).toEqual([]);
-  });
-});
-
-describe('briefFromInsight', () => {
-  it('returns the first two sentences without markdown or the closing disclaimer', () => {
-    const insight = '## Summary\n\n**Your portfolio** rose 1.5% today, led by Laurus Labs. Financials lagged. IT was flat.\n\nThis is a synthesis of public data, not investment advice.';
-    expect(briefFromInsight(insight)).toBe('Your portfolio rose 1.5% today, led by Laurus Labs. Financials lagged.');
-  });
-
-  it('does not split on decimals, rupee amounts or abbreviations', () => {
-    expect(splitSentences('Value is ₹52,072.50 today. It is up 1.5% vs the prior close.')).toEqual(['Value is ₹52,072.50 today.', 'It is up 1.5% vs the prior close.']);
-    expect(splitSentences('Dr. Reddy’s rose 2%. Nothing else moved.')).toEqual(['Dr. Reddy’s rose 2%.', 'Nothing else moved.']);
-  });
-
-  it('copes with one sentence, no terminal punctuation, and empty input', () => {
-    expect(briefFromInsight('Only one sentence here.')).toBe('Only one sentence here.');
-    expect(briefFromInsight('No full stop')).toBe('No full stop');
-    expect(briefFromInsight('')).toBe('');
-    expect(briefFromInsight('This is a synthesis of public data, not investment advice.')).toBe('');
-  });
-
-  it('drops heading lines instead of merging them into the first sentence', () => {
-    expect(briefFromInsight('# Today\nPortfolio is up. Banks led.')).toBe('Portfolio is up. Banks led.');
-    expect(briefFromInsight('## Only a heading')).toBe('');
-  });
-
-  it('strips markdown constructs', () => {
-    expect(stripMarkdown('- item **bold** and `code`\n1. next')).toBe('item bold and code next');
   });
 });
 

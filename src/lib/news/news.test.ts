@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildNewsPulsePrompt, cleanExcerpt, filterByTopic, pickHero, trendingTickers, TONE_VIEW } from './feed';
+import { cleanExcerpt, filterByTopic, pickHero, trendingTickers, TONE_VIEW } from './feed';
 import { classifyTopic, NEWS_TOPICS, TOPIC_LABEL } from './topics';
 
 describe('classifyTopic', () => {
@@ -96,15 +96,9 @@ describe('filterByTopic', () => {
   });
 });
 
-describe('tone and pulse prompt', () => {
+describe('tone', () => {
   it('describes tone as a headline read, never a signal', () => {
     for (const t of Object.values(TONE_VIEW)) expect(t.title).toMatch(/not a signal/i);
     expect(TONE_VIEW.positive.label).toBe('Positive');
-  });
-  it('lists only the supplied headlines, capped', () => {
-    const p = buildNewsPulsePrompt([{ title: 'A', source: 'X', sentiment: 'positive' }, { title: 'B', source: 'Y', sentiment: 'negative' }], 1);
-    expect(p).toContain('- A (X, positive tone)');
-    expect(p).not.toContain('B');
-    expect(buildNewsPulsePrompt([])).toBe('No headlines are available.');
   });
 });

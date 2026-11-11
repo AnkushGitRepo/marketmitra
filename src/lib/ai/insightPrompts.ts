@@ -58,26 +58,6 @@ export interface PortfolioInsightInput {
   grounding?: GroundingPassage[];
 }
 
-export function buildPortfolioPrompt(i: PortfolioInsightInput): string {
-  if (i.holdings.length === 0) return 'The portfolio is empty.';
-  const rows = i.holdings.map((h) => {
-    const value = h.ltp != null ? h.ltp * h.quantity : null;
-    const cost = h.avgPrice * h.quantity;
-    const pl = value != null ? value - cost : null;
-    return `- ${h.name} (${h.symbol}), ${h.sector ?? 'sector n/a'}: qty ${h.quantity}, avg ${money(h.avgPrice)}, LTP ${money(h.ltp)}, value ${money(value)}, unrealised P&L ${money(pl)}`;
-  });
-  const totalValue = i.holdings.reduce((s, h) => s + (h.ltp != null ? h.ltp * h.quantity : 0), 0);
-  const totalCost = i.holdings.reduce((s, h) => s + h.avgPrice * h.quantity, 0);
-  return [
-    `Holdings (${i.holdings.length}):`,
-    ...rows,
-    `Total current value ${money(Math.round(totalValue))}, total invested ${money(Math.round(totalCost))}.`,
-    groundingBlock(i.grounding, 'Retrieved context (indexed news / your notes)'),
-  ]
-    .filter(Boolean)
-    .join('\n');
-}
-
 export interface IpoInsightInput {
   ipo: Pick<
     Ipo,
@@ -99,28 +79,3 @@ export interface IpoInsightInput {
   grounding?: GroundingPassage[];
 }
 
-export function buildIpoPrompt(i: IpoInsightInput): string {
-  const p = i.ipo;
-  const lines = [
-    `IPO: ${p.name} (${p.category === 'sme' ? 'SME' : 'Mainboard'}), status ${p.status}.`,
-    `Price band cap: ${money(p.price)}. Issue size: ${p.ipo_size_cr != null ? `₹${p.ipo_size_cr} Cr` : '—'}. Lot: ${p.lot_size ?? '—'}.`,
-    `Dates — open ${p.open_date ?? '—'}, close ${p.close_date ?? '—'}, listing ${p.listing_date ?? '—'}. Anchor investors: ${p.anchor == null ? '—' : p.anchor ? 'yes' : 'no'}.`,
-    `Subscription so far: ${p.subscription_times != null ? `${p.subscription_times}x` : '—'}.`,
-    `Grey-market premium (UNOFFICIAL third-party estimate, not from any exchange): ${p.gmp != null ? `₹${p.gmp}${p.gmp_pct != null ? ` (${p.gmp_pct}%)` : ''}` : '—'}.`,
-  ];
-  if (i.drhpExtract) {
-    lines.push(`\nDRHP extract (key sections):\n${i.drhpExtract}`);
-  } else if (i.grounding && i.grounding.length > 0) {
-    lines.push(
-      groundingBlock(i.grounding, 'Retrieved context (indexed DRHP / prospectus / news passages)')
-    );
-    lines.push(
-      '\n(No full DRHP text — use the retrieved passages above plus the structured data, and say where detail is missing.)'
-    );
-  } else {
-    lines.push(
-      '\n(No DRHP text available — base the brief on the structured data above and general public knowledge of the company, and say so where detail is missing.)'
-    );
-  }
-  return lines.join('\n');
-}

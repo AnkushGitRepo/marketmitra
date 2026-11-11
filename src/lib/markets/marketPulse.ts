@@ -48,12 +48,6 @@ export interface SectorMove {
   readonly changePct: number;
 }
 
-export interface IndexMove {
-  readonly name: string;
-  readonly value: number;
-  readonly changePct: number;
-}
-
 export function computeBreadth(changePcts: readonly number[]): Breadth | null {
   const valid = changePcts.filter((c) => Number.isFinite(c));
   if (valid.length < MIN_BREADTH_COVERAGE) return null;
@@ -78,31 +72,3 @@ export function sectorBarScale(rows: readonly SectorMove[]): number {
   return Math.max(MIN_BAR_SCALE_PCT, ...rows.map((r) => Math.abs(r.changePct)));
 }
 
-const signed = (n: number): string => `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
-
-export interface MarketPulseInput {
-  readonly indices: readonly IndexMove[];
-  readonly breadth: Breadth | null;
-  readonly sectors: readonly SectorMove[];
-}
-
-/** The only facts the model may use for the Market Pulse: the figures already on the page. */
-export function buildMarketPulsePrompt(i: MarketPulseInput): string {
-  const lines: string[] = [];
-  lines.push(
-    i.indices.length > 0
-      ? `Indices: ${i.indices.map((x) => `${x.name} ${x.value.toLocaleString('en-IN')} (${signed(x.changePct)})`).join('; ')}.`
-      : 'Index data is unavailable.'
-  );
-  lines.push(
-    i.breadth
-      ? `NIFTY 50 breadth (${i.breadth.total} names reporting): ${i.breadth.advances} advancing, ${i.breadth.declines} declining, ${i.breadth.unchanged} unchanged.`
-      : 'NIFTY 50 breadth is unavailable.'
-  );
-  lines.push(
-    i.sectors.length > 0
-      ? `Sector indices today: ${rankSectors(i.sectors).map((s) => `${s.label} ${signed(s.changePct)}`).join('; ')}.`
-      : 'Sector data is unavailable.'
-  );
-  return lines.join('\n');
-}

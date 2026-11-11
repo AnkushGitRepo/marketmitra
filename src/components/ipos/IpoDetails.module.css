@@ -102,3 +102,10 @@
     font-size: 16px;
   }
 }
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
