@@ -1,0 +1,153 @@
+.root {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.block {
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+  font-weight: 500;
+}
+
+.list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.row dt {
+  color: var(--app-text-muted);
+}
+
+.row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+
+.row dd.gain {
+  color: var(--app-gain);
+}
+
+.row dd.loss {
+  color: var(--app-loss);
+}
+
+.row dd.na {
+  font-weight: 400;
+  color: var(--app-text-faint);
+}
+
+.foot {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--app-text-faint);
+}
+
+.peBar {
+  position: relative;
+  height: 14px;
+  margin: 2px 0 8px;
+}
+
+.peTrack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--app-pill-bg);
+}
+
+.peDot,
+.peMedian {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.peDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--app-ink);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 1px var(--app-border);
+}
+
+.peMedian {
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--app-teal);
+}
+
+.stack {
+  display: flex;
+  height: 8px;
+  margin: 2px 0 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--app-pill-bg);
+}
+
+.stack span {
+  display: block;
+  height: 100%;
+}
+
+.segPromoter {
+  background: var(--app-ink);
+}
+
+.segFii {
+  background: var(--app-teal);
+}
+
+.segDii {
+  background: var(--app-teal-strong);
+  opacity: 0.55;
+}
+
+.segOther {
+  background: var(--app-border);
+}
+
+.segPos {
+  background: var(--app-gain);
+}
+
+.segNeutral {
+  background: var(--app-border);
+}
+
+.segNeg {
+  background: var(--app-loss);
+}
+
+@media (max-width: 520px) {
+  .root {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

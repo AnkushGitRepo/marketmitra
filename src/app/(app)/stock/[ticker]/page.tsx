@@ -17,6 +17,8 @@ import { getCachedInsight } from '@/lib/insights';
 import { resolvePromptMode } from '@/lib/ai/promptModeStore';
 import { pivotFinancials, groupShareholding } from '@/lib/dashboard/transforms';
 import { toBars } from '@/lib/chart/bars';
+import { resolveRange52 } from '@/lib/stock/range52';
+import { buildSignals } from '@/lib/stock/signals';
 import type { PromptMode } from '@/lib/ai/promptMode';
 import type { StockBrief } from '@/lib/ai/stockBrief';
 import { StockPageClient, type HeaderQuote } from './StockPageClient';
@@ -93,8 +95,10 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const briefInitial = (() => {
     if (!cachedBrief) return null;
     try {
-      const stored = JSON.parse(cachedBrief.content) as { brief: StockBrief; mode: PromptMode };
-      return stored.mode === promptMode ? { ...stored, generatedAt: cachedBrief.generatedAt.toISOString() } : null;
+      const stored = JSON.parse(cachedBrief.content) as { brief?: StockBrief; mode?: PromptMode };
+      // Older cached briefs used a different shape; they are simply regenerated on request.
+      if (!stored.brief || !Array.isArray(stored.brief.points) || stored.mode !== promptMode) return null;
+      return { brief: stored.brief, mode: stored.mode, generatedAt: cachedBrief.generatedAt.toISOString() };
     } catch {
       return null;
     }
@@ -125,6 +129,24 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       };
     });
 
+  // The data panel of the 360 brief: computed from what is already loaded here, so it needs no AI key and no extra requests.
+  const signals = quote.then((q) =>
+    buildSignals({
+      sector: company.sector,
+      industry: company.industry,
+      ratios: ratios ?? [],
+      peers: peers ?? [],
+      price: q.latestClose !== null ? Number(q.latestClose) : null,
+      bars,
+      range52: resolveRange52({ low: q.week52Low, high: q.week52High }, bars),
+      profitAndLoss: pl ?? [],
+      balanceSheet: bs ?? [],
+      cashFlow: cf ?? [],
+      shareholding: shareholding ?? [],
+      news: news.items,
+    })
+  );
+
   return (
     <StockPageClient
       symbol={symbol}
@@ -143,6 +165,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       }}
       bars={bars}
       quote={quote}
+      signals={signals}
     />
   );
 }

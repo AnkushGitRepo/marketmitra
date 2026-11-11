@@ -11,6 +11,7 @@ import type { StatementKey } from '@/components/stock/FinancialsPanel';
 import { KeyTiles } from '@/components/stock/KeyTiles';
 import { MitraBrief, type BriefData } from '@/components/stock/MitraBrief';
 import type { PromptMode } from '@/lib/ai/promptMode';
+import type { StockSignals } from '@/lib/stock/signals';
 import { RangeBar } from '@/components/stock/RangeBar';
 import { StockChart } from '@/components/stock/StockChart';
 import { WatchlistButton } from '@/components/stock/WatchlistButton';
@@ -63,6 +64,8 @@ interface StockPageClientProps {
   bars: Bar[];
   /** Resolves when the live quote does (or falls back to the EOD close). */
   quote: Promise<HeaderQuote>;
+  /** The brief's data panel, resolved once the live quote is. */
+  signals: Promise<StockSignals>;
 }
 
 interface LiveSectionProps {
@@ -106,6 +109,10 @@ function LiveSection({ quote, bars, ratios, peers }: LiveSectionProps) {
   );
 }
 
+function BriefSection({ signals, ...rest }: Omit<React.ComponentProps<typeof MitraBrief>, 'signals'> & { signals: Promise<StockSignals> }) {
+  return <MitraBrief {...rest} signals={use(signals)} />;
+}
+
 export function StockPageClient({
   symbol,
   company,
@@ -119,6 +126,7 @@ export function StockPageClient({
   financials,
   bars,
   quote,
+  signals,
 }: StockPageClientProps) {
   const router = useRouter();
   const { setPageContext } = usePageContext();
@@ -188,13 +196,16 @@ export function StockPageClient({
       </div>
 
       <div className={styles.insightRow}>
-        <MitraBrief
-          symbol={symbol}
-          hasKey={aiInsight.hasKey}
-          mode={brief.mode}
-          initial={brief.initial}
-          longRead={<InsightCard label="AI read" endpoint="/api/insights/stock" body={{ symbol }} initial={aiInsight.initial} hasKey={aiInsight.hasKey} />}
-        />
+        <Suspense fallback={<div className={styles.briefPlaceholder} aria-hidden="true" />}>
+          <BriefSection
+            symbol={symbol}
+            hasKey={aiInsight.hasKey}
+            mode={brief.mode}
+            initial={brief.initial}
+            signals={signals}
+            longRead={<InsightCard label="AI read" endpoint="/api/insights/stock" body={{ symbol }} initial={aiInsight.initial} hasKey={aiInsight.hasKey} />}
+          />
+        </Suspense>
       </div>
 
       {aboutText && (

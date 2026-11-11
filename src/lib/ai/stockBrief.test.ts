@@ -1,71 +1,93 @@
 import { describe, expect, it } from 'vitest';
-import { buildBriefPrompt, chipPrompt, parseBrief, sanitizeBrief, type BriefFacts } from './stockBrief';
 import type { StockInsightInput } from './insightPrompts';
+import { POINT_KEYS, buildBriefPrompt, chipPrompts, parseBrief, sanitizeBrief, signalLabel, type StockBrief } from './stockBrief';
+import { buildSignals } from '@/lib/stock/signals';
+
+const json = (points: unknown, extra: Record<string, unknown> = {}) => JSON.stringify({ points, ...extra });
+const p = (key: string, signal: string, text = 'ROCE of 14.8% covers the cost of capital.') => ({ key, signal, text });
 
 describe('parseBrief', () => {
-  it('parses plain JSON', () => {
-    expect(parseBrief('{"strengths":["a","b"],"watchpoints":["c"]}')).toEqual({ strengths: ['a', 'b'], watchpoints: ['c'] });
+  it('parses five points and keeps the fixed order whatever order the model used', () => {
+    const b = parseBrief(json([p('risk', 'concern'), p('quality', 'strength'), p('growth', 'neutral'), p('valuation', 'strength'), p('ownership', 'neutral')]));
+    expect(b?.points.map((x) => x.key)).toEqual([...POINT_KEYS]);
+    expect(b?.points[0]).toEqual({ key: 'quality', signal: 'strength', text: 'ROCE of 14.8% covers the cost of capital.' });
   });
-  it('tolerates code fences and a trailing disclaimer line', () => {
-    const text = '```json\n{"strengths":["a"],"watchpoints":["c"]}\n```\nThis is a synthesis of public data, not investment advice.';
-    expect(parseBrief(text)).toEqual({ strengths: ['a'], watchpoints: ['c'] });
+  it('tolerates fences and a trailing disclaimer', () => {
+    const text = '```json\n' + json([p('quality', 'strength')]) + '\n```\nThis is a synthesis of public data, not investment advice.';
+    expect(parseBrief(text)?.points).toHaveLength(1);
   });
-  it('caps at 2 strengths and 1 watchpoint, trims, and drops blanks', () => {
-    const b = parseBrief('{"strengths":[" a ","","b","c"],"watchpoints":["x","y"]}');
-    expect(b).toEqual({ strengths: ['a', 'b'], watchpoints: ['x'] });
+  it('maps bullish / bearish wording onto the neutral signals', () => {
+    const b = parseBrief(json([p('quality', 'BULLISH'), p('risk', 'Bearish'), p('growth', 'mixed')]));
+    expect(b?.points.map((x) => x.signal)).toEqual(['strength', 'neutral', 'concern']);
+  });
+  it('drops unknown keys, empty text and duplicate keys (first wins), and trims long text', () => {
+    const b = parseBrief(json([p('quality', 'strength', 'first'), p('quality', 'concern', 'second'), p('nonsense', 'strength'), p('growth', 'strength', '   '), p('risk', 'concern', 'x'.repeat(500))]));
+    expect(b?.points.map((x) => [x.key, x.text.length])).toEqual([['quality', 5], ['risk', 320]]);
   });
   it('keeps a valid valuation and entry view and drops an invalid valuation', () => {
-    expect(parseBrief('{"strengths":["a"],"watchpoints":[],"valuation":"undervalued","entry":"Looks reasonable."}')).toMatchObject({ valuation: 'undervalued', entry: 'Looks reasonable.' });
-    expect(parseBrief('{"strengths":["a"],"watchpoints":[],"valuation":"moon"}')?.valuation).toBeUndefined();
+    expect(parseBrief(json([p('quality', 'strength')], { valuation: 'undervalued', entry: 'Looks reasonable.' }))).toMatchObject({ valuation: 'undervalued', entry: 'Looks reasonable.' });
+    expect(parseBrief(json([p('quality', 'strength')], { valuation: 'moon' }))?.valuation).toBeUndefined();
   });
-  it('returns null for non-JSON, empty content or the wrong shape', () => {
+  it('returns null for non-JSON, no usable points or the wrong shape', () => {
     expect(parseBrief('I cannot do that')).toBeNull();
-    expect(parseBrief('{"strengths":[],"watchpoints":[]}')).toBeNull();
-    expect(parseBrief('{"strengths":"nope"}')).toBeNull();
+    expect(parseBrief(json([]))).toBeNull();
+    expect(parseBrief('{"points":"nope"}')).toBeNull();
+    expect(parseBrief(json([p('nonsense', 'strength')]))).toBeNull();
   });
 });
 
 describe('sanitizeBrief', () => {
-  const full = { strengths: ['a'], watchpoints: ['b'], valuation: 'overvalued' as const, entry: 'Wait.' };
+  const full: StockBrief = { points: [{ key: 'quality', signal: 'strength', text: 'a' }], valuation: 'overvalued', entry: 'Wait.' };
   it('removes any verdict fields in guarded mode, even if the model produced them', () => {
-    expect(sanitizeBrief(full, 'guarded')).toEqual({ strengths: ['a'], watchpoints: ['b'] });
+    expect(sanitizeBrief(full, 'guarded')).toEqual({ points: full.points });
   });
-  it('keeps them in unrestricted mode', () => {
-    expect(sanitizeBrief(full, 'unrestricted')).toEqual(full);
-  });
+  it('keeps them in unrestricted mode', () => expect(sanitizeBrief(full, 'unrestricted')).toEqual(full));
   it('does not mutate its input', () => {
     sanitizeBrief(full, 'guarded');
     expect(full.valuation).toBe('overvalued');
   });
 });
 
-describe('buildBriefPrompt', () => {
-  const input: StockInsightInput = {
-    symbol: 'SBIN',
-    company: { name: 'State Bank of India', sector: 'Financial Services', industry: 'Banks', about: null },
-    ratios: [{ name: 'Stock P/E', value: '11.5', unit: null }],
-    latestClose: 1070,
-    financialsSummary: [],
-    shareholdingLatest: [],
-    news: [],
-  };
-  const facts: BriefFacts = { pe: 11.53, pb: 1.47, peerMedianPe: 6.9, rangePct: 44, range: { low: 933.9, high: 1234.7 } };
-  it('states the computed valuation facts so the model never has to invent them', () => {
-    const p = buildBriefPrompt(input, facts);
-    expect(p).toContain('P/E 11.5x');
-    expect(p).toContain('peer median P/E 6.9x');
-    expect(p).toContain('44% of the way up');
-    expect(p).toContain('SBIN');
-  });
-  it('says so when facts are missing instead of guessing', () => {
-    const p = buildBriefPrompt(input, { pe: null, pb: null, peerMedianPe: null, rangePct: null, range: null });
-    expect(p).toContain('not available');
+describe('signalLabel', () => {
+  it('uses neutral factor wording when guarded and market wording only when unrestricted', () => {
+    expect(['strength', 'neutral', 'concern'].map((s) => signalLabel(s as 'strength', 'guarded'))).toEqual(['Strength', 'Neutral', 'Concern']);
+    expect(['strength', 'neutral', 'concern'].map((s) => signalLabel(s as 'strength', 'unrestricted'))).toEqual(['Bullish', 'Neutral', 'Bearish']);
   });
 });
 
-describe('chipPrompt', () => {
-  it('asks for a neutral summary when guarded and for a view when unrestricted', () => {
-    expect(chipPrompt('SBIN', 'guarded')).toBe("Summarise SBIN's valuation ratios against its peers and its own price range.");
-    expect(chipPrompt('SBIN', 'unrestricted')).toBe('Is SBIN undervalued at its current price? Show the numbers behind your view.');
+describe('buildBriefPrompt', () => {
+  const input: StockInsightInput = {
+    symbol: 'ACC',
+    company: { name: 'ACC Limited', sector: 'Basic Materials', industry: 'Cement', about: 'Founded in 1936 ...' },
+    ratios: [],
+    latestClose: 1800,
+    financialsSummary: [],
+    shareholdingLatest: [],
+    news: [{ title: 'ACC volumes rise', sentiment: 'positive', published_at: '2026-11-01' }],
+  };
+  const signals = buildSignals({
+    sector: 'Basic Materials', industry: 'Cement', ratios: [{ name: 'ROCE', value: '14.8', unit: '%', as_of: '', source_tier: '' }], peers: [], price: 1800, bars: [], range52: { low: 1000, high: 2000 },
+    profitAndLoss: [], balanceSheet: [], cashFlow: [], shareholding: [], news: [{ sentiment: 'positive' }],
+  });
+  it('states computed numbers and says "not available" for gaps instead of leaving them to be guessed', () => {
+    const t = buildBriefPrompt(input, signals);
+    expect(t).toContain('ROCE 14.8%');
+    expect(t).toMatch(/P\/E[^\n]*not available/);
+    expect(t).toMatch(/debt\/equity[^\n]*not available/i);
+    expect(t).toContain('ACC volumes rise');
+  });
+  it('leaves out the company history blurb so the model has nothing generic to repeat', () => {
+    expect(buildBriefPrompt(input, signals)).not.toContain('Founded in 1936');
+  });
+});
+
+describe('chipPrompts', () => {
+  it('offers a neutral summary and a stress question when guarded', () => {
+    const [a, b] = chipPrompts('ACC', 'guarded');
+    expect(a).toBe("Summarise ACC's valuation ratios against its peers and its own price range.");
+    expect(b).toMatch(/weaken ACC/);
+  });
+  it('asks for a view when unrestricted', () => {
+    expect(chipPrompts('ACC', 'unrestricted')[0]).toBe('Is ACC undervalued at its current price? Show the numbers behind your view.');
   });
 });

@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { UNRESTRICTED_DISCLAIMER, type PromptMode } from '@/lib/ai/promptMode';
-import { chipPrompt, type StockBrief } from '@/lib/ai/stockBrief';
+import { POINT_KEYS, POINT_TITLES, chipPrompts, signalLabel, type StockBrief } from '@/lib/ai/stockBrief';
+import type { StockSignals } from '@/lib/stock/signals';
+import { SignalMatrix } from './SignalMatrix';
 import styles from './MitraBrief.module.css';
 
 export interface BriefData {
@@ -18,14 +20,17 @@ interface MitraBriefProps {
   /** The mode the server resolved for this user right now (hosted is always guarded). */
   readonly mode: PromptMode;
   readonly initial: BriefData | null;
+  /** Computed data panel: shown without an AI key or any generation. */
+  readonly signals: StockSignals;
   /** The longer AI read, kept reachable under the brief. */
   readonly longRead?: ReactNode;
 }
 
 const GUARDED_DISCLAIMER = 'This is a synthesis of public data, not investment advice.';
+const SKELETON_ROWS = 5;
 
-/** Strengths and watchpoints from public data, generated on demand with the user's own AI key. */
-export function MitraBrief({ symbol, hasKey, mode, initial, longRead }: MitraBriefProps) {
+/** The 360 brief: up to five AI points on the left, the computed numbers they rest on on the right. */
+export function MitraBrief({ symbol, hasKey, mode, initial, signals, longRead }: MitraBriefProps) {
   const [data, setData] = useState<BriefData | null>(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,80 +56,113 @@ export function MitraBrief({ symbol, hasKey, mode, initial, longRead }: MitraBri
     }
   };
 
-  const unrestricted = (data?.mode ?? mode) === 'unrestricted';
+  const activeMode = data?.mode ?? mode;
+  const unrestricted = activeMode === 'unrestricted';
   const brief = data?.brief;
+  const [primaryChip, stressChip] = chipPrompts(symbol, mode);
+  const c = signals.coverage;
 
   return (
     <section className={styles.card} aria-label="Mitra brief">
       <header className={styles.head}>
-        <p className={styles.title}>Mitra brief</p>
-        {unrestricted && (
-          <span className={styles.badge} title="Local only. Mitra may give valuation opinions. Change this in Settings > AI & Models.">
-            Unrestricted · local only
-          </span>
-        )}
+        <div>
+          <p className={styles.title}>Mitra 360 brief</p>
+          <p className={styles.meta}>
+            Built from {c.financialYears > 0 ? `${c.financialYears} years of financials` : 'the available financials'}, {c.quarters} quarters of shareholding and {c.headlines}{' '}
+            recent headlines.
+          </p>
+        </div>
+        <div className={styles.headActions}>
+          {unrestricted && (
+            <span className={styles.badge} title="Local only. Mitra may give valuation opinions. Change this in Settings > AI & Models.">
+              Unrestricted · local only
+            </span>
+          )}
+          {brief && (
+            <button type="button" className={styles.link} disabled={loading} onClick={() => void generate(true)}>
+              {loading ? 'Writing…' : 'Regenerate'}
+            </button>
+          )}
+        </div>
       </header>
 
-      {!hasKey ? (
-        <p className={styles.muted}>
-          Add your AI provider key to generate a brief. <Link href="/settings?tab=ai">Open Settings</Link>
-        </p>
-      ) : !brief ? (
-        <>
-          <p className={styles.muted}>Strengths and watchpoints for {symbol}, written from public data. It uses your own AI key, only when you ask.</p>
-          <button type="button" className={styles.primary} disabled={loading} onClick={() => void generate(false)}>
-            {loading ? 'Writing…' : 'Generate brief'}
-          </button>
-        </>
-      ) : (
-        <>
-          {brief.strengths.length > 0 && (
-            <div>
-              <p className={styles.label}>Strengths</p>
-              <ul className={styles.list}>
-                {brief.strengths.map((s) => (
-                  <li key={s} className={styles.strength}>
-                    {s}
+      <div className={styles.cols}>
+        <div className={styles.points} aria-live="polite">
+          {loading && !brief ? (
+            <div className={styles.skeleton} aria-label="Writing the brief">
+              {Array.from({ length: SKELETON_ROWS }, (_, i) => (
+                <div key={i} className={styles.skelRow}>
+                  <span className={styles.skelBar} />
+                  <span className={styles.skelLine} />
+                  <span className={`${styles.skelLine} ${styles.skelShort}`} />
+                </div>
+              ))}
+            </div>
+          ) : !hasKey ? (
+            <p className={styles.muted}>
+              Add your AI provider key to get the written read. The numbers on the right need no key. <Link href="/settings?tab=ai">Open Settings</Link>
+            </p>
+          ) : !brief ? (
+            <div className={styles.empty}>
+              <p className={styles.muted}>
+                Five points on quality, growth, valuation, smart money and the biggest risk, written from the numbers on the right. It uses your own AI key, only when you ask.
+              </p>
+              <button type="button" className={styles.primary} disabled={loading} onClick={() => void generate(false)}>
+                Generate brief
+              </button>
+              <ul className={styles.ghostList} aria-label="What the brief covers">
+                {POINT_KEYS.map((k) => (
+                  <li key={k} className={styles.ghost}>
+                    <span>{POINT_TITLES[k]}</span>
+                    <span className={styles.ghostNote}>not generated yet</span>
                   </li>
                 ))}
               </ul>
             </div>
-          )}
-          {brief.watchpoints.length > 0 && (
-            <div>
-              <p className={styles.label}>Watchpoint</p>
-              <ul className={styles.list}>
-                {brief.watchpoints.map((w) => (
-                  <li key={w} className={styles.watch}>
-                    {w}
+          ) : (
+            <>
+              <ul className={styles.pointList}>
+                {brief.points.map((p) => (
+                  <li key={p.key} className={`${styles.point} ${styles[p.signal]}`}>
+                    <div className={styles.pointHead}>
+                      <span className={styles.pointTitle}>{POINT_TITLES[p.key]}</span>
+                      <span className={`${styles.pill} ${styles[`pill_${p.signal}`]}`}>{signalLabel(p.signal, activeMode)}</span>
+                    </div>
+                    <p className={styles.pointText}>{p.text}</p>
                   </li>
                 ))}
               </ul>
-            </div>
+              {(brief.valuation || brief.entry) && (
+                <div className={styles.view}>
+                  {brief.valuation && <span className={styles.viewPill}>Valuation view: {brief.valuation}</span>}
+                  {brief.entry && <p className={styles.entry}>{brief.entry}</p>}
+                </div>
+              )}
+              <p className={styles.disclaimer}>{unrestricted ? UNRESTRICTED_DISCLAIMER : GUARDED_DISCLAIMER}</p>
+            </>
           )}
-          {(brief.valuation || brief.entry) && (
-            <div className={styles.view}>
-              {brief.valuation && <span className={styles.pill}>Valuation view: {brief.valuation}</span>}
-              {brief.entry && <p className={styles.entry}>{brief.entry}</p>}
-            </div>
+          {error && (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
           )}
-          <p className={styles.disclaimer}>{(data?.mode ?? mode) === 'unrestricted' ? UNRESTRICTED_DISCLAIMER : GUARDED_DISCLAIMER}</p>
-          <button type="button" className={styles.link} disabled={loading} onClick={() => void generate(true)}>
-            {loading ? 'Writing…' : 'Refresh brief'}
-          </button>
-        </>
-      )}
+        </div>
 
-      {error && (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      )}
+        <aside className={styles.matrix} aria-label="Data behind the brief">
+          <SignalMatrix signals={signals} />
+        </aside>
+      </div>
 
-      <Link className={styles.chip} href={`/mitra?q=${encodeURIComponent(chipPrompt(symbol, mode))}`}>
-        Ask Mitra: {chipPrompt(symbol, mode).replace(/\.$/, '')}
-        <span aria-hidden="true"> →</span>
-      </Link>
+      <div className={styles.chips}>
+        <Link className={styles.chip} href={`/mitra?q=${encodeURIComponent(primaryChip)}`}>
+          Ask Mitra: {primaryChip.replace(/\.$/, '')}
+          <span aria-hidden="true"> →</span>
+        </Link>
+        <Link className={styles.chip} href={`/mitra?q=${encodeURIComponent(stressChip)}`}>
+          Stress-test with Mitra
+          <span aria-hidden="true"> →</span>
+        </Link>
+      </div>
 
       {hasKey && longRead && (
         <details className={styles.more}>
