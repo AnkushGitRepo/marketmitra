@@ -6,6 +6,7 @@ import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { getDocuments } from '@/lib/dashboard/fundamentalsApi';
 import { deliverNotification, resolveChannels } from '@/lib/notifications/deliver';
 import { logEvent } from '@/lib/system/eventLog';
+import { dailyAiCap } from './capConfig';
 import type { EngineDeps } from './engine';
 import * as store from './store';
 
@@ -24,6 +25,7 @@ export function realDeps(): EngineDeps {
       if (obj.ok) return { ok: true, text: JSON.stringify(obj.object), model: obj.model, finishReason: obj.finishReason };
       return generateInsightText(config, system, prompt, { maxOutputTokens: MAX_OUTPUT_TOKENS });
     },
+    dailyCap: dailyAiCap,
     getUsage: (userId) => store.getUsage(userId),
     bumpUsage: (userId, now) => store.bumpUsage(userId, now),
     appendJournal: store.appendJournal,

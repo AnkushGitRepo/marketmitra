@@ -2,7 +2,7 @@
 
 import { getQuotes } from '@/lib/dashboard/quotes';
 import { getPreferences } from '@/lib/preferences/store';
-import { DAILY_AI_CAP } from './caps';
+import { dailyAiCap } from './capConfig';
 import type { DeskData, RosterQuote } from './desk';
 import { countEvents, getUsage, latestEntries, listAnalysts } from './store';
 
@@ -23,7 +23,7 @@ export async function loadDeskData(userId: string): Promise<DeskData> {
   const [latest, counts, usage, prefs, quotes] = await Promise.all([latestEntries(userId, symbols), countEvents(userId, symbols), getUsage(userId), getPreferences(userId), quotesBySymbol(symbols)]);
   return {
     auto: prefs.agents.auto,
-    usage: { used: usage.count, cap: DAILY_AI_CAP },
+    usage: { used: usage.count, cap: dailyAiCap() },
     analysts: records.map((r) => ({
       symbol: r.symbol,
       source: r.source,

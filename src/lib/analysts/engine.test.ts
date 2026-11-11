@@ -43,6 +43,7 @@ const deps = (): EngineDeps => ({
     seenSchemas.push(schema);
     return reply.ok ? { ok: true as const, text: reply.text ?? '', model: 'm', finishReason: finish } : { ok: false as const, error: reply.error ?? 'boom' };
   },
+  dailyCap: () => DAILY_AI_CAP,
   getUsage: async () => usage,
   bumpUsage: async () => {
     usage = { day: usage.day, count: usage.count + 1 };
