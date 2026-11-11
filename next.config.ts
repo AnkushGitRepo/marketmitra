@@ -1,7 +1,22 @@
+import { execSync } from 'node:child_process';
 import type { NextConfig } from 'next';
 import { legacyDashboardRedirects } from './src/lib/routes';
 
 const isProd = process.env.NODE_ENV === 'production';
+
+/**
+ * The commit this build is made from, shown with the version. `npm run deploy:prod` passes APP_COMMIT (a CLI deploy has no .git on
+ * the build machine); a local build reads git; anything else is "unknown".
+ */
+function buildCommit(): string {
+  if (process.env.APP_COMMIT) return process.env.APP_COMMIT;
+  if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
 
 // Third parties the browser legitimately talks to. Everything else is blocked,
 // which is what turns an XSS or a malicious dependency from "full takeover"
@@ -52,6 +67,8 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // Stamped into the bundle so the running version can say which commit it was built from (src/lib/version.ts).
+  env: { NEXT_PUBLIC_APP_COMMIT: buildCommit() },
   // The designed email templates are read from disk at runtime (src/emails/render.ts), so they must be
   // bundled into every serverless function that can send mail.
   outputFileTracingIncludes: { '/**': ['./src/emails/templates/**/*.html'] },

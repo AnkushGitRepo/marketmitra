@@ -210,6 +210,11 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 - **Auth:** session. **Purpose:** two-sentence Mitra read on today's indices, breadth and sector moves, grounded only in those figures. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when market data is unavailable; `ai` rate tier.
 
+### `GET /api/version`
+
+- **Auth:** public. **Purpose:** the running product version (SemVer; one version for the app and this API) and the short commit id the build was made from. `npm run deploy:prod` checks it after each deploy.
+- **Response:** `{ success, data: { version, commit } }`.
+
 ### `POST /api/settings/ai/test`
 
 - **Auth:** session; `ai` rate tier. **Purpose:** tests the signed-in user's *stored* AI key with a tiny request and reports the round trip.

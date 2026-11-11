@@ -21,6 +21,7 @@ check() {
 
 check "landing page"                 "$APP/"                      200
 check "stock aggregate API"          "$APP/api/stock/TCS"         200
+check "version endpoint"             "$APP/api/version"           200
 check "fundamentals-api health"      "$FUND/health"               200
 # Operator-only routes must reject anonymous callers (security hardening, ADR 0032).
 check "system logs closed to anon"   "$APP/api/system/logs"       401

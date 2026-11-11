@@ -1,0 +1,60 @@
+# Tags and publishes a release when the release commit lands on main.
+#
+# `npm run release` prepares the version bump and CHANGELOG, which a person (or the agent) commits as exactly
+# "chore(release): vX.Y.Z" on a branch and squash-merges (GitHub appends " (#N)", which is fine). This workflow notices that commit on main and creates the vX.Y.Z tag and a
+# GitHub Release carrying that version's changelog section. It does not open the release PR itself: a PR created with the built-in
+# GITHUB_TOKEN does not trigger the required CI checks, so it could never be merged under branch protection.
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Tag and publish if this is a release commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          subject="$(git log -1 --format=%s)"
+          # A squash merge appends " (#123)" to the PR title, so allow it.
+          if [[ ! "$subject" =~ ^chore\(release\):\ v([0-9]+\.[0-9]+\.[0-9]+)(\ \(#[0-9]+\))?$ ]]; then
+            echo "Not a release commit ('$subject'): nothing to do."
+            exit 0
+          fi
+          version="${BASH_REMATCH[1]}"
+          tag="v${version}"
+
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$pkg" != "$version" ]; then
+            echo "::error::Commit says $version but package.json says $pkg."
+            exit 1
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists."
+            exit 0
+          fi
+
+          # The changelog section for this version, without its heading.
+          awk -v v="## [${version}]" 'index($0, v) == 1 { on = 1; next } on && /^## \[/ { exit } on { print }' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "::error::No CHANGELOG.md section for $version."
+            exit 1
+          fi
+
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
+          echo "Published $tag."

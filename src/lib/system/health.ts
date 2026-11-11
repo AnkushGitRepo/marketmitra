@@ -5,6 +5,7 @@
 import { getDb } from '@/lib/mongodb';
 import { rateLimitEnabled, pingRedis } from '@/lib/rateLimit';
 import { isHosted } from '@/lib/deployment-mode';
+import { getVersionInfo, type VersionInfo } from '@/lib/version';
 import { tools } from '@/lib/mcp/tools';
 import { latestEventPerSource, type SystemEvent } from './eventLog';
 
@@ -29,6 +30,8 @@ export interface SystemStatus {
   overall: ComponentStatus;
   components: ComponentHealth[];
   crons: CronStatus[];
+  /** The running product version and build commit. */
+  version: VersionInfo;
 }
 
 const CHECK_TIMEOUT_MS = 5000;
@@ -154,5 +157,5 @@ export async function getSystemStatus(): Promise<SystemStatus> {
   // pre-provisioning) is expected, not an incident.
   const overall = worstOf([mongo.status, fundamentalsApi.status, mcp.status]);
 
-  return { checkedAt: new Date().toISOString(), overall, components, crons };
+  return { checkedAt: new Date().toISOString(), overall, components, crons, version: getVersionInfo() };
 }

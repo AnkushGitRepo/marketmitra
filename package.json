@@ -11,7 +11,10 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "release": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/release.mjs",
+    "release:dry": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/release.mjs --dry-run",
+    "deploy:prod": "bash scripts/deploy-prod.sh"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.98",

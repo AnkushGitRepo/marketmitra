@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "MarketMitra API",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "description": "Public + session-scoped HTTP API for the MarketMitra dashboard. For automated / agent access to public market data, prefer the MCP server at /api/mcp (see /llms.txt and docs/api-surface.md). Session-scoped endpoints authenticate via the Clerk session cookie in hosted mode; in self-host mode they resolve to a single local user with no login."
   },
   "servers": [
@@ -4508,6 +4508,21 @@
           },
           "429": {
             "description": "Rate limited."
+          }
+        }
+      }
+    },
+    "/api/version": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Running version",
+        "description": "The product version (SemVer, one version for the app and this API) and the short commit id the running build was made from. Public. `npm run deploy:prod` checks this after each deploy.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { version, commit } }"
           }
         }
       }

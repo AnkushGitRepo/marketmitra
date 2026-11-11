@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { ComponentHealth, CronStatus, SystemStatus } from '@/lib/system/health';
+import { formatVersion } from '@/lib/version';
 import styles from './page.module.css';
 
 interface Props {
@@ -65,7 +66,7 @@ export function StatusPageClient({ initialStatus }: Props) {
             {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
-        <p className={styles.checkedAt}>Last checked {formatTs(status.checkedAt)}</p>
+        <p className={styles.checkedAt}>Last checked {formatTs(status.checkedAt)} · Version {formatVersion(status.version)}</p>
       </div>
 
       <div className={styles.componentList}>
