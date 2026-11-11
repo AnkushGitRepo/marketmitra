@@ -1115,3 +1115,8 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - The daily cap on analyst AI calls is now 20 when hosted (unchanged) and 200 by default when not hosted, overridable with `ANALYST_DAILY_AI_CAP` (20 to 1000, ignored when hosted), because on a local single-user instance the cap only made dossiers wait a day. A single `dailyAiCap()` feeds the engine (`EngineDeps.dailyCap`), the roster and the deck.
 - **Verified:** lint, typecheck, unit tests (hosted fixed, local default, override clamping and junk). **Not verified:** the hosted site (unchanged code path, covered by the unit test only).
+
+## 2026-11-11 — v0.4.0 released and deployed to production (#144, #145)
+
+- 8 Conventional-Commit features since v0.3.0 became **v0.4.0** through the managed flow: `npm run release` on `chore/144-release-v0.4.0`, squash-merged as `chore(release): v0.4.0 (#145)`, the Release workflow tagged `v0.4.0` and published the GitHub Release. Deployed with `npm run deploy:prod` (guards: `HEAD` equals the tag, no stray duplicates; the maintainer gave the go-ahead). Production reports `0.4.0` / `6c2fb9b`; smoke 6/6; `vercel inspect`: target production, Ready. App only, no migration. The `CRON_SECRET` repo secret already existed.
+- **Verified on production:** version, OpenAPI contents, anonymous 401s on the new routes and on both cron routes (also with a wrong bearer). **Not verified:** anything needing a signed-in browser (the desk, chat, brief, criteria), the first scheduled `stock-analysts` and `analyst-dispatch` runs, a real morning-brief email and a real thesis alert. Early on, a curl with a body on a GET showed 308s that looked like a problem; plain requests answer 401.
