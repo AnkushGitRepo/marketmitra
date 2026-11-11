@@ -5450,7 +5450,7 @@
           "AI"
         ],
         "summary": "Read an analyst's dossier and journal",
-        "description": "The baseline dossier (summary, business, three strengths, up to two vulnerabilities, what was not available) and the journal, newest first. Browser session only.",
+        "description": "The baseline dossier (summary, business, three strengths, up to two vulnerabilities, what was not available) and the journal, newest first. Browser session only. Also returns `criteria`: the thesis invalidation criteria (null until set at the next evening check).",
         "security": [
           {
             "cookieAuth": []
@@ -5483,7 +5483,7 @@
           "AI"
         ],
         "summary": "Pause or resume an analyst",
-        "description": "Body `{ status: \"active\" | \"paused\" }`. Resuming an analyst that never built its dossier returns it to `initializing`.",
+        "description": "Pause or resume the analyst (`{ status }`), or switch one of its thesis criteria on or off or remove it (`{ criterion: { id, action } }`, where `id` is a metric: roce, roe, debtToEquity, promoterHolding, promoterChange4q, qtrSalesYoyPct, qtrProfitYoyPct, negativeNewsPct and `action` is enable, disable or remove). A criterion change returns the new `criteria` list; 404 when there is no such criterion. Browser session only.",
         "security": [
           {
             "cookieAuth": []
@@ -5504,19 +5504,61 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "status"
-                ],
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "active",
-                      "paused"
-                    ]
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "status"
+                    ],
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "paused"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "criterion"
+                    ],
+                    "properties": {
+                      "criterion": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "action"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "enum": [
+                              "roce",
+                              "roe",
+                              "debtToEquity",
+                              "promoterHolding",
+                              "promoterChange4q",
+                              "qtrSalesYoyPct",
+                              "qtrProfitYoyPct",
+                              "negativeNewsPct"
+                            ]
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "enable",
+                              "disable",
+                              "remove"
+                            ]
+                          }
+                        }
+                      }
+                    }
                   }
-                }
+                ]
               },
               "example": {
                 "status": "paused"

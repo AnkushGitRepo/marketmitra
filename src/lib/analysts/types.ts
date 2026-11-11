@@ -2,7 +2,7 @@
 
 export type AnalystStatus = 'initializing' | 'active' | 'paused' | 'error';
 export type AnalystSource = 'holding' | 'watcher';
-export type JournalKind = 'initiation' | 'price' | 'volume' | 'range' | 'news' | 'filing' | 'earnings';
+export type JournalKind = 'initiation' | 'price' | 'volume' | 'range' | 'news' | 'filing' | 'earnings' | 'thesis';
 export type AlertLevel = 'low' | 'medium' | 'high';
 export type Impact = 'positive' | 'neutral' | 'negative';
 
@@ -55,4 +55,26 @@ export interface MaterialEvent {
   /** Plain facts the AI may reason over. */
   facts: string[];
   alert: AlertLevel;
+}
+
+/** The observable measures a thesis criterion can watch. A closed set, so every criterion can be checked deterministically. */
+export type CriterionMetric = 'roce' | 'roe' | 'debtToEquity' | 'promoterHolding' | 'promoterChange4q' | 'qtrSalesYoyPct' | 'qtrProfitYoyPct' | 'negativeNewsPct';
+
+/** One condition that would weaken the baseline thesis. Evaluated every day by the heartbeat, with no AI. */
+export interface ThesisCriterion {
+  /** The metric name: an analyst has at most one criterion per metric. */
+  id: CriterionMetric;
+  metric: CriterionMetric;
+  /** `below` or `above` is fixed by the metric (the direction that weakens a thesis). */
+  op: 'below' | 'above';
+  threshold: number;
+  /** The metric's value when the criterion was set, or null when it was not readable then. */
+  baseline: number | null;
+  /** One line from the analyst on why this matters; empty for the defaults. */
+  why: string;
+  source: 'analyst' | 'default';
+  /** The user can switch a criterion off without removing it. */
+  enabled: boolean;
+  /** Whether the metric is currently past the threshold, so a breach is reported once and re-arms when it recovers. */
+  breached: boolean;
 }

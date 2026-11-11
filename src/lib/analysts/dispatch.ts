@@ -8,7 +8,7 @@ import type { AlertLevel, AnalystStatus, JournalEntry, JournalKind } from './typ
 export const DISPATCH_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_ITEMS_PER_SECTION = 8;
 const HIGHLIGHT_CHARS = 140;
-const PRIORITY_KINDS: readonly JournalKind[] = ['earnings', 'range'];
+const PRIORITY_KINDS: readonly JournalKind[] = ['earnings', 'range', 'thesis'];
 const PRIORITY_ALERTS: readonly AlertLevel[] = ['medium', 'high'];
 
 export interface DispatchAnalyst {

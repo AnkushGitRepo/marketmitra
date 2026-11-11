@@ -9,8 +9,9 @@ import type { z } from 'zod';
 import { ANALYST_JOURNAL_SYSTEM, ANALYST_MEMO_SYSTEM } from '@/lib/ai/prompts';
 import { canSpend, type Usage } from './caps';
 import { detectEvents } from './events';
-import { buildJournalPrompt, buildMemoPrompt, entrySchema, memoSchema, parseJournalEntry, parseMemo } from './memo';
-import type { AlertLevel, AnalystSource, AnalystStatus, Dossier, JournalEntry, MaterialEvent, WatchState } from './types';
+import { buildJournalPrompt, buildMemoPrompt, entrySchema, memoSchema, parseCriteria, parseJournalEntry, parseMemo } from './memo';
+import { breachEntry, chooseCriteria, defaultCriteria, evaluateCriteria, validateProposed } from './criteria';
+import type { AlertLevel, AnalystSource, AnalystStatus, Dossier, JournalEntry, MaterialEvent, ThesisCriterion, WatchState } from './types';
 
 export interface AnalystRecord {
   userId: string;
@@ -22,6 +23,8 @@ export interface AnalystRecord {
   watch: WatchState;
   lastCheckedAt: Date | null;
   createdAt: Date;
+  /** Thesis invalidation criteria; null until they have been set (dossiers written before they existed get defaults at the next check). */
+  criteria: ThesisCriterion[] | null;
 }
 
 type Generated = { ok: true; text: string; model: string; finishReason?: string } | { ok: false; error: string };
@@ -38,6 +41,9 @@ export interface EngineDeps {
   appendJournal: (entry: Omit<JournalEntry, 'id'> & { userId: string }) => Promise<void>;
   saveDossier: (userId: string, symbol: string, dossier: Dossier, watch: WatchState) => Promise<void>;
   saveCheck: (userId: string, symbol: string, watch: WatchState, lastCheckedAt: Date) => Promise<void>;
+  saveCriteria: (userId: string, symbol: string, criteria: ThesisCriterion[]) => Promise<void>;
+  /** Tells the user through their own alert channels (in-app, email, and any chat channel they set up). */
+  notify: (userId: string, payload: { title: string; body: string; href: string; meta: Record<string, unknown> }) => Promise<void>;
   setStatus: (userId: string, symbol: string, status: AnalystStatus, note: string | null) => Promise<void>;
   /** A key-free diagnostic record (a short snippet of what the model said), written when a reply cannot be used. */
   log: (e: { source: string; message: string; meta: Record<string, unknown> }) => Promise<void>;
@@ -95,8 +101,26 @@ export async function initiate(a: AnalystRecord, deps: EngineDeps): Promise<Init
   const { nextWatch } = detectEvents({ symbol: a.symbol, bars: bundle.raw.bars, range52: bundle.raw.range52, news: bundle.raw.news, documents: docs, results: resultsOf(bundle), watch: a.watch });
   const dossier: Dossier = { ...memo, generatedAt: now.toISOString(), model: gen.model };
   await deps.saveDossier(a.userId, a.symbol, dossier, nextWatch);
+  // The analyst's own proposals, checked against the figures; defaults fill any gap so every dossier gets two to four.
+  await deps.saveCriteria(a.userId, a.symbol, chooseCriteria(validateProposed(parseCriteria(gen.text), bundle.signals), bundle.signals));
   await deps.appendJournal({ userId: a.userId, symbol: a.symbol, ts: now.toISOString(), kind: 'initiation', title: `Analyst assigned to ${a.symbol}`, body: memo.summary || null, impact: null, alert: 'low' });
   return 'initiated';
+}
+
+/**
+ * The thesis criteria, checked with no AI: seeds defaults for a dossier that has none, writes a high-alert journal entry for each new
+ * breach and tells the user. Returns the number of new breaches. A failed notification never loses the journal entry.
+ */
+async function checkCriteria(a: AnalystRecord, bundle: SignalBundle, now: Date, deps: EngineDeps): Promise<number> {
+  const current = a.criteria ?? defaultCriteria(bundle.signals);
+  const { criteria, breaches } = evaluateCriteria(current, bundle.signals);
+  if (a.criteria === null || JSON.stringify(criteria) !== JSON.stringify(a.criteria)) await deps.saveCriteria(a.userId, a.symbol, criteria);
+  for (const b of breaches) {
+    const entry = breachEntry(b, a.symbol, now);
+    await deps.appendJournal({ ...entry, userId: a.userId });
+    await deps.notify(a.userId, { title: `${a.symbol}: ${entry.title}`, body: entry.body ?? entry.title, href: `/stock/${a.symbol}`, meta: { symbol: a.symbol, criterion: b.criterion.metric, source: 'thesis-criterion' } }).catch(() => undefined);
+  }
+  return breaches.length;
 }
 
 export async function heartbeat(a: AnalystRecord, deps: EngineDeps): Promise<HeartbeatResult> {
@@ -106,10 +130,12 @@ export async function heartbeat(a: AnalystRecord, deps: EngineDeps): Promise<Hea
   if (!bundle) return 'no_data';
   const docs = await deps.loadDocuments(a.symbol).catch(() => []);
 
+  const breached = await checkCriteria(a, bundle, now, deps);
+
   const { events, nextWatch } = detectEvents({ symbol: a.symbol, bars: bundle.raw.bars, range52: bundle.raw.range52, news: bundle.raw.news, documents: docs, results: resultsOf(bundle), watch: a.watch });
   if (events.length === 0) {
     await deps.saveCheck(a.userId, a.symbol, nextWatch, now);
-    return 'quiet';
+    return breached > 0 ? 'journaled' : 'quiet';
   }
 
   const plain = { title: events.map((e) => e.title).join('; ').slice(0, 200), body: null, impact: null };

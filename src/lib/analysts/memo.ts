@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { buildBriefPrompt, type BriefContext } from '@/lib/ai/stockBrief';
 import { wrapUntrusted } from '@/lib/ai/untrusted';
 import type { StockSignals } from '@/lib/stock/signals';
+import { CRITERION_METRICS } from './criteria';
 import type { Dossier, DossierPillar, Impact, MaterialEvent } from './types';
 
 /** The reply shapes asked of the model as constrained output. The tolerant parsers below still normalise whatever comes back. */
@@ -13,6 +14,7 @@ export const memoSchema = z.object({
   strengths: z.array(z.object({ title: z.string(), text: z.string() })),
   vulnerabilities: z.array(z.object({ title: z.string(), text: z.string() })),
   notAvailable: z.array(z.string()),
+  criteria: z.array(z.object({ metric: z.enum(CRITERION_METRICS), threshold: z.number(), why: z.string() })),
 });
 
 export const entrySchema = z.object({
@@ -94,6 +96,12 @@ export function parseMemo(text: string): ParsedMemo | null {
     notAvailable: Array.isArray(o.notAvailable) ? o.notAvailable.map((x) => str(x, MAX_LINE)).filter(Boolean).slice(0, 6) : [],
   };
   return memo.summary || memo.strengths.length || memo.vulnerabilities.length ? memo : null;
+}
+
+/** The raw criteria the model proposed, for `validateProposed` to check against the figures. Never trusted as they are. */
+export function parseCriteria(text: string): unknown[] {
+  const o = extractJson(text);
+  return o && Array.isArray(o.criteria) ? o.criteria : [];
 }
 
 export function buildMemoPrompt(ctx: BriefContext, signals: StockSignals): string {

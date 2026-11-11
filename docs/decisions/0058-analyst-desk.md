@@ -50,6 +50,14 @@ the first release covers dossier + journal, morning dispatch, thesis invalidatio
   existing alert-email path (the user's email switch and address). A user with no vigilant analyst, nothing material, or automatic analysts off gets nothing.
   Preview and Send test are on the Agents page. Email and in-app only: no Slack, Telegram or WhatsApp here. It reuses the plain alert email template until the
   maintainer supplies a designed one.
+- **Thesis invalidation criteria (#130):** each analyst holds two to four **observable** conditions that would weaken its thesis, drawn from a closed set of
+  metrics (ROCE, ROE, debt to equity, promoter holding and its four-quarter change, latest-quarter sales and profit growth, share of negative headlines) so every one can
+  be checked deterministically. The direction is fixed by the metric. The analyst proposes thresholds in the onboarding memo; they are validated against the figures
+  (known metric, plausible range, readable today, not already breached) and topped up with deterministic defaults. A dossier written before criteria existed gets
+  defaults at its next check. The evening heartbeat evaluates them with **no AI**: a new breach writes a high-alert `thesis` journal entry (what changed and by how much,
+  worded as a review point, never a recommendation), appears under Priority in the morning dispatch, and goes through the user's own alert channels (in-app, email, and
+  any chat channel they set up). A breach is reported once and re-arms when the metric recovers. Users can turn a criterion off or remove it from the dossier.
+  Not covered: persistence over time ("for two annual periods"), because the signals are a snapshot, not a history.
 
 ## Consequences
 
