@@ -124,7 +124,7 @@ writeFileSync('CHANGELOG.md', prependChangelog(existing, section));
 console.log(`Updated package.json, package-lock.json, public/openapi.json and CHANGELOG.md for v${next}.\n`);
 console.log('Next steps:');
 console.log(`  1. git checkout -b chore/<issue>-release-v${next}`);
-console.log(`  2. git commit -am "chore(release): v${next}"   (the subject must be exactly this: the tag workflow looks for it)`);
+console.log(`  2. git commit -am "chore(release): v${next}"   (keep this subject: the tag workflow looks for it; the " (#N)" a squash merge adds is fine)`);
 console.log('  3. open a PR, let the checks pass, squash-merge it keeping that subject');
 console.log(`  4. the Release workflow then tags v${next} and publishes the GitHub Release`);
 console.log('  5. deploy with: npm run deploy:prod   (only with the maintainer\'s go-ahead)');

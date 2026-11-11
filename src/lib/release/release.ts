@@ -121,7 +121,7 @@ export function latestChangelogVersion(changelog: string): string | null {
   return /^## \[(\d+\.\d+\.\d+)\]/m.exec(changelog)?.[1] ?? null;
 }
 
-/** "chore(release): v0.2.0" -> "0.2.0"; null for any other subject. */
+/** "chore(release): v0.2.0" -> "0.2.0"; null for any other subject. A trailing "(#123)" (added by a squash merge) is allowed. */
 export function versionFromReleaseSubject(subject: string): string | null {
-  return /^chore\(release\): v(\d+\.\d+\.\d+)\s*$/.exec(subject.trim())?.[1] ?? null;
+  return /^chore\(release\): v(\d+\.\d+\.\d+)(?:\s+\(#\d+\))?\s*$/.exec(subject.trim())?.[1] ?? null;
 }

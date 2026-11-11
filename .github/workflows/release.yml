@@ -1,7 +1,7 @@
 # Tags and publishes a release when the release commit lands on main.
 #
 # `npm run release` prepares the version bump and CHANGELOG, which a person (or the agent) commits as exactly
-# "chore(release): vX.Y.Z" on a branch and squash-merges. This workflow notices that commit on main and creates the vX.Y.Z tag and a
+# "chore(release): vX.Y.Z" on a branch and squash-merges (GitHub appends " (#N)", which is fine). This workflow notices that commit on main and creates the vX.Y.Z tag and a
 # GitHub Release carrying that version's changelog section. It does not open the release PR itself: a PR created with the built-in
 # GITHUB_TOKEN does not trigger the required CI checks, so it could never be merged under branch protection.
 
@@ -30,7 +30,8 @@ jobs:
         run: |
           set -euo pipefail
           subject="$(git log -1 --format=%s)"
-          if [[ ! "$subject" =~ ^chore\(release\):\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          # A squash merge appends " (#123)" to the PR title, so allow it.
+          if [[ ! "$subject" =~ ^chore\(release\):\ v([0-9]+\.[0-9]+\.[0-9]+)(\ \(#[0-9]+\))?$ ]]; then
             echo "Not a release commit ('$subject'): nothing to do."
             exit 0
           fi

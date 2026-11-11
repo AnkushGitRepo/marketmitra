@@ -131,6 +131,8 @@ describe('versionFromReleaseSubject', () => {
   it('recognises only the release commit', () => {
     expect(versionFromReleaseSubject('chore(release): v0.2.0')).toBe('0.2.0');
     expect(versionFromReleaseSubject('chore(release): v10.20.30 ')).toBe('10.20.30');
-    for (const s of ['chore: release v0.2.0', 'feat: v0.2.0', 'chore(release): 0.2.0', 'chore(release): v0.2', 'chore(release): v0.2.0 extra']) expect(versionFromReleaseSubject(s)).toBeNull();
+    // GitHub's squash merge appends the PR number to the title.
+    expect(versionFromReleaseSubject('chore(release): v0.2.0 (#93)')).toBe('0.2.0');
+    for (const s of ['chore: release v0.2.0', 'feat: v0.2.0', 'chore(release): 0.2.0', 'chore(release): v0.2', 'chore(release): v0.2.0 extra', 'chore(release): v0.2.0 (#x)']) expect(versionFromReleaseSubject(s)).toBeNull();
   });
 });
