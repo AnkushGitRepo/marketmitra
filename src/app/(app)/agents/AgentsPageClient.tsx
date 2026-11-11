@@ -111,9 +111,8 @@ export function AgentsPageClient() {
   const running = run?.status === 'queued' || run?.status === 'running';
 
   return (
-    <div className={styles.pageRoot}>
-      <p className={styles.eyebrow}>Agents</p>
-      <h1 className={styles.h1}>Multi-agent analysis</h1>
+    <div>
+      <h2 className={styles.h2}>Deep dive on any stock</h2>
       <p className={styles.introNote}>
         A panel of analyst agents works one stock from four angles, then a bull and a bear
         researcher debate it, and a lead writes up a balanced briefing — bull case, bear case,

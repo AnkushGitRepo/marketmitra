@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { StockSignals } from '@/lib/stock/signals';
 import type { StockInsightInput } from './insightPrompts';
 import type { PromptMode } from './promptMode';
+import { untrusted, wrapUntrusted } from './untrusted';
 
 export const POINT_KEYS = ['quality', 'growth', 'valuation', 'ownership', 'risk'] as const;
 export type PointKey = (typeof POINT_KEYS)[number];
@@ -173,9 +174,10 @@ export function buildBriefPrompt(input: BriefContext, s: StockSignals): string {
   const own = s.ownership;
   const holding = (label: string, h: { pct: number; delta1q: number | null } | null) =>
     h ? `${label} ${h.pct.toFixed(1)}% (${signed(h.delta1q, 1, ' pts QoQ')})` : `${label} ${NA}`;
-  const news = input.news.length ? input.news.map((n) => `- [${n.sentiment}] ${n.title}`).join('\n') : '(no recent headlines)';
+  const news = input.news.length ? wrapUntrusted(input.news.map((n) => `[${n.sentiment}] ${n.title}`)) : '(no recent headlines)';
   return [
-    `Company: ${input.company.name} (${input.symbol}), ${input.company.sector ?? 'sector n/a'} / ${input.company.industry ?? 'industry n/a'}.`,
+    // Names and classifications come from scraped company data, so they are flattened like any other external text.
+    `Company: ${untrusted(input.company.name, 80)} (${untrusted(input.symbol, 20)}), ${untrusted(input.company.sector ?? 'sector n/a', 60)} / ${untrusted(input.company.industry ?? 'industry n/a', 60)}.`,
     `Last close: ${input.latestClose === null ? NA : `₹${input.latestClose.toLocaleString('en-IN')}`}.`,
     `QUALITY: ROCE ${f(q.roce, 1, '%')}; ROE ${f(q.roe, 1, '%')}; debt/equity ${q.isFinancial ? 'not meaningful for a financial company' : f(q.debtToEquity, 2, 'x')}; free cash flow ${q.isFinancial ? 'not meaningful for a financial company' : fcf}.`,
     `GROWTH: 3-year sales CAGR ${f(s.growth.salesCagr3y, 1, '%')}; 3-year profit CAGR ${f(s.growth.profitCagr3y, 1, '%')}; latest quarter sales YoY ${signed(s.growth.qtrSalesYoyPct, 1, '%')}; latest quarter profit YoY ${signed(s.growth.qtrProfitYoyPct, 1, '%')}.`,

@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_PREFERENCES, applyPatch, preferencesPatchSchema, resolvePreferences } from './schema';
 
 describe('resolvePreferences', () => {
+  it('keeps automatic stock analysts on by default, and honours an explicit off', () => {
+    expect(resolvePreferences(undefined).agents.auto).toBe(true);
+    expect(resolvePreferences({ agents: { auto: false } }).agents.auto).toBe(false);
+    expect(resolvePreferences({ agents: { auto: 'no' } }).agents.auto).toBe(true);
+  });
+
   it('keeps unrestricted Mitra off unless explicitly stored as true', () => {
     expect(resolvePreferences(undefined).chat.unrestricted).toBe(false);
     expect(resolvePreferences({ chat: { unrestricted: 'yes' } }).chat.unrestricted).toBe(false);

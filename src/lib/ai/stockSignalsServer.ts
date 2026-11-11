@@ -13,6 +13,13 @@ const NEWS_LIMIT = 10;
 export interface SignalBundle {
   context: BriefContext;
   signals: StockSignals;
+  /** The loaded inputs, for callers that need more than the signals (the stock analysts' daily check). */
+  raw: {
+    bars: ReturnType<typeof toBars>;
+    range52: ReturnType<typeof resolveRange52>;
+    news: Awaited<ReturnType<typeof getNews>>['items'];
+    peers: NonNullable<Awaited<ReturnType<typeof getPeers>>>;
+  };
 }
 
 /** Null when the company itself cannot be loaded. Everything else degrades to "not available". */
@@ -37,6 +44,7 @@ export async function loadSignalBundle(symbol: string): Promise<SignalBundle | n
   const lastClose = bars.length ? bars[bars.length - 1].close : null;
   const price = livePrice ?? lastClose;
 
+  const range52 = resolveRange52({ low: quote?.week52_low ?? null, high: quote?.week52_high ?? null }, bars);
   const signals = buildSignals({
     sector: company.sector,
     industry: company.industry,
@@ -44,7 +52,7 @@ export async function loadSignalBundle(symbol: string): Promise<SignalBundle | n
     peers: peers ?? [],
     price,
     bars,
-    range52: resolveRange52({ low: quote?.week52_low ?? null, high: quote?.week52_high ?? null }, bars),
+    range52,
     profitAndLoss: pl ?? [],
     balanceSheet: bs ?? [],
     cashFlow: cf ?? [],
@@ -60,5 +68,6 @@ export async function loadSignalBundle(symbol: string): Promise<SignalBundle | n
       news: news.items.map((n) => ({ title: n.title, sentiment: n.sentiment, published_at: n.published_at })),
     },
     signals,
+    raw: { bars, range52, news: news.items, peers: peers ?? [] },
   };
 }

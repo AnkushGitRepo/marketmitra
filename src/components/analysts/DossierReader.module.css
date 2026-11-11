@@ -1,0 +1,128 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.h {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+  font-weight: 500;
+}
+
+.text {
+  margin: 0 0 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--app-ink);
+}
+
+.note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pillar {
+  border: 1px solid var(--app-border-soft);
+  border-left-width: 3px;
+  border-radius: var(--radius-lg);
+  padding: 8px 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.good {
+  border-left-color: var(--app-gain);
+}
+
+.bad {
+  border-left-color: var(--app-loss);
+}
+
+.journal {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.entry {
+  border-left: 2px solid var(--app-border);
+  padding: 2px 0 2px 12px;
+}
+
+.entry[data-alert='medium'] {
+  border-left-color: #c58a1b;
+}
+
+.entry[data-alert='high'] {
+  border-left-color: var(--app-loss);
+}
+
+.entryHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.kind {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+
+.impact {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+.impact_positive {
+  background: var(--app-pill-bg);
+  color: var(--app-gain);
+}
+
+.impact_neutral {
+  background: var(--app-pill-bg);
+  color: var(--app-text-muted);
+}
+
+.impact_negative {
+  background: var(--app-loss-bg);
+  color: var(--app-loss-text);
+}
+
+.when {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--app-text-faint);
+}
+
+.entryTitle {
+  margin: 0 0 2px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--app-ink);
+}

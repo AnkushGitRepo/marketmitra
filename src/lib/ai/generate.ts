@@ -1,5 +1,21 @@
-import { generateText, stepCountIs, streamText, type ModelMessage, type ToolSet } from 'ai';
+import { generateText, Output, stepCountIs, streamText, type ModelMessage, type ToolSet } from 'ai';
+import type { z } from 'zod';
 import { resolveModel, type AiConfig } from './providers';
+
+/**
+ * A log-safe summary of a failed model call: the error type and HTTP status only. The user-facing message (`normalizeAiError`) can embed the
+ * provider's response body, which may contain prompt or completion fragments, so it is never written to logs.
+ */
+export function failureSummary(err: unknown): string {
+  const e = err as { name?: unknown; statusCode?: unknown; status?: unknown } | null;
+  const name = typeof e?.name === 'string' && /^[A-Za-z0-9_.]{1,60}$/.test(e.name) ? e.name : 'Error';
+  const code = typeof e?.statusCode === 'number' ? e.statusCode : typeof e?.status === 'number' ? e.status : null;
+  return code === null ? name : `${name} (HTTP ${code})`;
+}
+
+function logFailure(label: string, err: unknown): void {
+  console.error(`[ai] ${label}: ${failureSummary(err)}`);
+}
 
 export interface GenerateResult {
   ok: true;
@@ -49,7 +65,43 @@ export async function generateInsightText(
     }
     return { ok: true, text: clean, model: config.model?.trim() || `${config.provider} (default)`, finishReason };
   } catch (err) {
-    console.error('[ai] generation failed:', err);
+    logFailure('generation failed', err);
+    return { ok: false, error: normalizeAiError(err) };
+  }
+}
+
+export interface ObjectResult<T> {
+  ok: true;
+  object: T;
+  model: string;
+  finishReason?: string;
+}
+
+/**
+ * One generation constrained to a schema (the provider is asked for JSON that matches it), for replies the app must parse. Plain
+ * "reply with JSON" instructions are not reliable: a model can answer with a markdown report instead (seen with the analyst dossier, #128).
+ * Never throws; a provider that cannot do structured output comes back as `{ ok: false, error }` so the caller can fall back to text.
+ */
+export async function generateInsightObject<S extends z.ZodTypeAny>(
+  config: AiConfig,
+  system: string,
+  prompt: string,
+  schema: S,
+  opts: { maxOutputTokens?: number } = {}
+): Promise<ObjectResult<z.infer<S>> | GenerateError> {
+  try {
+    const model = resolveModel(config);
+    const { output, finishReason } = await generateText({
+      model,
+      system,
+      prompt,
+      temperature: 0.4,
+      maxOutputTokens: opts.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
+      output: Output.object({ schema }),
+    });
+    return { ok: true, object: output as z.infer<S>, model: config.model?.trim() || `${config.provider} (default)`, finishReason };
+  } catch (err) {
+    logFailure('structured generation failed', err);
     return { ok: false, error: normalizeAiError(err) };
   }
 }
@@ -111,7 +163,7 @@ export async function validateAiKey(config: AiConfig): Promise<GenerateError | {
     await generateText({ model, prompt: 'Say OK.', maxOutputTokens: 16 });
     return { ok: true };
   } catch (err) {
-    console.error('[ai] key validation failed:', err);
+    logFailure('key validation failed', err);
     return { ok: false, error: normalizeAiError(err) };
   }
 }

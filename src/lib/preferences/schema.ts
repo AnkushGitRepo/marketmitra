@@ -24,6 +24,10 @@ export const preferencesSchema = z.object({
   shortcuts: z.object({
     enabled: z.boolean().default(true),
   }),
+  agents: z.object({
+    /** Automatic stock analysts (Analyst Desk, ADR 0058): one per holding, checked daily with the user's own AI key. The master switch. */
+    auto: z.boolean().default(true),
+  }),
 });
 
 export type Preferences = z.infer<typeof preferencesSchema>;
@@ -34,13 +38,14 @@ export const preferencesPatchSchema = z
     chat: preferencesSchema.shape.chat.partial().strict(),
     display: preferencesSchema.shape.display.partial().strict(),
     shortcuts: preferencesSchema.shape.shortcuts.partial().strict(),
+    agents: preferencesSchema.shape.agents.partial().strict(),
   })
   .partial()
   .strict();
 
 export type PreferencesPatch = z.infer<typeof preferencesPatchSchema>;
 
-export const DEFAULT_PREFERENCES: Preferences = preferencesSchema.parse({ chat: {}, display: {}, shortcuts: {} });
+export const DEFAULT_PREFERENCES: Preferences = preferencesSchema.parse({ chat: {}, display: {}, shortcuts: {}, agents: {} });
 
 /** Resolves anything stored (or nothing) to a complete, valid Preferences object; bad values fall back to defaults. */
 export function resolvePreferences(stored: unknown): Preferences {
@@ -52,7 +57,7 @@ export function resolvePreferences(stored: unknown): Preferences {
     const r = preferencesSchema.shape[key].safeParse(obj[key] ?? {});
     return (r.success ? r.data : DEFAULT_PREFERENCES[key]) as Preferences[K];
   };
-  return { chat: group('chat'), display: group('display'), shortcuts: group('shortcuts') };
+  return { chat: group('chat'), display: group('display'), shortcuts: group('shortcuts'), agents: group('agents') };
 }
 
 /** Applies a validated patch to current preferences without mutating either. */
@@ -61,5 +66,6 @@ export function applyPatch(current: Preferences, patch: PreferencesPatch): Prefe
     chat: { ...current.chat, ...patch.chat },
     display: { ...current.display, ...patch.display },
     shortcuts: { ...current.shortcuts, ...patch.shortcuts },
+    agents: { ...current.agents, ...patch.agents },
   };
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { DossierReader } from '@/components/analysts/DossierReader';
 import { FileTypeIcon } from '@/components/dashboard-charts/FileTypeIcon';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { ShareholdingBarChart } from '@/components/dashboard-charts/ShareholdingBarChart';
@@ -12,7 +13,7 @@ import { FinancialsPanel, type StatementKey } from './FinancialsPanel';
 import { PeersPanel } from './PeersPanel';
 import styles from './DeepDive.module.css';
 
-type TabId = 'financials' | 'peers' | 'shareholding' | 'news' | 'filings';
+type TabId = 'financials' | 'peers' | 'shareholding' | 'news' | 'filings' | 'journal';
 
 interface DeepDiveProps {
   readonly symbol: string;
@@ -38,6 +39,7 @@ export function DeepDive({ symbol, financials, peers, shareholding, news, docume
     { id: 'shareholding', label: 'Shareholding' },
     { id: 'news', label: 'News', count: news.length },
     { id: 'filings', label: 'Filings', count: documents.length },
+    { id: 'journal', label: 'Agent journal' },
   ];
 
   return (
@@ -72,6 +74,7 @@ export function DeepDive({ symbol, financials, peers, shareholding, news, docume
           ) : (
             <p className={styles.note}>No shareholding data available for this company right now.</p>
           ))}
+        {tab === 'journal' && <DossierReader symbol={symbol} />}
         {tab === 'news' && <NewsList items={news} emptyText="No recent news for this stock." />}
         {tab === 'filings' &&
           (documents.length > 0 ? (

@@ -1,0 +1,40 @@
+# Analyst Desk (#128, ADR 0058).
+#
+# Every 20 minutes: gives each holding an analyst, builds pending dossiers and runs the end-of-day check
+# for analysts that are due (after the 15:30 IST close). The endpoint decides what is due, so most runs
+# do nothing and spend nothing; AI is only called for a new dossier or a material event, under a per-user
+# daily cap.
+#
+# ACTIVATION: needs the CRON_SECRET repo secret (same value as on the marketmitra-v2 Vercel project).
+# Fires from the default branch only.
+
+name: stock-analysts
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: stock-analysts
+  cancel-in-progress: false
+
+# Least privilege: this job calls an HTTP endpoint and never touches the repository.
+permissions: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run the analyst sweep
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TARGET_URL: ${{ vars.STOCK_ANALYSTS_URL || 'https://marketmitra-v2.vercel.app/api/cron/stock-analysts' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repo secret is not set - see this workflow's ACTIVATION notes."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --max-time 290 \
+            -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${TARGET_URL}"

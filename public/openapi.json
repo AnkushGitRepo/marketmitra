@@ -5311,6 +5311,291 @@
           }
         }
       }
+    },
+    "/api/analysts": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "List your stock analysts",
+        "description": "The Analyst Desk roster (ADR 0058): one analyst per holding, plus any watchers. Each has a status, the last check, the newest journal entry and whether its dossier is built. Also returns `auto` (the master switch for automatic analysts) and today's AI-call usage against the daily cap. Browser session only, because these endpoints control unattended use of your own AI key.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { auto, usage: { used, cap }, analysts: [{ symbol, source, status, statusNote, hasDossier, summary, lastCheckedAt, latest }] } }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "auto": {
+                          "type": "boolean"
+                        },
+                        "analysts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "symbol": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "holding",
+                                  "watcher"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "initializing",
+                                  "active",
+                                  "paused",
+                                  "error"
+                                ]
+                              },
+                              "statusNote": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "lastCheckedAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Deploy a watcher analyst",
+        "description": "Assigns an analyst to a stock that is not a holding. Body `{ symbol }`. The dossier is built by the scheduled worker. At most 40 analysts per user.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "symbol": "ACC"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "{ success, data: { symbol, status } }"
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Unknown symbol."
+          },
+          "409": {
+            "description": "Analyst limit reached."
+          },
+          "422": {
+            "description": "Invalid body."
+          }
+        }
+      }
+    },
+    "/api/analysts/{symbol}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Read an analyst's dossier and journal",
+        "description": "The baseline dossier (summary, business, three strengths, up to two vulnerabilities, what was not available) and the journal, newest first. Browser session only.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { symbol, source, status, statusNote, dossier, lastCheckedAt, journal: [{ id, ts, kind, title, body, impact, alert }] } }"
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No analyst for this stock."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Pause or resume an analyst",
+        "description": "Body `{ status: \"active\" | \"paused\" }`. Resuming an analyst that never built its dossier returns it to `initializing`.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "paused"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": "paused"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ success, data: { symbol, status } }"
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No analyst for this stock."
+          },
+          "422": {
+            "description": "Invalid body."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Remove an analyst and its journal",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No analyst for this stock."
+          }
+        }
+      }
+    },
+    "/api/cron/stock-analysts": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "security": [
+          {
+            "cronBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ considered, written, skipped, error, pruned, errors }"
+          },
+          "401": {
+            "description": "Bad / missing bearer."
+          },
+          "503": {
+            "description": "CRON_SECRET not set (production)."
+          }
+        },
+        "summary": "Run the stock analyst sweep",
+        "description": "Analyst Desk worker (ADR 0058): gives every holding an analyst, builds pending dossiers and runs the end-of-day check for analysts that are due. Bounded per run; AI is only called for a new dossier or a material event, under a per-user daily cap. Bearer `CRON_SECRET`."
+      }
     }
   }
 }
