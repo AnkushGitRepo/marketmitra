@@ -51,12 +51,11 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const userId = await getCurrentUserId();
   const aiState = Promise.all([
     userId ? resolveHasAiKey(getUserAiConfig(userId)) : Promise.resolve(false),
-    userId ? getCachedInsight('stock', symbol, userId).catch(() => null) : Promise.resolve(null),
     userId ? getCachedInsight('stock_brief', symbol, userId).catch(() => null) : Promise.resolve(null),
     userId ? resolvePromptMode(userId) : Promise.resolve('guarded' as const),
   ]);
 
-  const [company, ratios, shareholding, peers, documents, news, pl, bs, cf, fiveYearPrices, [hasKey, cachedInsight, cachedBrief, promptMode]] =
+  const [company, ratios, shareholding, peers, documents, news, pl, bs, cf, fiveYearPrices, [hasKey, cachedBrief, promptMode]] =
     await Promise.all([
       getCompany(symbol),
       getRatios(symbol),
@@ -82,13 +81,6 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       </div>
     );
   }
-
-  const aiInsight = {
-    hasKey,
-    initial: cachedInsight
-      ? { content: cachedInsight.content, generatedAt: cachedInsight.generatedAt.toISOString() }
-      : null,
-  };
 
   // A cached brief is only reused if it was written in the mode the user is in now: switching
   // modes (local only, ADR 0054) must never show a stale verdict or a stale refusal.
@@ -156,7 +148,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       documents={documents ?? []}
       shareholding={groupShareholding(shareholding ?? [])}
       news={news.items}
-      aiInsight={aiInsight}
+      hasKey={hasKey}
       brief={{ mode: promptMode, initial: briefInitial }}
       financials={{
         profit_and_loss: pivotFinancials(pl ?? [], 'profit_and_loss'),

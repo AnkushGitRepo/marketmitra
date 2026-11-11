@@ -15,8 +15,8 @@ import { withRateLimit } from '@/lib/rateLimit';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-/** A brief is reused for 12 hours per user, symbol and mode, so coming back to the page costs no tokens. */
-const TTL_MS = 12 * 60 * 60 * 1000;
+/** A brief is reused for 24 hours per user, symbol and mode, so coming back to the page costs no tokens. */
+const TTL_MS = 24 * 60 * 60 * 1000;
 /**
  * Room for five points plus the hidden reasoning that "thinking" models spend from the same budget. 4096 was not enough: gemini-3.8-flash
  * used nearly all of it reasoning and was cut off after two points (#117). Only tokens actually used are billed.

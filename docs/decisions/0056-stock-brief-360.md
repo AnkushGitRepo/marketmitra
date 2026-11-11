@@ -34,3 +34,13 @@ are noise, and an LLM must not invent figures.
 - The panel is accurate where the data is, and visibly incomplete where it is not; adding a data source later fills the same fields.
 - Two reads of the same page can differ slightly from the written points if prices moved between generation and viewing; the panel always
   shows current numbers.
+
+## Amendment (#152): one research container
+
+The separate collapsed "Longer AI read" is gone from the stock page: it repeated the brief's numbers as a paragraph and cost a second model call. (`POST /api/insights/stock` stays for API and MCP consumers.) The brief is now the single analysis surface:
+
+- **Valuation sensitivity check** (`src/lib/stock/sensitivity.ts`): computed, no AI and no key. P/E against the peer median; the yearly profit growth needed over 3 years for today's P/E to fall to the peer median, `(P/E ÷ peer median) ^ (1/3) − 1` with the price unchanged; PEG (P/E ÷ 3-year profit CAGR, only for a positive CAGR); and latest-quarter profit growth less sales growth. Each line says how it is made, is worded as arithmetic and not a forecast, and shows "not available" when an input is missing. It replaces the five "not generated yet" placeholders in the empty state and sits in the Valuation tab.
+- **Tabs** on the generated brief: All points, Supports (strength), Weak spots (concern), Valuation (the valuation point plus the sensitivity check). Neutral points show under All. Neutral labels, not Bull / Bear, because "why own it" reads as a recommendation in guarded mode.
+- Figures in point text are bold; the data gaps our free data cannot fill (concall commentary, management and board profiles, pledged shares, analyst reports, 5-year median multiples) are listed rather than implied to be ingested.
+- The brief is cached per user, symbol and input for **24 hours** (was 12), so reopening the page never calls the model.
+

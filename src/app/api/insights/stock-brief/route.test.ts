@@ -59,13 +59,13 @@ describe('POST /api/insights/stock-brief', () => {
     expect((await res.json()).error).toBe('no_ai_key');
   });
 
-  it('returns the parsed points and caches for 12 hours', async () => {
+  it('returns the parsed points and caches for 24 hours', async () => {
     const res = await call();
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.data.brief.points[0]).toMatchObject({ key: 'quality', signal: 'strength' });
     expect(body.data.mode).toBe('guarded');
-    expect(state.ttl).toBe(12 * 60 * 60 * 1000);
+    expect(state.ttl).toBe(24 * 60 * 60 * 1000);
   });
 
   it('strips a verdict the model produced when guarded', async () => {

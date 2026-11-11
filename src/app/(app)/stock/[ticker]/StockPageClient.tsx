@@ -5,7 +5,6 @@ import { Suspense, use, useEffect, useMemo, useState } from 'react';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
 import { AlertModal } from '@/components/alerts/AlertModal';
 import Link from 'next/link';
-import { InsightCard } from '@/components/dashboard-charts/InsightCard';
 import { DeepDive } from '@/components/stock/DeepDive';
 import type { StatementKey } from '@/components/stock/FinancialsPanel';
 import { KeyTiles } from '@/components/stock/KeyTiles';
@@ -57,7 +56,7 @@ interface StockPageClientProps {
   peers: PeerOut[];
   documents: DocumentOut[];
   news: NewsItem[];
-  aiInsight: { hasKey: boolean; initial: { content: string; generatedAt: string } | null };
+  hasKey: boolean;
   brief: { mode: PromptMode; initial: BriefData | null };
   shareholding: ShareholdingSeries[];
   financials: Record<StatementKey, FinTable>;
@@ -120,7 +119,7 @@ export function StockPageClient({
   peers,
   documents,
   news,
-  aiInsight,
+  hasKey,
   brief,
   shareholding,
   financials,
@@ -199,11 +198,10 @@ export function StockPageClient({
         <Suspense fallback={<div className={styles.briefPlaceholder} aria-hidden="true" />}>
           <BriefSection
             symbol={symbol}
-            hasKey={aiInsight.hasKey}
+            hasKey={hasKey}
             mode={brief.mode}
             initial={brief.initial}
             signals={signals}
-            longRead={<InsightCard label="AI read" endpoint="/api/insights/stock" body={{ symbol }} initial={aiInsight.initial} hasKey={aiInsight.hasKey} />}
           />
         </Suspense>
       </div>
