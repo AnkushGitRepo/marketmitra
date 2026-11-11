@@ -43,6 +43,13 @@ the first release covers dossier + journal, morning dispatch, thesis invalidatio
   It is one model call with no tools, session-only, rate limited, not counted against the daily cap (the user starts it and sees it), and follows the
   guarded / unrestricted mode. Dossier and journal text is embedded as untrusted data. The prompts say what is not in our data, and forbid telling the
   user what to do with a position, because a real run showed the model drifting to "cut losses" wording under the plain guardrail. Chats are not saved.
+- **Morning dispatch (#129):** a workflow at 08:30 IST (`analyst-dispatch.yml`, `POST /api/cron/analyst-dispatch`) rolls each user's last 24 hours of
+  analyst journals into one brief: priority (earnings, 52-week highs and lows, anything medium or high), overnight developments, and a one-line
+  highlight per analyst. It is **deterministic and free** (it arranges entries that already exist, no AI call). It is saved once per user per India day
+  (`analystDispatches`, unique on user and day, which also stops a re-run sending twice), shown in the desk's Morning brief panel, and sent through the
+  existing alert-email path (the user's email switch and address). A user with no vigilant analyst, nothing material, or automatic analysts off gets nothing.
+  Preview and Send test are on the Agents page. Email and in-app only: no Slack, Telegram or WhatsApp here. It reuses the plain alert email template until the
+  maintainer supplies a designed one.
 
 ## Consequences
 

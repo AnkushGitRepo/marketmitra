@@ -69,7 +69,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
 
   return (
     <section className={styles.desk} aria-label="Analyst desk">
-      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} onChat={() => setPanel({ kind: 'chat', symbol: null })} />
+      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} onChat={() => setPanel({ kind: 'chat', symbol: null })} onBrief={() => setPanel({ kind: 'brief' })} />
 
       <div className={styles.autonomy}>
         <p className={styles.autonomyText}>

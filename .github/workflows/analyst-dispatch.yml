@@ -1,0 +1,38 @@
+# Analyst Desk morning dispatch (#129, ADR 0058).
+#
+# 08:30 IST (03:00 UTC) every day: rolls up what each user's analysts logged in the last 24 hours into one in-app brief and one
+# email. Free (no AI call); the endpoint skips users with nothing material and never sends a second brief for the same India day.
+#
+# ACTIVATION: needs the CRON_SECRET repo secret (same value as on the marketmitra-v2 Vercel project).
+# Fires from the default branch only; GitHub may delay scheduled runs by several minutes.
+
+name: analyst-dispatch
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: analyst-dispatch
+  cancel-in-progress: false
+
+# Least privilege: this job calls an HTTP endpoint and never touches the repository.
+permissions: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Send the morning dispatch
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TARGET_URL: ${{ vars.ANALYST_DISPATCH_URL || 'https://marketmitra-v2.vercel.app/api/cron/analyst-dispatch' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repo secret is not set - see this workflow's ACTIVATION notes."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --max-time 290 \
+            -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${TARGET_URL}"

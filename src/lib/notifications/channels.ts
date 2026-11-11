@@ -161,7 +161,7 @@ function renderEmail(payload: NotificationPayload): { subject: string; html: str
   const html = `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;color:#16191c">
   <p style="font:600 11px/1 ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#8a9299;margin:0 0 6px">${esc(kindLabel)}</p>
   <h1 style="font-size:19px;font-weight:600;margin:0 0 10px">${esc(payload.title)}</h1>
-  <p style="font-size:14px;line-height:1.55;color:#4a5158;margin:0 0 18px">${esc(payload.body)}</p>
+  <p style="font-size:14px;line-height:1.55;color:#4a5158;margin:0 0 18px;white-space:pre-line">${esc(payload.body)}</p>
   <p style="margin:0 0 24px"><a href="${esc(link)}" style="display:inline-block;background:#16191c;color:#fff;text-decoration:none;border-radius:999px;padding:9px 20px;font-size:13px">Open MarketMitra</a></p>
   <p style="font-size:11.5px;color:#8a9299;margin:0">Not investment advice. You&rsquo;re receiving this because you set up an alert in MarketMitra.</p>
 </div>`;

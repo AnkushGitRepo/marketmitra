@@ -148,6 +148,17 @@ export async function countEvents(userId: string, symbols: readonly string[]): P
   return Object.fromEntries(rows.map((r) => [r._id, r.n]));
 }
 
+/** Every journal entry the user's analysts logged since `since`, newest first, for the morning dispatch. */
+export async function recentEntries(userId: string, since: Date, limit = 400): Promise<JournalEntry[]> {
+  const docs = await (await journal()).find({ userId, ts: { $gte: since } }).sort({ ts: -1 }).limit(limit).toArray();
+  return docs.map(toEntry);
+}
+
+/** Users with at least one vigilant analyst. */
+export async function listUsersWithActiveAnalysts(onlyUserId?: string): Promise<string[]> {
+  return (await analysts()).distinct('userId', { status: 'active', ...(onlyUserId ? { userId: onlyUserId } : {}) });
+}
+
 export async function getUsage(userId: string, now: Date = new Date()): Promise<Usage> {
   const day = istDay(now);
   const d = await (await usageCol()).findOne({ userId, day });
