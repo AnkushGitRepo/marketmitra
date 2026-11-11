@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { buildMcpClients, buildToolCallBody, type McpClientId } from '@/lib/api-docs/mcpClients';
 import type { McpToolDoc } from '@/lib/api-docs/mcpTools';
+import { evaluateChecks, type Check } from '@/lib/api-docs/checks';
+import { ChecksPanel } from './ChecksPanel';
 import { fmt } from './restDocs';
 import styles from './page.module.css';
 
@@ -72,7 +74,22 @@ export function McpHub({ url, tools }: McpHubProps) {
 function ToolCard({ tool }: { tool: McpToolDoc }) {
   const body = buildToolCallBody(tool.name, tool.exampleArgs);
   const [running, setRunning] = useState(false);
-  const [output, setOutput] = useState<{ ok: boolean; text: string; ms: number } | null>(null);
+  const [output, setOutput] = useState<{
+    ok: boolean;
+    text: string;
+    raw: string;
+    status: number;
+    headers: Record<string, string>;
+    ms: number;
+  } | null>(null);
+  const [checks, setChecks] = useState<Check[]>([
+    { kind: 'status', equals: 200 },
+    { kind: 'jsonPath', path: 'result.content', mode: 'exists' },
+  ]);
+  const report = useMemo(
+    () => (output ? evaluateChecks(checks, { status: output.status, headers: output.headers, body: output.raw }) : null),
+    [output, checks]
+  );
 
   const run = async () => {
     setRunning(true);
@@ -86,12 +103,22 @@ function ToolCard({ tool }: { tool: McpToolDoc }) {
         body,
       });
       const text = await res.text();
-      // eslint-disable-next-line react-hooks/purity -- inside an async event handler, not render
-      setOutput({ ok: res.ok, text: fmt(text), ms: Date.now() - started });
+      setOutput({
+        ok: res.ok,
+        text: fmt(text),
+        raw: text,
+        status: res.status,
+        headers: Object.fromEntries([...res.headers.entries()].map(([k, v]) => [k.toLowerCase(), v])),
+        // eslint-disable-next-line react-hooks/purity -- inside an async event handler, not render
+        ms: Date.now() - started,
+      });
     } catch (e) {
       setOutput({
         ok: false,
         text: e instanceof Error ? e.message : 'Request failed',
+        raw: '',
+        status: 0,
+        headers: {},
         // eslint-disable-next-line react-hooks/purity -- inside an async event handler, not render
         ms: Date.now() - started,
       });
@@ -141,6 +168,7 @@ function ToolCard({ tool }: { tool: McpToolDoc }) {
       <pre className={styles.pre}>
         <code>{JSON.stringify(JSON.parse(body), null, 2)}</code>
       </pre>
+      <ChecksPanel checks={checks} onChange={setChecks} report={report} />
       <button type="button" className={styles.btnPrimary} onClick={run} disabled={running}>
         {running ? 'Running…' : 'Run example'}
       </button>

@@ -217,6 +217,9 @@ export interface RunResult {
   statusText: string;
   ms: number;
   body: string;
+  /** Unformatted response text and lower-cased headers, for check evaluation. */
+  raw: string;
+  headers: Record<string, string>;
   rateLimit?: string;
   ok: boolean;
 }
