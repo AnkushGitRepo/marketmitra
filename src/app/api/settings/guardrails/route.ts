@@ -8,7 +8,7 @@ import { getAutoGuardrailsEnabled, setAutoGuardrailsEnabled } from '@/lib/userSe
 // off-switch for that behavior.
 
 export async function GET() {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
   const enabled = await getAutoGuardrailsEnabled(userId).catch(() => true);
   return NextResponse.json({ success: true, data: { enabled } });
@@ -17,7 +17,7 @@ export async function GET() {
 const putSchema = z.object({ enabled: z.boolean() });
 
 export async function PUT(request: Request) {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
 
   const parsed = putSchema.safeParse(await request.json().catch(() => null));

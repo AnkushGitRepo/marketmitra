@@ -12,7 +12,7 @@ export const maxDuration = 30;
  * is never part of the response: only the provider, model and the measured latency are returned.
  */
 async function handlePOST() {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
 
   const config = await getUserAiConfig(userId).catch(() => null);

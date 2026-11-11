@@ -26,14 +26,14 @@ const putSchema = z.object({
 
 
 export async function GET() {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
   const view = await getNotificationChannelSettingsView(userId).catch(() => null);
   return NextResponse.json({ success: true, data: view, meta: { encConfigured: isEncKeyConfigured() } });
 }
 
 export async function PUT(request: Request) {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
   if (!isEncKeyConfigured()) {
     return NextResponse.json(

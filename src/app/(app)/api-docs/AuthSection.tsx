@@ -18,8 +18,8 @@ const AUTH_MODES: Array<{ title: string; who: string; how: string }> = [
   },
   {
     title: 'Personal access tokens',
-    who: 'Programmatic access to your own data',
-    how: 'Not available yet — tracked in issue #91.',
+    who: 'Your own scripts, bots and cron jobs (hosted mode)',
+    how: 'Authorization: Bearer <token>. Create one in Settings > Account; read-only or read & write. Not accepted on /api/settings, cron, advisor or logs.',
   },
 ];
 

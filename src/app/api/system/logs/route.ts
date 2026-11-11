@@ -11,7 +11,7 @@ import { listEvents, type EventLevel } from '@/lib/system/eventLog';
 const LEVELS: EventLevel[] = ['info', 'warn', 'error'];
 
 export async function GET(request: Request) {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) {
     return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
   }

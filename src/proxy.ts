@@ -2,6 +2,7 @@ import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { isHosted } from '@/lib/deployment-mode';
 import { isCrossSiteWrite } from '@/lib/security/csrf';
+import { checkPatRequest } from '@/lib/tokens/pat';
 import { checkRateLimit, rateLimitResponse, rateLimitHeaders } from '@/lib/rateLimit';
 
 // App pages live at the top level (see src/lib/routes.ts); keep this list in sync (a test enforces it).
@@ -45,7 +46,15 @@ const hostedProxy = clerkMiddleware(async (auth, req) => {
   // Rate-limited API routes are never app pages, so handle them and return.
   if (isDefaultRateLimited(req) && !isRateLimitExempt(req)) {
     const { userId } = await auth();
-    const result = await checkRateLimit(req, 'default', { userId });
+    // A personal access token is rate limited per token (same tier), not per IP.
+    const pat = patDecision(req);
+    if (pat.kind === 'allow') {
+      // Any well-formed token string gets its own bucket, so guard by IP first: random tokens must not
+      // be a way around the limit or a free path to a database lookup per request.
+      const ipResult = await checkRateLimit(req, 'default', { userId: null, ipAtAuthedRate: true });
+      if (!ipResult.ok) return rateLimitResponse(ipResult);
+    }
+    const result = await checkRateLimit(req, 'default', { userId: pat.kind === 'allow' ? pat.rateKey : userId });
     if (!result.ok) return rateLimitResponse(result);
     const res = NextResponse.next();
     for (const [k, v] of Object.entries(rateLimitHeaders(result))) res.headers.set(k, v);
@@ -58,6 +67,14 @@ const hostedProxy = clerkMiddleware(async (auth, req) => {
 });
 
 const isMcpRoute = createRouteMatcher(['/api/mcp(.*)']);
+
+function patDecision(req: NextRequest) {
+  return checkPatRequest({
+    method: req.method,
+    path: req.nextUrl.pathname,
+    authorization: req.headers.get('authorization'),
+  });
+}
 
 export default function proxy(req: NextRequest, event: NextFetchEvent) {
   // CSRF: refuse state-changing API calls a browser makes from another site.
@@ -77,6 +94,11 @@ export default function proxy(req: NextRequest, event: NextFetchEvent) {
 
   if (!isHosted()) {
     return NextResponse.next();
+  }
+  // Personal access tokens (ADR 0053): cheap scope / path gate here; the database check is in getCurrentUserId.
+  const pat = patDecision(req);
+  if (pat.kind === 'deny') {
+    return NextResponse.json({ success: false, error: pat.error }, { status: pat.status });
   }
   return hostedProxy(req, event);
 }

@@ -65,6 +65,12 @@
         "type": "http",
         "scheme": "bearer",
         "description": "CRON_SECRET bearer token."
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "mm_pat_r_… (read) / mm_pat_w_… (write)",
+        "description": "Personal access token, hosted mode only. Create one in Settings > Account > API access tokens; it is shown once. A read token allows GET only, a write token allows all methods. Tokens work on the data API and are rejected on /api/settings, /api/cron, /api/advisor and /api/system/logs. Rate limited per token."
       }
     },
     "schemas": {
@@ -512,6 +518,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -541,6 +550,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -598,6 +610,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -654,6 +669,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -689,6 +707,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -718,6 +739,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -778,6 +802,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -836,6 +863,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -870,6 +900,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -890,6 +923,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -937,6 +973,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -985,6 +1024,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -1020,6 +1062,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -1095,6 +1140,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -1117,6 +1165,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1262,6 +1313,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1314,6 +1368,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1358,6 +1415,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1410,6 +1470,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1493,6 +1556,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1550,6 +1616,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -1621,6 +1690,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1691,6 +1763,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -1860,6 +1935,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1910,6 +1988,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1992,6 +2073,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -2046,6 +2130,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -2095,6 +2182,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -2149,6 +2239,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -2184,6 +2277,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -2275,6 +2371,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -3588,6 +3687,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "description": "Newest first. `q` filters by title. On a user's first visit the old single widget thread is migrated into a first conversation \"Earlier chat\".",
@@ -3618,6 +3720,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -3660,6 +3765,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -3684,6 +3792,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "description": "Returns the conversation and its stored AI SDK UI messages (text, file and tool parts), oldest first.",
@@ -3717,6 +3828,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -3771,6 +3885,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "description": "Deletes the conversation, its messages and its stored attachments.",
@@ -3806,6 +3923,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "description": "Server-authoritative history: send only the new user message. Attachments are references (`/api/mitra/files/{id}`) returned by the upload endpoint and must belong to the caller and this conversation. Streams the AI SDK UI-message format (SSE), runs the investing-focused agentic loop (same read-only tool allow-list and guardrail as the widget), and persists both turns. Long conversations are windowed, with older turns folded into a stored summary. Rate limited (ai tier).",
@@ -3911,6 +4031,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "description": "multipart/form-data with `file` and `conversationId`. Allowed: images (PNG/JPEG/GIF/WebP), PDF, audio (MP3/WAV/OGG/FLAC/M4A/WebM) and .txt/.csv/.md. The type is decided from the file's bytes, not its name. Max 4 MB per file, 50 MB per user.",
@@ -3971,6 +4094,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "description": "Owner-only. Supports `Range` requests (206) so audio can seek. Served with nosniff and a sandbox CSP.",
@@ -4010,6 +4136,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "description": "Only for files not yet part of a sent message.",
@@ -4216,6 +4345,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -4241,6 +4373,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -4309,6 +4444,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -4356,6 +4494,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -4403,6 +4544,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -4537,6 +4681,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -4592,6 +4739,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -4643,6 +4793,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -4699,6 +4852,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -4736,6 +4892,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -4828,6 +4987,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -4893,6 +5055,204 @@
         },
         "deprecated": true,
         "description": "Deprecated: use `/api/watchlists/{id}/symbols/{symbol}`. Same behaviour; kept so existing clients keep working."
+      }
+    },
+    "/api/settings/tokens": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "List your access tokens",
+        "description": "Browser session only (a token cannot list tokens). Never returns a token or its hash. In self-host mode returns `enabled: false`.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { enabled, tokens: [{ id, name, scope, prefix, createdAt, expiresAt, lastUsedAt, status }] } }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "tokens": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "scope": {
+                                "type": "string",
+                                "enum": [
+                                  "read",
+                                  "write"
+                                ]
+                              },
+                              "prefix": {
+                                "type": "string",
+                                "description": "First characters of the token, to recognise it. Not secret."
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "expiresAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              },
+                              "lastUsedAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "active",
+                                  "expired",
+                                  "revoked"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Create an access token",
+        "description": "Browser session only. Body `{ name, scope: read|write, expiry?: never|30d|90d|365d }` (default 90d). The plaintext `token` is returned once, here, and never again; only its SHA-256 hash is stored. At most 10 active tokens per user. Hosted mode only.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "scope"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "read",
+                      "write"
+                    ]
+                  },
+                  "expiry": {
+                    "type": "string",
+                    "enum": [
+                      "never",
+                      "30d",
+                      "90d",
+                      "365d"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "name": "nightly script",
+                "scope": "read",
+                "expiry": "90d"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "{ success, data: { token, id, name, scope, prefix, createdAt, expiresAt, lastUsedAt, status } }. Copy `token` now."
+          },
+          "400": {
+            "description": "Self-host mode: tokens are not used."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Token limit reached."
+          },
+          "422": {
+            "description": "Invalid body."
+          }
+        }
+      }
+    },
+    "/api/settings/tokens/{id}": {
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Revoke an access token",
+        "description": "Browser session only. Takes effect immediately.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not yours / already revoked."
+          }
+        }
       }
     }
   }

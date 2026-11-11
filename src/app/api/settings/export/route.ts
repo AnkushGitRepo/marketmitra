@@ -14,7 +14,7 @@ export const maxDuration = 60;
 
 /** Everything the caller owns, as one JSON download. Secrets (AI key, channel tokens) are never included. */
 export async function GET() {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, data: null, error: 'Not authenticated' }, { status: 401 });
   try {
     const [holdings, notes, alerts, wishlists, preferences, convos] = await Promise.all([

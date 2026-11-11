@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // Whether a triggered alert is also emailed (on by default), plus whether that email can actually be sent and the last outcome.
 
 export async function GET() {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
   return NextResponse.json({ success: true, data: await getEmailAlertStatus(userId) });
 }
@@ -17,7 +17,7 @@ export async function GET() {
 const putSchema = z.object({ enabled: z.boolean() });
 
 export async function PUT(request: Request) {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
 
   const parsed = putSchema.safeParse(await request.json().catch(() => null));

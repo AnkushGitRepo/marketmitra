@@ -1,0 +1,73 @@
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.reveal {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-lg);
+  background: var(--app-pill-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.secret {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  word-break: break-all;
+  user-select: all;
+  color: var(--app-ink);
+}
+
+.revealActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-lg);
+}
+
+.item[data-status='revoked'],
+.item[data-status='expired'] {
+  opacity: 0.6;
+}
+
+.prefix {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--app-text-faint);
+}

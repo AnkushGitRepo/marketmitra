@@ -2,7 +2,7 @@
 
 Documented public API endpoints, intended for both the human dashboard UI and AI agent consumers. This describes the system **as it currently stands** — updated per feature, never pruned or archived.
 
-Every endpoint here is a Next.js App Router route handler under `app/api/**/route.ts` (see [ADR 0004](./decisions/0004-nextjs-api-routes-as-backend.md)). Auth is via Clerk session ([ADR 0005](./decisions/0005-clerk-auth.md)) unless marked public.
+Every endpoint here is a Next.js App Router route handler under `app/api/**/route.ts` (see [ADR 0004](./decisions/0004-nextjs-api-routes-as-backend.md)). Auth is via Clerk session ([ADR 0005](./decisions/0005-clerk-auth.md)), or in hosted mode a personal access token (`Authorization: Bearer mm_pat_…`, [ADR 0053](./decisions/0053-personal-access-tokens.md)), unless marked public.
 
 ## Conventions
 
@@ -422,3 +422,16 @@ Template for a new entry:
 - **Rate limits:** <if any>
 - **Errors:** <notable error cases>
 -->
+
+
+## Personal access tokens (ADR 0053)
+
+Hosted mode only; self-host is already open. Create, list and revoke tokens in Settings > Account, or with the browser-session-only
+endpoints below. A token is shown once at creation and only its SHA-256 hash is stored.
+
+- `GET /api/settings/tokens` — list your tokens (`id, name, scope, prefix, createdAt, expiresAt, lastUsedAt, status`); never the secret. Session only.
+- `POST /api/settings/tokens` — body `{ name, scope: "read"|"write", expiry?: "never"|"30d"|"90d"|"365d" }` (default 90d). Returns `201` with the plaintext `token` once; `409` at 10 active tokens. Session only.
+- `DELETE /api/settings/tokens/{id}` — revoke, effective immediately. Session only.
+
+Using a token: `Authorization: Bearer <token>`. `read` allows GET/HEAD/OPTIONS, `write` allows all methods. Tokens are rejected (403) on
+`/api/settings/*`, `/api/cron`, `/api/advisor`, `/api/system/logs` and on any non-`/api` path, and are rate limited per token.

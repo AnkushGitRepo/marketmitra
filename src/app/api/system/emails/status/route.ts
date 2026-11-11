@@ -9,7 +9,7 @@ const err = (error: string, status: number) => NextResponse.json({ success: fals
 
 /** Operator-only: can outgoing email reach real users, and if not, why. Read-only. */
 export async function GET() {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return err('Not authenticated', 401);
   if (!isAdminUser(userId)) return err('Forbidden', 403);
   return NextResponse.json({ success: true, data: await getEmailDiagnosis(), error: null });

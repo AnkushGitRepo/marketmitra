@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AccountSection, LocalAccountSection } from '@/app/(app)/settings/AccountSection';
+import { TokensSection } from '@/app/(app)/settings/TokensSection';
 import { AboutSection } from '@/app/(app)/settings/DataAndAboutSections';
 import { usePreferences } from '@/app/(app)/settings/usePreferenceSaver';
 import type { EmailAlertStatus } from '@/lib/notifications/emailStatus';
@@ -80,7 +81,14 @@ export function SettingsTabs({ initialTab, hosted, isAdmin, encConfigured, aiVie
       <div id={`settings-panel-${tab}`} role="tabpanel" aria-labelledby={`settings-tab-${tab}`} className={styles.panel}>
         {tab === 'account' && (
           <>
-            {hosted ? <AccountSection /> : <LocalAccountSection />}
+            {hosted ? (
+              <>
+                <AccountSection />
+                <TokensSection />
+              </>
+            ) : (
+              <LocalAccountSection />
+            )}
             <AboutSection hosted={hosted} isAdmin={isAdmin} />
           </>
         )}
