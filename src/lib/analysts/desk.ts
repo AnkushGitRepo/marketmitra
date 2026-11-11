@@ -37,6 +37,7 @@ const ATTENTION_LEVELS: readonly AlertLevel[] = ['medium', 'high'];
 
 /** Why an analyst needs a look, or null. A medium or high alert in the last 48 hours, or an analyst in error. */
 export function attentionReason(a: RosterAnalyst, now: Date): string | null {
+  if (isStalled(a)) return 'Dossier stalled. Retry it from its card.';
   if (a.status === 'error') return a.statusNote ?? 'The analyst hit an error.';
   const e = a.latest;
   if (e && ATTENTION_LEVELS.includes(e.alert) && now.getTime() - new Date(e.ts).getTime() <= ATTENTION_WINDOW_MS) return e.title;
@@ -100,6 +101,38 @@ export function canAnalyzeNow(a: RosterAnalyst): boolean {
 /** An analyst whose dossier build failed (as opposed to one whose later check failed). */
 export const isStalled = (a: RosterAnalyst): boolean => a.status === 'error' && !a.hasDossier;
 
+export const stalledCount = (list: readonly RosterAnalyst[]): number => list.filter(isStalled).length;
+
+export type PrimaryAction =
+  | { kind: 'dossier'; label: 'View dossier' }
+  | { kind: 'retry'; label: 'Retry' }
+  | { kind: 'analyze'; label: 'Analyze now' }
+  | { kind: 'key'; label: 'Add AI key' }
+  | { kind: 'resume'; label: 'Resume' };
+
+/**
+ * The one button a card leads with, by state: read the dossier when there is one, otherwise the step that moves it forward. A stalled analyst
+ * gets Retry (never Resume beside it), a waiting one Analyze now, one without a key a link to Settings.
+ */
+export function primaryAction(a: RosterAnalyst): PrimaryAction {
+  if (a.hasDossier) return { kind: 'dossier', label: 'View dossier' };
+  if (isStalled(a)) return { kind: 'retry', label: 'Retry' };
+  if (a.status === 'paused') return { kind: 'resume', label: 'Resume' };
+  if (a.status === 'initializing' && /AI key/i.test(a.statusNote ?? '')) return { kind: 'key', label: 'Add AI key' };
+  return { kind: 'analyze', label: 'Analyze now' };
+}
+
+export type MenuAction = { id: 'pause' | 'resume' | 'remove'; label: string; danger?: boolean };
+
+/** The management actions tucked into the card's ⋯ menu. Resume only when it is the way back (paused, or a built analyst in error). */
+export function menuActions(a: RosterAnalyst): MenuAction[] {
+  const items: MenuAction[] = [];
+  if (a.status === 'paused' || (a.status === 'error' && a.hasDossier)) items.push({ id: 'resume', label: 'Resume' });
+  else if (!isStalled(a)) items.push({ id: 'pause', label: 'Pause' });
+  if (a.source === 'watcher') items.push({ id: 'remove', label: 'Remove watcher', danger: true });
+  return items;
+}
+
 export function matchesFilter(a: RosterAnalyst, filter: DeskFilter, now: Date): boolean {
   switch (filter) {
     case 'all':
@@ -130,6 +163,8 @@ export interface DeskSummary {
   attention: Array<{ symbol: string; reason: string }>;
   waiting: number;
   paused: number;
+  /** Analysts whose dossier build failed, so the deck can offer Retry all. */
+  stalled: number;
   /** The most recent journal entry across the desk, if any. */
   latest: { symbol: string; title: string; ts: string } | null;
 }
@@ -149,6 +184,7 @@ export function summarizeDesk(list: readonly RosterAnalyst[], now: Date): DeskSu
     attention,
     waiting: list.filter((a) => a.status === 'initializing').length,
     paused: list.filter((a) => a.status === 'paused').length,
+    stalled: stalledCount(list),
     latest: newest ?? null,
   };
 }

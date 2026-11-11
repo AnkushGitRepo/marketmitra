@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { attentionReason, canAnalyzeNow, isStalled, queueLabel, queueState, type RosterAnalyst } from '@/lib/analysts/desk';
+import { attentionReason, isStalled, menuActions, primaryAction, queueLabel, queueState, type RosterAnalyst } from '@/lib/analysts/desk';
 import { agoLabel, statusView } from '@/lib/analysts/format';
+import { CardMenu } from './CardMenu';
 import styles from './AnalystDesk.module.css';
 
 interface AnalystCardProps {
@@ -30,7 +31,13 @@ export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onChat,
       : queue
         ? { label: queue, tone: needsKey ? ('bad' as const) : queue.startsWith('Scheduled') || queue.startsWith('Daily') ? ('warn' as const) : ('wait' as const) }
         : statusView(a.status, a.statusNote);
-  const analyzing = busy === `analyze-${a.symbol}`;
+  const primary = primaryAction(a);
+  const primaryBusy = busy === `analyze-${a.symbol}` || (primary.kind === 'resume' && busy === `status-${a.symbol}`);
+  const runPrimary = () => {
+    if (primary.kind === 'dossier') onRead(a.symbol);
+    else if (primary.kind === 'resume') onSetStatus(a.symbol, 'active');
+    else onAnalyze(a.symbol);
+  };
   const up = (a.quote?.changePct ?? 0) >= 0;
   return (
     <li className={styles.card} data-attention={attention ? 'true' : undefined}>
@@ -67,36 +74,24 @@ export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onChat,
         !a.latest && !attention && <p className={styles.latest}>{a.statusNote ?? 'No journal entries yet.'}</p>
       )}
       <div className={styles.actions}>
-        <button type="button" className={styles.link} onClick={() => onRead(a.symbol)}>
-          Read dossier
-        </button>
-        <button type="button" className={styles.link} onClick={() => onChat(a.symbol)}>
-          Chat with analyst
-        </button>
-        {canAnalyzeNow(a) && (
-          <button type="button" className={styles.link} disabled={analyzing} onClick={() => onAnalyze(a.symbol)}>
-            {analyzing ? 'Analyzing…' : stalled ? 'Retry now' : 'Analyze now'}
-          </button>
-        )}
-        {needsKey && (
-          <Link href="/settings" className={styles.link}>
-            Add AI key
+        {primary.kind === 'key' ? (
+          <Link href="/settings" className={styles.primary}>
+            {primary.label}
           </Link>
-        )}
-        {a.status === 'paused' || a.status === 'error' ? (
-          <button type="button" className={styles.link} disabled={busy === `status-${a.symbol}`} onClick={() => onSetStatus(a.symbol, 'active')}>
-            Resume
-          </button>
         ) : (
-          <button type="button" className={styles.link} disabled={busy === `status-${a.symbol}`} onClick={() => onSetStatus(a.symbol, 'paused')}>
-            Pause
+          <button type="button" className={primary.kind === 'dossier' ? styles.outline : styles.primary} disabled={primaryBusy} onClick={runPrimary}>
+            {primaryBusy ? 'Working…' : primary.label}
           </button>
         )}
-        {a.source === 'watcher' && (
-          <button type="button" className={styles.linkDanger} disabled={busy === `rm-${a.symbol}`} onClick={() => onRemove(a.symbol)}>
-            Remove
-          </button>
-        )}
+        <button type="button" className={styles.outline} onClick={() => onChat(a.symbol)}>
+          Chat
+        </button>
+        <CardMenu
+          label={`More actions for ${a.symbol}`}
+          items={menuActions(a)}
+          disabled={busy === `status-${a.symbol}` || busy === `rm-${a.symbol}`}
+          onSelect={(id) => (id === 'remove' ? onRemove(a.symbol) : onSetStatus(a.symbol, id === 'resume' ? 'active' : 'paused'))}
+        />
       </div>
     </li>
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attentionReason, canAnalyzeNow, deskHeadline, isStalled, tomorrowCount, filterAnalysts, filterCounts, queueLabel, queueState, summarizeDesk, type RosterAnalyst } from './desk';
+import { attentionReason, canAnalyzeNow, deskHeadline, isStalled, menuActions, primaryAction, stalledCount, tomorrowCount, filterAnalysts, filterCounts, queueLabel, queueState, summarizeDesk, type RosterAnalyst } from './desk';
 import type { JournalEntry } from './types';
 
 const NOW = new Date('2026-11-11T12:00:00Z');
@@ -93,5 +93,30 @@ describe('filters and summary', () => {
     expect(deskHeadline(summarizeDesk(list, NOW))).toBe('5 analysts: 1 vigilant, 2 need attention, 1 building, 1 paused.');
     expect(deskHeadline(summarizeDesk([analyst('A'), analyst('B', { latest: entry() })], NOW))).toBe('2 analysts: 1 vigilant, 1 needs attention.');
     expect(deskHeadline(summarizeDesk([], NOW))).toBe('No analysts yet.');
+  });
+});
+
+describe('card actions (#149)', () => {
+  const stalled = analyst('S', { status: 'error', hasDossier: false, statusNote: 'The analyst hit an unexpected error.' });
+  it('leads with one primary action by state', () => {
+    expect(primaryAction(analyst('A')).kind).toBe('dossier');
+    expect(primaryAction(analyst('B', { status: 'error', hasDossier: true })).kind).toBe('dossier');
+    expect(primaryAction(stalled)).toEqual({ kind: 'retry', label: 'Retry' });
+    expect(primaryAction(analyst('C', { status: 'initializing', hasDossier: false })).kind).toBe('analyze');
+    expect(primaryAction(analyst('D', { status: 'initializing', hasDossier: false, statusNote: 'Waiting for an AI key. Add one in Settings.' })).kind).toBe('key');
+    expect(primaryAction(analyst('E', { status: 'paused', hasDossier: false })).kind).toBe('resume');
+  });
+  it('keeps management actions in the menu, with no Resume next to a stalled analyst\'s Retry', () => {
+    expect(menuActions(analyst('A')).map((m) => m.id)).toEqual(['pause']);
+    expect(menuActions(analyst('B', { status: 'paused' })).map((m) => m.id)).toEqual(['resume']);
+    expect(menuActions(analyst('C', { status: 'error', hasDossier: true })).map((m) => m.id)).toEqual(['resume']);
+    expect(menuActions(stalled)).toEqual([]);
+    expect(menuActions(analyst('W', { source: 'watcher' }))).toEqual([{ id: 'pause', label: 'Pause' }, { id: 'remove', label: 'Remove watcher', danger: true }]);
+  });
+  it('counts stalled analysts and describes them in plain words, not raw error text', () => {
+    const list = [analyst('A'), stalled, analyst('T', { status: 'error', hasDossier: false })];
+    expect(stalledCount(list)).toBe(2);
+    expect(summarizeDesk(list, NOW).stalled).toBe(2);
+    expect(attentionReason(stalled, NOW)).toBe('Dossier stalled. Retry it from its card.');
   });
 });

@@ -108,6 +108,25 @@ describe('unexpected failures (#148)', () => {
   });
 });
 
+describe('requeueStalled (#149)', () => {
+  it("re-queues only this user's stalled analysts: built ones and other users' are left alone", async () => {
+    await store.spawnAnalyst('u1', 'ACC', 'holding', NOW);
+    await store.setStatus('u1', 'ACC', 'error', 'The AI provider returned an error: quota', NOW);
+    await store.spawnAnalyst('u1', 'PNB', 'holding', NOW);
+    await store.setStatus('u1', 'PNB', 'error', 'The analyst hit an unexpected error several times in a row.', NOW);
+    await store.spawnAnalyst('u1', 'TCS', 'holding', NOW);
+    await store.saveDossier('u1', 'TCS', { summary: 's', business: 'b', strengths: [], vulnerabilities: [], notAvailable: [], generatedAt: '', model: '' }, { seenNewsUrls: [], seenDocUrls: [], resultsKey: null, atRangeHigh: false, atRangeLow: false }, NOW);
+    await store.setStatus('u1', 'TCS', 'error', 'later check failed', NOW);
+    await store.spawnAnalyst('u2', 'ACC', 'holding', NOW);
+    await store.setStatus('u2', 'ACC', 'error', 'x', NOW);
+    expect(await store.requeueStalled('u1', NOW)).toBe(2);
+    expect(await store.getAnalyst('u1', 'ACC')).toMatchObject({ status: 'initializing', retryCount: 0 });
+    expect((await store.getAnalyst('u1', 'PNB'))?.status).toBe('initializing');
+    expect((await store.getAnalyst('u1', 'TCS'))?.status).toBe('error');
+    expect((await store.getAnalyst('u2', 'ACC'))?.status).toBe('error');
+  });
+});
+
 describe('journal', () => {
   it('lists the newest entry first and caps the page size', async () => {
     for (let i = 0; i < 3; i++) await store.appendJournal({ userId: 'u1', symbol: 'ACC', ts: new Date(NOW.getTime() + i * 1000).toISOString(), kind: 'price', title: `t${i}`, body: null, impact: null, alert: 'low' });

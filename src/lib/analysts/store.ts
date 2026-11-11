@@ -142,6 +142,14 @@ export async function requeueRetryable(onlyUserId?: string, now: Date = new Date
   return n;
 }
 
+/** "Retry all stalled": puts every one of the user's stalled analysts (no dossier, status error) back in the queue, so the sweep rebuilds them one at a time. Returns how many. */
+export async function requeueStalled(userId: string, now: Date = new Date()): Promise<number> {
+  const col = await analysts();
+  const stalled = await col.find({ userId, status: 'error', dossier: null }).toArray();
+  for (const d of stalled) await col.updateOne({ _id: d._id }, { $set: { status: 'initializing', statusNote: 'Re-queued to retry.', retryCount: 0, updatedAt: now } });
+  return stalled.length;
+}
+
 export async function saveDossier(userId: string, symbol: string, dossier: Dossier, watch: WatchState, now: Date = new Date()): Promise<void> {
   await (await analysts()).updateOne({ userId, symbol: symbol.toUpperCase() }, { $set: { dossier, watch, status: 'active', statusNote: null, retryCount: 0, lastCheckedAt: now, updatedAt: now } });
 }

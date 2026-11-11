@@ -9,12 +9,14 @@ interface RootDeckProps {
   readonly cap: number;
   /** Analysts that cannot be built before tomorrow's AI budget opens. */
   readonly waitingTomorrow: number;
+  readonly busy: boolean;
   readonly onChat: () => void;
   readonly onBrief: () => void;
+  readonly onRetryAll: () => void;
 }
 
 /** The Root Agent ("Mitra Portfolio CIO"): a deterministic read of the whole desk. Rendering it never calls an AI. */
-export function RootDeck({ summary, now, used, cap, waitingTomorrow, onChat, onBrief }: RootDeckProps) {
+export function RootDeck({ summary, now, used, cap, waitingTomorrow, busy, onChat, onBrief, onRetryAll }: RootDeckProps) {
   return (
     <section className={styles.deck} aria-label="Mitra Portfolio CIO">
       <div className={styles.top}>
@@ -42,6 +44,11 @@ export function RootDeck({ summary, now, used, cap, waitingTomorrow, onChat, onB
           {waitingTomorrow} {waitingTomorrow === 1 ? 'analyst' : 'analysts'} will wait for tomorrow’s AI budget ({used} of {cap} calls used today). Use <strong>Analyze now</strong> on a card to choose which one goes next.
         </p>
       )}
+      {summary.stalled > 0 && (
+        <p className={styles.budget}>
+          {summary.stalled} {summary.stalled === 1 ? 'analyst is' : 'analysts are'} stalled, usually after a temporary error. Retry them all and the next sweep rebuilds them one at a time.
+        </p>
+      )}
       {summary.latest && (
         <p className={styles.latest}>
           Latest note, {agoLabel(summary.latest.ts, now)}: <strong>{summary.latest.symbol}</strong> {summary.latest.title}
@@ -54,6 +61,11 @@ export function RootDeck({ summary, now, used, cap, waitingTomorrow, onChat, onB
         <button type="button" className={styles.secondary} onClick={onBrief}>
           Read morning brief
         </button>
+        {summary.stalled > 0 && (
+          <button type="button" className={styles.secondary} disabled={busy} onClick={onRetryAll}>
+            {busy ? 'Re-queuing…' : `Retry all stalled (${summary.stalled})`}
+          </button>
+        )}
         <span className={styles.ctaNote}>Next brief at 08:30 AM IST</span>
       </div>
       <p className={styles.sub}>

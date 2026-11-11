@@ -22,6 +22,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
   const [symbol, setSymbol] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [panel, setPanel] = useState<DrawerPanel | null>(null);
   // Captured once so server and client render the same relative times.
   const [now] = useState(() => new Date());
@@ -64,6 +65,27 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
   // Builds the dossier now instead of waiting for the sweep; one model call, so it can take up to a minute.
   const analyze = (s: string) => act(`analyze-${s}`, () => fetch(`/api/analysts/${s}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'analyze' }) }), 'Could not build the dossier.');
 
+  // Re-queues every stalled analyst; the sweep rebuilds them one at a time, so this is instant.
+  const retryAll = async () => {
+    setBusy('retry-all');
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch('/api/analysts/retry', { method: 'POST' });
+      const json = (await res.json().catch(() => null)) as { data?: { requeued?: number }; error?: string } | null;
+      if (!res.ok) setError(json?.error ?? 'Could not re-queue the stalled analysts.');
+      else {
+        const n = json?.data?.requeued ?? 0;
+        setNotice(n === 0 ? 'No stalled analysts to retry.' : `${n} ${n === 1 ? 'analyst' : 'analysts'} re-queued. The next sweep rebuilds them one at a time.`);
+        router.refresh();
+      }
+    } catch {
+      setError('Could not reach the server. Try again.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const remove = (s: string) => act(`rm-${s}`, () => fetch(`/api/analysts/${s}`, { method: 'DELETE' }), 'Could not remove the analyst.');
 
   const summary = summarizeDesk(initial.analysts, now);
@@ -72,7 +94,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
 
   return (
     <section className={styles.desk} aria-label="Analyst desk">
-      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} waitingTomorrow={tomorrowCount(initial.analysts, initial.usage)} onChat={() => setPanel({ kind: 'chat', symbol: null })} onBrief={() => setPanel({ kind: 'brief' })} />
+      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} waitingTomorrow={tomorrowCount(initial.analysts, initial.usage)} busy={busy === 'retry-all'} onRetryAll={() => void retryAll()} onChat={() => setPanel({ kind: 'chat', symbol: null })} onBrief={() => setPanel({ kind: 'brief' })} />
 
       <div className={styles.autonomy}>
         <p className={styles.autonomyText}>
@@ -91,6 +113,11 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
           + Deploy watcher
         </button>
       </div>
+      {notice && (
+        <p className={styles.notice} role="status">
+          {notice}
+        </p>
+      )}
       {error && (
         <p className={styles.error} role="alert">
           {error}

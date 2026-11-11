@@ -67,6 +67,7 @@ the first release covers dossier + journal, morning dispatch, thesis invalidatio
   self-hosted instance (one person, own machine, own key), overridable with `ANALYST_DAILY_AI_CAP` (a whole number from 20 to 1000; ignored when hosted). One function,
   `dailyAiCap()`, feeds the engine, the roster and the deck, so the UI shows the real number.
 - **Retries (#148):** an unexpected exception for one analyst in the sweep no longer sets `error` for good. It goes back to `initializing` with a note ("Retrying after a temporary error (attempt n of 3)") up to 3 attempts, then stalls with a clear note; a built dossier resets the count. The sweep also re-queues analysts that an earlier version left stalled by the generic unexpected-error note (no dossier). Provider and data errors are not retried automatically, because they need the user (a bad key, a quota).
+- **Card actions (#149):** each card leads with one state-dependent primary button (View dossier; Retry for a stalled build; Analyze now for a waiting one; Add AI key; Resume for a paused one without a dossier) plus Chat, and the management actions (Pause or Resume, Remove watcher) sit in a ⋯ menu. A stalled analyst shows Retry and never Resume beside it. The Root deck says how many are stalled in plain words and offers **Retry all stalled** (`POST /api/analysts/retry`), which only re-queues them so the sweep rebuilds them one at a time, with no parallel model calls.
 
 ## Consequences
 
