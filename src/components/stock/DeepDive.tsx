@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AnalystChatButton } from '@/components/analysts/AnalystChatButton';
 import { DossierReader } from '@/components/analysts/DossierReader';
 import { FileTypeIcon } from '@/components/dashboard-charts/FileTypeIcon';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
@@ -74,7 +75,12 @@ export function DeepDive({ symbol, financials, peers, shareholding, news, docume
           ) : (
             <p className={styles.note}>No shareholding data available for this company right now.</p>
           ))}
-        {tab === 'journal' && <DossierReader symbol={symbol} />}
+        {tab === 'journal' && (
+          <>
+            <AnalystChatButton symbol={symbol} />
+            <DossierReader symbol={symbol} />
+          </>
+        )}
         {tab === 'news' && <NewsList items={news} emptyText="No recent news for this stock." />}
         {tab === 'filings' &&
           (documents.length > 0 ? (

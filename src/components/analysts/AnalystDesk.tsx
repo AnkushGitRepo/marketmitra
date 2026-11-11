@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { DESK_FILTERS, filterAnalysts, filterCounts, summarizeDesk, type DeskData, type DeskFilter } from '@/lib/analysts/desk';
 import { AnalystCard } from './AnalystCard';
-import { AnalystDrawer } from './AnalystDrawer';
+import { AnalystDrawer, type DrawerPanel } from './AnalystDrawer';
 import { RootDeck } from './RootDeck';
 import styles from './AnalystDesk.module.css';
 
@@ -22,7 +22,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
   const [symbol, setSymbol] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [reading, setReading] = useState<string | null>(null);
+  const [panel, setPanel] = useState<DrawerPanel | null>(null);
   // Captured once so server and client render the same relative times.
   const [now] = useState(() => new Date());
   const [filter, setFilter] = useState<DeskFilter>('all');
@@ -69,7 +69,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
 
   return (
     <section className={styles.desk} aria-label="Analyst desk">
-      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} />
+      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} onChat={() => setPanel({ kind: 'chat', symbol: null })} />
 
       <div className={styles.autonomy}>
         <p className={styles.autonomyText}>
@@ -110,14 +110,14 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
           ) : (
             <ul className={styles.roster}>
               {visible.map((a) => (
-                <AnalystCard key={a.symbol} analyst={a} all={initial.analysts} usage={initial.usage} now={now} busy={busy} onRead={setReading} onSetStatus={(s, st) => void setStatus(s, st)} onRemove={(s) => void remove(s)} />
+                <AnalystCard key={a.symbol} analyst={a} all={initial.analysts} usage={initial.usage} now={now} busy={busy} onRead={(sym) => setPanel({ kind: 'dossier', symbol: sym })} onChat={(sym) => setPanel({ kind: 'chat', symbol: sym })} onSetStatus={(s, st) => void setStatus(s, st)} onRemove={(s) => void remove(s)} />
               ))}
             </ul>
           )}
         </>
       )}
 
-      <AnalystDrawer symbol={reading} onClose={() => setReading(null)} />
+      <AnalystDrawer panel={panel} onChange={setPanel} onClose={() => setPanel(null)} />
     </section>
   );
 }

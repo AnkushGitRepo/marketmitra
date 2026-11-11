@@ -7,10 +7,11 @@ interface RootDeckProps {
   readonly now: Date;
   readonly used: number;
   readonly cap: number;
+  readonly onChat: () => void;
 }
 
 /** The Root Agent ("Mitra Portfolio CIO"): a deterministic read of the whole desk. Rendering it never calls an AI. */
-export function RootDeck({ summary, now, used, cap }: RootDeckProps) {
+export function RootDeck({ summary, now, used, cap, onChat }: RootDeckProps) {
   return (
     <section className={styles.deck} aria-label="Mitra Portfolio CIO">
       <div className={styles.top}>
@@ -38,6 +39,12 @@ export function RootDeck({ summary, now, used, cap }: RootDeckProps) {
           Latest note, {agoLabel(summary.latest.ts, now)}: <strong>{summary.latest.symbol}</strong> {summary.latest.title}
         </p>
       )}
+      <div className={styles.cta}>
+        <button type="button" className={styles.chat} onClick={onChat}>
+          Chat with Root Agent
+        </button>
+        <span className={styles.ctaNote}>Ask across all your holdings</span>
+      </div>
       <p className={styles.sub}>
         Each holding gets its own analyst. It checks the stock every evening for free and only uses your AI key when something material happens.
       </p>

@@ -38,6 +38,11 @@ the first release covers dossier + journal, morning dispatch, thesis invalidatio
 - **UI:** `/agents` is now the analyst roster (status, last check, latest entry, Read dossier, Pause or Resume, Remove for watchers,
   Deploy watcher, usage, master switch) with the one-off multi-agent analysis kept below it; the stock page has an **Agent journal** tab.
   The API (`/api/analysts`, `/api/analysts/{symbol}`) is session-only because it controls unattended use of the user's AI key.
+- **Chat (#131):** `POST /api/analysts/chat` streams a reply from one analyst (`symbol` set; grounded in its dossier, the last ten journal entries and the
+  computed figures) or from the Root Agent (`symbol` omitted; grounded in every analyst's thesis, weak points and latest note, plus the portfolio summary).
+  It is one model call with no tools, session-only, rate limited, not counted against the daily cap (the user starts it and sees it), and follows the
+  guarded / unrestricted mode. Dossier and journal text is embedded as untrusted data. The prompts say what is not in our data, and forbid telling the
+  user what to do with a position, because a real run showed the model drifting to "cut losses" wording under the plain guardrail. Chats are not saved.
 
 ## Consequences
 
