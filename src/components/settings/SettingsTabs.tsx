@@ -92,7 +92,7 @@ export function SettingsTabs({ initialTab, hosted, isAdmin, encConfigured, aiVie
             <AboutSection hosted={hosted} isAdmin={isAdmin} />
           </>
         )}
-        {tab === 'ai' && <AiPanel initialView={aiView} encConfigured={encConfigured} prefs={prefs} onPrefs={(patch) => void save(patch)} />}
+        {tab === 'ai' && <AiPanel initialView={aiView} encConfigured={encConfigured} prefs={prefs} hosted={hosted} onPrefs={(patch) => void save(patch)} />}
         {tab === 'preferences' && <PreferencesPanel prefs={prefs} onPrefs={(patch) => void save(patch)} error={error} saved={saved} />}
         {tab === 'alerts' && <AlertsSummaryPanel emailStatus={emailStatus} guardrailsEnabled={guardrailsEnabled} channels={channelsView} />}
         {tab === 'data' && <DataPanel />}

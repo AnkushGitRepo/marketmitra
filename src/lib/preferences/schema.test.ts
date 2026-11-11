@@ -2,9 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_PREFERENCES, applyPatch, preferencesPatchSchema, resolvePreferences } from './schema';
 
 describe('resolvePreferences', () => {
+  it('keeps unrestricted Mitra off unless explicitly stored as true', () => {
+    expect(resolvePreferences(undefined).chat.unrestricted).toBe(false);
+    expect(resolvePreferences({ chat: { unrestricted: 'yes' } }).chat.unrestricted).toBe(false);
+    expect(resolvePreferences({ chat: { unrestricted: true } }).chat.unrestricted).toBe(true);
+  });
+
   it('gives sensible defaults for nothing stored', () => {
     expect(resolvePreferences(undefined)).toEqual(DEFAULT_PREFERENCES);
-    expect(DEFAULT_PREFERENCES.chat).toEqual({ platformAccess: true, sendOnEnter: true, showToolActivity: true, dictationLanguage: 'auto' });
+    expect(DEFAULT_PREFERENCES.chat).toEqual({ platformAccess: true, sendOnEnter: true, showToolActivity: true, dictationLanguage: 'auto', unrestricted: false });
     expect(DEFAULT_PREFERENCES.display.hideValuesByDefault).toBe(false);
     expect(DEFAULT_PREFERENCES.shortcuts.enabled).toBe(true);
   });

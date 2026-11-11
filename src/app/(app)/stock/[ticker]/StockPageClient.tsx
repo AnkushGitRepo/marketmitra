@@ -7,6 +7,8 @@ import { InsightCard } from '@/components/dashboard-charts/InsightCard';
 import { DeepDive } from '@/components/stock/DeepDive';
 import type { StatementKey } from '@/components/stock/FinancialsPanel';
 import { KeyTiles } from '@/components/stock/KeyTiles';
+import { MitraBrief, type BriefData } from '@/components/stock/MitraBrief';
+import type { PromptMode } from '@/lib/ai/promptMode';
 import { RangeBar } from '@/components/stock/RangeBar';
 import { StockChart } from '@/components/stock/StockChart';
 import { WatchlistButton } from '@/components/stock/WatchlistButton';
@@ -53,6 +55,7 @@ interface StockPageClientProps {
   documents: DocumentOut[];
   news: NewsItem[];
   aiInsight: { hasKey: boolean; initial: { content: string; generatedAt: string } | null };
+  brief: { mode: PromptMode; initial: BriefData | null };
   shareholding: ShareholdingSeries[];
   financials: Record<StatementKey, FinTable>;
   bars: Bar[];
@@ -109,6 +112,7 @@ export function StockPageClient({
   documents,
   news,
   aiInsight,
+  brief,
   shareholding,
   financials,
   bars,
@@ -171,7 +175,13 @@ export function StockPageClient({
       </div>
 
       <div className={styles.insightRow}>
-        <InsightCard label="AI read" endpoint="/api/insights/stock" body={{ symbol }} initial={aiInsight.initial} hasKey={aiInsight.hasKey} />
+        <MitraBrief
+          symbol={symbol}
+          hasKey={aiInsight.hasKey}
+          mode={brief.mode}
+          initial={brief.initial}
+          longRead={<InsightCard label="AI read" endpoint="/api/insights/stock" body={{ symbol }} initial={aiInsight.initial} hasKey={aiInsight.hasKey} />}
+        />
       </div>
 
       {aboutText && (

@@ -17,6 +17,18 @@ export const STOCK_SYSTEM = withGuardrail(
   'You are a markets analyst writing a short, neutral read on one Indian-listed company for a retail investor who is already looking at its dashboard. Cover what stands out in the valuation ratios, the recent financial trend, the shareholding pattern, and any notable recent news — in 4-6 sentences. Note gaps in the data rather than guessing.',
 );
 
+// The stock page's structured brief (#103). Output is JSON for the UI, not prose. The valuation / entry
+// fields are only allowed by the unrestricted rules (ADR 0054); in guarded mode the server drops them anyway.
+export const STOCK_BRIEF_SYSTEM = withGuardrail(
+  [
+    'You write a short, neutral brief on one Indian-listed company for a retail investor, from the public data in the prompt only.',
+    'Reply with ONLY a JSON object, no markdown: {"strengths": [..], "watchpoints": [..]}.',
+    '"strengths" has at most 2 items and "watchpoints" at most 1 item; each is one plain sentence under 140 characters that cites a number or fact from the data.',
+    'If, and only if, the rules below allow a valuation view, also include "valuation" (one of "undervalued", "fairly valued", "overvalued", "unclear") and "entry" (one sentence on whether the current price looks reasonable and why).',
+    'If the data is thin, return fewer items rather than guessing.',
+  ].join(' '),
+);
+
 export const PORTFOLIO_SYSTEM = withGuardrail(
   "You are a markets analyst writing a short, neutral read on a retail investor's stock portfolio. Cover concentration (is it top-heavy?), sector tilt, what is currently driving the unrealised P&L, and any diversification observations — in 4-6 sentences. Refer to holdings by name.",
 );

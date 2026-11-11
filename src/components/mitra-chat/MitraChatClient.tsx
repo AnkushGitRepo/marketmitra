@@ -27,7 +27,10 @@ function syncUrl(id: string | null) {
 }
 
 export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] }) {
-  const initialId = useSearchParams().get('c');
+  const params = useSearchParams();
+  const initialId = params.get('c');
+  // `?q=` (e.g. from a stock page chip) pre-fills the box for a new chat. It is never sent automatically.
+  const initialDraft = params.get('q')?.slice(0, 300) ?? undefined;
   const [view, setView] = useState<View>(initialId ? { kind: 'loading', id: initialId } : { kind: 'new', nonce: 0 });
   const [railOpen, setRailOpen] = useState(false);
   const conversations = useConversations();
@@ -162,6 +165,7 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
             key={`new-${view.nonce}`}
             initialConversationId={null}
             initialMessages={[]}
+            initialDraft={initialDraft}
             onConversationCreated={handleCreated}
             onActivity={conversations.refresh}
             chatPrefs={chatPrefs}

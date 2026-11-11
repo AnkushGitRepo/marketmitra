@@ -14,8 +14,11 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { DataUnavailable } from '@/components/common/DataUnavailable';
 import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCachedInsight } from '@/lib/insights';
+import { resolvePromptMode } from '@/lib/ai/promptModeStore';
 import { pivotFinancials, groupShareholding } from '@/lib/dashboard/transforms';
 import { toBars } from '@/lib/chart/bars';
+import type { PromptMode } from '@/lib/ai/promptMode';
+import type { StockBrief } from '@/lib/ai/stockBrief';
 import { StockPageClient, type HeaderQuote } from './StockPageClient';
 import styles from './page.module.css';
 
@@ -47,9 +50,11 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const aiState = Promise.all([
     userId ? resolveHasAiKey(getUserAiConfig(userId)) : Promise.resolve(false),
     userId ? getCachedInsight('stock', symbol, userId).catch(() => null) : Promise.resolve(null),
+    userId ? getCachedInsight('stock_brief', symbol, userId).catch(() => null) : Promise.resolve(null),
+    userId ? resolvePromptMode(userId) : Promise.resolve('guarded' as const),
   ]);
 
-  const [company, ratios, shareholding, peers, documents, news, pl, bs, cf, fiveYearPrices, [hasKey, cachedInsight]] =
+  const [company, ratios, shareholding, peers, documents, news, pl, bs, cf, fiveYearPrices, [hasKey, cachedInsight, cachedBrief, promptMode]] =
     await Promise.all([
       getCompany(symbol),
       getRatios(symbol),
@@ -82,6 +87,18 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       ? { content: cachedInsight.content, generatedAt: cachedInsight.generatedAt.toISOString() }
       : null,
   };
+
+  // A cached brief is only reused if it was written in the mode the user is in now: switching
+  // modes (local only, ADR 0054) must never show a stale verdict or a stale refusal.
+  const briefInitial = (() => {
+    if (!cachedBrief) return null;
+    try {
+      const stored = JSON.parse(cachedBrief.content) as { brief: StockBrief; mode: PromptMode };
+      return stored.mode === promptMode ? { ...stored, generatedAt: cachedBrief.generatedAt.toISOString() } : null;
+    } catch {
+      return null;
+    }
+  })();
 
   // The 5-year daily set backs every range tab; the chart windows into it.
   const bars = toBars(fiveYearPrices ?? []);
@@ -118,6 +135,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       shareholding={groupShareholding(shareholding ?? [])}
       news={news.items}
       aiInsight={aiInsight}
+      brief={{ mode: promptMode, initial: briefInitial }}
       financials={{
         profit_and_loss: pivotFinancials(pl ?? [], 'profit_and_loss'),
         balance_sheet: pivotFinancials(bs ?? [], 'balance_sheet'),

@@ -5254,6 +5254,61 @@
           }
         }
       }
+    },
+    "/api/insights/stock-brief": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate the stock page Mitra brief",
+        "description": "Up to 2 strengths and 1 watchpoint for a stock, written from public data with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 24 hours per user, symbol and mode. Mode is guarded by default (no verdicts). On a local / self-host instance a user can opt in to unrestricted mode (Settings > AI & Models), and the response may then also carry `valuation` and `entry`; the hosted site is always guarded (ADR 0054). Body `{ symbol, force? }`.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "force": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {
+                "symbol": "RELIANCE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ success, data: { brief: { strengths[], watchpoints[], valuation?, entry? }, mode: 'guarded'|'unrestricted', generatedAt }, meta: { cached } }"
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "429": {
+            "description": "Rate limited."
+          }
+        }
+      }
     }
   }
 }

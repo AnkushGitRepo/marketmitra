@@ -5,6 +5,8 @@ import { withRateLimit } from '@/lib/rateLimit';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
 import { MITRA_WORKSPACE_SYSTEM } from '@/lib/ai/prompts';
+import { promptForMode, selectPromptMode } from '@/lib/ai/promptMode';
+import { isHosted } from '@/lib/deployment-mode';
 import { buildChatTools } from '@/lib/ai/chatTools';
 import { PLATFORM_CATALOG_TEXT, buildPlatformApiTools } from '@/lib/ai/platformApiTools';
 import { getPreferences } from '@/lib/preferences/store';
@@ -121,7 +123,8 @@ async function handleMessage(request: Request, ctx?: unknown) {
   const prefs = await getPreferences(userId);
   const context = await buildPortfolioContext(userId).catch(() => '');
   const system = [
-    MITRA_WORKSPACE_SYSTEM,
+    // Guarded unless a local user opted in (ADR 0054); the hosted site is always guarded.
+    promptForMode(MITRA_WORKSPACE_SYSTEM, selectPromptMode({ hosted: isHosted(), unrestricted: prefs.chat.unrestricted })),
     prefs.chat.platformAccess ? `--- PLATFORM API (call_platform_api, read-only GET) ---\n${PLATFORM_CATALOG_TEXT}` : '',
     `--- PORTFOLIO CONTEXT ---\n${context}`,
     summary ? `--- EARLIER IN THIS CONVERSATION (summary) ---\n${summary}` : '',

@@ -24,15 +24,18 @@ interface AiPanelProps {
   readonly encConfigured: boolean;
   readonly prefs: Preferences;
   readonly onPrefs: (patch: PreferencesPatch) => void;
+  /** Unrestricted Mitra (ADR 0054) exists only on a local / self-host instance. */
+  readonly hosted: boolean;
 }
 
 function Switch({ checked, onChange, label }: { checked: boolean; onChange: (next: boolean) => void; label: string }) {
   return <button type="button" role="switch" aria-checked={checked} aria-label={label} className={rowStyles.switch} onClick={() => onChange(!checked)} />;
 }
 
-export function AiPanel({ initialView, encConfigured, prefs, onPrefs }: AiPanelProps) {
+export function AiPanel({ initialView, encConfigured, prefs, onPrefs, hosted }: AiPanelProps) {
   const router = useRouter();
   const [view, setView] = useState(initialView);
+  const [confirmingUnrestricted, setConfirmingUnrestricted] = useState(false);
   const [changing, setChanging] = useState(initialView === null);
   const [provider, setProvider] = useState<AiProvider>(initialView?.provider ?? 'gemini');
   const [apiKey, setApiKey] = useState('');
@@ -245,8 +248,36 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs }: AiPanelP
             </div>
             <Switch label="Show tool activity" checked={prefs.chat.showToolActivity} onChange={(v) => onPrefs({ chat: { showToolActivity: v } })} />
           </div>
+          {!hosted && (
+            <div className={rowStyles.row}>
+              <div className={rowStyles.rowText}>
+                <p className={rowStyles.rowLabel}>Unrestricted Mitra (local only)</p>
+                <p className={rowStyles.rowHint}>
+                  Off by default. When on, Mitra may give a valuation view (undervalued, fairly valued, overvalued) and say whether the current price looks reasonable, from the data it has.
+                  It is an AI opinion, not licensed advice. This option does not exist on the hosted site.
+                </p>
+              </div>
+              <Switch
+                label="Unrestricted Mitra"
+                checked={prefs.chat.unrestricted}
+                onChange={(v) => (v ? setConfirmingUnrestricted(true) : onPrefs({ chat: { unrestricted: false } }))}
+              />
+            </div>
+          )}
         </div>
       </section>
+
+      <ConfirmDialog
+        open={confirmingUnrestricted}
+        title="Turn on unrestricted Mitra?"
+        message="Mitra will be allowed to say whether a stock looks undervalued or overvalued and whether the price looks reasonable. These are AI opinions from public data, not licensed advice, and you make the decision. You can turn this off any time."
+        confirmLabel="Turn on"
+        onConfirm={() => {
+          setConfirmingUnrestricted(false);
+          onPrefs({ chat: { unrestricted: true } });
+        }}
+        onCancel={() => setConfirmingUnrestricted(false)}
+      />
 
       <ConfirmDialog
         open={confirmRemove}
