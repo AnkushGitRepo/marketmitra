@@ -1,0 +1,47 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--app-text-muted);
+  font-family: var(--font-serif, Georgia, serif);
+  font-style: italic;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.button[aria-expanded='true'] {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: min(86vw, 420px);
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 14px;
+  box-shadow: 0 14px 36px rgba(22, 25, 28, 0.16);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
+
+.panel p {
+  margin: 0 0 8px;
+}
+
+.panel p:last-child {
+  margin-bottom: 0;
+}

@@ -1,0 +1,138 @@
+.scroll {
+  display: none;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+  /* A bounded box is what lets the header and first column stay put while the rest scrolls. */
+  overflow: auto;
+  max-height: 72vh;
+}
+
+@media (min-width: 768px) {
+  .scroll {
+    display: block;
+  }
+}
+
+.loading {
+  opacity: 0.55;
+  transition: opacity var(--duration-fast) ease;
+}
+
+.table {
+  width: 100%;
+  min-width: 960px;
+  font-size: 13px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+  font-weight: 500;
+  border-bottom: 1px solid var(--app-border-soft);
+  white-space: nowrap;
+}
+
+.company {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  background: var(--color-surface);
+}
+
+/* Corner cell: sticky both ways, above everything. */
+thead .company {
+  z-index: 20;
+}
+
+tbody .company {
+  z-index: 5;
+  box-shadow: 1px 0 0 var(--app-border-softer);
+}
+
+.num {
+  text-align: right;
+}
+
+.sector {
+  text-align: left;
+  white-space: nowrap;
+  color: var(--app-text-muted);
+}
+
+.td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--app-border-softer);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rowHead {
+  font-weight: 500;
+}
+
+/* The metrics being screened or sorted get a soft tint, in the header and every row. */
+.hl {
+  background: var(--app-teal-bg);
+}
+
+thead .hl {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .row:hover .td:not(.hl) {
+    background: #faf8f2;
+  }
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--app-teal-strong);
+}
+
+.symbol {
+  color: var(--app-text-subtle);
+  font-weight: 400;
+}
+
+.sortBtn {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sortBtn:hover {
+  color: var(--app-ink);
+}
+
+.arrow {
+  margin-left: 4px;
+  opacity: 0.45;
+}
+
+.arrowOn {
+  margin-left: 4px;
+  color: var(--app-teal-strong);
+}

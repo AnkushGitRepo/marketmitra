@@ -1,6 +1,7 @@
 import { runScreenerPage, getScreenerFacets, getScreenerStats } from '@/lib/dashboard/screener';
 import type { ScreenerFilters } from '@/lib/dashboard/screenerSchema';
 import { parseScreenerParams, MAX_PAGE_SIZE } from '@/lib/screener/params';
+import { ScreenerInfo } from '@/components/screener/ScreenerInfo';
 import { ScreenerPageClient } from './ScreenerPageClient';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from './pageMath';
 import styles from './page.module.css';
@@ -72,21 +73,17 @@ export default async function ScreenerPage({
   return (
     <div className={styles.pageRoot}>
       <p className={styles.eyebrow}>Screener</p>
-      <h1 className={styles.h1}>Stock screener</h1>
-      <p className={styles.introNote}>
-        Filter the NSE stock universe by market cap, valuation, profitability, leverage, and growth.
-        Market cap, price, P/E, P/B and dividend yield refresh daily for every listed company; ROE,
-        ROCE, debt/equity and growth are scraped in rotation, stalest first. A dash means that
-        figure isn&rsquo;t available yet, not that it&rsquo;s zero.
-      </p>
-      {stats && (
-        <p className={styles.introNote} data-testid="screener-coverage">
-          {pricesAsOf ? `Prices as of ${pricesAsOf}. ` : ''}
-          Fundamentals available for {stats.with_fundamentals.toLocaleString('en-IN')} of{' '}
-          {stats.universe.toLocaleString('en-IN')} companies — ROE, ROCE, debt and growth filters
-          only match those.
-        </p>
-      )}
+      <div className={styles.titleRow}>
+        <h1 className={styles.h1}>Stock screener</h1>
+        <ScreenerInfo
+          intro="Filter the NSE stock universe by market cap, valuation, profitability, leverage, and growth. Market cap, price, P/E, P/B and dividend yield refresh daily for every listed company; ROE, ROCE, debt/equity and growth are scraped in rotation, stalest first. A dash means that figure isn’t available yet, not that it’s zero."
+          coverage={
+            stats
+              ? `${pricesAsOf ? `Prices as of ${pricesAsOf}. ` : ''}Fundamentals available for ${stats.with_fundamentals.toLocaleString('en-IN')} of ${stats.universe.toLocaleString('en-IN')} companies. ROE, ROCE, debt and growth filters only match those.`
+              : null
+          }
+        />
+      </div>
       <ScreenerPageClient
         // Remount when the URL state changes from outside (e.g. Mitra opening a
         // new screen while this page is already showing), since the client

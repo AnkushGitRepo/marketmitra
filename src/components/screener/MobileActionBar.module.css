@@ -1,0 +1,58 @@
+.bar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    /* Sits just above the mobile tab bar. */
+    bottom: calc(4.6rem + env(safe-area-inset-bottom));
+    z-index: 40;
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--app-border-soft);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    box-shadow: 0 10px 30px rgba(22, 25, 28, 0.18);
+  }
+}
+
+.filters {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--app-ink);
+  color: var(--app-cream);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.sort {
+  flex: 1;
+  min-width: 0;
+}
+
+.select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  padding: 0 12px;
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
