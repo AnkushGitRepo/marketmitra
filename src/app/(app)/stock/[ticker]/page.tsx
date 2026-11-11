@@ -103,6 +103,8 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       return {
         latestClose: live?.price ?? latestPrice?.close ?? null,
         previousClose: live?.prev_close ?? previousPrice?.close ?? null,
+        week52High: live?.week52_high ?? null,
+        week52Low: live?.week52_low ?? null,
       };
     });
 

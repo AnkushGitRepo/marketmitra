@@ -1,0 +1,251 @@
+.root {
+  margin-top: 16px;
+}
+
+.tabBar {
+  position: sticky;
+  top: var(--stock-sticky-top, 72px);
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 8px 0;
+  background: var(--app-bg, #fbf8f1);
+  border-bottom: 1px solid var(--app-border-soft);
+  scrollbar-width: none;
+}
+
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+}
+
+.tabActive {
+  background: var(--app-ink);
+  color: var(--color-surface);
+}
+
+.count {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.panel {
+  margin-top: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 18px;
+  min-width: 0;
+}
+
+.note {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+}
+
+.finHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.finHead .note {
+  margin: 0;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.numHead,
+.stickyHead {
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+  font-weight: 500;
+  border-bottom: 1px solid var(--app-border-soft);
+  white-space: nowrap;
+}
+
+.numHead {
+  text-align: right;
+}
+
+.stickyHead,
+.stickyCell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  background: var(--color-surface);
+  /* A hairline on the sticky edge so scrolled numbers do not blur into the label. */
+  box-shadow: 1px 0 0 var(--app-border-softer);
+}
+
+.stickyCell {
+  padding: 12px 10px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--app-border-softer);
+  min-width: 140px;
+  max-width: 220px;
+}
+
+.numCell {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--app-border-softer);
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.targetRow .stickyCell,
+.targetRow .numCell {
+  font-weight: 600;
+}
+
+.peerLink {
+  color: var(--app-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--app-border);
+  text-underline-offset: 3px;
+}
+
+.peerCards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.peerCard {
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+
+.targetCard {
+  background: var(--app-pill-bg);
+}
+
+.peerCardName {
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.peerStats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.peerStats dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.peerStats dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.docList {
+  display: flex;
+  flex-direction: column;
+}
+
+.docRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--app-border-softer);
+  text-decoration: none;
+  color: var(--app-ink);
+}
+
+.docInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.docName {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.docOpen {
+  font-size: 12.5px;
+  color: var(--app-teal-strong);
+  white-space: nowrap;
+}
+
+.linkBtn {
+  margin-top: 12px;
+  border: none;
+  background: transparent;
+  padding: 6px 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-teal-strong);
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .tabBar {
+    --stock-sticky-top: 60px;
+  }
+  .panel {
+    padding: 14px;
+  }
+  .peersTable {
+    display: none;
+  }
+  .peerCards {
+    display: flex;
+  }
+  .stickyCell {
+    min-width: 110px;
+    max-width: 150px;
+  }
+}
