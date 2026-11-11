@@ -132,14 +132,16 @@
 
   .shell {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 10px;
+    grid-template-rows: minmax(0, 1fr);
   }
 
+  /* History lives in the chat's own header bar, so it costs no extra row. */
   .railToggle {
     display: inline-flex;
-    justify-self: start;
-    padding: 8px 14px;
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 34px;
+    padding: 6px 14px;
     border: 1px solid var(--app-border);
     border-radius: var(--radius-pill);
     background: var(--color-surface);
@@ -154,7 +156,8 @@
     display: none;
     position: absolute;
     z-index: 5;
-    top: 44px;
+    /* Below the header bar (44px min-height plus its border), so the toggle stays reachable. */
+    top: 46px;
     left: 0;
     bottom: 0;
     width: min(320px, 100%);
@@ -165,9 +168,15 @@
   }
 }
 
+/*
+ * Phones. The raised Mitra orb in the tab bar sticks up 22px above it, so the card ends 28px above the bar rather than on it.
+ * Height: viewport - mobile header (95px) - its safe-area top - tab bar (4.5rem + safe-area bottom) - that 28px of clearance.
+ * No forced minimum height: on a short phone it would push the composer behind the tab bar.
+ */
 @media (max-width: 760px) {
   .shell {
-    /* mobile header and page padding (95px) + 4.5rem bottom bar + 1px, plus the safe area */
-    height: calc(100dvh - 168px - env(safe-area-inset-bottom));
+    height: calc(100dvh - 95px - env(safe-area-inset-top) - 4.5rem - env(safe-area-inset-bottom) - 28px);
+    min-height: 320px;
+    margin-bottom: 28px;
   }
 }

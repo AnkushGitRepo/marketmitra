@@ -3,19 +3,15 @@
 import Link from 'next/link';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Composer } from './Composer';
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { Composer, type ComposerHandle } from './Composer';
+import { EmptyState } from './EmptyState';
+import type { ChatContextState } from './useChatContext';
+import type { StarterPrompt } from '@/lib/mitra-chat/starters';
 import { MessageView } from './MessageView';
 import type { Preferences } from '@/lib/preferences/schema';
 import { chatErrorMessage, mitraApi, type ConversationDto, type UploadedFile } from './api';
 import styles from './Chat.module.css';
-
-const STARTERS = [
-  'Is my portfolio too concentrated in a few stocks?',
-  'Compare TCS and Infosys on margins, growth and valuation',
-  'What should I check before applying for an IPO?',
-  'Walk me through reading a company’s annual report — I’ll attach one',
-];
 
 interface ChatThreadProps {
   readonly initialConversationId: string | null;
@@ -24,9 +20,11 @@ interface ChatThreadProps {
   /** Called after each completed reply so the rail can refresh titles and ordering. */
   readonly onActivity: () => void;
   readonly chatPrefs: Preferences['chat'];
+  /** Greeting context for the empty state (first name and live-priced holdings). */
+  readonly contextState: ChatContextState;
 }
 
-export function ChatThread({ initialConversationId, initialMessages, onConversationCreated, onActivity, chatPrefs }: ChatThreadProps) {
+export function ChatThread({ initialConversationId, initialMessages, onConversationCreated, onActivity, chatPrefs, contextState }: ChatThreadProps) {
   // The id can appear mid-thread (a new chat creates its conversation on first send/attach),
   // so it lives in a ref the transport reads at request time rather than in the URL.
   const [session] = useState<{ id: string | null; creating: Promise<string> | null }>(() => ({
@@ -68,6 +66,12 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
   });
   const busy = status === 'submitted' || status === 'streaming';
 
+  const composer = useRef<ComposerHandle>(null);
+  // Files can be dropped anywhere on the conversation. dragenter/leave fire for every child, so count depth.
+  const [dropping, setDropping] = useState(false);
+  const dragDepth = useRef(0);
+  const hasFiles = (e: DragEvent) => e.dataTransfer?.types.includes('Files') ?? false;
+
   const [stuck, setStuck] = useState(true);
   const scroller = useRef<HTMLDivElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
@@ -92,11 +96,53 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
     [clearError, ensureConversation, sendMessage]
   );
 
+  const onStarter = useCallback(
+    (card: StarterPrompt) => {
+      if (card.action === 'send') {
+        void send(card.prompt, []);
+        return;
+      }
+      composer.current?.setDraft(card.prompt);
+      composer.current?.focus();
+      composer.current?.openFilePicker();
+    },
+    [send]
+  );
+
   const failure = error ? chatErrorMessage(error) : null;
   const last = messages.at(-1);
 
   return (
-    <section className={styles.thread} aria-label="Conversation">
+    <section
+      className={styles.thread}
+      aria-label="Conversation"
+      onDragEnter={(e) => {
+        if (!hasFiles(e)) return;
+        dragDepth.current += 1;
+        setDropping(true);
+      }}
+      onDragOver={(e) => {
+        if (hasFiles(e)) e.preventDefault();
+      }}
+      onDragLeave={(e) => {
+        if (!hasFiles(e)) return;
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDropping(false);
+      }}
+      onDrop={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth.current = 0;
+        setDropping(false);
+        composer.current?.addFiles([...e.dataTransfer.files]);
+      }}
+    >
+      {dropping && (
+        <div className={styles.dropZone} aria-hidden="true">
+          <p className={styles.dropTitle}>Drop to attach</p>
+          <p className={styles.dropText}>Annual reports and broker PDFs, screenshots, or earnings-call recordings</p>
+        </div>
+      )}
       <div
         ref={scroller}
         className={styles.scroll}
@@ -106,20 +152,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
         }}
       >
         {messages.length === 0 ? (
-          <div className={styles.empty}>
-            <h2 className={styles.emptyTitle}>What are you working through?</h2>
-            <p className={styles.emptyText}>
-              Ask about a company, your portfolio or the market. Attach an annual report, a broker screenshot, or an earnings-call recording and Mitra will
-              read it with you.
-            </p>
-            <div className={styles.starters}>
-              {STARTERS.map((s) => (
-                <button key={s} type="button" className={styles.starter} onClick={() => void send(s, [])}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
+          <EmptyState state={contextState} onPrompt={onStarter} />
         ) : (
           <div className={styles.messages}>
             {messages.map((m, i) => (
@@ -151,7 +184,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
         </div>
       )}
 
-      <Composer sendOnEnter={chatPrefs.sendOnEnter} dictationLanguage={chatPrefs.dictationLanguage} busy={busy} disabled={false} ensureConversation={ensureConversation} onSend={(t, f) => void send(t, f)} onStop={stop} />
+      <Composer ref={composer} sendOnEnter={chatPrefs.sendOnEnter} dictationLanguage={chatPrefs.dictationLanguage} busy={busy} disabled={false} ensureConversation={ensureConversation} onSend={(t, f) => void send(t, f)} onStop={stop} />
       <p className={styles.disclaimer}>Mitra synthesises data; it is not investment advice.</p>
     </section>
   );

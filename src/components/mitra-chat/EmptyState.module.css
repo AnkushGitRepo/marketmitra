@@ -1,0 +1,105 @@
+.root {
+  max-width: 640px;
+  /* Centred when there is room; on a short screen the container scrolls from the top instead of clipping the heading. */
+  margin: auto;
+  padding: 8px 0 12px;
+  text-align: center;
+}
+
+.greeting {
+  margin: 0 0 4px;
+  min-height: 1.4em;
+  font-size: 13.5px;
+  color: var(--app-text-muted);
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--app-ink);
+}
+
+.status {
+  margin: 0 auto 18px;
+  max-width: 52ch;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--app-text-muted);
+}
+
+.skeleton {
+  height: 44px;
+  border-radius: 12px;
+  background: var(--app-pill-bg);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  text-align: left;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-md);
+  background: var(--app-cream);
+  color: var(--app-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardSkeleton {
+  cursor: default;
+  background: var(--app-pill-bg);
+  border-color: transparent;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.cardText {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:not(.cardSkeleton):hover {
+    background: var(--app-teal-tint);
+    border-color: var(--app-teal-bg-strong);
+  }
+}
+
+@media (max-width: 640px) {
+  .title {
+    font-size: 21px;
+  }
+
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .card {
+    min-height: 0;
+    padding: 12px 14px;
+  }
+}

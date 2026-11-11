@@ -210,6 +210,10 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 - **Auth:** session. **Purpose:** two-sentence Mitra read on today's indices, breadth and sector moves, grounded only in those figures. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when market data is unavailable; `ai` rate tier.
 
+### `GET /api/mitra/context`
+
+- **Auth:** session. **Purpose:** the signed-in user's first name (hosted accounts) and holdings with live prices, to personalise the Mitra chat greeting and starter prompts. Own data only; unpriced holdings have `ltp: null`. Returns `{ success, data: { firstName, holdings[] }, error }`.
+
 ### `POST /api/insights/news`
 
 - **Auth:** session. **Purpose:** two-sentence Mitra read on the dominant themes in the latest 20 headlines, grounded only in them. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when no headlines are available; `ai` rate tier.

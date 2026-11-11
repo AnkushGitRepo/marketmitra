@@ -8,6 +8,7 @@ import { ConversationRail } from './ConversationRail';
 import { mitraApi, type ConversationDto } from './api';
 import type { Preferences } from '@/lib/preferences/schema';
 import { useConversations } from './useConversations';
+import { useChatContext } from './useChatContext';
 import { usePersistedFlag } from './usePersistedFlag';
 import styles from './MitraChat.module.css';
 
@@ -30,6 +31,7 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
   const [view, setView] = useState<View>(initialId ? { kind: 'loading', id: initialId } : { kind: 'new', nonce: 0 });
   const [railOpen, setRailOpen] = useState(false);
   const conversations = useConversations();
+  const contextState = useChatContext();
   const [railCollapsed, setRailCollapsed] = usePersistedFlag('mm-mitra-rail-collapsed');
   const nonce = useRef(1);
   // Bumped on every navigation so a slow response for an earlier choice cannot overwrite the current view.
@@ -103,9 +105,6 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
       data-fill-viewport
     >
       <h1 className={styles.srOnly}>Mitra chat</h1>
-      <button type="button" className={styles.railToggle} onClick={() => setRailOpen((o) => !o)} aria-expanded={railOpen}>
-        {railOpen ? 'Close history' : 'History'}
-      </button>
       <aside id="mitra-chat-rail" className={`${styles.rail} ${railOpen ? styles.railOpen : ''}`}>
         <ConversationRail
           items={conversations.items}
@@ -123,6 +122,15 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
 
       <div className={styles.main}>
         <header className={styles.bar}>
+          <button
+            type="button"
+            className={styles.railToggle}
+            onClick={() => setRailOpen((o) => !o)}
+            aria-expanded={railOpen}
+            aria-controls="mitra-chat-rail"
+          >
+            {railOpen ? 'Close' : 'History'}
+          </button>
           <button
             type="button"
             className={styles.collapseBtn}
@@ -157,6 +165,7 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
             onConversationCreated={handleCreated}
             onActivity={conversations.refresh}
             chatPrefs={chatPrefs}
+            contextState={contextState}
           />
         )}
         {view.kind === 'ready' && (
@@ -167,6 +176,7 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
             onConversationCreated={handleCreated}
             onActivity={conversations.refresh}
             chatPrefs={chatPrefs}
+            contextState={contextState}
           />
         )}
       </div>
