@@ -1,3 +1,6 @@
+/** Dispatched on `window` by anything that wants the shortcut sheet open (the Settings "View all shortcuts" button). */
+export const OPEN_SHORTCUTS_EVENT = 'mm:open-shortcuts';
+
 export interface GoToShortcut {
   /** Second key of the "G then <key>" chord, lower-case. */
   readonly key: string;

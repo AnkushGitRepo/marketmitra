@@ -1,0 +1,28 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.preview {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.link {
+  margin-top: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  padding: 10px 18px;
+  min-height: 42px;
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.link:hover {
+  background: var(--app-pill-bg);
+}

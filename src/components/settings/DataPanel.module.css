@@ -1,0 +1,112 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.exportRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+}
+
+.exportRow > div {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 24px;
+  border-radius: var(--radius-pill);
+  background: var(--app-ink);
+  color: var(--app-cream);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Fenced off on purpose: a red border, its own heading, and a typed confirmation before anything is deleted. */
+.danger {
+  padding: 22px 24px;
+  border: 1.5px solid var(--app-loss-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+}
+
+.dangerTitle {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-loss-text);
+}
+
+.dangerIntro {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: var(--app-text-muted);
+}
+
+.dangerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dangerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
+  flex-wrap: wrap;
+  padding: 14px 0;
+  border-top: 1px solid var(--app-loss-border);
+}
+
+.dangerItem > div {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.dangerLabel {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.dangerBtn {
+  min-height: 42px;
+  border: 1px solid var(--app-loss-text);
+  border-radius: var(--radius-pill);
+  padding: 0 18px;
+  background: var(--color-surface);
+  color: var(--app-loss-text);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dangerBtn:hover:not(:disabled) {
+  background: var(--app-loss-bg);
+}
+
+.dangerBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+  .exportBtn,
+  .dangerBtn {
+    width: 100%;
+  }
+}

@@ -4480,6 +4480,37 @@
           }
         }
       }
+    },
+    "/api/settings/ai/test": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Test the stored AI key",
+        "description": "Tests the signed-in user's stored AI provider key with a tiny request and returns the provider, model and the measured round-trip latency in milliseconds. The key is never part of the response. Uses a few tokens of the user's own key. Rate limited (ai tier).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { provider, model, latencyMs } }"
+          },
+          "400": {
+            "description": "The provider rejected the key; `error` carries the reason."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "no_ai_key: nothing stored to test."
+          },
+          "429": {
+            "description": "Rate limited."
+          }
+        }
+      }
     }
   }
 }

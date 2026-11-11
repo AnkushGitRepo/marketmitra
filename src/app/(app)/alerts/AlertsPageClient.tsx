@@ -33,6 +33,8 @@ interface AlertsPageClientProps {
   alerts: Alert[];
   /** From `?new=1&symbol=…` on the stock page's "Set alert" button. */
   openNew: boolean;
+  /** From `?settings=1`, the link in Settings -> Alerts & Channels. */
+  openSettings?: boolean;
   prefillSymbol?: string;
   channelsView: NotificationChannelSettingsView | null;
   encConfigured: boolean;
@@ -44,7 +46,7 @@ interface AlertsPageClientProps {
 
 const SECTION_TITLE = { attention: 'Needs attention', monitoring: 'Active monitoring', paused: 'Paused', resolved: 'Earlier triggers' } as const;
 
-export function AlertsPageClient({ alerts, openNew, prefillSymbol, channelsView, encConfigured, autoGuardrailsEnabled, emailStatus, nowIso }: AlertsPageClientProps) {
+export function AlertsPageClient({ alerts, openNew, openSettings = false, prefillSymbol, channelsView, encConfigured, autoGuardrailsEnabled, emailStatus, nowIso }: AlertsPageClientProps) {
   const router = useRouter();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const counts = useMemo(() => tabCounts(alerts), [alerts]);
@@ -54,7 +56,7 @@ export function AlertsPageClient({ alerts, openNew, prefillSymbol, channelsView,
   const [creating, setCreating] = useState(openNew);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(openSettings);
   const [deleting, setDeleting] = useState<Alert | null>(null);
   const [error, setError] = useState<string | null>(null);
 

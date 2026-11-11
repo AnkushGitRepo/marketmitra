@@ -1,4 +1,6 @@
 .dialog {
+  /* The app's global reset zeroes margins, which would pin a modal <dialog> to the top-left; auto re-centres it. */
+  margin: auto;
   border: 1px solid var(--app-border-soft);
   border-radius: var(--radius-xl);
   padding: 24px;

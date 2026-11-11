@@ -1,40 +1,5 @@
-.layout {
-  display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
-}
-
-.toc {
-  position: sticky;
-  top: 90px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-family: var(--font-sans);
-}
-
-.toc a {
-  padding: 8px 14px;
-  border-radius: var(--radius-pill);
-  color: var(--app-text-muted);
-  font-size: 14px;
-  text-decoration: none;
-}
-
 @media (hover: hover) and (pointer: fine) {
-  .toc a:hover {
-    background: var(--app-pill-bg);
-    color: var(--app-ink);
   }
-}
-
-.sections {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
-}
 
 .section {
   scroll-margin-top: 90px;
@@ -184,33 +149,6 @@
   cursor: not-allowed;
 }
 
-.kbdList {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 24px;
-  font-size: 13.5px;
-  color: var(--app-text-muted);
-}
-
-.kbdList li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.kbd {
-  padding: 1px 7px;
-  border: 1px solid var(--app-border);
-  border-radius: 7px;
-  background: var(--app-pill-bg);
-  color: var(--app-ink);
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
 .about {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -235,26 +173,7 @@
 }
 
 @media (max-width: 900px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .toc {
-    position: static;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .toc a {
-    border: 1px solid var(--app-border);
-    padding: 6px 12px;
-  }
-
-  .kbdList {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
+        }
 
 .accountList {
   list-style: none;
