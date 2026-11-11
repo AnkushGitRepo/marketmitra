@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { Suspense, use, useEffect, useMemo, useState } from 'react';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
+import { AlertModal } from '@/components/alerts/AlertModal';
+import Link from 'next/link';
 import { InsightCard } from '@/components/dashboard-charts/InsightCard';
 import { DeepDive } from '@/components/stock/DeepDive';
 import type { StatementKey } from '@/components/stock/FinancialsPanel';
@@ -121,6 +123,8 @@ export function StockPageClient({
   const router = useRouter();
   const { setPageContext } = usePageContext();
   const [range, setRange] = useState<PricePeriod>('1y');
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertCreated, setAlertCreated] = useState(false);
   const alertHref = `/alerts?new=1&symbol=${encodeURIComponent(symbol)}`;
 
   // Publish what the user is looking at so Mitra (mounted as a shell sibling, not a child of this page)
@@ -154,9 +158,18 @@ export function StockPageClient({
         </div>
         <div className={styles.actions}>
           <WatchlistButton symbol={symbol} />
-          <button type="button" className={styles.setAlertButton} onClick={() => router.push(alertHref)}>
+          <button type="button" className={styles.setAlertButton} onClick={() => {
+              setAlertCreated(false);
+              setAlertOpen(true);
+            }}
+          >
             + Set alert
           </button>
+          {alertCreated && (
+            <span className={styles.alertNote} role="status">
+              Alert created. <Link href="/alerts">View alerts</Link>
+            </span>
+          )}
         </div>
       </div>
 
@@ -171,7 +184,7 @@ export function StockPageClient({
       </Suspense>
 
       <div className={styles.chartRow}>
-        <StockChart symbol={symbol} bars={bars} alertHref={alertHref} onRangeChange={(r) => setRange(CONTEXT_PERIOD[r])} />
+        <StockChart symbol={symbol} bars={bars} alertHref={alertHref} onAlert={() => { setAlertCreated(false); setAlertOpen(true); }} onRangeChange={(r) => setRange(CONTEXT_PERIOD[r])} />
       </div>
 
       <div className={styles.insightRow}>
@@ -193,6 +206,8 @@ export function StockPageClient({
           {sourceLabel && <p className={styles.sourceLine}>Source: {sourceLabel}</p>}
         </div>
       )}
+
+      <AlertModal open={alertOpen} symbol={symbol} onCreated={() => setAlertCreated(true)} onClose={() => setAlertOpen(false)} />
 
       <DeepDive symbol={symbol} financials={financials} peers={peers} shareholding={shareholding} news={news} documents={documents} />
     </div>
