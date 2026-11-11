@@ -102,11 +102,14 @@ lawyer review; production runs on a Clerk *dev* instance.
 From an up-to-date `main` whose CI is green and whose tree has no stray `* 2.*` files:
 
 ```bash
-cd services/fundamentals-api && vercel deploy --prod --yes   # 1. data service first
-cd ../..                      && vercel deploy --prod --yes   # 2. the app
-bash scripts/smoke-test.sh                                    # 3. must print ok for every check
+npm run release                                               # 0. new version + CHANGELOG from the commits since the last tag
+#    commit as exactly "chore(release): vX.Y.Z", PR, squash-merge; the Release workflow tags it and publishes the GitHub Release
+cd services/fundamentals-api && vercel deploy --prod --yes   # 1. data service first (only if it changed)
+cd ../..                      && npm run deploy:prod          # 2. the app: refuses unless HEAD is the tagged release; verifies /api/version; runs the smoke test
 vercel inspect <deployment-url>                               # target=production, status=Ready
 ```
+
+Every production deploy of the app is a tagged release (ADR 0051); `ALLOW_UNTAGGED=1 npm run deploy:prod` is the emergency override.
 
 - Both Vercel projects deploy via the CLI (not git integration); the project Node version is 24.x.
 - **Production DB migrations** (maintainer runs them — they need production credentials) **before** deploying code that
