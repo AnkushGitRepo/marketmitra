@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeAiError } from './generate';
+import { failureSummary, normalizeAiError } from './generate';
 
 describe('normalizeAiError', () => {
   it('buckets an invalid-key error and echoes the provider text', () => {
@@ -42,5 +42,16 @@ describe('normalizeAiError', () => {
 
   it('falls back to a generic message with no detail', () => {
     expect(normalizeAiError(undefined)).toBe('The AI request failed.');
+  });
+});
+
+describe('failureSummary', () => {
+  it('keeps only the error type and HTTP status, never the provider body', () => {
+    const err = Object.assign(new Error('boom: prompt fragment sk-secret'), { name: 'APICallError', statusCode: 429 });
+    expect(failureSummary(err)).toBe('APICallError (HTTP 429)');
+  });
+  it('falls back to a generic label for odd values', () => {
+    expect(failureSummary('x')).toBe('Error');
+    expect(failureSummary(Object.assign(new Error('x'), { name: 'bad name\nwith newline' }))).toBe('Error');
   });
 });

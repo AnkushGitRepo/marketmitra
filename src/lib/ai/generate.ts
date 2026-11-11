@@ -3,11 +3,18 @@ import type { z } from 'zod';
 import { resolveModel, type AiConfig } from './providers';
 
 /**
- * Server-log a failed model call without writing the raw error object: provider and SDK errors can carry request metadata or prompt
- * fragments. Only the normalised, user-safe message is logged.
+ * A log-safe summary of a failed model call: the error type and HTTP status only. The user-facing message (`normalizeAiError`) can embed the
+ * provider's response body, which may contain prompt or completion fragments, so it is never written to logs.
  */
+export function failureSummary(err: unknown): string {
+  const e = err as { name?: unknown; statusCode?: unknown; status?: unknown } | null;
+  const name = typeof e?.name === 'string' && /^[A-Za-z0-9_.]{1,60}$/.test(e.name) ? e.name : 'Error';
+  const code = typeof e?.statusCode === 'number' ? e.statusCode : typeof e?.status === 'number' ? e.status : null;
+  return code === null ? name : `${name} (HTTP ${code})`;
+}
+
 function logFailure(label: string, err: unknown): void {
-  console.error(`[ai] ${label}: ${normalizeAiError(err)}`);
+  console.error(`[ai] ${label}: ${failureSummary(err)}`);
 }
 
 export interface GenerateResult {
