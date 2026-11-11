@@ -21,6 +21,7 @@ export interface AnalystRecord {
   dossier: Dossier | null;
   watch: WatchState;
   lastCheckedAt: Date | null;
+  createdAt: Date;
 }
 
 type Generated = { ok: true; text: string; model: string; finishReason?: string } | { ok: false; error: string };

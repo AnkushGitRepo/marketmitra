@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { DAILY_AI_CAP } from '@/lib/analysts/caps';
-import { ensureAnalystIndexes, getUsage, latestEntries, listAnalysts, MAX_ANALYSTS_PER_USER, spawnAnalyst } from '@/lib/analysts/store';
+import { loadDeskData } from '@/lib/analysts/deskData';
+import { ensureAnalystIndexes, MAX_ANALYSTS_PER_USER, spawnAnalyst } from '@/lib/analysts/store';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getCompany } from '@/lib/dashboard/fundamentalsApi';
-import { getPreferences } from '@/lib/preferences/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,25 +14,7 @@ export async function GET() {
   const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
   try {
-    const records = await listAnalysts(userId);
-    const [latest, usage, prefs] = await Promise.all([latestEntries(userId, records.map((r) => r.symbol)), getUsage(userId), getPreferences(userId)]);
-    return NextResponse.json({
-      success: true,
-      data: {
-        auto: prefs.agents.auto,
-        usage: { used: usage.count, cap: DAILY_AI_CAP },
-        analysts: records.map((r) => ({
-          symbol: r.symbol,
-          source: r.source,
-          status: r.status,
-          statusNote: r.statusNote,
-          hasDossier: r.dossier !== null,
-          summary: r.dossier?.summary ?? null,
-          lastCheckedAt: r.lastCheckedAt?.toISOString() ?? null,
-          latest: latest[r.symbol] ?? null,
-        })),
-      },
-    });
+    return NextResponse.json({ success: true, data: await loadDeskData(userId) });
   } catch {
     return NextResponse.json({ success: false, error: 'Could not load your analysts' }, { status: 500 });
   }

@@ -25,7 +25,7 @@ let finish: string | undefined;
 let seenSystem: string[];
 let seenSchemas: unknown[];
 
-const analyst = (over: Record<string, unknown> = {}) => ({ userId: 'u1', symbol: 'ACC', source: 'holding' as const, status: 'active' as const, statusNote: null, dossier: { summary: 's', business: 'b', strengths: [], vulnerabilities: [], notAvailable: [], generatedAt: '', model: '' } as Dossier, watch: EMPTY_WATCH, lastCheckedAt: null as Date | null, ...over });
+const analyst = (over: Record<string, unknown> = {}) => ({ userId: 'u1', symbol: 'ACC', source: 'holding' as const, status: 'active' as const, statusNote: null, dossier: { summary: 's', business: 'b', strengths: [], vulnerabilities: [], notAvailable: [], generatedAt: '', model: '' } as Dossier, watch: EMPTY_WATCH, lastCheckedAt: null as Date | null, createdAt: new Date('2026-11-01T00:00:00Z'), ...over });
 
 const deps = (): EngineDeps => ({
   now: () => NOW,

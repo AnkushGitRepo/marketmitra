@@ -58,6 +58,7 @@ const toRecord = (d: AnalystDoc): AnalystRecord => ({
   dossier: d.dossier,
   watch: d.watch,
   lastCheckedAt: d.lastCheckedAt,
+  createdAt: d.createdAt,
 });
 
 const toEntry = (d: JournalDoc): JournalEntry => ({
@@ -136,6 +137,15 @@ export async function latestEntries(userId: string, symbols: readonly string[]):
     if (first) out[s] = first;
   }
   return out;
+}
+
+/** How many events each analyst has logged (the initiation entry is not an event), for the roster. */
+export async function countEvents(userId: string, symbols: readonly string[]): Promise<Record<string, number>> {
+  if (symbols.length === 0) return {};
+  const rows = await (await journal())
+    .aggregate<{ _id: string; n: number }>([{ $match: { userId, symbol: { $in: symbols.map((s) => s.toUpperCase()) }, kind: { $ne: 'initiation' } } }, { $group: { _id: '$symbol', n: { $sum: 1 } } }])
+    .toArray();
+  return Object.fromEntries(rows.map((r) => [r._id, r.n]));
 }
 
 export async function getUsage(userId: string, now: Date = new Date()): Promise<Usage> {

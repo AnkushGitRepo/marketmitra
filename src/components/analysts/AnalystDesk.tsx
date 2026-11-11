@@ -1,28 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { agoLabel, statusView } from '@/lib/analysts/format';
-import type { AnalystSource, AnalystStatus, JournalEntry } from '@/lib/analysts/types';
-import { DossierReader } from './DossierReader';
+import { useState } from 'react';
+import { DESK_FILTERS, filterAnalysts, filterCounts, summarizeDesk, type DeskData, type DeskFilter } from '@/lib/analysts/desk';
+import { AnalystCard } from './AnalystCard';
+import { AnalystDrawer } from './AnalystDrawer';
+import { RootDeck } from './RootDeck';
 import styles from './AnalystDesk.module.css';
 
-export interface RosterAnalyst {
-  symbol: string;
-  source: AnalystSource;
-  status: AnalystStatus;
-  statusNote: string | null;
-  hasDossier: boolean;
-  summary: string | null;
-  lastCheckedAt: string | null;
-  latest: JournalEntry | null;
-}
-
-export interface DeskData {
-  auto: boolean;
-  usage: { used: number; cap: number };
-  analysts: RosterAnalyst[];
-}
+const FILTER_LABEL: Record<DeskFilter, string> = { all: 'All', attention: 'Needs attention', vigilant: 'Vigilant', waiting: 'Waiting' };
 
 async function errorOf(res: Response, fallback: string): Promise<string> {
   const data = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -39,14 +25,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
   const [reading, setReading] = useState<string | null>(null);
   // Captured once so server and client render the same relative times.
   const [now] = useState(() => new Date());
-  const dialog = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const d = dialog.current;
-    if (!d) return;
-    if (reading && !d.open) d.showModal();
-    if (!reading && d.open) d.close();
-  }, [reading]);
+  const [filter, setFilter] = useState<DeskFilter>('all');
 
   const act = async (key: string, run: () => Promise<Response>, failure: string) => {
     setBusy(key);
@@ -84,21 +63,18 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
 
   const remove = (s: string) => act(`rm-${s}`, () => fetch(`/api/analysts/${s}`, { method: 'DELETE' }), 'Could not remove the analyst.');
 
-  const active = initial.analysts.filter((a) => a.status === 'active').length;
-  const { used, cap } = initial.usage;
+  const summary = summarizeDesk(initial.analysts, now);
+  const counts = filterCounts(initial.analysts, now);
+  const visible = filterAnalysts(initial.analysts, filter, now);
 
   return (
     <section className={styles.desk} aria-label="Analyst desk">
-      <div className={styles.summary}>
-        <div>
-          <p className={styles.count}>
-            {initial.analysts.length} {initial.analysts.length === 1 ? 'analyst' : 'analysts'} · {active} vigilant
-          </p>
-          <p className={styles.sub}>
-            Each holding gets its own analyst. It checks the stock every evening for free and only uses your AI key when something material happens.
-            AI calls today: {used} of {cap}.
-          </p>
-        </div>
+      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} />
+
+      <div className={styles.autonomy}>
+        <p className={styles.autonomyText}>
+          Analysts run on their own, with no prompting needed. They use your own AI key, at most {initial.usage.cap} calls a day, and only when something material happens.
+        </p>
         <label className={styles.switchRow}>
           <span>Automatic analysts</span>
           <button type="button" role="switch" aria-checked={auto} aria-label="Automatic analysts" className={styles.switch} onClick={() => void toggleAuto()} />
@@ -121,63 +97,27 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
       {initial.analysts.length === 0 ? (
         <p className={styles.empty}>No analysts yet. Add a holding on the Portfolio page and its analyst appears here, or deploy a watcher for any other stock.</p>
       ) : (
-        <ul className={styles.roster}>
-          {initial.analysts.map((a) => {
-            const view = statusView(a.status, a.statusNote);
-            return (
-              <li key={a.symbol} className={styles.card}>
-                <div className={styles.cardHead}>
-                  <span className={styles.symbol}>{a.symbol}</span>
-                  <span className={styles.source}>{a.source === 'holding' ? 'Holding' : 'Watcher'}</span>
-                  <span className={`${styles.status} ${styles[`tone_${view.tone}`]}`}>{view.label}</span>
-                  <span className={styles.checked}>Checked {agoLabel(a.lastCheckedAt, now)}</span>
-                </div>
-                {a.summary && <p className={styles.summaryText}>{a.summary}</p>}
-                {a.latest ? (
-                  <p className={styles.latest}>
-                    <span className={styles.latestLabel}>Latest entry</span> {a.latest.title}
-                  </p>
-                ) : (
-                  <p className={styles.latest}>{a.statusNote ?? 'No journal entries yet.'}</p>
-                )}
-                <div className={styles.actions}>
-                  <button type="button" className={styles.link} onClick={() => setReading(a.symbol)}>
-                    Read dossier
-                  </button>
-                  {a.status === 'paused' || a.status === 'error' ? (
-                    <button type="button" className={styles.link} disabled={busy === `status-${a.symbol}`} onClick={() => void setStatus(a.symbol, 'active')}>
-                      Resume
-                    </button>
-                  ) : (
-                    <button type="button" className={styles.link} disabled={busy === `status-${a.symbol}`} onClick={() => void setStatus(a.symbol, 'paused')}>
-                      Pause
-                    </button>
-                  )}
-                  {a.source === 'watcher' && (
-                    <button type="button" className={styles.linkDanger} disabled={busy === `rm-${a.symbol}`} onClick={() => void remove(a.symbol)}>
-                      Remove
-                    </button>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <div className={styles.filters} role="group" aria-label="Filter analysts">
+            {DESK_FILTERS.map((f) => (
+              <button key={f} type="button" className={styles.chip} aria-pressed={filter === f} onClick={() => setFilter(f)}>
+                {FILTER_LABEL[f]} <span className={styles.chipCount}>{counts[f]}</span>
+              </button>
+            ))}
+          </div>
+          {visible.length === 0 ? (
+            <p className={styles.empty}>No analysts match this filter.</p>
+          ) : (
+            <ul className={styles.roster}>
+              {visible.map((a) => (
+                <AnalystCard key={a.symbol} analyst={a} all={initial.analysts} usage={initial.usage} now={now} busy={busy} onRead={setReading} onSetStatus={(s, st) => void setStatus(s, st)} onRemove={(s) => void remove(s)} />
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
-      <dialog ref={dialog} className={styles.dialog} aria-label="Analyst dossier" onClose={() => setReading(null)} onCancel={() => setReading(null)}>
-        {reading && (
-          <>
-            <div className={styles.dialogHead}>
-              <h2 className={styles.dialogTitle}>{reading} · living dossier</h2>
-              <button type="button" className={styles.link} onClick={() => setReading(null)}>
-                Close
-              </button>
-            </div>
-            <DossierReader symbol={reading} />
-          </>
-        )}
-      </dialog>
+      <AnalystDrawer symbol={reading} onClose={() => setReading(null)} />
     </section>
   );
 }
