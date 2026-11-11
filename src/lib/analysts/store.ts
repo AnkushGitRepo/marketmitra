@@ -3,8 +3,9 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
 import { istDay, isHeartbeatDue, type Usage } from './caps';
+import { applyCriterionAction, type CriterionAction } from './criteria';
 import type { AnalystRecord } from './engine';
-import { EMPTY_WATCH, type AnalystSource, type AnalystStatus, type Dossier, type JournalEntry, type WatchState } from './types';
+import { EMPTY_WATCH, type AnalystSource, type AnalystStatus, type Dossier, type CriterionMetric, type JournalEntry, type ThesisCriterion, type WatchState } from './types';
 
 interface AnalystDoc {
   _id: ObjectId;
@@ -18,6 +19,8 @@ interface AnalystDoc {
   lastCheckedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  /** Absent on analysts written before thesis criteria existed. */
+  criteria?: ThesisCriterion[] | null;
 }
 
 interface JournalDoc extends Omit<JournalEntry, 'id' | 'ts'> {
@@ -59,6 +62,7 @@ const toRecord = (d: AnalystDoc): AnalystRecord => ({
   watch: d.watch,
   lastCheckedAt: d.lastCheckedAt,
   createdAt: d.createdAt,
+  criteria: d.criteria ?? null,
 });
 
 const toEntry = (d: JournalDoc): JournalEntry => ({
@@ -117,6 +121,18 @@ export async function saveDossier(userId: string, symbol: string, dossier: Dossi
 
 export async function saveCheck(userId: string, symbol: string, watch: WatchState, lastCheckedAt: Date): Promise<void> {
   await (await analysts()).updateOne({ userId, symbol: symbol.toUpperCase() }, { $set: { watch, lastCheckedAt, updatedAt: lastCheckedAt } });
+}
+
+export async function saveCriteria(userId: string, symbol: string, criteria: ThesisCriterion[]): Promise<void> {
+  await (await analysts()).updateOne({ userId, symbol: symbol.toUpperCase() }, { $set: { criteria, updatedAt: new Date() } });
+}
+
+/** Switches one of the analyst's criteria on or off, or removes it. Returns the new list, or null when the analyst or criterion does not exist. */
+export async function updateCriterion(userId: string, symbol: string, id: CriterionMetric, action: CriterionAction): Promise<ThesisCriterion[] | null> {
+  const record = await getAnalyst(userId, symbol);
+  const next = record?.criteria ? applyCriterionAction(record.criteria, id, action) : null;
+  if (next) await saveCriteria(userId, symbol, next);
+  return next;
 }
 
 export async function appendJournal(entry: Omit<JournalEntry, 'id'> & { userId: string }): Promise<void> {

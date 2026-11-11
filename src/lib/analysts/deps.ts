@@ -4,6 +4,7 @@ import { generateInsightObject, generateInsightText } from '@/lib/ai/generate';
 import { loadSignalBundle } from '@/lib/ai/stockSignalsServer';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { getDocuments } from '@/lib/dashboard/fundamentalsApi';
+import { deliverNotification, resolveChannels } from '@/lib/notifications/deliver';
 import { logEvent } from '@/lib/system/eventLog';
 import type { EngineDeps } from './engine';
 import * as store from './store';
@@ -28,6 +29,11 @@ export function realDeps(): EngineDeps {
     appendJournal: store.appendJournal,
     saveDossier: (userId, symbol, dossier, watch) => store.saveDossier(userId, symbol, dossier, watch),
     saveCheck: store.saveCheck,
+    saveCriteria: store.saveCriteria,
+    // The user's own alert channels, the same fan-out the price alerts use.
+    notify: async (userId, payload) => {
+      await deliverNotification(userId, { kind: 'alert', ...payload }, await resolveChannels(userId));
+    },
     setStatus: (userId, symbol, status, note) => store.setStatus(userId, symbol, status, note).then(() => undefined),
     log: (e) => logEvent({ level: 'warn', ...e }),
   };

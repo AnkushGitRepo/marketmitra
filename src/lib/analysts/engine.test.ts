@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { buildSignals } from '@/lib/stock/signals';
 import { DAILY_AI_CAP } from './caps';
 import { heartbeat, initiate, type EngineDeps } from './engine';
-import { EMPTY_WATCH, type Dossier, type JournalEntry } from './types';
+import { EMPTY_WATCH, type Dossier, type JournalEntry, type ThesisCriterion } from './types';
 
 const NOW = new Date('2026-11-11T11:00:00Z'); // 16:30 IST
 const signals = buildSignals({ sector: null, industry: null, ratios: [], peers: [], price: 100, bars: [], range52: null, profitAndLoss: [], balanceSheet: [], cashFlow: [], shareholding: [], news: [] });
@@ -10,7 +10,8 @@ const bar = (i: number, close: number, volume = 1000) => ({ time: `d${String(i).
 const quiet = Array.from({ length: 25 }, (_, i) => bar(i, 100));
 const spike = [...quiet.slice(0, 24), bar(24, 106)];
 
-const memoJson = JSON.stringify({ summary: 'A steady company.', business: 'Makes things.', strengths: [{ title: 'Debt', text: 'Low debt.' }], vulnerabilities: [{ title: 'Margins', text: 'Thin.' }], notAvailable: ['Concalls'] });
+const memoJson = JSON.stringify({ summary: 'A steady company.', business: 'Makes things.', strengths: [{ title: 'Debt', text: 'Low debt.' }], vulnerabilities: [{ title: 'Margins', text: 'Thin.' }], notAvailable: ['Concalls'], criteria: [] });
+const withRoce = (roce: number | null) => ({ ...signals, quality: { ...signals.quality, roce }, ownership: { ...signals.ownership, promoter: { pct: 56, delta1q: null, delta4q: 0 } } });
 const entryJson = JSON.stringify({ title: 'Price jump', body: 'Moved +6% on volume.', impact: 'neutral' });
 
 let journal: JournalEntry[];
@@ -24,13 +25,17 @@ let logs: Array<{ source: string; meta: Record<string, unknown> }>;
 let finish: string | undefined;
 let seenSystem: string[];
 let seenSchemas: unknown[];
+let liveSignals: typeof signals;
+let savedCriteria: ThesisCriterion[] | undefined;
+let notices: Array<{ title: string; body: string; href: string }>;
+let notifyFails: boolean;
 
-const analyst = (over: Record<string, unknown> = {}) => ({ userId: 'u1', symbol: 'ACC', source: 'holding' as const, status: 'active' as const, statusNote: null, dossier: { summary: 's', business: 'b', strengths: [], vulnerabilities: [], notAvailable: [], generatedAt: '', model: '' } as Dossier, watch: EMPTY_WATCH, lastCheckedAt: null as Date | null, createdAt: new Date('2026-11-01T00:00:00Z'), ...over });
+const analyst = (over: Record<string, unknown> = {}) => ({ userId: 'u1', symbol: 'ACC', source: 'holding' as const, status: 'active' as const, statusNote: null, dossier: { summary: 's', business: 'b', strengths: [], vulnerabilities: [], notAvailable: [], generatedAt: '', model: '' } as Dossier, watch: EMPTY_WATCH, lastCheckedAt: null as Date | null, createdAt: new Date('2026-11-01T00:00:00Z'), criteria: null as ThesisCriterion[] | null, ...over });
 
 const deps = (): EngineDeps => ({
   now: () => NOW,
   getAiConfig: async () => aiKey as never,
-  loadData: async () => ({ context: { symbol: 'ACC', company: { name: 'ACC', sector: null, industry: null, about: null }, latestClose: 100, news: [] }, signals, raw: { bars, range52: null, news: [], peers: [] } }),
+  loadData: async () => ({ context: { symbol: 'ACC', company: { name: 'ACC', sector: null, industry: null, about: null }, latestClose: 100, news: [] }, signals: liveSignals, raw: { bars, range52: null, news: [], peers: [] } }),
   loadDocuments: async () => [],
   generate: async (_c, system, _p, schema) => {
     calls += 1;
@@ -46,6 +51,11 @@ const deps = (): EngineDeps => ({
   saveDossier: async (_u, _s, dossier, watch) => void Object.assign(saved, { dossier, watch, status: 'active' }),
   saveCheck: async (_u, _s, watch, lastChecked) => void Object.assign(saved, { watch, lastChecked }),
   setStatus: async (_u, _s, status, note) => void Object.assign(saved, { status, note }),
+  saveCriteria: async (_u, _s, criteria) => void (savedCriteria = criteria),
+  notify: async (_u, p) => {
+    if (notifyFails) throw new Error('channel down');
+    notices.push(p);
+  },
   log: async (e) => void logs.push(e),
 });
 
@@ -54,6 +64,10 @@ beforeEach(() => {
   logs = [];
   seenSystem = [];
   seenSchemas = [];
+  liveSignals = signals;
+  savedCriteria = undefined;
+  notices = [];
+  notifyFails = false;
   finish = 'stop';
   saved = {};
   usage = { day: '2026-11-11', count: 0 };
@@ -188,6 +202,50 @@ describe('heartbeat', () => {
     bars = spike;
     expect(await heartbeat(analyst({ status: 'paused' }), deps())).toBe('skipped');
     expect(calls).toBe(0);
+    expect(journal).toHaveLength(0);
+  });
+});
+
+describe('thesis criteria (#130)', () => {
+  const roceBelow10: ThesisCriterion = { id: 'roce', metric: 'roce', op: 'below', threshold: 10, baseline: 14, why: '', source: 'analyst', enabled: true, breached: false };
+
+  it('saves the analyst\'s proposals at initiation, checked against the figures, with defaults topping up a short list', async () => {
+    liveSignals = withRoce(14);
+    reply = { ok: true, text: JSON.stringify({ ...JSON.parse(memoJson), criteria: [{ metric: 'roce', threshold: 10, why: 'Core of the thesis.' }, { metric: 'roce', threshold: 99 }, { metric: 'sharePrice', threshold: 1 }] }) };
+    await initiate(analyst({ status: 'initializing', dossier: null }), deps());
+    expect(savedCriteria?.[0]).toMatchObject({ metric: 'roce', threshold: 10, source: 'analyst', why: 'Core of the thesis.' });
+    expect(savedCriteria?.some((c) => c.source === 'default')).toBe(true);
+    expect(savedCriteria?.length).toBeLessThanOrEqual(4);
+  });
+  it('seeds free defaults at the next check for a dossier written before criteria existed', async () => {
+    liveSignals = withRoce(14);
+    await heartbeat(analyst({ criteria: null }), deps());
+    expect(savedCriteria?.length).toBeGreaterThan(0);
+    expect(savedCriteria?.every((c) => c.source === 'default')).toBe(true);
+    expect(calls).toBe(0);
+  });
+  it('writes a high-alert thesis entry and notifies on a breach, with no AI call, and counts the day as journaled', async () => {
+    liveSignals = withRoce(8);
+    expect(await heartbeat(analyst({ criteria: [roceBelow10] }), deps())).toBe('journaled');
+    expect(calls).toBe(0);
+    expect(journal).toHaveLength(1);
+    expect(journal[0]).toMatchObject({ kind: 'thesis', alert: 'high', impact: 'negative', title: 'Thesis check: ROCE below 10%' });
+    expect(journal[0].body).toMatch(/not a recommendation/);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({ title: 'ACC: Thesis check: ROCE below 10%', href: '/stock/ACC' });
+    expect(savedCriteria?.[0].breached).toBe(true);
+  });
+  it('does not repeat a breach on the next check, and keeps the entry if the notification fails', async () => {
+    liveSignals = withRoce(8);
+    expect(await heartbeat(analyst({ criteria: [{ ...roceBelow10, breached: true }] }), deps())).toBe('quiet');
+    expect(journal).toHaveLength(0);
+    notifyFails = true;
+    expect(await heartbeat(analyst({ criteria: [roceBelow10] }), deps())).toBe('journaled');
+    expect(journal).toHaveLength(1);
+  });
+  it('ignores a disabled criterion', async () => {
+    liveSignals = withRoce(8);
+    expect(await heartbeat(analyst({ criteria: [{ ...roceBelow10, enabled: false }] }), deps())).toBe('quiet');
     expect(journal).toHaveLength(0);
   });
 });

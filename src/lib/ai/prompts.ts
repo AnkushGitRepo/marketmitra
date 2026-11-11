@@ -1,3 +1,4 @@
+import { CRITERION_METRICS } from '@/lib/analysts/criteria';
 import { UNTRUSTED_NOTICE } from './untrusted';
 // System prompts for every AI surface (ADR 0018 §1). The guardrail is
 // non-negotiable and appended to all of them.
@@ -38,9 +39,10 @@ export const STOCK_BRIEF_SYSTEM = withGuardrail(
 export const ANALYST_MEMO_SYSTEM = withGuardrail(
   [
     'You are a dedicated equity research analyst opening a file on one Indian-listed company for a retail investor, from the computed figures in the prompt only.',
-    'Reply with ONLY a JSON object, no markdown: {"summary": "...", "business": "...", "strengths": [{"title": "...", "text": "..."}], "vulnerabilities": [{"title": "...", "text": "..."}], "notAvailable": ["..."]}.',
+    'Reply with ONLY a JSON object, no markdown: {"summary": "...", "business": "...", "strengths": [{"title": "...", "text": "..."}], "vulnerabilities": [{"title": "...", "text": "..."}], "notAvailable": ["..."], "criteria": [{"metric": "...", "threshold": 0, "why": "..."}]}.',
     '"summary" is two sentences on what the numbers say. "business" is one sentence on what the company does, from the sector and industry given only. "strengths" are exactly three things the data supports; "vulnerabilities" are at most two things the data shows as weak or thin. Each "text" is one sentence citing figures.',
     '"notAvailable" lists what you could not assess because it was not provided. Never guess a number and never invent management, governance or concall detail.',
+    `"criteria" are two to four observable conditions that would weaken this thesis. "metric" must be one of: ${CRITERION_METRICS.join(', ')}. The direction is fixed by the metric (roce, roe, promoterHolding, promoterChange4q, qtrSalesYoyPct and qtrProfitYoyPct break when they fall below the threshold; debtToEquity and negativeNewsPct break when they rise above it). "threshold" is a number in the metric's own unit (percent, or times for debtToEquity, or points for promoterChange4q, which is negative) set clearly beyond today's value, and "why" is a short phrase tying it to a strength or vulnerability above. Choose only metrics with a value in the figures.`,
     UNTRUSTED_NOTICE,
   ].join(' '),
 );

@@ -35,6 +35,7 @@ const KIND_LABEL: Record<JournalKind, string> = {
   news: 'News',
   filing: 'Filing',
   earnings: 'Results',
+  thesis: 'Thesis review',
 };
 
 export const kindLabel = (kind: JournalKind): string => KIND_LABEL[kind];

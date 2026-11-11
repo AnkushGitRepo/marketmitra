@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { agoLabel, kindLabel } from '@/lib/analysts/format';
-import type { Dossier, JournalEntry } from '@/lib/analysts/types';
+import { describeCriterion, type CriterionAction } from '@/lib/analysts/criteria';
+import type { Dossier, JournalEntry, ThesisCriterion } from '@/lib/analysts/types';
 import styles from './DossierReader.module.css';
 
 interface AnalystDetail {
@@ -10,6 +11,7 @@ interface AnalystDetail {
   status: string;
   statusNote: string | null;
   dossier: Dossier | null;
+  criteria: ThesisCriterion[] | null;
   journal: JournalEntry[];
 }
 
@@ -25,6 +27,7 @@ type Load = { state: 'loading' } | { state: 'none' } | { state: 'error' } | { st
 /** The analyst's living dossier and journal, read-only. Used by the roster modal and the stock page's Agent Journal tab. */
 export function DossierReader({ symbol, tabbed = false }: { readonly symbol: string; readonly tabbed?: boolean }) {
   const [tab, setTab] = useState<Tab>('thesis');
+  const [criteriaError, setCriteriaError] = useState<string | null>(null);
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   // Captured once so server and client render the same relative times.
   const [now] = useState(() => new Date());
@@ -52,7 +55,57 @@ export function DossierReader({ symbol, tabbed = false }: { readonly symbol: str
   if (load.state === 'none') return <p className={styles.note}>No analyst is assigned to {symbol} yet. Holdings get one automatically; use Deploy watcher on the Agents page for any other stock.</p>;
   if (load.state === 'error') return <p className={styles.note}>Could not load this analyst right now.</p>;
 
-  const { dossier, journal, statusNote } = load.detail;
+  const { dossier, journal, statusNote, criteria } = load.detail;
+
+  // Switch a criterion on or off, or remove it; the server answers with the new list.
+  const changeCriterion = (id: ThesisCriterion['id'], action: CriterionAction) => {
+    setCriteriaError(null);
+    void fetch(`/api/analysts/${encodeURIComponent(symbol)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ criterion: { id, action } }) })
+      .then(async (res) => {
+        const json = (await res.json()) as { success: boolean; data?: { criteria: ThesisCriterion[] } };
+        if (!res.ok || !json.success || !json.data) throw new Error();
+        const next = json.data.criteria;
+        setLoad((cur) => (cur.state === 'ready' ? { state: 'ready', detail: { ...cur.detail, criteria: next } } : cur));
+      })
+      .catch(() => setCriteriaError('Could not update that criterion. Try again.'));
+  };
+
+  const criteriaSection = dossier && (
+    <section>
+      <h3 className={styles.h}>Thesis criteria</h3>
+      {criteria === null ? (
+        <p className={styles.note}>Criteria are set at the analyst’s next evening check.</p>
+      ) : criteria.length === 0 ? (
+        <p className={styles.note}>No criteria are being watched.</p>
+      ) : (
+        <ul className={styles.list}>
+          {criteria.map((c) => (
+            <li key={c.id} className={styles.criterion} data-state={!c.enabled ? 'off' : c.breached ? 'breached' : 'watching'}>
+              <div className={styles.criterionHead}>
+                <strong>{describeCriterion(c)}</strong>
+                <span className={styles.criterionState}>{!c.enabled ? 'Off' : c.breached ? 'Breached' : 'Watching'}</span>
+              </div>
+              {c.why && <p className={styles.note}>{c.why}</p>}
+              <div className={styles.criterionActions}>
+                <button type="button" className={styles.linkBtn} onClick={() => changeCriterion(c.id, c.enabled ? 'disable' : 'enable')}>
+                  {c.enabled ? 'Turn off' : 'Turn on'}
+                </button>
+                <button type="button" className={styles.linkBtn} onClick={() => changeCriterion(c.id, 'remove')}>
+                  Remove
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {criteriaError && (
+        <p className={styles.note} role="alert">
+          {criteriaError}
+        </p>
+      )}
+      <p className={styles.note}>Checked every evening with no AI. A breach is logged in the journal and sent to your alert channels as a point to review the thesis, never as a recommendation.</p>
+    </section>
+  );
   const thesis = (
     <>
       {!dossier ? (
@@ -91,6 +144,7 @@ export function DossierReader({ symbol, tabbed = false }: { readonly symbol: str
           {dossier.notAvailable.length > 0 && <p className={styles.note}>Not assessed (not in our data): {dossier.notAvailable.join(', ')}.</p>}
         </>
       )}
+      {criteriaSection}
     </>
   );
 
