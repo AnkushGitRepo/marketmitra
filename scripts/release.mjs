@@ -17,6 +17,7 @@ import {
   isNewer,
   parseCommit,
   prependChangelog,
+  setSpecVersion,
   renderSection,
   versionFromReleaseSubject,
 } from '../src/lib/release/release.ts';
@@ -108,10 +109,8 @@ lock.version = next;
 if (lock.packages?.['']) lock.packages[''].version = next;
 writeFileSync('package-lock.json', `${JSON.stringify(lock, null, 2)}\n`);
 
-// The API reference version follows the product version.
-const spec = JSON.parse(read('public/openapi.json'));
-spec.info.version = next;
-writeFileSync('public/openapi.json', `${JSON.stringify(spec, null, 2)}\n`);
+// The API reference version follows the product version. Edited as text so nothing else in the file moves.
+writeFileSync('public/openapi.json', setSpecVersion(read('public/openapi.json'), next));
 
 let existing = null;
 try {

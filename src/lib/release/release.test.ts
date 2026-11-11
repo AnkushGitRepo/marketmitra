@@ -9,6 +9,7 @@ import {
   prependChangelog,
   releaseNotesFor,
   renderSection,
+  setSpecVersion,
   versionFromReleaseSubject,
   type Commit,
 } from './release';
@@ -134,5 +135,31 @@ describe('versionFromReleaseSubject', () => {
     // GitHub's squash merge appends the PR number to the title.
     expect(versionFromReleaseSubject('chore(release): v0.2.0 (#93)')).toBe('0.2.0');
     for (const s of ['chore: release v0.2.0', 'feat: v0.2.0', 'chore(release): 0.2.0', 'chore(release): v0.2', 'chore(release): v0.2.0 extra', 'chore(release): v0.2.0 (#x)']) expect(versionFromReleaseSubject(s)).toBeNull();
+  });
+});
+
+describe('setSpecVersion', () => {
+  const spec = `{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API",
+    "version": "0.1.0",
+    "description": "has a \\"version\\": \\"9\\" mention"
+  },
+  "paths": {
+    "/a": { "get": { "responses": { "404": { "description": "x" }, "200": { "description": "y" } } } }
+  }
+}
+`;
+
+  it('changes only info.version, leaving the rest byte for byte (response codes stay in their order)', () => {
+    const out = setSpecVersion(spec, '0.2.0');
+    expect(JSON.parse(out).info.version).toBe('0.2.0');
+    expect(out).toBe(spec.replace('"version": "0.1.0"', '"version": "0.2.0"'));
+    expect(out.indexOf('"404"')).toBeLessThan(out.indexOf('"200"'));
+  });
+
+  it('refuses a document without info.version', () => {
+    expect(() => setSpecVersion('{"paths":{}}', '1.0.0')).toThrow();
   });
 });
