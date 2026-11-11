@@ -168,3 +168,10 @@
 .alertNote a {
   color: var(--app-teal-strong);
 }
+
+.briefPlaceholder {
+  height: 360px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--app-border-soft);
+  background: var(--color-surface);
+}

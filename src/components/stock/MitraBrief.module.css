@@ -173,3 +173,211 @@
   color: var(--app-text-muted);
   margin-bottom: 8px;
 }
+
+/* --- 360 layout --- */
+
+.meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+  gap: 20px 28px;
+  align-items: start;
+}
+
+.points {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.matrix {
+  min-width: 0;
+  padding-left: 24px;
+  border-left: 1px solid var(--app-border-soft);
+}
+
+.pointList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.point {
+  border: 1px solid var(--app-border-soft);
+  border-left-width: 3px;
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+}
+
+.point.strength {
+  border-left-color: var(--app-gain);
+}
+
+.point.neutral {
+  border-left-color: #c58a1b;
+}
+
+.point.concern {
+  border-left-color: var(--app-loss);
+}
+
+.pointHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pointTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.pointText {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--app-ink);
+}
+
+.pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.pill_strength {
+  background: var(--app-pill-bg);
+  color: var(--app-gain);
+}
+
+.pill_neutral {
+  background: var(--app-pill-bg);
+  color: #8a5a0b;
+}
+
+.pill_concern {
+  background: var(--app-loss-bg);
+  color: var(--app-loss-text);
+}
+
+.viewPill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skelRow {
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skelBar,
+.skelLine {
+  display: block;
+  height: 10px;
+  border-radius: 6px;
+  background: var(--app-pill-bg);
+}
+
+.skelBar {
+  width: 38%;
+}
+
+.skelShort {
+  width: 65%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skelBar,
+  .skelLine {
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 860px) {
+  .cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .matrix {
+    padding-left: 0;
+    border-left: none;
+    padding-top: 16px;
+    border-top: 1px solid var(--app-border-soft);
+  }
+}
+
+.ghostList {
+  align-self: stretch;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ghost {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--app-border);
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.ghostNote {
+  font-size: 12px;
+  color: var(--app-text-faint);
+}

@@ -17,15 +17,18 @@ export const STOCK_SYSTEM = withGuardrail(
   'You are a markets analyst writing a short, neutral read on one Indian-listed company for a retail investor who is already looking at its dashboard. Cover what stands out in the valuation ratios, the recent financial trend, the shareholding pattern, and any notable recent news — in 4-6 sentences. Note gaps in the data rather than guessing.',
 );
 
-// The stock page's structured brief (#103). Output is JSON for the UI, not prose. The valuation / entry
-// fields are only allowed by the unrestricted rules (ADR 0054); in guarded mode the server drops them anyway.
+// The stock page's 360 brief (#115, ADR 0056). Output is JSON for the UI, not prose. The prompt carries computed figures
+// only (src/lib/stock/signals.ts); the valuation / entry fields are allowed only by the unrestricted rules (ADR 0054), and in
+// guarded mode the server drops them anyway.
 export const STOCK_BRIEF_SYSTEM = withGuardrail(
   [
-    'You write a short, neutral brief on one Indian-listed company for a retail investor, from the public data in the prompt only.',
-    'Reply with ONLY a JSON object, no markdown: {"strengths": [..], "watchpoints": [..]}.',
-    '"strengths" has at most 2 items and "watchpoints" at most 1 item; each is one plain sentence under 140 characters that cites a number or fact from the data.',
+    'You are a senior equity research analyst writing a data-grounded synthesis of one Indian-listed company (NSE/BSE) for a retail investor, from the computed data in the prompt only.',
+    'Reply with ONLY a JSON object, no markdown: {"points": [{"key": "quality", "signal": "strength", "text": "..."}, ...]}.',
+    'Use these keys, at most one point each, in this order: "quality" (capital efficiency: ROCE, ROE, debt, free cash flow), "growth" (sales and profit trajectory and the latest quarter), "valuation" (P/E and P/B against the peer median; historical medians are not provided, so never claim one), "ownership" (promoter, FII and DII holding and how it changed), "risk" (the single biggest risk or headwind visible in the data or the headlines).',
+    '"signal" is how the data reads for that factor: "strength", "neutral" or "concern". It is a description of the factor, not a recommendation.',
+    'Each "text" is one or two plain sentences under 260 characters and must cite specific numbers from the data. Never write company history or a generic description. Never put a disclaimer inside a point.',
+    'If the data for a factor is "not available", say it cannot be assessed from the data, or leave that key out. Never guess a number.',
     'If, and only if, the rules below allow a valuation view, also include "valuation" (one of "undervalued", "fairly valued", "overvalued", "unclear") and "entry" (one sentence on whether the current price looks reasonable and why).',
-    'If the data is thin, return fewer items rather than guessing.',
   ].join(' '),
 );
 
