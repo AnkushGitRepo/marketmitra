@@ -24,7 +24,7 @@ Every feature in MarketMitra ships with a documented API endpoint next to its UI
 | --- | --- |
 | Market data | `GET /api/search`, `GET /api/stock/{ticker}`, `GET /api/news` |
 | Screener | `GET /api/screener`, `GET /api/screener/facets`, `GET /api/screener/export` |
-| Portfolio | `/api/holdings`, `/api/portfolio-import/extract` and `/confirm`, `/api/wishlists` |
+| Portfolio | `/api/holdings`, `/api/portfolio-import/extract` and `/confirm`, `/api/watchlists` |
 | Alerts | `/api/alerts`, `/api/notifications`, `/api/settings/notifications`, `/api/mitra-activity` |
 | AI | `POST /api/ai/chat`, `POST /api/research`, `POST /api/insights/{stock\|portfolio\|ipo}`, `/api/settings/ai` |
 | Agents | `/api/agents/*` |

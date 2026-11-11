@@ -9,7 +9,7 @@ const has = (t: string) => catalog.some((e) => e.template === t);
 
 describe('buildCatalog (real openapi.json)', () => {
   it('exposes the data endpoints the chat should read', () => {
-    for (const t of ['/api/holdings', '/api/stock/{ticker}', '/api/news', '/api/screener', '/api/alerts', '/api/notes', '/api/wishlists', '/api/search', '/api/status']) {
+    for (const t of ['/api/holdings', '/api/stock/{ticker}', '/api/news', '/api/screener', '/api/alerts', '/api/notes', '/api/watchlists', '/api/search', '/api/status']) {
       expect(has(t), t).toBe(true);
     }
   });

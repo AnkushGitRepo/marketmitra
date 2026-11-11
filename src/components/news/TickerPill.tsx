@@ -76,7 +76,7 @@ export function TickerPill({ symbol, held }: TickerPillProps) {
     setMessage(null);
     if (lists.status !== 'idle') return;
     setLists({ status: 'loading' });
-    fetch('/api/wishlists')
+    fetch('/api/watchlists')
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('unavailable'))))
       .then((body: { data?: WatchlistRef[] }) => setLists({ status: 'ready', value: body.data ?? [] }))
       .catch(() => setLists({ status: 'error' }));
@@ -84,7 +84,7 @@ export function TickerPill({ symbol, held }: TickerPillProps) {
 
   const addTo = async (list: WatchlistRef) => {
     try {
-      const res = await fetch(`/api/wishlists/${list.id}/symbols`, {
+      const res = await fetch(`/api/watchlists/${list.id}/symbols`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbol }),
