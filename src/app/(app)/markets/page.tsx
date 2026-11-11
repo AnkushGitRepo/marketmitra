@@ -11,6 +11,7 @@ import { getIndices, getPrices } from '@/lib/dashboard/fundamentalsApi';
 import { getQuotes, type Quote } from '@/lib/dashboard/quotes';
 import { getCachedInsight } from '@/lib/insights';
 import { getMarketOverview } from '@/lib/markets/marketOverview';
+import { listHoldings } from '@/lib/holdings';
 import { listWishlists, type UserWishlist } from '@/lib/wishlists/userWishlists';
 import styles from './page.module.css';
 
@@ -43,7 +44,10 @@ export default async function MarketsPage() {
     }
   }
 
-  const allSymbols = Array.from(new Set(watchlists.flatMap((w) => w.symbols)));
+  // Holdings form a managed list; if they cannot be read the other lists still render.
+  const holdings = userId ? await listHoldings(userId).catch(() => []) : [];
+
+  const allSymbols = Array.from(new Set([...watchlists.flatMap((w) => w.symbols), ...holdings.map((h) => h.symbol)]));
   const [indices, overview, quoteList, sparkEntries, hasKey, cachedPulse] = await Promise.all([
     getIndices(),
     getMarketOverview(),
@@ -79,7 +83,7 @@ export default async function MarketsPage() {
 
         <div className={styles.watch}>
           {userId ? (
-            <WatchlistPanel watchlists={watchlists} quotes={quotes} sparks={sparks} />
+            <WatchlistPanel watchlists={watchlists} quotes={quotes} sparks={sparks} holdings={holdings} />
           ) : (
             <p className={styles.eyebrow}>Sign in to build your own watchlists.</p>
           )}

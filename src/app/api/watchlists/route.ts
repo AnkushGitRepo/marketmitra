@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUserId } from '@/lib/currentUserId';
+import { isReservedName } from '@/lib/wishlists/view';
 import { createWishlist, listWishlists, MAX_NAME } from '@/lib/wishlists/userWishlists';
 
 const createSchema = z.object({
-  name: z.string().trim().min(1).max(MAX_NAME),
+  name: z.string().trim().min(1).max(MAX_NAME).refine((n) => !isReservedName(n), 'Holdings is reserved for the list that follows your portfolio'),
 });
 
 export async function GET() {
