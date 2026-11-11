@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, type ClipboardEvent, type KeyboardEvent, type Ref } from 'react';
 import { MAX_FILES_PER_MESSAGE, MAX_FILE_BYTES, MAX_MESSAGE_CHARS } from '@/lib/mitra-chat/limits';
 import { formatBytes } from '@/lib/mitra-chat/uiHelpers';
 import { mitraApi, type UploadedFile } from './api';
@@ -16,7 +16,16 @@ type Pending =
   | { readonly key: string; readonly name: string; readonly size: number; readonly status: 'error'; readonly error: string }
   | { readonly key: string; readonly name: string; readonly size: number; readonly status: 'ready'; readonly file: UploadedFile };
 
+/** What the thread can ask the composer to do: take dropped files, open the file picker, prefill the box. */
+export interface ComposerHandle {
+  readonly addFiles: (files: readonly File[]) => void;
+  readonly openFilePicker: () => void;
+  readonly setDraft: (text: string) => void;
+  readonly focus: () => void;
+}
+
 interface ComposerProps {
+  readonly ref?: Ref<ComposerHandle>;
   /** Enter sends (default) or, when false, Cmd/Ctrl+Enter sends and Enter adds a new line. */
   readonly sendOnEnter?: boolean;
   readonly dictationLanguage?: string;
@@ -28,11 +37,10 @@ interface ComposerProps {
   readonly onStop: () => void;
 }
 
-export function Composer({ sendOnEnter = true, dictationLanguage = 'auto', busy, disabled, ensureConversation, onSend, onStop }: ComposerProps) {
+export function Composer({ ref, sendOnEnter = true, dictationLanguage = 'auto', busy, disabled, ensureConversation, onSend, onStop }: ComposerProps) {
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<readonly Pending[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -101,6 +109,17 @@ export function Composer({ sendOnEnter = true, dictationLanguage = 'auto', busy,
   const uploading = pending.some((p) => p.status === 'uploading');
   const canSend = !disabled && !busy && !uploading && (draft.trim().length > 0 || ready.length > 0);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      addFiles: (files) => void addFiles(files),
+      openFilePicker: () => fileInput.current?.click(),
+      setDraft: (text) => setDraft(text),
+      focus: () => textarea.current?.focus(),
+    }),
+    [addFiles]
+  );
+
   const send = () => {
     if (!canSend) return;
     onSend(draft.trim(), ready.map((p) => p.file));
@@ -124,22 +143,8 @@ export function Composer({ sendOnEnter = true, dictationLanguage = 'auto', busy,
       void addFiles(files);
     }
   };
-  const onDrop = (e: DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    void addFiles([...e.dataTransfer.files]);
-  };
-
   return (
-    <div
-      className={`${styles.composer} ${dragging ? styles.dragging : ''}`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={onDrop}
-    >
+    <div className={styles.composer}>
       {pending.length > 0 && (
         <ul className={styles.chips} aria-label="Attachments">
           {pending.map((p) => (
@@ -166,7 +171,7 @@ export function Composer({ sendOnEnter = true, dictationLanguage = 'auto', busy,
         onPaste={onPaste}
         rows={1}
         maxLength={MAX_MESSAGE_CHARS}
-        placeholder="Ask about a stock, your portfolio, or attach a report, chart or call recording…"
+        placeholder="Ask about a stock or your portfolio…"
         aria-label="Message Mitra"
         className={styles.textarea}
         disabled={disabled}
@@ -184,10 +189,18 @@ export function Composer({ sendOnEnter = true, dictationLanguage = 'auto', busy,
             e.target.value = '';
           }}
         />
-        <button type="button" className={styles.iconBtn} onClick={() => fileInput.current?.click()} disabled={disabled} aria-label="Attach files" title="Attach images, PDFs, audio or text files">
+        <button
+          type="button"
+          className={styles.attachBtn}
+          onClick={() => fileInput.current?.click()}
+          disabled={disabled}
+          aria-label="Attach files"
+          title="Upload annual report, concall recording, broker PDF or screenshot"
+        >
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M16.5 9.5 10 16a4 4 0 0 1-5.7-5.7l7-7a2.7 2.7 0 0 1 3.8 3.8l-7 7a1.3 1.3 0 0 1-1.9-1.9l6.4-6.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
+          <span className={styles.attachLabel}>Attach</span>
         </button>
         {dictation.supported && (
           <button
@@ -197,7 +210,7 @@ export function Composer({ sendOnEnter = true, dictationLanguage = 'auto', busy,
             disabled={disabled}
             aria-pressed={dictation.listening}
             aria-label={dictation.listening ? 'Stop dictation' : 'Dictate a message'}
-            title="Dictate — your browser sends the audio to its own speech service"
+            title="Dictate by voice. Your browser sends the audio to its own speech service."
           >
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <rect x="7.5" y="2.5" width="5" height="9" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
@@ -209,11 +222,11 @@ export function Composer({ sendOnEnter = true, dictationLanguage = 'auto', busy,
           {dictation.error ?? notice ?? (sendOnEnter ? 'Enter to send · Shift+Enter for a new line' : 'Ctrl/Cmd+Enter to send · Enter for a new line')}
         </span>
         {busy ? (
-          <button type="button" className={styles.sendBtn} onClick={onStop} aria-label="Stop generating">
+          <button type="button" className={`${styles.sendBtn} ${styles.sendReady}`} onClick={onStop} aria-label="Stop generating">
             Stop
           </button>
         ) : (
-          <button type="button" className={styles.sendBtn} onClick={send} disabled={!canSend} aria-label="Send message">
+          <button type="button" className={`${styles.sendBtn} ${canSend ? styles.sendReady : ''}`} onClick={send} disabled={!canSend} aria-label="Send message">
             Send
           </button>
         )}

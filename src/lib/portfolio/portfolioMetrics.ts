@@ -148,6 +148,22 @@ function driversText(gainers: readonly HoldingLike[], losers: readonly HoldingLi
   return 'No standout winners or losers: returns are evenly spread.';
 }
 
+/** Holdings in profit (best first) and in loss (worst first), by return on cost; unpriced and flat ones are in neither. */
+export function returnRanking<T extends HoldingLike>(holdings: readonly T[]): { readonly gainers: T[]; readonly losers: T[] } {
+  const ranked = priced(holdings)
+    .map((h) => ({ h: h as T, r: returnPct(h) }))
+    .filter((x): x is { h: T; r: number } => x.r !== null);
+  return {
+    gainers: ranked.filter((x) => x.r > 0).sort((a, b) => b.r - a.r).map((x) => x.h),
+    losers: ranked.filter((x) => x.r < 0).sort((a, b) => a.r - b.r).map((x) => x.h),
+  };
+}
+
+/** Return on cost in percent for one holding; null when unpriced or there is no cost basis. */
+export function holdingReturnPct(holding: HoldingLike): number | null {
+  return returnPct(holding);
+}
+
 /** Three scannable risk notes computed from the user's own numbers, so they work without an AI key. */
 export function buildRiskCards(holdings: readonly HoldingLike[]): RiskCard[] {
   const pricedHoldings = priced(holdings);
@@ -158,11 +174,7 @@ export function buildRiskCards(holdings: readonly HoldingLike[]): RiskCard[] {
   const topSector = sectors[0];
   const tickersInTopSector = pricedHoldings.filter((h) => (h.sector ?? OTHER_SECTOR) === topSector.name).length;
 
-  const ranked = pricedHoldings
-    .map((h) => ({ h, r: returnPct(h) }))
-    .filter((x): x is { h: HoldingLike; r: number } => x.r !== null);
-  const gainers = ranked.filter((x) => x.r > 0).sort((a, b) => b.r - a.r).map((x) => x.h);
-  const losers = ranked.filter((x) => x.r < 0).sort((a, b) => a.r - b.r).map((x) => x.h);
+  const { gainers, losers } = returnRanking(holdings);
 
   return [
     {

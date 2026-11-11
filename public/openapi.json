@@ -4391,6 +4391,28 @@
           }
         }
       }
+    },
+    "/api/mitra/context": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Mitra chat greeting context",
+        "description": "The signed-in user's first name (hosted accounts) and holdings with live prices, used to personalise the Mitra chat greeting and starter prompts. Own data only. Never fails because of missing quotes: unpriced holdings have a null ltp.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { firstName, holdings[] }, error }"
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      }
     }
   }
 }
