@@ -1,42 +1,49 @@
 'use client';
 
-import type { Check, CheckReport } from '@/lib/api-docs/checks';
+import type { Check } from '@/lib/api-docs/checks';
 import styles from './page.module.css';
 
 type Kind = Check['kind'];
 
 const KIND_LABEL: Record<Kind, string> = {
-  status: 'Status equals',
-  header: 'Header contains',
+  status: 'HTTP status',
+  header: 'Header',
   jsonPath: 'JSON path',
+  latency: 'Latency (ms)',
 };
 
 function blankCheck(kind: Kind): Check {
-  if (kind === 'status') return { kind, equals: 200 };
-  if (kind === 'header') return { kind, name: 'content-type', contains: 'json' };
-  return { kind, path: '', mode: 'exists' };
+  switch (kind) {
+    case 'status':
+      return { kind, equals: 200 };
+    case 'header':
+      return { kind, name: 'content-type', contains: 'json' };
+    case 'latency':
+      return { kind, maxMs: 500 };
+    case 'jsonPath':
+      return { kind, path: '', mode: 'exists' };
+  }
 }
 
-interface ChecksPanelProps {
+interface ChecksEditorProps {
   checks: Check[];
   onChange: (next: Check[]) => void;
-  /** Null until a request has been sent. */
-  report: CheckReport | null;
 }
 
-export function ChecksPanel({ checks, onChange, report }: ChecksPanelProps) {
+/** Collapsed by default: a reader who only wants to see the output is never forced through setup. */
+export function ChecksEditor({ checks, onChange }: ChecksEditorProps) {
   const update = (i: number, next: Check) => onChange(checks.map((c, idx) => (idx === i ? next : c)));
   const remove = (i: number) => onChange(checks.filter((_, idx) => idx !== i));
 
   return (
-    <div className={styles.fieldGroup}>
-      <p className={styles.fieldGroupTitle}>
-        Checks <span className={styles.fieldHint}>(pass/fail after Send)</span>
-      </p>
+    <details className={styles.checksEditor}>
+      <summary className={styles.checksSummary}>
+        Checks <span className={styles.fieldHint}>({checks.length}, run automatically on Send)</span>
+      </summary>
       {checks.map((c, i) => (
         <div key={i} className={styles.checkRow}>
           <select
-            className={styles.input}
+            className={styles.checkInput}
             aria-label="Check type"
             value={c.kind}
             onChange={(e) => update(i, blankCheck(e.target.value as Kind))}
@@ -48,24 +55,40 @@ export function ChecksPanel({ checks, onChange, report }: ChecksPanelProps) {
             ))}
           </select>
           {c.kind === 'status' && (
-            <input
-              className={styles.input}
-              aria-label="Expected status"
-              inputMode="numeric"
-              value={String(c.equals)}
-              onChange={(e) => update(i, { ...c, equals: Number(e.target.value.replace(/\D/g, '')) || 0 })}
-            />
+            <>
+              <span className={styles.checkOp}>equals</span>
+              <input
+                className={styles.checkInput}
+                aria-label="Expected status"
+                inputMode="numeric"
+                value={String(c.equals)}
+                onChange={(e) => update(i, { ...c, equals: Number(e.target.value.replace(/\D/g, '')) || 0 })}
+              />
+            </>
+          )}
+          {c.kind === 'latency' && (
+            <>
+              <span className={styles.checkOp}>under</span>
+              <input
+                className={styles.checkInput}
+                aria-label="Maximum latency in ms"
+                inputMode="numeric"
+                value={String(c.maxMs)}
+                onChange={(e) => update(i, { ...c, maxMs: Number(e.target.value.replace(/\D/g, '')) || 0 })}
+              />
+            </>
           )}
           {c.kind === 'header' && (
             <>
               <input
-                className={styles.input}
+                className={styles.checkInput}
                 aria-label="Header name"
                 value={c.name}
                 onChange={(e) => update(i, { ...c, name: e.target.value })}
               />
+              <span className={styles.checkOp}>contains</span>
               <input
-                className={styles.input}
+                className={styles.checkInput}
                 aria-label="Header value contains"
                 value={c.contains}
                 onChange={(e) => update(i, { ...c, contains: e.target.value })}
@@ -75,14 +98,14 @@ export function ChecksPanel({ checks, onChange, report }: ChecksPanelProps) {
           {c.kind === 'jsonPath' && (
             <>
               <input
-                className={styles.input}
+                className={styles.checkInput}
                 aria-label="JSON path"
                 placeholder="data.items[0].symbol"
                 value={c.path}
                 onChange={(e) => update(i, { ...c, path: e.target.value })}
               />
               <select
-                className={styles.input}
+                className={styles.checkInput}
                 aria-label="Path condition"
                 value={c.mode}
                 onChange={(e) => update(i, { ...c, mode: e.target.value as 'exists' | 'equals' })}
@@ -92,7 +115,7 @@ export function ChecksPanel({ checks, onChange, report }: ChecksPanelProps) {
               </select>
               {c.mode === 'equals' && (
                 <input
-                  className={styles.input}
+                  className={styles.checkInput}
                   aria-label="Expected value"
                   value={c.value ?? ''}
                   onChange={(e) => update(i, { ...c, value: e.target.value })}
@@ -112,21 +135,6 @@ export function ChecksPanel({ checks, onChange, report }: ChecksPanelProps) {
       >
         + Add check
       </button>
-
-      {report && (
-        <div className={styles.checkReport} role="status">
-          <span className={`${styles.status} ${report.passed ? styles.statusOk : styles.statusBad}`}>
-            {report.passed ? 'All checks passed' : 'Checks failed'}
-          </span>
-          <ul className={styles.checkList}>
-            {report.results.map((r, i) => (
-              <li key={i} className={r.passed ? styles.checkPass : styles.checkFail}>
-                <span aria-hidden="true">{r.passed ? '✓' : '✗'}</span> {r.detail}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+    </details>
   );
 }

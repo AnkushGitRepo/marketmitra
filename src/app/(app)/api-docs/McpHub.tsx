@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { buildMcpClients, buildToolCallBody, type McpClientId } from '@/lib/api-docs/mcpClients';
 import type { McpToolDoc } from '@/lib/api-docs/mcpTools';
 import { evaluateChecks, type Check } from '@/lib/api-docs/checks';
-import { ChecksPanel } from './ChecksPanel';
+import { ChecksEditor } from './ChecksPanel';
+import { RunOutput, runShortcut } from './RunOutput';
 import { fmt } from './restDocs';
 import styles from './page.module.css';
 
@@ -142,7 +143,7 @@ function ToolInspector({ tool }: { tool: McpToolDoc }) {
     { kind: 'jsonPath', path: 'result.content', mode: 'exists' },
   ]);
   const report = useMemo(
-    () => (output ? evaluateChecks(checks, { status: output.status, headers: output.headers, body: output.raw }) : null),
+    () => (output ? evaluateChecks(checks, { status: output.status, headers: output.headers, body: output.raw, ms: output.ms }) : null),
     [output, checks]
   );
 
@@ -183,7 +184,7 @@ function ToolInspector({ tool }: { tool: McpToolDoc }) {
   };
 
   return (
-    <article className={styles.inspector}>
+    <article className={styles.inspector} onKeyDown={(e) => runShortcut(e, run, running)}>
       <header className={styles.toolHead}>
         <code className={styles.toolName}>{tool.name}</code>
         <span className={styles.toolTitle}>{tool.title}</span>
@@ -230,25 +231,18 @@ function ToolInspector({ tool }: { tool: McpToolDoc }) {
       <pre className={styles.pre}>
         <code>{JSON.stringify(JSON.parse(body), null, 2)}</code>
       </pre>
-      <ChecksPanel checks={checks} onChange={setChecks} report={report} />
       <button type="button" className={styles.btnPrimary} onClick={run} disabled={running}>
         {running ? 'Running…' : 'Run example'}
+        <span className={styles.kbdHint}> ⌘↵</span>
       </button>
+      <ChecksEditor checks={checks} onChange={setChecks} />
       {output && (
-        <div className={styles.result}>
-          <div className={styles.resultHead}>
-            <span className={`${styles.status} ${output.ok ? styles.statusOk : styles.statusBad}`}>
-              {output.ok ? 'OK' : 'Error'}
-            </span>
-            <span className={styles.resultMeta}>{output.ms} ms &middot; live response</span>
-          </div>
-          <details open>
-            <summary className={styles.fileHint}>Response (live)</summary>
-            <pre className={`${styles.pre} ${styles.outputPre}`}>
-              <code>{output.text}</code>
-            </pre>
-          </details>
-        </div>
+        <RunOutput
+          meta={{ status: output.status, ok: output.ok, ms: output.ms }}
+          report={report}
+          formatted={output.text}
+          raw={output.raw}
+        />
       )}
     </article>
   );

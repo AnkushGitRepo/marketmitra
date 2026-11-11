@@ -72,6 +72,18 @@ describe('evaluateChecks', () => {
   it('an empty check list is not a pass', () => expect(run([]).passed).toBe(false));
 });
 
+describe('latency check', () => {
+  it('passes at or under the limit and fails above it', () => {
+    expect(evaluateChecks([{ kind: 'latency', maxMs: 500 }], target({ ms: 120 })).passed).toBe(true);
+    const r = evaluateChecks([{ kind: 'latency', maxMs: 100 }], target({ ms: 120 }));
+    expect(r.passed).toBe(false);
+    expect(r.results[0].detail).toContain('120');
+  });
+  it('fails cleanly when no timing is available', () => {
+    expect(evaluateChecks([{ kind: 'latency', maxMs: 500 }], target()).passed).toBe(false);
+  });
+});
+
 describe('defaultChecks', () => {
   it('asserts the first documented 2xx status', () => {
     expect(defaultChecks(['404', '201', '200'])).toEqual([{ kind: 'status', equals: 201 }]);

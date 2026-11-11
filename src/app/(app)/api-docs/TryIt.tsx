@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { defaultChecks, evaluateChecks, type Check } from '@/lib/api-docs/checks';
-import { ChecksPanel } from './ChecksPanel';
+import { ChecksEditor } from './ChecksPanel';
+import { RunOutput, runShortcut } from './RunOutput';
 import { fmt, isPublic, jsonExample, type Method, type Operation, type RunResult } from './restDocs';
 import styles from './page.module.css';
 
@@ -17,7 +18,7 @@ export function TryIt({ path, method, op }: { path: string; method: Method; op: 
   const [result, setResult] = useState<RunResult | null>(null);
   const [checks, setChecks] = useState<Check[]>(() => defaultChecks(Object.keys(op.responses ?? {})));
   const report = useMemo(
-    () => (result ? evaluateChecks(checks, { status: result.status, headers: result.headers, body: result.raw }) : null),
+    () => (result ? evaluateChecks(checks, { status: result.status, headers: result.headers, body: result.raw, ms: result.ms }) : null),
     [result, checks]
   );
   const [running, setRunning] = useState(false);
@@ -100,7 +101,7 @@ export function TryIt({ path, method, op }: { path: string; method: Method; op: 
   };
 
   return (
-    <div>
+    <div onKeyDown={(e) => runShortcut(e, run, running)}>
       <p className={styles.tryIntro}>
         This sends a real request to the current deployment using your signed-in session &mdash;
         no keys entered here.
@@ -177,11 +178,12 @@ export function TryIt({ path, method, op }: { path: string; method: Method; op: 
         </div>
       )}
 
-      <ChecksPanel checks={checks} onChange={setChecks} report={report} />
+      <ChecksEditor checks={checks} onChange={setChecks} />
 
       <div className={styles.panelActions}>
         <button type="button" className={styles.btnPrimary} onClick={run} disabled={running}>
           {running ? 'Sending…' : 'Send'}
+          <span className={styles.kbdHint}> ⌘↵</span>
         </button>
         <button
           type="button"
@@ -195,18 +197,12 @@ export function TryIt({ path, method, op }: { path: string; method: Method; op: 
       {error && <p className={styles.error}>{error}</p>}
 
       {result && (
-        <div className={styles.result}>
-          <div className={styles.resultHead}>
-            <span className={`${styles.status} ${result.ok ? styles.statusOk : styles.statusBad}`}>
-              {result.status} {result.statusText}
-            </span>
-            <span className={styles.resultMeta}>{result.ms} ms</span>
-            {result.rateLimit && <span className={styles.resultMeta}>{result.rateLimit}</span>}
-          </div>
-          <pre className={styles.pre}>
-            <code>{result.body || '(empty response)'}</code>
-          </pre>
-        </div>
+        <RunOutput
+          meta={{ status: result.status, ok: result.ok, ms: result.ms, note: result.rateLimit }}
+          report={report}
+          formatted={result.body}
+          raw={result.raw}
+        />
       )}
     </div>
   );

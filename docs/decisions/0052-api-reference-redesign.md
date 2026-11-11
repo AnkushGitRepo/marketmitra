@@ -31,6 +31,9 @@ server under a card, and gave an agent no copy-paste way to connect. The REST AP
   with defaults, example request, checks and the live response; a select on mobile). Long schemas such as `run_screener` scroll
   inside a capped parameter section so the page does not stretch. A Windsurf preset (`serverUrl`), Copy URL, and a reachability
   indicator from a real `tools/list` call were added. No sample output is invented; the response is always a live call.
+- **Checks UX (feedback on #100):** the checks editor is collapsed by default (the default checks still run on every send), each
+  check is one compact row, and results show as pass/fail pills above a response viewer (Formatted/Raw, Copy JSON, capped height)
+  with status, latency and size. A latency check was added. Cmd/Ctrl+Enter runs the request when focus is inside the panel.
 
 ## Consequences
 
