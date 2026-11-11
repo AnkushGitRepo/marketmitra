@@ -30,7 +30,7 @@ let savedCriteria: ThesisCriterion[] | undefined;
 let notices: Array<{ title: string; body: string; href: string }>;
 let notifyFails: boolean;
 
-const analyst = (over: Record<string, unknown> = {}) => ({ userId: 'u1', symbol: 'ACC', source: 'holding' as const, status: 'active' as const, statusNote: null, dossier: { summary: 's', business: 'b', strengths: [], vulnerabilities: [], notAvailable: [], generatedAt: '', model: '' } as Dossier, watch: EMPTY_WATCH, lastCheckedAt: null as Date | null, createdAt: new Date('2026-11-01T00:00:00Z'), criteria: null as ThesisCriterion[] | null, ...over });
+const analyst = (over: Record<string, unknown> = {}) => ({ userId: 'u1', symbol: 'ACC', source: 'holding' as const, status: 'active' as const, statusNote: null, dossier: { summary: 's', business: 'b', strengths: [], vulnerabilities: [], notAvailable: [], generatedAt: '', model: '' } as Dossier, watch: EMPTY_WATCH, lastCheckedAt: null as Date | null, createdAt: new Date('2026-11-01T00:00:00Z'), criteria: null as ThesisCriterion[] | null, retryCount: 0, ...over });
 
 const deps = (): EngineDeps => ({
   now: () => NOW,

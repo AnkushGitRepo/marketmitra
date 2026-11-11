@@ -5702,7 +5702,7 @@
           }
         },
         "summary": "Run the stock analyst sweep",
-        "description": "Analyst Desk worker (ADR 0058): gives every holding an analyst, builds pending dossiers and runs the end-of-day check for analysts that are due. Bounded per run; AI is only called for a new dossier or a material event, under a per-user daily cap. Bearer `CRON_SECRET`."
+        "description": "Analyst Desk worker (ADR 0058): gives every holding an analyst, builds pending dossiers and runs the end-of-day check for analysts that are due. Bounded per run; AI is only called for a new dossier or a material event, under a per-user daily cap. Bearer `CRON_SECRET`. An unexpected failure for one analyst puts it back in the queue (up to 3 attempts) instead of stalling it for good; analysts an earlier version left stalled by an unexpected error are re-queued the same way."
       }
     },
     "/api/analysts/chat": {
