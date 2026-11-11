@@ -3,9 +3,10 @@ import { withRateLimit } from '@/lib/rateLimit';
 import { z } from 'zod';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getAiConfig } from '@/lib/ai/userAiConfig';
-import { generateInsightText } from '@/lib/ai/generate';
-import { IPO_SYSTEM } from '@/lib/ai/prompts';
-import { buildIpoPrompt } from '@/lib/ai/insightPrompts';
+import { IPO_BRIEF_SYSTEM } from '@/lib/ai/prompts';
+import { IPO_SPEC } from '@/lib/ai/briefSpecs';
+import { buildIpoBriefPrompt, hasEnoughIpoData } from '@/lib/ai/briefPrompts';
+import { generateStructuredBrief } from '@/lib/ai/structuredGenerate';
 import { getOrGenerate, hashInput } from '@/lib/insights';
 import { retrieveInsightGrounding } from '@/lib/rag/insightContext';
 import { getIpos } from '@/lib/dashboard/iposApi';
@@ -39,6 +40,10 @@ async function handlePOST(request: Request) {
     return NextResponse.json({ success: false, error: 'That IPO is not in the current list.' }, { status: 404 });
   }
 
+  if (!hasEnoughIpoData(ipo)) {
+    return NextResponse.json({ success: false, error: 'There is not enough data on this IPO yet for a brief.' }, { status: 422 });
+  }
+
   // Shared surface — retrieve against the shared corpus only (userId: null).
   // Picks up DRHP/prospectus passages once those are indexed; today mostly
   // returns news about the company.
@@ -49,36 +54,21 @@ async function handlePOST(request: Request) {
     limit: 6,
   });
 
-  const input = {
-    ipo: {
-      name: ipo.name,
-      category: ipo.category,
-      status: ipo.status,
-      price: ipo.price,
-      ipo_size_cr: ipo.ipo_size_cr,
-      lot_size: ipo.lot_size,
-      subscription_times: ipo.subscription_times,
-      gmp: ipo.gmp,
-      gmp_pct: ipo.gmp_pct,
-      open_date: ipo.open_date,
-      close_date: ipo.close_date,
-      listing_date: ipo.listing_date,
-      anchor: ipo.anchor,
-    },
-    drhpExtract: null as string | null, // full-DRHP text still needs a URL source
-    grounding: grounding.passages,
-  };
-
   const result = await getOrGenerate({
     scope: 'ipo',
     key: slug,
     userId: null, // shared across users
-    inputHash: hashInput(input),
+    // The version marker retires pre-#125 prose briefs; GMP is rounded so a small tick does not bust the cache.
+    inputHash: hashInput({
+      v: 2,
+      ipo: [ipo.price, ipo.ipo_size_cr, ipo.lot_size, ipo.status, ipo.subscription_times, ipo.gmp === null ? null : Math.round(ipo.gmp), ipo.listing_date],
+      passages: grounding.passages.map((p) => p.text),
+    }),
     ttlMs: TTL_MS,
     force,
     generate: async () => {
-      const gen = await generateInsightText(aiConfig, IPO_SYSTEM, buildIpoPrompt(input));
-      return gen.ok ? { content: gen.text, model: gen.model } : { error: gen.error };
+      const out = await generateStructuredBrief({ aiConfig, system: IPO_BRIEF_SYSTEM, prompt: buildIpoBriefPrompt(ipo, grounding.passages), spec: IPO_SPEC });
+      return 'error' in out ? out : { content: out.content, model: out.model };
     },
   });
 

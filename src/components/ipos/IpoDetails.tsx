@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { InsightCard } from '@/components/dashboard-charts/InsightCard';
+import { StructuredBriefCard } from '@/components/dashboard-charts/StructuredBriefCard';
+import { hasEnoughIpoData } from '@/lib/ai/briefPrompts';
 import type { IpoTrigger } from '@/lib/alerts/types';
 import type { Ipo } from '@/lib/dashboard/iposApi';
 import { fmtDay } from '@/lib/dashboard/ipoView';
@@ -85,7 +86,21 @@ export function IpoDetails({ ipo, aiKeyAvailable }: { readonly ipo: Ipo; readonl
       </p>
 
       <div className={styles.insight}>
-        <InsightCard label="IPO brief" endpoint="/api/insights/ipo" body={{ slug: ipo.slug }} initial={null} hasKey={aiKeyAvailable} />
+        {hasEnoughIpoData(ipo) ? (
+          <StructuredBriefCard
+            surface="ipo"
+            title="IPO brief"
+            endpoint="/api/insights/ipo"
+            body={{ slug: ipo.slug }}
+            initial={null}
+            hasKey={aiKeyAvailable}
+            emptyText="No brief yet. Ask Mitra for the listing signal, offer structure, business and key risk."
+            noKeyText="to get a four-point IPO scorecard. MarketMitra charges nothing for it."
+            chatPrompt={`What should I understand about the ${ipo.name} IPO: the offer structure, the grey-market signal and the main risks?`}
+          />
+        ) : (
+          <p className={styles.note}>No AI brief yet: there is not enough data on this issue (no price or size listed).</p>
+        )}
       </div>
 
       <div className={styles.alertRow}>

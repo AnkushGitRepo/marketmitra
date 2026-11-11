@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { AiBriefCard } from '@/components/dashboard-charts/AiBriefCard';
+import { StructuredBriefCard } from '@/components/dashboard-charts/StructuredBriefCard';
 import { IndexStrip } from '@/components/dashboard-charts/IndexStrip';
 import { BreadthCard } from '@/components/markets/BreadthCard';
 import { SectorPerformanceCard } from '@/components/markets/SectorPerformanceCard';
@@ -94,13 +94,15 @@ export default async function MarketsPage() {
         </div>
 
         <div className={styles.pulse}>
-          <AiBriefCard
+          <StructuredBriefCard
+            surface="market"
             title="Mitra Market Pulse"
             endpoint="/api/insights/market"
             initial={cachedPulse?.content ?? null}
             hasKey={hasKey}
-            emptyText="No read yet. Ask Mitra for two sentences on how the market is trading today."
-            noKeyText="to get a two-sentence read on how the market is trading. MarketMitra charges nothing for it."
+            emptyText="No read yet. Ask Mitra for breadth, sector leaders and laggards, and the headline catalyst."
+            noKeyText="to get a three-point read on how the market is trading. MarketMitra charges nothing for it."
+            chatPrompt="How is the market trading today? Cover breadth, the strongest and weakest sectors and what the headlines say."
           />
         </div>
       </div>

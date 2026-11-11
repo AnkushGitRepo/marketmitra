@@ -1363,8 +1363,8 @@
         "tags": [
           "AI"
         ],
-        "summary": "Generate / fetch a portfolio insight",
-        "description": "Neutral synthesis of the user's holdings. Per-user cache, 6h. 400 with no holdings. Rate limited (ai tier).",
+        "summary": "Dashboard AI Daily Brief",
+        "description": "Three items from figures computed on the server: `return` (today's net rupee and % move and the top contributor), `exposure` (largest holding / sector weight) and `risk` (active price alerts within 3% of triggering, else none). Reply `content` is JSON, `{ items: [{ key, tone, text }] }` (tone: positive | neutral | warning). Uses the caller's own AI key (BYOK). Cached per user (shared for IPOs); briefs cached before v0.4.0 were prose and are regenerated. Body `{ force? }` (`{ slug, force? }` for an IPO).",
         "security": [
           {
             "cookieAuth": []
@@ -1391,7 +1391,7 @@
         },
         "responses": {
           "200": {
-            "description": "Insight text + metadata."
+            "description": "{ success, data: { content: '{\"items\":[{\"key\",\"tone\",\"text\"}]}', model, generatedAt }, meta: { cached } }"
           },
           "400": {
             "description": "no_ai_key or no holdings."
@@ -1410,8 +1410,8 @@
         "tags": [
           "AI"
         ],
-        "summary": "Generate / fetch an IPO brief",
-        "description": "Neutral synthesis of one IPO's public data. Cross-user shared cache keyed by slug, 12h. May use the operator key. Rate limited (ai tier).",
+        "summary": "IPO brief",
+        "description": "Four items: `listing` (GMP, GMP % and the implied listing price from the price band, the GMP being an unofficial estimate), `offer` (size, lot, minimum investment, subscription, dates), `business` and `risk` (only from retrieved filings or news, otherwise stated as not available). Reply `content` is JSON, `{ items: [{ key, tone, text }] }` (tone: positive | neutral | warning). Uses the caller's own AI key (BYOK). Cached per user (shared for IPOs); briefs cached before v0.4.0 were prose and are regenerated. Body `{ force? }` (`{ slug, force? }` for an IPO).",
         "security": [
           {
             "cookieAuth": []
@@ -1446,7 +1446,7 @@
         },
         "responses": {
           "200": {
-            "description": "Brief text + metadata."
+            "description": "{ success, data: { content: '{\"items\":[{\"key\",\"tone\",\"text\"}]}', model, generatedAt }, meta: { cached } }"
           },
           "400": {
             "description": "no_ai_key."
@@ -4441,8 +4441,8 @@
         "tags": [
           "AI"
         ],
-        "summary": "Generate / fetch the Mitra market pulse",
-        "description": "Two-sentence neutral read on today's indices, NIFTY 50 breadth and sector moves, grounded only in those figures. Per-user cache, 1h. 503 when market data is unavailable. Rate limited (ai tier).",
+        "summary": "Mitra Market Pulse",
+        "description": "Three items: `breadth` (advances vs declines), `leaders` (strongest and weakest sector with % moves) and `catalyst` (the main headline theme). Index levels are not repeated and no institutional-flow data exists. Reply `content` is JSON, `{ items: [{ key, tone, text }] }` (tone: positive | neutral | warning). Uses the caller's own AI key (BYOK). Cached per user (shared for IPOs); briefs cached before v0.4.0 were prose and are regenerated. Body `{ force? }` (`{ slug, force? }` for an IPO).",
         "security": [
           {
             "cookieAuth": []
@@ -4469,7 +4469,7 @@
         },
         "responses": {
           "200": {
-            "description": "Insight text + metadata."
+            "description": "{ success, data: { content: '{\"items\":[{\"key\",\"tone\",\"text\"}]}', model, generatedAt }, meta: { cached } }"
           },
           "400": {
             "description": "no_ai_key."
@@ -4491,8 +4491,8 @@
         "tags": [
           "AI"
         ],
-        "summary": "Generate / fetch the Mitra news pulse",
-        "description": "Two-sentence neutral read on the dominant themes in the latest 20 Indian markets headlines, grounded only in those headlines. Per-user cache, 1h. 503 when no headlines are available. Rate limited (ai tier).",
+        "summary": "Mitra news pulse",
+        "description": "Three themes: `earnings`, `macro` and `sector`, each with a tone (positive / neutral = developing / warning = negative). `[TICKER]` tags appear only for tickers present in the headlines. Reply `content` is JSON, `{ items: [{ key, tone, text }] }` (tone: positive | neutral | warning). Uses the caller's own AI key (BYOK). Cached per user (shared for IPOs); briefs cached before v0.4.0 were prose and are regenerated. Body `{ force? }` (`{ slug, force? }` for an IPO).",
         "security": [
           {
             "cookieAuth": []
@@ -4519,7 +4519,7 @@
         },
         "responses": {
           "200": {
-            "description": "Insight text + metadata."
+            "description": "{ success, data: { content: '{\"items\":[{\"key\",\"tone\",\"text\"}]}', model, generatedAt }, meta: { cached } }"
           },
           "400": {
             "description": "no_ai_key."
