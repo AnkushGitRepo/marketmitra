@@ -60,34 +60,6 @@
   gap: 6px;
 }
 
-.strength,
-.watch {
-  position: relative;
-  padding-left: 16px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--app-ink);
-}
-
-.strength::before,
-.watch::before {
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: 0.62em;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-}
-
-.strength::before {
-  background: var(--app-gain);
-}
-
-.watch::before {
-  background: var(--app-loss);
-}
-
 .view {
   padding: 10px 12px;
   border-radius: var(--radius-lg);

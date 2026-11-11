@@ -36,6 +36,39 @@ describe('parseBrief', () => {
   });
 });
 
+describe('parseBrief - messy real-world replies (#117)', () => {
+  it('salvages every complete point from a reply cut off mid-object (token limit)', () => {
+    const cut = '{"points":[{"key":"quality","signal":"strength","text":"ROCE of 14.8% covers the cost of capital."},{"key":"growth","signal":"neutral","text":"Sales growth of 4% while profit fe';
+    expect(parseBrief(cut)?.points).toEqual([{ key: 'quality', signal: 'strength', text: 'ROCE of 14.8% covers the cost of capital.' }]);
+  });
+  it('salvages complete points from fenced JSON that was cut off', () => {
+    const cut = '```json\n{"points": [\n  {"key": "quality", "signal": "concern", "text": "ROE is 9%."},\n  {"key": "risk", "signal": "concern", "text": "Weak qtr profit (-88% YoY)."},\n  {"key": "own';
+    expect(parseBrief(cut)?.points.map((x) => x.key)).toEqual(['quality', 'risk']);
+  });
+  it('maps the descriptive titles a model may use to the fixed keys', () => {
+    const b = parseBrief(json([
+      p('Financial Quality & Moat', 'strength'),
+      p('Growth & Operational Momentum', 'neutral'),
+      p('Valuation Reality Check', 'strength'),
+      p('Smart Money / Institutional Conviction', 'neutral'),
+      p('Key Asymmetric Risk / Headwind', 'concern'),
+    ]));
+    expect(b?.points.map((x) => x.key)).toEqual([...POINT_KEYS]);
+  });
+  it('accepts [BULLISH] style tags and a missing signal (treated as neutral)', () => {
+    const b = parseBrief(json([p('quality', '[BULLISH]'), { key: 'growth', text: 'Sales +8% YoY.' }]));
+    expect(b?.points.map((x) => x.signal)).toEqual(['strength', 'neutral']);
+  });
+  it('accepts points keyed by name, and points nested under another property', () => {
+    expect(parseBrief(JSON.stringify({ points: { quality: { signal: 'strength', text: 'a' }, risk: 'Competition is rising.' } }))?.points.map((x) => x.key)).toEqual(['quality', 'risk']);
+    expect(parseBrief(JSON.stringify({ brief: { points: [p('quality', 'strength')] } }))?.points).toHaveLength(1);
+  });
+  it('still returns null when nothing usable can be recovered', () => {
+    expect(parseBrief('{"points":[{"key":"quality","signal":"stre')).toBeNull();
+    expect(parseBrief('```json\n```')).toBeNull();
+  });
+});
+
 describe('sanitizeBrief', () => {
   const full: StockBrief = { points: [{ key: 'quality', signal: 'strength', text: 'a' }], valuation: 'overvalued', entry: 'Wait.' };
   it('removes any verdict fields in guarded mode, even if the model produced them', () => {

@@ -50,8 +50,31 @@ const SIGNAL_WORDS: Record<string, Signal> = {
   risk: 'concern',
 };
 
-const rawBrief = z.object({ points: z.array(z.unknown()), valuation: z.unknown().optional(), entry: z.unknown().optional() });
+/** Models often use the descriptive title ("Financial Quality & Moat") instead of the key. Match on the topic word. */
+const KEY_TOPICS: ReadonlyArray<readonly [PointKey, readonly string[]]> = [
+  ['quality', ['quality', 'moat', 'capital']],
+  ['growth', ['growth', 'momentum', 'operational']],
+  ['valuation', ['valuation', 'multiple']],
+  ['ownership', ['ownership', 'smartmoney', 'institution', 'conviction', 'shareholder']],
+  ['risk', ['risk', 'headwind', 'asymmetric']],
+];
 
+function normalizeKey(raw: string): PointKey | null {
+  const flat = raw.toLowerCase().replace(/[^a-z]/g, '');
+  const exact = (POINT_KEYS as readonly string[]).includes(flat) ? (flat as PointKey) : null;
+  if (exact) return exact;
+  return KEY_TOPICS.find(([, words]) => words.some((w) => flat.includes(w)))?.[0] ?? null;
+}
+
+function normalizeSignal(raw: unknown): Signal {
+  // "[BULLISH]", "Bullish", "strength" all map; a missing or unknown signal reads as neutral rather than losing the point.
+  const word = typeof raw === 'string' ? raw.toLowerCase().replace(/[^a-z]/g, '') : '';
+  return SIGNAL_WORDS[word] ?? 'neutral';
+}
+
+const rawBrief = z.record(z.string(), z.unknown());
+
+/** Parses the first `{ ... }` in the text. Fences and trailing text are ignored. */
 function extractJson(text: string): unknown {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
@@ -63,21 +86,51 @@ function extractJson(text: string): unknown {
   }
 }
 
+/** Every complete `{ ... }` (no nesting) that carries a "text": what survives when a reply is cut off by the token limit. */
+function salvageObjects(text: string): unknown[] {
+  const out: unknown[] = [];
+  for (const m of text.matchAll(/\{[^{}]*"text"[^{}]*\}/g)) {
+    try {
+      out.push(JSON.parse(m[0]));
+    } catch {
+      /* skip a fragment that is not valid JSON */
+    }
+  }
+  return out;
+}
+
+/** The list of point-like values, wherever the model put them: `points: []`, `points: {name: ...}` or another array property. */
+function pointCandidates(obj: Record<string, unknown>): unknown[] {
+  const direct = obj.points;
+  if (Array.isArray(direct)) return direct;
+  if (direct && typeof direct === 'object') {
+    return Object.entries(direct as Record<string, unknown>).map(([key, v]) => (typeof v === 'string' ? { key, text: v } : { key, ...(v as object) }));
+  }
+  for (const v of Object.values(obj)) {
+    if (Array.isArray(v) && v.some((x) => x && typeof x === 'object')) return v;
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      const nested = (v as Record<string, unknown>).points;
+      if (Array.isArray(nested)) return nested;
+    }
+  }
+  return [];
+}
+
 function toPoint(raw: unknown): BriefPoint | null {
   if (typeof raw !== 'object' || raw === null) return null;
-  const { key, signal, text } = raw as Record<string, unknown>;
-  if (typeof key !== 'string' || !(POINT_KEYS as readonly string[]).includes(key)) return null;
-  const mapped = typeof signal === 'string' ? SIGNAL_WORDS[signal.trim().toLowerCase()] : undefined;
+  const { key, title, signal, text } = raw as Record<string, unknown>;
+  const label = typeof key === 'string' ? key : typeof title === 'string' ? title : null;
+  const mapped = label ? normalizeKey(label) : null;
   if (!mapped || typeof text !== 'string' || !text.trim()) return null;
-  return { key: key as PointKey, signal: mapped, text: text.trim().slice(0, MAX_TEXT) };
+  return { key: mapped, signal: normalizeSignal(signal), text: text.trim().slice(0, MAX_TEXT) };
 }
 
 export function parseBrief(text: string): StockBrief | null {
-  const parsed = rawBrief.safeParse(extractJson(text));
-  if (!parsed.success) return null;
+  const whole = rawBrief.safeParse(extractJson(text));
+  const candidates = whole.success ? pointCandidates(whole.data) : salvageObjects(text);
   const seen = new Set<PointKey>();
   const points: BriefPoint[] = [];
-  for (const raw of parsed.data.points) {
+  for (const raw of candidates) {
     const point = toPoint(raw);
     if (point && !seen.has(point.key)) {
       seen.add(point.key);
@@ -87,7 +140,8 @@ export function parseBrief(text: string): StockBrief | null {
   if (points.length === 0) return null;
   points.sort((a, b) => POINT_KEYS.indexOf(a.key) - POINT_KEYS.indexOf(b.key));
   const brief: StockBrief = { points };
-  const { valuation, entry } = parsed.data;
+  const valuation = whole.success ? whole.data.valuation : undefined;
+  const entry = whole.success ? whole.data.entry : undefined;
   if (typeof valuation === 'string' && (VALUATION_VIEWS as readonly string[]).includes(valuation)) brief.valuation = valuation as ValuationView;
   if (typeof entry === 'string' && entry.trim()) brief.entry = entry.trim().slice(0, MAX_ENTRY);
   return brief;
