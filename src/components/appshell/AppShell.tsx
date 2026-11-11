@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppHeader } from './AppHeader';
 import { AiWidget, sectionFromPathname } from './AiWidget';
@@ -10,6 +10,7 @@ import { Sidebar } from './Sidebar';
 import { useIsMac, useKeyboardShortcuts } from './useKeyboardShortcuts';
 import { MaskProvider, useMask } from '@/lib/dashboard/MaskContext';
 import { PageContextProvider } from '@/lib/dashboard/PageContext';
+import { OPEN_SHORTCUTS_EVENT } from '@/lib/shortcuts/shortcuts';
 import styles from './AppShell.module.css';
 
 function AppShellInner({ children, advisorEnabled, shortcutsEnabled }: { children: ReactNode; advisorEnabled: boolean; shortcutsEnabled: boolean }) {
@@ -21,6 +22,13 @@ function AppShellInner({ children, advisorEnabled, shortcutsEnabled }: { childre
   const toggleHelp = useCallback(() => setHelpOpen((open) => !open), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
   useKeyboardShortcuts({ enabled: shortcutsEnabled, helpOpen, onToggleHelp: toggleHelp });
+
+  // Lets a button elsewhere (Settings) open the same sheet the "?" key opens.
+  useEffect(() => {
+    const open = () => setHelpOpen(true);
+    window.addEventListener(OPEN_SHORTCUTS_EVENT, open);
+    return () => window.removeEventListener(OPEN_SHORTCUTS_EVENT, open);
+  }, []);
 
   return (
     <div className={styles.shell}>

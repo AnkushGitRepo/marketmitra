@@ -1,0 +1,91 @@
+.dialog {
+  /* The app's global reset zeroes margins, which would pin a modal <dialog> to the top-left; auto re-centres it. */
+  margin: auto;
+  border: 1px solid var(--app-loss-border);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  width: min(92vw, 440px);
+  background: var(--color-surface);
+  color: var(--app-ink);
+  box-shadow: 0 24px 60px rgba(22, 25, 28, 0.28);
+}
+
+.dialog::backdrop {
+  background: rgba(22, 25, 28, 0.5);
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.message {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
+
+.message p {
+  margin: 0 0 8px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--app-ink);
+}
+
+.input {
+  min-height: 44px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--app-loss-text);
+  outline-offset: 1px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel,
+.danger {
+  min-height: 42px;
+  border-radius: var(--radius-pill);
+  padding: 0 18px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.cancel {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
+.danger {
+  border: none;
+  background: var(--app-loss-text);
+  color: #fff;
+}
+
+.danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

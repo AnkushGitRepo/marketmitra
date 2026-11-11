@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function AlertsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ new?: string; symbol?: string }>;
+  searchParams: Promise<{ new?: string; symbol?: string; settings?: string }>;
 }) {
   const userId = await getCurrentUserId();
   if (!userId) {
@@ -22,7 +22,7 @@ export default async function AlertsPage({
     );
   }
 
-  const { new: newParam, symbol } = await searchParams;
+  const { new: newParam, symbol, settings } = await searchParams;
   let alerts: Awaited<ReturnType<typeof listAlerts>> = [];
   let channelsView: Awaited<ReturnType<typeof getNotificationChannelSettingsView>> | null = null;
   let autoGuardrailsEnabled = true;
@@ -53,6 +53,7 @@ export default async function AlertsPage({
     <AlertsPageClient
       alerts={alerts}
       openNew={newParam === '1' || newParam === 'true'}
+      openSettings={settings === '1' || settings === 'true'}
       prefillSymbol={symbol?.toUpperCase()}
       channelsView={channelsView}
       encConfigured={isEncKeyConfigured()}

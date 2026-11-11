@@ -210,6 +210,11 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 - **Auth:** session. **Purpose:** two-sentence Mitra read on today's indices, breadth and sector moves, grounded only in those figures. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when market data is unavailable; `ai` rate tier.
 
+### `POST /api/settings/ai/test`
+
+- **Auth:** session; `ai` rate tier. **Purpose:** tests the signed-in user's *stored* AI key with a tiny request and reports the round trip.
+- **Response:** `{ success, data: { provider, model, latencyMs } }`; `400` with the provider's reason (and `data.provider`, `latencyMs`) when the key is rejected; `404 no_ai_key` when nothing is stored. The key is never part of any response. Uses a few tokens of the user's own key.
+
 ### `GET /api/settings/email-alerts` and `PUT /api/settings/email-alerts`
 
 - **Auth:** session. **Purpose:** whether a triggered alert is also emailed (on by default; `PUT { enabled }`), whether an email can actually be sent right now, and the last outcome.

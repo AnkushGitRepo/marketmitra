@@ -1,0 +1,187 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  padding: 22px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-sans);
+}
+
+.cardTitle {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.badge {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.badgeOn {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+.badgeOff {
+  background: var(--app-pill-bg);
+  color: var(--app-text-muted);
+}
+
+.statusText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--app-ink);
+}
+
+.statusText code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.trust {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--app-pill-bg);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
+
+.warn {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--app-warn-bg);
+  color: var(--app-warn-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.primary,
+.secondary,
+.danger {
+  min-height: 42px;
+  border-radius: var(--radius-pill);
+  padding: 0 18px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.secondary {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
+/* Quiet until used: removing a key is rare and not something to hit by accident. */
+.danger {
+  border: 1px solid var(--app-loss-border);
+  background: var(--color-surface);
+  color: var(--app-loss-text);
+}
+
+.primary:disabled,
+.secondary:disabled,
+.danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ok {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--app-teal-strong);
+}
+
+.bad {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  color: var(--app-loss-text);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--app-border-softer);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--app-ink);
+}
+
+.hint {
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
+@media (max-width: 767px) {
+  .card {
+    padding: 18px 16px;
+  }
+
+  .input {
+    font-size: 16px;
+  }
+
+  .actions > * {
+    flex: 1 1 140px;
+  }
+}
