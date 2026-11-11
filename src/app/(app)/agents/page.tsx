@@ -1,5 +1,7 @@
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { AnalystDesk } from '@/components/analysts/AnalystDesk';
+import { logEvent } from '@/lib/system/eventLog';
+import { RosterUnavailable } from '@/components/analysts/RosterUnavailable';
 import type { DeskData } from '@/lib/analysts/desk';
 import { loadDeskData } from '@/lib/analysts/deskData';
 import { AgentsPageClient } from './AgentsPageClient';
@@ -21,7 +23,9 @@ export default async function AgentsPage() {
   const desk: DeskData | null = await (async () => {
     try {
       return await loadDeskData(userId);
-    } catch {
+    } catch (err) {
+      // The cause (usually a database connection error) is logged by name only, so the next failure can be diagnosed without leaking content.
+      await logEvent({ level: 'error', source: 'page:agents', message: `Analyst roster failed to load: ${err instanceof Error ? err.name : 'Error'}` }).catch(() => undefined);
       return null;
     }
   })();
@@ -30,7 +34,7 @@ export default async function AgentsPage() {
     <div className={styles.pageRoot}>
       <p className={styles.eyebrow}>Agents</p>
       <h1 className={styles.h1}>Analyst desk</h1>
-      {desk ? <AnalystDesk initial={desk} /> : <p className={styles.introNote}>The analyst roster could not be loaded right now.</p>}
+      {desk ? <AnalystDesk initial={desk} /> : <RosterUnavailable />}
       <AgentsPageClient />
     </div>
   );
