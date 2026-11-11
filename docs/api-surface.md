@@ -140,40 +140,42 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Response:** `data`: `MitraAction[]` — `{ id, userId, action, alertId, symbol, before, after, reason, source, createdAt }`. `action` ∈ `alert_created | alert_updated | alert_paused | alert_resumed`; `source` ∈ `auto_guardrail | mitra`; `before`/`after` are partial param/status snapshots for the diff shown on `/mitra-activity`.
 - **Errors:** `401` unauthenticated.
 
-### `GET /api/wishlists`
+> **Renamed:** these endpoints were `/api/wishlists…`. `/api/wishlists…` still works as a deprecated alias (same handlers) and is marked `deprecated` in `openapi.json`; stored data and the export field keep the old name.
+
+### `GET /api/watchlists`
 - **Purpose:** List the current user's stock wishlists (Markets page, ADR 0028), oldest-created first.
 - **Auth:** required (see above).
 - **Response:** `data`: `UserWishlist[]` — `{ id, userId, name, symbols: string[], createdAt, updatedAt }`.
 - **Errors:** `401` unauthenticated.
 
-### `POST /api/wishlists`
+### `POST /api/watchlists`
 - **Purpose:** Create a wishlist.
 - **Auth:** required.
 - **Request:** body `{ name: string(1–60) }`.
 - **Response:** `data`: the created wishlist, `201`.
 - **Errors:** `401` unauthenticated, `409` per-user cap (20) reached, `422` invalid input.
 
-### `PATCH /api/wishlists/[id]`
+### `PATCH /api/watchlists/[id]`
 - **Purpose:** Rename a wishlist.
 - **Auth:** required; scoped to the owning user.
 - **Request:** body `{ name: string(1–60) }`.
 - **Response:** `data`: the updated wishlist.
 - **Errors:** `401` unauthenticated, `404` not found/not owned, `422` invalid input.
 
-### `DELETE /api/wishlists/[id]`
+### `DELETE /api/watchlists/[id]`
 - **Purpose:** Delete a wishlist.
 - **Auth:** required; scoped to the owning user.
 - **Response:** `data: { id }`.
 - **Errors:** `401` unauthenticated, `404` not found/not owned.
 
-### `POST /api/wishlists/[id]/symbols`
+### `POST /api/watchlists/[id]/symbols`
 - **Purpose:** Add a stock to a wishlist. Deduped (adding an already-present symbol is a no-op success); capped at 50 symbols/wishlist.
 - **Auth:** required; scoped to the owning user.
 - **Request:** body `{ symbol: string(1–30) }` — upper-cased and trimmed server-side.
 - **Response:** `data`: the updated wishlist.
 - **Errors:** `401` unauthenticated, `409` wishlist not found or at the symbol cap, `422` invalid input.
 
-### `DELETE /api/wishlists/[id]/symbols/[symbol]`
+### `DELETE /api/watchlists/[id]/symbols/[symbol]`
 - **Purpose:** Remove a stock from a wishlist.
 - **Auth:** required; scoped to the owning user.
 - **Response:** `data`: the updated wishlist.

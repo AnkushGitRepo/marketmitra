@@ -72,7 +72,7 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/wishlists', {
+      const res = await fetch('/api/watchlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim() }),
@@ -98,7 +98,7 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/wishlists/${id}`, {
+      const res = await fetch(`/api/watchlists/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
@@ -114,7 +114,7 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
     if (!active) return;
     setBusy(true);
     try {
-      const res = await fetch(`/api/wishlists/${active.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/watchlists/${active.id}`, { method: 'DELETE' });
       if (res.ok) {
         setActiveId(null);
         setConfirmDelete(false);
@@ -133,7 +133,7 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
     setQuery('');
     setResults([]);
     setError(null);
-    const res = await fetch(`/api/wishlists/${active.id}/symbols`, {
+    const res = await fetch(`/api/watchlists/${active.id}/symbols`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ symbol: result.symbol }),
@@ -147,7 +147,7 @@ export function WatchlistPanel({ watchlists, quotes, sparks }: WatchlistPanelPro
 
   const removeSymbol = async (symbol: string) => {
     if (!active) return;
-    const res = await fetch(`/api/wishlists/${active.id}/symbols/${encodeURIComponent(symbol)}`, { method: 'DELETE' });
+    const res = await fetch(`/api/watchlists/${active.id}/symbols/${encodeURIComponent(symbol)}`, { method: 'DELETE' });
     if (res.ok) router.refresh();
     else setError(await errorOf(res, `Could not remove ${symbol}.`));
   };

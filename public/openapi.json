@@ -1982,7 +1982,7 @@
         }
       }
     },
-    "/api/wishlists": {
+    "/api/watchlists": {
       "get": {
         "tags": [
           "Watchlists"
@@ -2086,7 +2086,7 @@
         }
       }
     },
-    "/api/wishlists/{id}": {
+    "/api/watchlists/{id}": {
       "patch": {
         "tags": [
           "Watchlists"
@@ -2174,7 +2174,7 @@
         }
       }
     },
-    "/api/wishlists/{id}/symbols": {
+    "/api/watchlists/{id}/symbols": {
       "post": {
         "tags": [
           "Watchlists"
@@ -2266,7 +2266,7 @@
         }
       }
     },
-    "/api/wishlists/{id}/symbols/{symbol}": {
+    "/api/watchlists/{id}/symbols/{symbol}": {
       "delete": {
         "tags": [
           "Watchlists"
@@ -4525,6 +4525,374 @@
             "description": "{ success, data: { version, commit } }"
           }
         }
+      }
+    },
+    "/api/wishlists": {
+      "get": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "List watchlists (deprecated alias)",
+        "description": "Deprecated: use `/api/watchlists`. Same behaviour; kept so existing clients keep working. The user's watchlists, oldest-created first.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user's watchlists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "userId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "symbols": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        },
+        "deprecated": true
+      },
+      "post": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Create a watchlist (deprecated alias)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  }
+                }
+              },
+              "example": {
+                "name": "IT majors"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Per-user watchlist limit (20) reached."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        },
+        "deprecated": true,
+        "description": "Deprecated: use `/api/watchlists`. Same behaviour; kept so existing clients keep working."
+      }
+    },
+    "/api/wishlists/{id}": {
+      "patch": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Rename a watchlist (deprecated alias)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Renamed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        },
+        "deprecated": true,
+        "description": "Deprecated: use `/api/watchlists/{id}`. Same behaviour; kept so existing clients keep working."
+      },
+      "delete": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Delete a watchlist (deprecated alias)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          }
+        },
+        "deprecated": true,
+        "description": "Deprecated: use `/api/watchlists/{id}`. Same behaviour; kept so existing clients keep working."
+      }
+    },
+    "/api/wishlists/{id}/symbols": {
+      "post": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Add a stock to a watchlist (deprecated alias)",
+        "description": "Deprecated: use `/api/watchlists/{id}/symbols`. Same behaviour; kept so existing clients keep working. Adds an NSE symbol (deduped, capped at 50 per watchlist).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "maxLength": 30
+                  }
+                }
+              },
+              "example": {
+                "symbol": "RELIANCE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated watchlist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "symbols": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Watchlist not found, or already at the 50-symbol cap."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/wishlists/{id}/symbols/{symbol}": {
+      "delete": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Remove a stock from a watchlist (deprecated alias)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated watchlist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "symbols": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          }
+        },
+        "deprecated": true,
+        "description": "Deprecated: use `/api/watchlists/{id}/symbols/{symbol}`. Same behaviour; kept so existing clients keep working."
       }
     }
   }
