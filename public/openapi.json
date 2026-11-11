@@ -5855,6 +5855,28 @@
           }
         }
       }
+    },
+    "/api/analysts/retry": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Retry all stalled analysts",
+        "description": "Re-queues every analyst whose dossier build failed (status error, no dossier) so the scheduled sweep rebuilds them one at a time under the daily cap. It makes no model call itself, so it is instant. Browser session only.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { requeued } }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      }
     }
   }
 }
