@@ -5656,6 +5656,97 @@
           }
         }
       }
+    },
+    "/api/cron/analyst-dispatch": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "security": [
+          {
+            "cronBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ considered, written, skipped, error, pruned, errors }"
+          },
+          "401": {
+            "description": "Bad / missing bearer."
+          },
+          "503": {
+            "description": "CRON_SECRET not set (production)."
+          }
+        },
+        "summary": "Analyst morning dispatch (cron)",
+        "description": "Called by the `analyst-dispatch` workflow at 08:30 IST. For each user with a vigilant analyst (and automatic analysts on), rolls the last 24 hours of analyst journals into one brief: saved in the app and emailed to the account address. Free (no AI call); skips users with nothing material; one brief per user per India day. Bearer `CRON_SECRET`, required in every environment."
+      }
+    },
+    "/api/analysts/dispatch": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Morning brief: latest and today's preview",
+        "description": "The last saved morning brief and what today's would contain right now (`preview` is null when nothing is material, in which case no brief would be sent). Nothing is sent. Browser session only.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { latest: { day, title, dispatch, email, emailDetail, createdAt } | null, preview: { day, title, priority, developments, highlights, analystCount, body } | null } }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Send a test morning brief",
+        "description": "Emails today's preview (or a short test note when nothing is material) to the account address through the alert-email path, subject prefixed `[Test]`. Respects the email switch; never saves a brief. Browser session only.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "test"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ success, data: { email: \"sent\" | \"skipped\" | \"failed\", message } }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "422": {
+            "description": "Invalid request"
+          }
+        }
+      }
     }
   }
 }

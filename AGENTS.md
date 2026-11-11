@@ -79,6 +79,7 @@ issue and stay off the board.
 Conventional Commits, bumps `package.json`, the lockfile, `openapi.json` and `CHANGELOG.md`), then commit it as exactly
 `chore(release): vX.Y.Z` on a `chore/<issue>-release-vX.Y.Z` branch, PR, squash-merge; the Release workflow tags and publishes it.
 Deploy with `npm run deploy:prod` (it refuses unless `HEAD` is that tag). PR titles must stay Conventional Commits.
+Cut a release only when the maintainer says so; the script picks the bump from the commit types (SemVer: `fix` = patch, `feat` = minor), so type commits honestly.
 
 **8. Report faithfully.** If tests fail, say so with the output; if a step was skipped, say that;
 say what was and was not verified. Don't claim something is fixed in production without checking

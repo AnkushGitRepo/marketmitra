@@ -3,10 +3,11 @@
 import { useEffect, useRef } from 'react';
 import { AnalystChat } from './AnalystChat';
 import { DossierReader } from './DossierReader';
+import { MorningBrief } from './MorningBrief';
 import styles from './AnalystDrawer.module.css';
 
-/** What the drawer shows: one analyst's dossier, or a chat with an analyst (`symbol`) or with the Root Agent (`symbol: null`). */
-export type DrawerPanel = { readonly kind: 'dossier'; readonly symbol: string } | { readonly kind: 'chat'; readonly symbol: string | null };
+/** What the drawer shows: one analyst's dossier, the morning brief, or a chat with an analyst (`symbol`) or with the Root Agent (`symbol: null`). */
+export type DrawerPanel = { readonly kind: 'dossier'; readonly symbol: string } | { readonly kind: 'chat'; readonly symbol: string | null } | { readonly kind: 'brief' };
 
 interface AnalystDrawerProps {
   readonly panel: DrawerPanel | null;
@@ -25,13 +26,13 @@ export function AnalystDrawer({ panel, onChange, onClose }: AnalystDrawerProps) 
     if (!panel && d.open) d.close();
   }, [panel]);
 
-  const title = !panel ? '' : panel.kind === 'dossier' ? `${panel.symbol} · living dossier` : panel.symbol ? `Chat with the ${panel.symbol} analyst` : 'Chat with Mitra Portfolio CIO';
+  const title = !panel ? '' : panel.kind === 'brief' ? 'Morning brief' : panel.kind === 'dossier' ? `${panel.symbol} · living dossier` : panel.symbol ? `Chat with the ${panel.symbol} analyst` : 'Chat with Mitra Portfolio CIO';
 
   return (
     <dialog
       ref={dialog}
       className={styles.drawer}
-      aria-label={panel?.kind === 'chat' ? 'Analyst chat' : 'Analyst dossier'}
+      aria-label={panel?.kind === 'chat' ? 'Analyst chat' : panel?.kind === 'brief' ? 'Morning brief' : 'Analyst dossier'}
       onClose={onClose}
       onClick={(e) => {
         // A click on the backdrop lands on the <dialog> element itself.
@@ -59,7 +60,9 @@ export function AnalystDrawer({ panel, onChange, onClose }: AnalystDrawerProps) 
             </div>
           </div>
           <div className={panel.kind === 'chat' ? styles.bodyChat : styles.body}>
-            {panel.kind === 'dossier' ? <DossierReader key={panel.symbol} symbol={panel.symbol} tabbed /> : <AnalystChat key={panel.symbol ?? 'root'} symbol={panel.symbol} />}
+            {panel.kind === 'dossier' && <DossierReader key={panel.symbol} symbol={panel.symbol} tabbed />}
+            {panel.kind === 'chat' && <AnalystChat key={panel.symbol ?? 'root'} symbol={panel.symbol} />}
+            {panel.kind === 'brief' && <MorningBrief />}
           </div>
         </div>
       )}
