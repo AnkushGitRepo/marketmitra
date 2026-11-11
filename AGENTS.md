@@ -75,11 +75,11 @@ one per release/goal; create a new one rather than reusing a finished one. Depen
 issue and stay off the board.
 
 **7. Versions and releases** ([0051](./docs/decisions/0051-version-management.md)). One SemVer product version in
-`package.json` (the API reference follows it). Every production deploy is a tagged release: `npm run release` (reads the
+`package.json` (the API reference follows it). A new version is a release, cut **only when the maintainer asks for one**: `npm run release` (reads the
 Conventional Commits, bumps `package.json`, the lockfile, `openapi.json` and `CHANGELOG.md`), then commit it as exactly
 `chore(release): vX.Y.Z` on a `chore/<issue>-release-vX.Y.Z` branch, PR, squash-merge; the Release workflow tags and publishes it.
-Deploy with `npm run deploy:prod` (it refuses unless `HEAD` is that tag). PR titles must stay Conventional Commits.
-Cut a release only when the maintainer says so; the script picks the bump from the commit types (SemVer: `fix` = patch, `feat` = minor), so type commits honestly.
+A deploy does **not** imply a release ([0059](./docs/decisions/0059-deploys-do-not-imply-a-version.md)): `npm run deploy:prod` deploys `main` as it is and verifies production by commit, with no new version. PR titles must stay Conventional Commits.
+The release script picks the bump from the commit types (SemVer: `fix` = patch, `feat` = minor), so type commits honestly; small fixes are not a release on their own.
 
 **8. Report faithfully.** If tests fail, say so with the output; if a step was skipped, say that;
 say what was and was not verified. Don't claim something is fixed in production without checking
@@ -88,7 +88,7 @@ production.
 ## Safety rules (ask first)
 
 - **Never deploy to production or run production migrations without the maintainer's explicit
-  go-ahead.** Deploy = `npm run deploy:prod`, which wraps `vercel deploy --prod --yes` and requires a tagged release (see HANDOFF). Production DB migrations need
+  go-ahead.** Deploy = `npm run deploy:prod`, which wraps `vercel deploy --prod --yes` and deploys `main` as it is, with no new version (see HANDOFF). Production DB migrations need
   production credentials — the maintainer runs those.
 - **Secrets:** never commit `.env*` values, keys or tokens; never print them; never paste them into
   issues/PRs/logs. `.env.local` and `services/fundamentals-api/.env` are gitignored. Add new env
@@ -117,7 +117,7 @@ production.
   make it pass. Use Playwright for end-to-end flows.
 - **No `console.log`** in committed code. No hardcoded secrets or magic values.
 - Docs move with code: update `docs/` (architecture, api-surface, data-sources, ADR) and add an
-  ADR (next number: 0059) for a real decision. ADRs are never pruned.
+  ADR (next number: 0060) for a real decision. ADRs are never pruned.
 
 ## Commands
 
@@ -139,7 +139,7 @@ More (deploying, production migrations, scheduled jobs, environment) in `docs/HA
 - [`docs/HANDOFF.md`](./docs/HANDOFF.md) — **current state**, open work, environment, deploy, gotchas
 - `docs/architecture.md` — current system architecture (routes, components, data flow)
 - `docs/design-system.md` — colors/type/spacing/component patterns
-- `docs/decisions/` — ADRs, one per decision, numbered, **never pruned** (latest: 0058 analyst desk)
+- `docs/decisions/` — ADRs, one per decision, numbered, **never pruned** (latest: 0059 deploys do not imply a version)
 - `docs/data-sources.md` — every external API/scraper: endpoint, auth, rate limits, cost, ToS
 - `docs/api-surface.md` and `public/openapi.json` — public API for agent consumers
 - `docs/session-log.md` — rolling log of what happened, session by session

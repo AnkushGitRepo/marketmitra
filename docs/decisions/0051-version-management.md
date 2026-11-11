@@ -1,6 +1,6 @@
 # 0051 — Version management: one version, generated changelog, tagged releases, guarded deploys
 
-Status: accepted (2026-11-11, issue #89)
+Status: accepted (2026-11-11, issue #89). **Amended by [0059](./0059-deploys-do-not-imply-a-version.md): a deploy no longer requires or implies a new version.**
 
 ## Context
 
