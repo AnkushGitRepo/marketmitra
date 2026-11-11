@@ -63,6 +63,9 @@ the first release covers dossier + journal, morning dispatch, thesis invalidatio
   (`POST /api/analysts/{symbol}`) builds one dossier immediately (same initiation, same key, same cap) so the user picks what goes first; a failed build shows
   "Dossier stalled" with its reason and **Retry now**. No progress percentages, step bars or new queue service: the build is one model call with nothing observable in
   between. Chat does not wait for the dossier: it answers from the live figures and says the dossier is not built.
+- **Cap by deployment (#142):** the daily cap on analyst AI calls is 20 on the hosted site, where it protects a user's own key from unattended spend, and 200 by default on a local or
+  self-hosted instance (one person, own machine, own key), overridable with `ANALYST_DAILY_AI_CAP` (a whole number from 20 to 1000; ignored when hosted). One function,
+  `dailyAiCap()`, feeds the engine, the roster and the deck, so the UI shows the real number.
 
 ## Consequences
 

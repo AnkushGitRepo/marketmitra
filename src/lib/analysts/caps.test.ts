@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DAILY_AI_CAP, canSpend, isHeartbeatDue, istDay, recordSpend } from './caps';
+import { DAILY_AI_CAP, LOCAL_DAILY_AI_CAP, canSpend, resolveDailyCap, isHeartbeatDue, istDay, recordSpend } from './caps';
 
 describe('istDay', () => {
   it('uses the Indian calendar day, which differs from UTC late in the evening', () => {
@@ -13,21 +13,40 @@ describe('daily AI cap', () => {
   it('allows spending until the cap and then refuses', () => {
     let usage = { day: istDay(now), count: 0 };
     for (let i = 0; i < DAILY_AI_CAP; i++) {
-      expect(canSpend(usage, now)).toBe(true);
+      expect(canSpend(usage, now, DAILY_AI_CAP)).toBe(true);
       usage = recordSpend(usage, now);
     }
     expect(usage.count).toBe(DAILY_AI_CAP);
-    expect(canSpend(usage, now)).toBe(false);
+    expect(canSpend(usage, now, DAILY_AI_CAP)).toBe(false);
   });
   it('starts a fresh count on a new day', () => {
     const yesterday = { day: '2026-11-10', count: DAILY_AI_CAP };
-    expect(canSpend(yesterday, now)).toBe(true);
+    expect(canSpend(yesterday, now, DAILY_AI_CAP)).toBe(true);
     expect(recordSpend(yesterday, now)).toEqual({ day: '2026-11-11', count: 1 });
   });
   it('does not mutate the usage it is given', () => {
     const u = { day: '2026-11-11', count: 3 };
     recordSpend(u, now);
     expect(u.count).toBe(3);
+  });
+});
+
+describe('resolveDailyCap', () => {
+  it('is fixed when hosted, whatever the override says', () => {
+    expect(resolveDailyCap(true, undefined)).toBe(20);
+    expect(resolveDailyCap(true, '500')).toBe(20);
+  });
+  it('is high by default when not hosted', () => {
+    expect(resolveDailyCap(false, undefined)).toBe(LOCAL_DAILY_AI_CAP);
+    expect(resolveDailyCap(false, '')).toBe(LOCAL_DAILY_AI_CAP);
+    expect(LOCAL_DAILY_AI_CAP).toBeGreaterThan(DAILY_AI_CAP);
+  });
+  it('takes a whole-number override, never below the hosted cap or above the maximum, and ignores junk', () => {
+    expect(resolveDailyCap(false, '60')).toBe(60);
+    expect(resolveDailyCap(false, '5')).toBe(20);
+    expect(resolveDailyCap(false, '99999')).toBe(1000);
+    expect(resolveDailyCap(false, 'lots')).toBe(LOCAL_DAILY_AI_CAP);
+    expect(resolveDailyCap(false, '40.5')).toBe(LOCAL_DAILY_AI_CAP);
   });
 });
 

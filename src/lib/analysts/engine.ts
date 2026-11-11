@@ -36,6 +36,8 @@ export interface EngineDeps {
   loadDocuments: (symbol: string) => Promise<Array<{ title: string; url: string }>>;
   /** Asks for output matching `schema` where the provider supports it. The reply comes back as JSON text either way. */
   generate: (config: AiConfig, system: string, prompt: string, schema: z.ZodTypeAny) => Promise<Generated>;
+  /** The day's cap on AI calls for one user: small when hosted, high locally. */
+  dailyCap: () => number;
   getUsage: (userId: string) => Promise<Usage>;
   bumpUsage: (userId: string, now: Date) => Promise<void>;
   appendJournal: (entry: Omit<JournalEntry, 'id'> & { userId: string }) => Promise<void>;
@@ -66,7 +68,7 @@ function resultsOf(bundle: SignalBundle) {
 
 export async function initiate(a: AnalystRecord, deps: EngineDeps): Promise<InitiateResult> {
   const now = deps.now();
-  if (!canSpend(await deps.getUsage(a.userId), now)) return 'deferred';
+  if (!canSpend(await deps.getUsage(a.userId), now, deps.dailyCap())) return 'deferred';
   const config = await deps.getAiConfig(a.userId);
   if (!config) {
     await deps.setStatus(a.userId, a.symbol, 'initializing', 'Waiting for an AI key. Add one in Settings.');
@@ -141,7 +143,7 @@ export async function heartbeat(a: AnalystRecord, deps: EngineDeps): Promise<Hea
   const plain = { title: events.map((e) => e.title).join('; ').slice(0, 200), body: null, impact: null };
   let entry: { title: string; body: string | null; impact: JournalEntry['impact'] } = plain;
   // AI only when a key exists and the day's cap allows; otherwise the event is still recorded as a plain fact.
-  const config = canSpend(await deps.getUsage(a.userId), now) ? await deps.getAiConfig(a.userId) : null;
+  const config = canSpend(await deps.getUsage(a.userId), now, deps.dailyCap()) ? await deps.getAiConfig(a.userId) : null;
   if (config) {
     const gen = await deps.generate(config, ANALYST_JOURNAL_SYSTEM, buildJournalPrompt(events, bundle.signals, a.dossier), entrySchema);
     await deps.bumpUsage(a.userId, now);
