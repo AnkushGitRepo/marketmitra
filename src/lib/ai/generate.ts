@@ -2,6 +2,14 @@ import { generateText, Output, stepCountIs, streamText, type ModelMessage, type 
 import type { z } from 'zod';
 import { resolveModel, type AiConfig } from './providers';
 
+/**
+ * Server-log a failed model call without writing the raw error object: provider and SDK errors can carry request metadata or prompt
+ * fragments. Only the normalised, user-safe message is logged.
+ */
+function logFailure(label: string, err: unknown): void {
+  console.error(`[ai] ${label}: ${normalizeAiError(err)}`);
+}
+
 export interface GenerateResult {
   ok: true;
   text: string;
@@ -50,7 +58,7 @@ export async function generateInsightText(
     }
     return { ok: true, text: clean, model: config.model?.trim() || `${config.provider} (default)`, finishReason };
   } catch (err) {
-    console.error('[ai] generation failed:', err);
+    logFailure('generation failed', err);
     return { ok: false, error: normalizeAiError(err) };
   }
 }
@@ -86,7 +94,7 @@ export async function generateInsightObject<S extends z.ZodTypeAny>(
     });
     return { ok: true, object: output as z.infer<S>, model: config.model?.trim() || `${config.provider} (default)`, finishReason };
   } catch (err) {
-    console.error('[ai] structured generation failed:', err);
+    logFailure('structured generation failed', err);
     return { ok: false, error: normalizeAiError(err) };
   }
 }
@@ -148,7 +156,7 @@ export async function validateAiKey(config: AiConfig): Promise<GenerateError | {
     await generateText({ model, prompt: 'Say OK.', maxOutputTokens: 16 });
     return { ok: true };
   } catch (err) {
-    console.error('[ai] key validation failed:', err);
+    logFailure('key validation failed', err);
     return { ok: false, error: normalizeAiError(err) };
   }
 }
