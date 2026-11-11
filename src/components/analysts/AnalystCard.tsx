@@ -9,13 +9,14 @@ interface AnalystCardProps {
   readonly now: Date;
   readonly busy: string | null;
   readonly onRead: (symbol: string) => void;
+  readonly onChat: (symbol: string) => void;
   readonly onSetStatus: (symbol: string, status: 'active' | 'paused') => void;
   readonly onRemove: (symbol: string) => void;
 }
 
 const formatPrice = (n: number): string => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
-export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onSetStatus, onRemove }: AnalystCardProps) {
+export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onChat, onSetStatus, onRemove }: AnalystCardProps) {
   const attention = attentionReason(a, now);
   const queue = queueLabel(queueState(a, all, usage));
   const view = attention ? { label: 'Needs attention', tone: 'bad' as const } : queue ? { label: queue, tone: a.statusNote && /AI key/i.test(a.statusNote) ? ('bad' as const) : ('wait' as const) } : statusView(a.status, a.statusNote);
@@ -57,6 +58,9 @@ export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onSetSt
       <div className={styles.actions}>
         <button type="button" className={styles.link} onClick={() => onRead(a.symbol)}>
           Read dossier
+        </button>
+        <button type="button" className={styles.link} onClick={() => onChat(a.symbol)}>
+          Chat with analyst
         </button>
         {a.status === 'paused' || a.status === 'error' ? (
           <button type="button" className={styles.link} disabled={busy === `status-${a.symbol}`} onClick={() => onSetStatus(a.symbol, 'active')}>

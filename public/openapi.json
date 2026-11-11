@@ -5596,6 +5596,66 @@
         "summary": "Run the stock analyst sweep",
         "description": "Analyst Desk worker (ADR 0058): gives every holding an analyst, builds pending dossiers and runs the end-of-day check for analysts that are due. Bounded per run; AI is only called for a new dossier or a material event, under a per-user daily cap. Bearer `CRON_SECRET`."
       }
+    },
+    "/api/analysts/chat": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Chat with a stock analyst or the Root Agent",
+        "description": "Streams a reply (AI SDK UI message stream) from one of your stock analysts, grounded in its dossier, recent journal and current figures (`symbol` set), or from the Root Agent, Mitra Portfolio CIO, grounded in every analyst's notes and your portfolio summary (`symbol` omitted). It says plainly when something is not in our data. Uses your own AI key and follows the guarded / unrestricted prompt mode (ADR 0054). Browser session only. Errors: 400 `no_ai_key`, 404 no analyst for that stock, 422 invalid request.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "messages"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "description": "NSE symbol of the analyst to chat with. Omit for the Root Agent."
+                  },
+                  "messages": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 12,
+                    "description": "AI SDK UIMessage[] (from useChat).",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A streamed assistant message."
+          },
+          "400": {
+            "description": "no_ai_key"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "No analyst for this stock"
+          },
+          "422": {
+            "description": "Invalid request"
+          }
+        }
+      }
     }
   }
 }
