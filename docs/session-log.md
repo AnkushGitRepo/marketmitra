@@ -1014,3 +1014,8 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 - `/api-docs` is now three tabs (AI Agents & MCP default, REST, Schemas & OpenAPI) with a copy-prompt header action, a one-click MCP config hub (Cursor / Claude Code / Claude Desktop), schema-derived tool cards with a live "Run example", and a categorised REST view with no nested scrollbar. Mobile uses a grouped select and hides Try it. Auth section states PATs are not available (#91).
 - `/api/wishlists*` renamed to `/api/watchlists*`; the old paths stay as deprecated aliases (same handlers).
 - **Verified:** lint, typecheck, unit tests for the new pure helpers; in a browser at 1440px and 390px (no horizontal overflow, no nested scrollers, one category open, a real `get_quote` call through "Run example"). **Not verified:** other MCP clients' actual connection flow, production.
+
+## 2026-11-11 — Assertions on API Try it (#98, [ADR 0052](./decisions/0052-api-reference-redesign.md))
+
+- Try it and MCP "Run example" now take optional checks (status, header contains, JSON path exists/equals) and show per-check pass/fail. Pure evaluator with 14 unit tests.
+- **Verified:** lint, typecheck, 1301 tests; browser run showed a pass, a deliberate failure (`definitely.missing not found`) and a passing MCP card. **Not verified:** production. Removed four stray gitignored `.next/types/* 2.ts` duplicates that broke `tsc`.

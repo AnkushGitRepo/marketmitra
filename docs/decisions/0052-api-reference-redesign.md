@@ -24,6 +24,9 @@ server under a card, and gave an agent no copy-paste way to connect. The REST AP
   the `CRON_SECRET` bearer; personal access tokens do not exist yet (#91, not built).
 - **Rename:** `/api/wishlists*` becomes `/api/watchlists*`. The old paths remain as `deprecated: true` aliases that re-export
   the same handlers, so existing callers keep working. Storage and the data-export field keep their legacy `wishlists` names.
+- **Checks on Try it (#98):** an optional pass/fail list per request (status equals, header contains, JSON path exists/equals),
+  defaulting to the first documented 2xx status; MCP cards default to status 200 plus `result.content`. Evaluated by a pure
+  function (`src/lib/api-docs/checks.ts`) on the received response, per session, nothing stored.
 
 ## Consequences
 

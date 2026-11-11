@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { defaultChecks, evaluateChecks, type Check } from '@/lib/api-docs/checks';
+import { ChecksPanel } from './ChecksPanel';
 import { fmt, isPublic, jsonExample, type Method, type Operation, type RunResult } from './restDocs';
 import styles from './page.module.css';
 
@@ -13,6 +15,11 @@ export function TryIt({ path, method, op }: { path: string; method: Method; op: 
   const [queryVals, setQueryVals] = useState<Record<string, string>>({});
   const [body, setBody] = useState<string>(jsonExample(op));
   const [result, setResult] = useState<RunResult | null>(null);
+  const [checks, setChecks] = useState<Check[]>(() => defaultChecks(Object.keys(op.responses ?? {})));
+  const report = useMemo(
+    () => (result ? evaluateChecks(checks, { status: result.status, headers: result.headers, body: result.raw }) : null),
+    [result, checks]
+  );
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +87,8 @@ export function TryIt({ path, method, op }: { path: string; method: Method; op: 
         // eslint-disable-next-line react-hooks/purity -- inside an async event handler, not render
         ms: Date.now() - started,
         body: fmt(text),
+        raw: text,
+        headers: Object.fromEntries([...res.headers.entries()].map(([k, v]) => [k.toLowerCase(), v])),
         rateLimit: rl,
         ok: res.ok,
       });
@@ -167,6 +176,8 @@ export function TryIt({ path, method, op }: { path: string; method: Method; op: 
           />
         </div>
       )}
+
+      <ChecksPanel checks={checks} onChange={setChecks} report={report} />
 
       <div className={styles.panelActions}>
         <button type="button" className={styles.btnPrimary} onClick={run} disabled={running}>
