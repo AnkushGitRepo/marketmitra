@@ -1,10 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatInr } from '@/lib/dashboard/format';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
+import { stockHref } from '@/lib/stock/href';
 import styles from './page.module.css';
 
 interface HoldingRowProps {
@@ -59,7 +61,11 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
             <CompanyLogo symbol={holding.symbol} size={20} />
           </div>
           <div>
-            <p className={styles.companyName}>{holding.name}</p>
+            <p className={styles.companyName}>
+              <Link href={stockHref(holding.symbol)} className={styles.companyLink}>
+                {holding.name}
+              </Link>
+            </p>
             <p className={styles.companyMeta}>
               {holding.symbol}
               {holding.sector ? ` · ${holding.sector}` : ''}
