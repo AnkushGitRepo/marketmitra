@@ -4344,6 +4344,53 @@
           }
         }
       }
+    },
+    "/api/insights/news": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate / fetch the Mitra news pulse",
+        "description": "Two-sentence neutral read on the dominant themes in the latest 20 Indian markets headlines, grounded only in those headlines. Per-user cache, 1h. 503 when no headlines are available. Rate limited (ai tier).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "force": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Insight text + metadata."
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "429": {
+            "description": "Rate limited."
+          },
+          "503": {
+            "description": "No headlines available."
+          }
+        }
+      }
     }
   }
 }
