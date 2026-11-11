@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { realDeps } from '@/lib/analysts/deps';
 import { isHosted } from '@/lib/deployment-mode';
 import { heartbeat, initiate } from '@/lib/analysts/engine';
-import { ensureAnalystIndexes, listDueForHeartbeat, listHoldingPairs, listInitializing, spawnAnalyst, setStatus } from '@/lib/analysts/store';
+import { ensureAnalystIndexes, listDueForHeartbeat, listHoldingPairs, listInitializing, markFailure, requeueRetryable, spawnAnalyst } from '@/lib/analysts/store';
 import { getPreferences } from '@/lib/preferences/store';
 import { authorizeCron } from '@/lib/security/cronAuth';
 import { logEvent } from '@/lib/system/eventLog';
@@ -44,7 +44,7 @@ async function handle(request: Request) {
     return autoOn.get(userId) as boolean;
   };
 
-  const out = { initiated: 0, deferred: 0, needsKey: 0, errors: 0, checked: 0, journaled: 0, quiet: 0, skippedOff: 0 };
+  const out = { initiated: 0, deferred: 0, needsKey: 0, errors: 0, checked: 0, journaled: 0, quiet: 0, skippedOff: 0, requeued: 0 };
   const errors: string[] = [];
 
   // 1. Every holding gets an analyst (a no-op for those that already have one).
@@ -52,6 +52,9 @@ async function handle(request: Request) {
     if (!(await isAuto(pair.userId))) continue;
     await spawnAnalyst(pair.userId, pair.symbol, 'holding', now).catch(() => null);
   }
+
+  // 1b. Analysts that stalled on an unexpected error (including ones an earlier version left behind) get another try, a few times.
+  out.requeued = await requeueRetryable(only).catch(() => 0);
 
   // 2. Build pending dossiers.
   for (const a of await listInitializing(MAX_INITIATIONS, only)) {
@@ -68,7 +71,8 @@ async function handle(request: Request) {
     } catch (err) {
       out.errors += 1;
       errors.push(`${a.symbol}: ${err instanceof Error ? err.message : 'failed'}`);
-      await setStatus(a.userId, a.symbol, 'error', 'The analyst hit an unexpected error. Resume it to try again.').catch(() => undefined);
+      // Back in the queue for the next sweep, a few times; only then does it stall (#148).
+      await markFailure(a.userId, a.symbol).catch(() => undefined);
     }
   }
 

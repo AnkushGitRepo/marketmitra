@@ -25,6 +25,8 @@ export interface AnalystRecord {
   createdAt: Date;
   /** Thesis invalidation criteria; null until they have been set (dossiers written before they existed get defaults at the next check). */
   criteria: ThesisCriterion[] | null;
+  /** Automatic retries used after unexpected failures. */
+  retryCount: number;
 }
 
 type Generated = { ok: true; text: string; model: string; finishReason?: string } | { ok: false; error: string };

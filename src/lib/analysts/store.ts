@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
 import { istDay, isHeartbeatDue, type Usage } from './caps';
 import { applyCriterionAction, type CriterionAction } from './criteria';
+import { afterFailure, isAutoRetryable, MAX_AUTO_RETRIES } from './retry';
 import type { AnalystRecord } from './engine';
 import { EMPTY_WATCH, type AnalystSource, type AnalystStatus, type Dossier, type CriterionMetric, type JournalEntry, type ThesisCriterion, type WatchState } from './types';
 
@@ -21,6 +22,8 @@ interface AnalystDoc {
   updatedAt: Date;
   /** Absent on analysts written before thesis criteria existed. */
   criteria?: ThesisCriterion[] | null;
+  /** Automatic retries after unexpected failures (#148). Absent on older records. */
+  retryCount?: number;
 }
 
 interface JournalDoc extends Omit<JournalEntry, 'id' | 'ts'> {
@@ -63,6 +66,7 @@ const toRecord = (d: AnalystDoc): AnalystRecord => ({
   lastCheckedAt: d.lastCheckedAt,
   createdAt: d.createdAt,
   criteria: d.criteria ?? null,
+  retryCount: d.retryCount ?? 0,
 });
 
 const toEntry = (d: JournalDoc): JournalEntry => ({
@@ -115,8 +119,31 @@ export async function setStatus(userId: string, symbol: string, status: AnalystS
   return res.modifiedCount > 0;
 }
 
+/** Records one unexpected failure: back in the queue while attempts remain, stalled once they are used up. Returns the new status. */
+export async function markFailure(userId: string, symbol: string, now: Date = new Date()): Promise<AnalystStatus | null> {
+  const record = await getAnalyst(userId, symbol);
+  if (!record) return null;
+  const next = afterFailure(record.retryCount);
+  await (await analysts()).updateOne({ userId, symbol: symbol.toUpperCase() }, { $set: { status: next.status, statusNote: next.note, retryCount: next.retryCount, updatedAt: now } });
+  return next.status;
+}
+
+/** Puts analysts stalled by an unexpected exception (including those the old sweep left behind) back in the queue. Returns how many. */
+export async function requeueRetryable(onlyUserId?: string, now: Date = new Date()): Promise<number> {
+  const col = await analysts();
+  const stalled = await col.find({ status: 'error', dossier: null, ...(onlyUserId ? { userId: onlyUserId } : {}) }).toArray();
+  let n = 0;
+  for (const d of stalled) {
+    const r = toRecord(d);
+    if (!isAutoRetryable({ status: r.status, hasDossier: false, statusNote: r.statusNote, retryCount: r.retryCount })) continue;
+    await col.updateOne({ _id: d._id }, { $set: { status: 'initializing', statusNote: `Retrying after a temporary error (attempt ${r.retryCount + 2} of ${MAX_AUTO_RETRIES}).`, retryCount: r.retryCount + 1, updatedAt: now } });
+    n += 1;
+  }
+  return n;
+}
+
 export async function saveDossier(userId: string, symbol: string, dossier: Dossier, watch: WatchState, now: Date = new Date()): Promise<void> {
-  await (await analysts()).updateOne({ userId, symbol: symbol.toUpperCase() }, { $set: { dossier, watch, status: 'active', statusNote: null, lastCheckedAt: now, updatedAt: now } });
+  await (await analysts()).updateOne({ userId, symbol: symbol.toUpperCase() }, { $set: { dossier, watch, status: 'active', statusNote: null, retryCount: 0, lastCheckedAt: now, updatedAt: now } });
 }
 
 export async function saveCheck(userId: string, symbol: string, watch: WatchState, lastCheckedAt: Date): Promise<void> {
