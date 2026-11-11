@@ -62,6 +62,17 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+describe('indexes', () => {
+  it('are requested once per process, before the first token exists', async () => {
+    await createToken('u1', input('a'), NOW);
+    await createToken('u1', input('b'), NOW);
+    await createToken('u2', input('c'), NOW);
+    expect(fakeCol.createIndexes).toHaveBeenCalledTimes(1);
+    const specs = (fakeCol.createIndexes.mock.calls[0] as unknown as [Array<{ name: string; unique?: boolean }>])[0];
+    expect(specs.find((x) => x.name === 'hash_unique')?.unique).toBe(true);
+  });
+});
+
 describe('createToken', () => {
   it('returns the plaintext once and stores only its hash', async () => {
     const { token, view } = await createToken('u1', input(), NOW);

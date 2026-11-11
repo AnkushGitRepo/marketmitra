@@ -59,6 +59,17 @@ async function collection() {
   return db.collection<TokenDoc>('apiTokens');
 }
 
+let indexesReady: Promise<void> | null = null;
+
+/** Creates the indexes once per process. Failing here must not stop a token being created, so it is logged and dropped. */
+function ensureIndexesOnce(): Promise<void> {
+  indexesReady ??= ensureTokenIndexes().catch(async (e: unknown) => {
+    indexesReady = null; // try again next time
+    await logEvent({ level: 'warn', source: 'tokens', message: 'Could not create apiTokens indexes', meta: { error: e instanceof Error ? e.message : String(e) } });
+  });
+  return indexesReady;
+}
+
 export async function ensureTokenIndexes(): Promise<void> {
   const col = await collection();
   await col.createIndexes([
@@ -96,6 +107,7 @@ export async function createToken(
   input: CreateTokenInput,
   now: Date = new Date()
 ): Promise<{ token: string; view: TokenView }> {
+  await ensureIndexesOnce();
   const col = await collection();
   const live = (await col.find({ userId, revokedAt: null }).toArray()).filter((d) => isUsable(d, now));
   if (live.length >= MAX_ACTIVE_TOKENS) throw new TokenLimitError();
