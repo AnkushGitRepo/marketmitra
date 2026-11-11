@@ -1,0 +1,76 @@
+.drawer {
+  border: none;
+  padding: 0;
+  margin: 0 0 0 auto;
+  width: min(480px, 100vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  background: var(--app-bg-top, var(--color-surface));
+  color: var(--app-ink);
+  box-shadow: -18px 0 50px rgba(22, 25, 28, 0.22);
+}
+
+.drawer[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer::backdrop {
+  background: rgba(22, 25, 28, 0.45);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drawer[open] {
+    animation: slideIn 0.22s ease both;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--app-border-softer);
+  background: var(--color-surface);
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: var(--app-pill-bg);
+  color: var(--app-ink);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+/* The cards inside were built to sit on the page; here they only need to fill the drawer. */
+.body > * {
+  margin: 0;
+}

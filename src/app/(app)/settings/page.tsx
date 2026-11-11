@@ -6,6 +6,8 @@ import { getPreferences } from '@/lib/preferences/store';
 import { getAiSettingsView, getAutoGuardrailsEnabled, getNotificationChannelSettingsView } from '@/lib/userSettings';
 import { GuardrailsToggle } from '../alerts/GuardrailsToggle';
 import { NotificationChannelsCard } from '../alerts/NotificationChannelsCard';
+import { EmailAlertsCard } from '@/components/alerts/EmailAlertsCard';
+import { getEmailAlertStatus } from '@/lib/notifications/emailStatus';
 import { AccountSection, LocalAccountSection } from './AccountSection';
 import { AboutSection, DataSection } from './DataAndAboutSections';
 import { PreferencesSections } from './PreferencesSections';
@@ -39,11 +41,12 @@ export default async function SettingsPage() {
   }
 
   const encConfigured = isEncKeyConfigured();
-  const [aiView, prefs, channelsView, guardrails] = await Promise.all([
+  const [aiView, prefs, channelsView, guardrails, emailStatus] = await Promise.all([
     getAiSettingsView(userId).catch(() => null),
     getPreferences(userId),
     getNotificationChannelSettingsView(userId).catch(() => null),
     getAutoGuardrailsEnabled(userId).catch(() => true),
+    getEmailAlertStatus(userId).catch(() => null),
   ]);
 
   return (
@@ -75,6 +78,7 @@ export default async function SettingsPage() {
           <section id="notifications" className={styles.section} aria-labelledby="notif-title">
             <h2 id="notif-title" className={styles.sectionTitle}>Notifications &amp; alerts</h2>
             <p className={styles.sectionIntro}>Where alert notifications are delivered, and what is set up automatically for new holdings.</p>
+            <EmailAlertsCard initial={emailStatus} />
             <GuardrailsToggle initialEnabled={guardrails} />
             <NotificationChannelsCard initialView={channelsView} encConfigured={encConfigured} />
           </section>

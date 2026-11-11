@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUserId } from '@/lib/currentUserId';
-import { resolveChannels } from '@/lib/notifications/deliver';
+import { isHosted } from '@/lib/deployment-mode';
+import { resolveAlertEmailAddress, resolveChannels } from '@/lib/notifications/deliver';
+import { decideEmailRoute, describeEmailSkip } from '@/lib/notifications/emailPolicy';
+import { getEmailAlertStatus } from '@/lib/notifications/emailStatus';
+import { emailConfigured, sendEmail } from '@/lib/notifications/channels';
+import { getEmailAlertSettings, recordAlertEmailResult } from '@/lib/userSettings';
 import { sendSlack, sendTelegram, sendWebhook, sendWhatsapp } from '@/lib/notifications/channels';
 
 const testSchema = z.object({
-  channel: z.enum(['slack', 'telegram', 'whatsapp', 'webhook']),
+  channel: z.enum(['email', 'slack', 'telegram', 'whatsapp', 'webhook']),
 });
 
 /** Sends one real test notification through a single already-saved channel,
@@ -20,7 +25,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: parsed.error.message }, { status: 422 });
   }
 
-  const channels = await resolveChannels(userId);
   const payload = {
     kind: 'system' as const,
     title: 'Test notification',
@@ -29,6 +33,22 @@ export async function POST(request: Request) {
   };
 
   const { channel } = parsed.data;
+
+  if (channel === 'email') {
+    // The same route a real alert takes (setting, provider, address), so a passing test means an alert would arrive.
+    const { enabled } = await getEmailAlertSettings(userId).catch(() => ({ enabled: true }));
+    const providerConfigured = emailConfigured();
+    const address = providerConfigured ? await resolveAlertEmailAddress(userId).catch(() => null) : null;
+    const route = decideEmailRoute({ enabled, providerConfigured, address });
+    if (route.kind === 'skip') {
+      return NextResponse.json({ success: false, error: describeEmailSkip(route.reason, isHosted()), reason: route.reason }, { status: 409 });
+    }
+    const result = await sendEmail(route.to, payload);
+    await recordAlertEmailResult(userId, { status: result.status === 'sent' ? 'sent' : result.status === 'skipped' ? 'skipped' : 'failed', detail: result.detail ?? null });
+    return NextResponse.json({ success: true, data: { result, status: await getEmailAlertStatus(userId) } });
+  }
+
+  const channels = await resolveChannels(userId);
   if (channel === 'slack') {
     if (!channels.slack) return NextResponse.json({ success: false, error: 'Slack is not configured yet.' }, { status: 409 });
     return NextResponse.json({ success: true, data: await sendSlack(channels.slack, payload) });

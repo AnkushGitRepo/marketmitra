@@ -2521,7 +2521,7 @@
           "Settings"
         ],
         "summary": "Send a test notification on one channel",
-        "description": "Sends a real test notification through one already-saved channel.",
+        "description": "Sends a real test notification through one already-saved channel. Channel `email` sends a real test email through the same route an alert takes (the user's email setting, the server's provider and the account address); it answers 409 with the reason when email cannot be sent.",
         "security": [
           {
             "cookieAuth": []
@@ -2540,6 +2540,7 @@
                   "channel": {
                     "type": "string",
                     "enum": [
+                      "email",
                       "slack",
                       "telegram",
                       "whatsapp",
@@ -4410,6 +4411,72 @@
           },
           "401": {
             "description": "Not authenticated."
+          }
+        }
+      }
+    },
+    "/api/settings/email-alerts": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Email alerts setting and status",
+        "description": "Whether a triggered alert is also emailed (on by default), whether an email can actually be sent right now (and why not: `disabled`, `provider_missing`, `no_address`), the masked destination address, a plain-words `blockedText` with how to fix it for this deployment, and the outcome of the last attempt.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { enabled, deliverable, blockedBy, blockedText, maskedTo, last } }"
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Turn alert emails on or off",
+        "description": "Body `{ enabled }`. Returns the same status object as GET.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enabled"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {
+                "enabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated status."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "422": {
+            "description": "Invalid body."
           }
         }
       }

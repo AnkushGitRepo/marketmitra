@@ -2,6 +2,7 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { listAlerts } from '@/lib/alerts/store';
 import { isEncKeyConfigured } from '@/lib/crypto';
 import { getAutoGuardrailsEnabled, getNotificationChannelSettingsView } from '@/lib/userSettings';
+import { getEmailAlertStatus, type EmailAlertStatus } from '@/lib/notifications/emailStatus';
 import { AlertsPageClient } from './AlertsPageClient';
 import styles from './page.module.css';
 
@@ -25,6 +26,7 @@ export default async function AlertsPage({
   let alerts: Awaited<ReturnType<typeof listAlerts>> = [];
   let channelsView: Awaited<ReturnType<typeof getNotificationChannelSettingsView>> | null = null;
   let autoGuardrailsEnabled = true;
+  let emailStatus: EmailAlertStatus | null = null;
   try {
     alerts = await listAlerts(userId);
   } catch {
@@ -41,6 +43,12 @@ export default async function AlertsPage({
     // Same fallback — default to the on state rather than 500.
   }
 
+  try {
+    emailStatus = await getEmailAlertStatus(userId);
+  } catch {
+    // The card shows an "unavailable" note rather than the page failing.
+  }
+
   return (
     <AlertsPageClient
       alerts={alerts}
@@ -49,6 +57,8 @@ export default async function AlertsPage({
       channelsView={channelsView}
       encConfigured={isEncKeyConfigured()}
       autoGuardrailsEnabled={autoGuardrailsEnabled}
+      emailStatus={emailStatus}
+      nowIso={new Date().toISOString()}
     />
   );
 }

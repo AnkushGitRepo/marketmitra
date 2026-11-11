@@ -1,5 +1,8 @@
 import { isHosted } from '@/lib/deployment-mode';
-import { getNotificationChannelSettings } from '@/lib/userSettings';
+import { getEmailAlertSettings, getNotificationChannelSettings, recordAlertEmailResult } from '@/lib/userSettings';
+import { maskEmail } from '@/lib/email/send';
+import { logEvent } from '@/lib/system/eventLog';
+import { decideEmailRoute, describeEmailSkip, type EmailRoute, type EmailSkipReason } from './emailPolicy';
 import { emailConfigured, sendEmail, sendSlack, sendTelegram, sendWebhook, sendWhatsapp } from './channels';
 import { insertNotification } from './store';
 import type { ChannelResult, Notification, NotificationPayload } from './types';
@@ -7,6 +10,8 @@ import type { ChannelResult, Notification, NotificationPayload } from './types';
 export interface ChannelConfig {
   /** External email recipient, or false/undefined to skip email. */
   email?: string | false;
+  /** Why email is not being sent, when it is not (recorded so the user can see it). */
+  emailSkipped?: EmailSkipReason;
   /** External webhook URL, or false/undefined to skip. */
   webhook?: string | false;
   /** Slack incoming-webhook URL, or false/undefined to skip. */
@@ -38,7 +43,11 @@ export async function deliverNotification(
   const results: ChannelResult[] = [{ channel: 'in_app', status: 'sent' }];
 
   if (channels.email) {
-    results.push(await sendEmail(channels.email, payload));
+    const result = await sendEmail(channels.email, payload);
+    results.push(result);
+    await recordEmailOutcome(userId, channels.email, result);
+  } else if (channels.emailSkipped) {
+    await recordAlertEmailResult(userId, { status: 'skipped', detail: describeEmailSkip(channels.emailSkipped) });
   }
   if (channels.webhook) {
     results.push(await sendWebhook(channels.webhook, payload));
@@ -76,16 +85,34 @@ export async function resolveChannels(userId: string): Promise<ChannelConfig> {
       : false;
   const whatsapp = stored?.whatsappWebhookUrl || false;
 
-  let email: string | false = false;
-  if (emailConfigured()) {
-    if (isHosted()) {
-      email = (await resolveClerkEmail(userId)) ?? false;
-    } else {
-      email = process.env.ALERT_EMAIL_TO || false;
-    }
-  }
+  const route = await resolveEmailRoute(userId);
+  const email = route.kind === 'send' ? route.to : false;
+  const emailSkipped = route.kind === 'skip' ? route.reason : undefined;
 
-  return { email, webhook, slack, telegram, whatsapp };
+  return { email, emailSkipped, webhook, slack, telegram, whatsapp };
+}
+
+/** The address alert emails go to: the Clerk primary email when hosted, `ALERT_EMAIL_TO` when self-hosting. */
+export async function resolveAlertEmailAddress(userId: string): Promise<string | null> {
+  if (isHosted()) return resolveClerkEmail(userId);
+  return process.env.ALERT_EMAIL_TO?.trim() || null;
+}
+
+/** Whether an alert email will be sent, to which address, or why not. Reads the user's setting (on by default). */
+export async function resolveEmailRoute(userId: string): Promise<EmailRoute> {
+  const { enabled } = await getEmailAlertSettings(userId).catch(() => ({ enabled: true }));
+  const providerConfigured = emailConfigured();
+  // Only look the address up when it could be used: a hosted lookup is a network call.
+  const address = enabled && providerConfigured ? await resolveAlertEmailAddress(userId) : null;
+  return decideEmailRoute({ enabled, providerConfigured, address });
+}
+
+/** Records the outcome for the user and logs a failure; never throws, so recording cannot lose a notification. */
+async function recordEmailOutcome(userId: string, to: string, result: ChannelResult): Promise<void> {
+  if (result.status === 'sent') return void (await recordAlertEmailResult(userId, { status: 'sent', detail: null }));
+  if (result.status === 'skipped') return void (await recordAlertEmailResult(userId, { status: 'skipped', detail: result.detail ?? null }));
+  await recordAlertEmailResult(userId, { status: 'failed', detail: result.detail ?? 'unknown error' });
+  await logEvent({ level: 'error', source: 'alerts:email', message: `Alert email to ${maskEmail(to)} failed: ${result.detail ?? 'unknown error'}` });
 }
 
 async function resolveClerkEmail(userId: string): Promise<string | null> {

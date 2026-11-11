@@ -1,0 +1,186 @@
+.row {
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--app-border-soft);
+  border-left-width: 4px;
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 14px rgba(22, 25, 28, 0.04);
+}
+
+/* The left border carries state; the badge words repeat it, so colour is never the only signal. */
+.attention {
+  border-left-color: var(--app-warn-accent);
+  background: var(--app-warn-bg);
+  border-color: var(--app-warn-border);
+  border-left-color: var(--app-warn-accent);
+}
+
+.attentionStop {
+  background: var(--app-loss-bg);
+  border-color: var(--app-loss-border);
+  border-left-color: var(--app-loss);
+}
+
+.monitoring {
+  border-left-color: var(--app-teal);
+}
+
+.paused,
+.resolved {
+  border-left-color: var(--app-border);
+  box-shadow: none;
+}
+
+.resolved {
+  opacity: 0.85;
+}
+
+.main {
+  min-width: 0;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.badge {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: var(--color-surface);
+}
+
+.badge_attention {
+  color: var(--app-warn-text);
+}
+
+.attentionStop .badge_attention {
+  color: var(--app-loss-text);
+}
+
+.badge_monitoring {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+}
+
+.badge_paused,
+.badge_resolved {
+  background: var(--app-pill-bg);
+  color: var(--app-text-muted);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--app-ink);
+  overflow-wrap: break-word;
+}
+
+.note {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+}
+
+.facts {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.facts dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.facts dd {
+  margin: 3px 0 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.primary,
+.secondary {
+  min-height: 40px;
+  border-radius: var(--radius-pill);
+  padding: 0 18px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.secondary {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* Phones: a vertical card, so the title never fragments and the actions sit apart on their own row. */
+@media (max-width: 767px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .facts {
+    gap: 8px 20px;
+  }
+
+  .actions {
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--app-border-softer);
+  }
+
+  .primary,
+  .secondary {
+    flex: 1;
+    min-height: 44px;
+  }
+}

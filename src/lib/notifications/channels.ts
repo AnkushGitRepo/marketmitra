@@ -1,5 +1,7 @@
 import { Resend } from 'resend';
 import { replyToFromEnv } from '@/lib/email/replyTo';
+import { retryWithBackoff } from '@/lib/net/retry';
+import { EMAIL_ATTEMPTS, EMAIL_RETRY_DELAYS_MS, isTransientEmailError } from './emailPolicy';
 import { isHosted } from '@/lib/deployment-mode';
 import { describeOutboundError, safeOutboundFetch, type OutboundOptions } from '@/lib/security/outbound';
 import type { ChannelResult, NotificationPayload } from './types';
@@ -167,10 +169,24 @@ function renderEmail(payload: NotificationPayload): { subject: string; html: str
   return { subject, html, text };
 }
 
+class EmailSendError extends Error {
+  constructor(
+    message: string,
+    readonly statusCode?: number,
+    readonly errName?: string
+  ) {
+    super(message);
+  }
+}
+
 /**
  * Send one notification as an email via Resend (ADR 0014 §2). Never throws:
  * returns `skipped` when no `RESEND_API_KEY` is set (degrades to in-app +
  * webhook), `error` on a provider failure, `sent` otherwise.
+ *
+ * A transient failure (rate limit, 5xx, network) is retried with a short back-off, because the
+ * alert has already been marked triggered by the time this runs: one dropped attempt would lose
+ * the email for good. Permanent failures (invalid sender, unverified domain) are not retried.
  *
  * `ALERT_EMAIL_FROM` overrides the default sender — required for the hosted
  * instance (a verified domain); `onboarding@resend.dev` is fine for
@@ -178,7 +194,8 @@ function renderEmail(payload: NotificationPayload): { subject: string; html: str
  */
 export async function sendEmail(
   to: string,
-  payload: NotificationPayload
+  payload: NotificationPayload,
+  options: { sleep?: (ms: number) => Promise<void> } = {}
 ): Promise<ChannelResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -186,18 +203,33 @@ export async function sendEmail(
   }
 
   const { subject, html, text } = renderEmail(payload);
+  const resend = new Resend(apiKey);
   try {
-    const { error } = await new Resend(apiKey).emails.send({
-      from: process.env.ALERT_EMAIL_FROM || DEFAULT_FROM,
-      to,
-      subject,
-      html,
-      text,
-      replyTo: replyToFromEnv(),
-    });
-    if (error) {
-      return { channel: 'email', status: 'error', detail: error.message || 'resend error' };
-    }
+    await retryWithBackoff(
+      async () => {
+        const { error } = await resend.emails.send({
+          from: process.env.ALERT_EMAIL_FROM || DEFAULT_FROM,
+          to,
+          subject,
+          html,
+          text,
+          replyTo: replyToFromEnv(),
+        });
+        if (error) {
+          const e = error as { message?: string; name?: string; statusCode?: number | null };
+          throw new EmailSendError(e.message || 'resend error', e.statusCode ?? undefined, e.name);
+        }
+      },
+      {
+        attempts: EMAIL_ATTEMPTS,
+        delaysMs: EMAIL_RETRY_DELAYS_MS,
+        sleep: options.sleep,
+        shouldRetry: (e) =>
+          e instanceof EmailSendError
+            ? isTransientEmailError({ statusCode: e.statusCode, name: e.errName, message: e.message })
+            : isTransientEmailError({ message: e instanceof Error ? e.message : String(e) }),
+      }
+    );
     return { channel: 'email', status: 'sent' };
   } catch (err) {
     return {

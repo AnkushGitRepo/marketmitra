@@ -52,13 +52,6 @@
   }
 }
 
-.introNote {
-  margin: 0 0 22px;
-  font-size: 13px;
-  color: var(--app-text-muted);
-  max-width: 62ch;
-}
-
 .btnPrimary {
   border: none;
   background: var(--app-ink);
@@ -209,45 +202,6 @@
   justify-content: flex-end;
 }
 
-/* list */
-
-.filterBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.filterGroup {
-  display: flex;
-  gap: 3px;
-  background: var(--app-pill-bg);
-  border-radius: var(--radius-pill);
-  padding: 4px;
-}
-
-.filterPill {
-  border: none;
-  padding: 6px 13px;
-  border-radius: var(--radius-pill);
-  font-size: 12px;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  background: transparent;
-  color: var(--app-text-faint);
-  transition: all var(--duration-fast) ease;
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.filterPillActive {
-  background: var(--color-surface);
-  color: var(--app-ink);
-  box-shadow: 0 1px 4px rgba(22, 25, 28, 0.1);
-  font-weight: 500;
-}
-
 .filterBar .select,
 .filterBar .input {
   width: auto;
@@ -256,126 +210,189 @@
   font-size: 12.5px;
 }
 
+.linkButton:disabled,
+
+/* Header: title on the left, settings and the primary action on the right. */
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  padding: 0 16px;
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.gearBtn:hover {
+  background: var(--app-pill-bg);
+}
+
+/* One-line guardrail status, under the header. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 10px 16px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-pill);
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
+  font-size: 13px;
+}
+
+.bannerOff {
+  background: var(--app-warn-bg);
+  border-color: var(--app-warn-border);
+  color: var(--app-warn-text);
+}
+
+.bannerLink {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Status tabs, type menu and search in one bar. */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--app-pill-bg);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex: none;
+  border: none;
+  background: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  min-height: 36px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tabActive {
+  background: var(--color-surface);
+  color: var(--app-ink);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(22, 25, 28, 0.12);
+}
+
+.count {
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.search {
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+}
+
+.sectionHead {
+  margin: 18px 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.sectionHead:first-child {
+  margin-top: 0;
+}
+
 .list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-lg);
-  padding: 20px 22px;
-  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-}
-
-.cardBody {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-
-.cardMain {
-  min-width: 0;
-  flex: 1;
-}
-
-.cardTopLine {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.badge {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-}
-
-.badge_active {
-  background: var(--app-teal-bg);
-  color: var(--app-teal-strong);
-}
-
-.badge_triggered {
-  background: #fbe9e3;
-  color: var(--app-loss);
-}
-
-.badge_paused {
-  background: var(--app-border-softer);
-  color: var(--app-text-muted);
-}
-
-.typeTag {
-  font-size: 11px;
-  color: var(--app-text-subtle);
-  border: 1px solid var(--app-border);
-  border-radius: var(--radius-pill);
-  padding: 3px 9px;
-}
-
-.cardDesc {
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--app-ink);
-}
-
-.cardNote {
-  margin: 5px 0 0;
-  font-size: 12.5px;
-  color: var(--app-text-muted);
-}
-
-.cardMeta {
-  margin: 8px 0 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--app-text-subtle);
-}
-
-.cardActions {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  flex: none;
+  gap: 10px;
 }
 
 .linkButton {
   border: none;
   background: none;
-  padding: 0;
-  font-size: 12.5px;
-  color: var(--app-teal-strong);
-  cursor: pointer;
+  padding: 6px 4px;
   font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
 }
 
-.linkButtonDanger {
-  border: none;
-  background: none;
-  padding: 0;
-  font-size: 12.5px;
-  color: var(--app-loss);
-  cursor: pointer;
-  font-family: var(--font-sans);
-}
+@media (max-width: 767px) {
+  /* A short note, not a pill: let the text flow after the icon instead of wrapping into a tall oval. */
+  .banner {
+    display: block;
+    border-radius: 14px;
+    line-height: 1.5;
+  }
 
-.linkButton:disabled,
-.linkButtonDanger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  .banner > span:first-child {
+    margin-right: 6px;
+  }
+
+  .banner > span:nth-child(2) {
+    margin-right: 6px;
+  }
+
+  .headActions {
+    width: 100%;
+  }
+
+  .headActions > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .search {
+    max-width: none;
+    width: 100%;
+  }
+
+  /* Keep the last card clear of the tab bar and the home indicator. */
+  .pageRoot {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
 }
