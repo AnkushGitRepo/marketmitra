@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { UNRESTRICTED_DISCLAIMER, type PromptMode } from '@/lib/ai/promptMode';
-import { POINT_KEYS, POINT_TITLES, chipPrompts, signalLabel, type StockBrief } from '@/lib/ai/stockBrief';
+import { BRIEF_TABS, pointsForTab, tabCounts, type BriefTab } from '@/lib/ai/briefTabs';
+import { POINT_TITLES, chipPrompts, signalLabel, type StockBrief } from '@/lib/ai/stockBrief';
+import { emphasizeNumbers } from '@/lib/stock/sensitivity';
 import type { StockSignals } from '@/lib/stock/signals';
+import { SensitivityCard } from './SensitivityCard';
 import { SignalMatrix } from './SignalMatrix';
 import styles from './MitraBrief.module.css';
 
@@ -22,18 +25,26 @@ interface MitraBriefProps {
   readonly initial: BriefData | null;
   /** Computed data panel: shown without an AI key or any generation. */
   readonly signals: StockSignals;
-  /** The longer AI read, kept reachable under the brief. */
-  readonly longRead?: ReactNode;
 }
 
 const GUARDED_DISCLAIMER = 'This is a synthesis of public data, not investment advice.';
 const SKELETON_ROWS = 5;
 
+/** Point text with its figures in bold. */
+function Emphasized({ text }: { readonly text: string }) {
+  return (
+    <>
+      {emphasizeNumbers(text).map((part, i) => (part.bold ? <strong key={i}>{part.text}</strong> : <span key={i}>{part.text}</span>))}
+    </>
+  );
+}
+
 /** The 360 brief: up to five AI points on the left, the computed numbers they rest on on the right. */
-export function MitraBrief({ symbol, hasKey, mode, initial, signals, longRead }: MitraBriefProps) {
+export function MitraBrief({ symbol, hasKey, mode, initial, signals }: MitraBriefProps) {
   const [data, setData] = useState<BriefData | null>(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<BriefTab>('all');
 
   const generate = async (force: boolean) => {
     setLoading(true);
@@ -61,6 +72,8 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals, longRead }:
   const brief = data?.brief;
   const [primaryChip, stressChip] = chipPrompts(symbol, mode);
   const c = signals.coverage;
+  const counts = brief ? tabCounts(brief.points) : tabCounts([]);
+  const visible = brief ? pointsForTab(brief.points, tab) : [];
 
   return (
     <section className={styles.card} aria-label="Mitra brief">
@@ -110,28 +123,35 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals, longRead }:
               <button type="button" className={styles.primary} disabled={loading} onClick={() => void generate(false)}>
                 Generate brief
               </button>
-              <ul className={styles.ghostList} aria-label="What the brief covers">
-                {POINT_KEYS.map((k) => (
-                  <li key={k} className={styles.ghost}>
-                    <span>{POINT_TITLES[k]}</span>
-                    <span className={styles.ghostNote}>not generated yet</span>
-                  </li>
-                ))}
-              </ul>
+              <SensitivityCard signals={signals} />
             </div>
           ) : (
             <>
-              <ul className={styles.pointList}>
-                {brief.points.map((p) => (
-                  <li key={p.key} className={`${styles.point} ${styles[p.signal]}`}>
-                    <div className={styles.pointHead}>
-                      <span className={styles.pointTitle}>{POINT_TITLES[p.key]}</span>
-                      <span className={`${styles.pill} ${styles[`pill_${p.signal}`]}`}>{signalLabel(p.signal, activeMode)}</span>
-                    </div>
-                    <p className={styles.pointText}>{p.text}</p>
-                  </li>
+              <div className={styles.tabs} role="tablist" aria-label="Brief sections">
+                {BRIEF_TABS.map((t) => (
+                  <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={styles.tab} onClick={() => setTab(t.id)}>
+                    {t.label} <span className={styles.tabCount}>{counts[t.id]}</span>
+                  </button>
                 ))}
-              </ul>
+              </div>
+              {visible.length === 0 ? (
+                <p className={styles.muted}>{tab === 'supports' ? 'No point reads as a clear strength.' : tab === 'weak' ? 'No point reads as a concern.' : 'No valuation point in this brief.'}</p>
+              ) : (
+                <ul className={styles.pointList}>
+                  {visible.map((p) => (
+                    <li key={p.key} className={`${styles.point} ${styles[p.signal]}`}>
+                      <div className={styles.pointHead}>
+                        <span className={styles.pointTitle}>{POINT_TITLES[p.key]}</span>
+                        <span className={`${styles.pill} ${styles[`pill_${p.signal}`]}`}>{signalLabel(p.signal, activeMode)}</span>
+                      </div>
+                      <p className={styles.pointText}>
+                        <Emphasized text={p.text} />
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {tab === 'valuation' && <SensitivityCard signals={signals} />}
               {(brief.valuation || brief.entry) && (
                 <div className={styles.view}>
                   {brief.valuation && <span className={styles.viewPill}>Valuation view: {brief.valuation}</span>}
@@ -164,12 +184,6 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals, longRead }:
         </Link>
       </div>
 
-      {hasKey && longRead && (
-        <details className={styles.more}>
-          <summary>Longer AI read</summary>
-          {longRead}
-        </details>
-      )}
     </section>
   );
 }
