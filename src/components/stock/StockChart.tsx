@@ -25,11 +25,13 @@ interface StockChartProps {
   readonly symbol: string;
   readonly bars: Bar[];
   readonly alertHref: string;
+  /** Opens the set-alert modal instead of leaving the page. */
+  readonly onAlert?: () => void;
   readonly onRangeChange: (range: RangeKey) => void;
 }
 
 /** Desktop: the full interactive chart. Phone: a plain area chart that never captures touch scrolling, with the full chart one tap away. */
-export function StockChart({ symbol, bars, alertHref, onRangeChange }: StockChartProps) {
+export function StockChart({ symbol, bars, alertHref, onAlert, onRangeChange }: StockChartProps) {
   const chartData = useChartBars(symbol, bars);
   const isMobile = useIsMobile();
   const [fullscreen, setFullscreen] = useState(false);
@@ -43,7 +45,7 @@ export function StockChart({ symbol, bars, alertHref, onRangeChange }: StockChar
         <ChartFallbackPanel symbol={symbol} bars={chartData.bars} reason="The chart hit a problem, so a simple view is shown." onRetry={reset} />
       )}
     >
-      <ProChart key={symbol} symbol={symbol} bars={chartData.bars} alertHref={alertHref} onRangeChange={onRangeChange} />
+      <ProChart key={symbol} symbol={symbol} bars={chartData.bars} alertHref={alertHref} onAlert={onAlert} onRangeChange={onRangeChange} />
     </ChartErrorBoundary>
   );
 

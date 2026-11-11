@@ -1038,6 +1038,11 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 - Mitra brief (strengths / watchpoint) on demand with the user's own key; chip opens `/mitra?q=` (prefills, never auto-sends). Maintainer-requested opt-in **unrestricted mode**, local only, off by default, enforced server-side (hosted always guarded), ADR 0054, AGENTS.md rule updated.
 - **Verified:** lint, typecheck, unit tests for the pure logic and the mode enforcement; browser at 1440px and 390px for the page. **Not verified:** a live brief generation (it would spend the AI key; the JSON parser is unit-tested but a real model's compliance is untested), the unrestricted toggle in the browser, and the fullscreen chart on a real touch device.
 
+## 2026-11-11 — Set alert in a modal on the stock page (#107)
+
+- `+ Set alert` (hero) and the chart's Alert button now open a modal on the stock page instead of navigating to Alerts. It reuses the Alerts page `AlertForm` (same types, validation and API), with the symbol locked and the portfolio-wide type left out; success closes it and shows "Alert created. View alerts". `/alerts?new=1&symbol=` still works.
+- **Verified:** lint, typecheck, tests; in a browser at 1440px and 390px: centred, symbol locked, inline validation ("Enter a price above 0."), Esc closes, no navigation, and a real create (SBIN above 99999, which cannot trigger) worked end to end. I deleted that one test alert straight after (found by its unique values, since the note I tried to tag it with was not saved); the alert count is back to 27. **Not verified:** the email path for a triggered alert from this modal (unchanged server code).
+
 ## 2026-11-11 — Watchlists: modals, derived Holdings list, sort (#106, [ADR 0055](./decisions/0055-holdings-watchlist-derived.md))
 
 - Stock page `+ Watchlist` is a dropdown with per-list Rename and "New watchlist" in a proper modal (adds the stock to the new list). The same `WatchlistNameDialog` replaces the inline create/rename on Markets. Holdings is a derived, read-only, reserved-name list shown first on Markets. Watchlists can be sorted by top gainers / losers.

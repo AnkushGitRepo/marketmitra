@@ -2,23 +2,22 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { ALL_ALERT_TYPES } from '@/lib/alerts/stockAlertTypes';
 import type { Alert, AlertType } from '@/lib/alerts/types';
 import { alertTypeLabel } from './alertText';
 import styles from './page.module.css';
 
-const TYPES: AlertType[] = [
-  'price_threshold',
-  'percent_move',
-  'week52_breach',
-  'portfolio_pnl',
-  'trailing_stop',
-  'cumulative_drawdown',
-];
 
 interface AlertFormProps {
   /** Present = edit mode (type + symbol are fixed, only params/note/rearm change). */
   alert?: Alert;
   initialSymbol?: string;
+  /** Alert types to offer (default: all). A stock-page modal leaves out the portfolio-wide type. */
+  types?: readonly AlertType[];
+  /** Keep the symbol fixed (the stock page already knows it). */
+  lockSymbol?: boolean;
+  /** Called after the alert was saved, just before `onClose`. */
+  onSaved?: () => void;
   onClose: () => void;
 }
 
@@ -140,7 +139,7 @@ function buildParams(d: Draft): BuiltParams {
   }
 }
 
-export function AlertForm({ alert, initialSymbol, onClose }: AlertFormProps) {
+export function AlertForm({ alert, initialSymbol, types = ALL_ALERT_TYPES, lockSymbol = false, onSaved, onClose }: AlertFormProps) {
   const router = useRouter();
   const isEdit = Boolean(alert);
   const [d, setD] = useState<Draft>(() => draftFromAlert(alert, initialSymbol));
@@ -196,6 +195,7 @@ export function AlertForm({ alert, initialSymbol, onClose }: AlertFormProps) {
         return;
       }
       router.refresh();
+      onSaved?.();
       onClose();
     } finally {
       setSubmitting(false);
@@ -213,7 +213,7 @@ export function AlertForm({ alert, initialSymbol, onClose }: AlertFormProps) {
             disabled={isEdit}
             onChange={(e) => set('type', e.target.value as AlertType)}
           >
-            {TYPES.map((t) => (
+            {types.map((t) => (
               <option key={t} value={t}>
                 {alertTypeLabel(t)}
               </option>
@@ -228,7 +228,7 @@ export function AlertForm({ alert, initialSymbol, onClose }: AlertFormProps) {
           <input
             className={styles.input}
             value={d.symbol}
-            disabled={isEdit}
+            disabled={isEdit || lockSymbol}
             onChange={(e) => set('symbol', e.target.value.toUpperCase())}
             placeholder={needsSymbol ? 'RELIANCE' : 'RELIANCE (optional)'}
           />

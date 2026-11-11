@@ -20,7 +20,10 @@ import styles from './ProChart.module.css';
 interface ProChartProps {
   symbol: string;
   bars: Bar[];
+  /** Where the Alert button goes when `onAlert` is not given. */
   alertHref: string;
+  /** When given, Alert opens in place (a modal) instead of navigating away. */
+  onAlert?: () => void;
   onRangeChange?: (range: RangeKey) => void;
 }
 
@@ -45,7 +48,15 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
-export function ProChart({ symbol, bars, alertHref, onRangeChange }: ProChartProps) {
+function BellIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <path d="M6 16V10a5 5 0 0 1 10 0v6l1.5 2h-13L6 16ZM9.5 19.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: ProChartProps) {
   const [range, setRange] = useState<RangeKey>('1Y');
   const [kind, setKind] = useState<ChartKind>('candles');
   // Client-only component (loaded with ssr: false), so reading localStorage in
@@ -115,12 +126,17 @@ export function ProChart({ symbol, bars, alertHref, onRangeChange }: ProChartPro
         </div>
         <span className={styles.divider} />
         <IndicatorMenu active={indicators} onToggle={toggleIndicator} />
-        <Link href={alertHref} className={styles.topBtn}>
-          <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-            <path d="M6 16V10a5 5 0 0 1 10 0v6l1.5 2h-13L6 16ZM9.5 19.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Alert
-        </Link>
+        {onAlert ? (
+          <button type="button" className={styles.topBtn} onClick={onAlert}>
+            <BellIcon />
+            Alert
+          </button>
+        ) : (
+          <Link href={alertHref} className={styles.topBtn}>
+            <BellIcon />
+            Alert
+          </Link>
+        )}
       </div>
 
       <div className={styles.body}>
