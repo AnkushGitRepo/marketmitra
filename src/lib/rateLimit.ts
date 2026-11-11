@@ -113,7 +113,7 @@ function clientIp(req: Request): string {
 export async function checkRateLimit(
   req: Request,
   tier: RateLimitTier = 'default',
-  opts: { userId?: string | null } = {}
+  opts: { userId?: string | null; /** Key by IP but at the signed-in rate: the pre-validation guard for bearer tokens. */ ipAtAuthedRate?: boolean } = {}
 ): Promise<RateLimitResult> {
   if (!rateLimitEnabled) return PASS;
 
@@ -129,8 +129,9 @@ export async function checkRateLimit(
   }
   // `getCurrentUserId()` returns the literal 'local' only in self-host, where
   // `rateLimitEnabled` is already false — so here a value means a real user.
-  const authed = Boolean(userId && userId !== 'local');
-  const key = authed ? `u:${userId}` : `ip:${clientIp(req)}`;
+  const ipAtAuthedRate = opts.ipAtAuthedRate === true;
+  const authed = ipAtAuthedRate || Boolean(userId && userId !== 'local');
+  const key = ipAtAuthedRate ? `pip:${clientIp(req)}` : authed ? `u:${userId}` : `ip:${clientIp(req)}`;
 
   try {
     const r = await getLimiter(tier, authed).limit(key);

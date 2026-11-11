@@ -17,7 +17,7 @@ const testSchema = z.object({
  * so the user can confirm it actually works (not just that the URL/token
  * saved without error) before relying on it for a real alert. */
 export async function POST(request: Request) {
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
 
   const parsed = testSchema.safeParse(await request.json().catch(() => null));

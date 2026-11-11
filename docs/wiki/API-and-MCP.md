@@ -30,6 +30,14 @@ Every feature in MarketMitra ships with a documented API endpoint next to its UI
 | Agents | `/api/agents/*` |
 | Operations | `/api/status`, `/api/system/*`, `/api/cron/*` (bearer-secret, machine-to-machine) |
 
+### Personal access tokens (hosted)
+
+For your own scripts and cron jobs, create a token in **Settings > Account > API access tokens** (read only, or read & write; optional expiry; shown once) and send it as `Authorization: Bearer <token>`. Tokens cannot reach Settings, cron, Advisor or system logs, and cannot create other tokens. See [ADR 0053](https://github.com/AnkushGitRepo/marketmitra/blob/main/docs/decisions/0053-personal-access-tokens.md).
+
+```bash
+curl -s https://marketmitra-v2.vercel.app/api/holdings -H "Authorization: Bearer $MM_TOKEN"
+```
+
 ### The screener endpoint
 
 `GET /api/screener` takes `<field>_min` / `<field>_max` for `market_cap`, `pe`, `pb`, `roe`, `roce`, `dividend_yield`, `debt_to_equity`, `sales_growth_3y_cagr`, `profit_growth_3y_cagr`, plus `sector`, `industry`, `q`, `sort_by`, `order`, `limit` (1–500) and `offset`. The body is a plain array; the total number of matches is in the **`X-Total-Count`** header.

@@ -1024,3 +1024,10 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - The MCP tab is now a sticky tool list plus an inspector (badges, parameter table with defaults, example, checks, live response); a select on mobile. Added a Windsurf preset, Copy URL and a measured reachability indicator.
 - **Verified:** lint, typecheck, unit tests; in a browser: reachable indicator, 9 tools, `run_screener` (25 params) scrolls inside its section, live `get_quote` passes its checks, mobile shows the select with no horizontal overflow. Checks UX reworked after feedback: collapsed single-row editor, pass/fail pills, response viewer with Formatted/Raw/Copy, latency check, Cmd/Ctrl+Enter. **Not verified:** local `npm run build` (failed with "Failed to open database" while the dev server held `.next`; CI runs it), the Windsurf config against a real Windsurf install; no syntax highlighting was added (plain pre).
+
+## 2026-11-11 — Personal access tokens (#91, [ADR 0053](./decisions/0053-personal-access-tokens.md))
+
+- Hosted users can create read or read & write tokens (optional expiry, max 10, shown once, SHA-256 stored) and call the session API with `Authorization: Bearer`. Proxy gate (path/scope, per-token rate limit) plus DB resolution in `getCurrentUserId`; tokens can never reach settings (incl. token management), cron, advisor or system logs. Settings card, `bearerAuth` in `openapi.json`, API reference auth section.
+- Decisions made with the maintainer: read+write scopes, optional expiry with a 10-token cap, tokens cannot manage tokens; the rest of the blocked list follows Mitra's deny-list.
+- **Verified:** lint, typecheck, 1349 unit tests (pure policy, store against a fake collection, route handlers). **Not verified:** the hosted flow end to end (needs Clerk + Atlas locally), the Settings token card in a browser (hosted-only), Clerk middleware's handling of a non-Clerk bearer header. Do these on a preview/prod deploy before relying on it.
+- Removed 106 stale gitignored `* 2.ts` duplicate files from `src` that broke `tsc` (recurring IDE artifact).
