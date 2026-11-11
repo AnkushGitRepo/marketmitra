@@ -156,16 +156,27 @@ export function ApiIcon() {
   );
 }
 
-export function SystemIcon() {
+/** Settings gear: Heroicons "cog-6-tooth" (outline), MIT licence, https://heroicons.com. Drawn on a 24-unit grid, so it overrides the 22-unit box the other icons use. */
+export function SettingsIcon({ size = 21 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+      />
+      <path stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+    </svg>
+  );
+}
+
+/** System status: three rising bars. */
+export function StatusIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <circle cx="11" cy="11" r="3.4" stroke="currentColor" strokeWidth="1.7" />
-      <path
-        d="M11 3v2.4M11 16.6V19M19 11h-2.4M5.4 11H3M16.2 5.8l-1.7 1.7M7.5 14.5l-1.7 1.7M16.2 16.2l-1.7-1.7M7.5 7.5 5.8 5.8"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
+      <path d="M5 17V12M11 17V6M17 17V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -195,10 +206,10 @@ export const NAV_ICONS = {
   '/ipos': IposIcon,
   '/research': ResearchIcon,
   '/mitra': ChatIcon,
-  '/status': SystemIcon,
+  '/status': StatusIcon,
   '/agents': AgentsIcon,
   '/notes': NotesIcon,
   '/api-docs': ApiIcon,
-  '/settings': SystemIcon,
+  '/settings': SettingsIcon,
   '/mitra-activity': MitraActivityIcon,
 } as const;
