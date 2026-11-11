@@ -58,6 +58,11 @@ the first release covers dossier + journal, morning dispatch, thesis invalidatio
   worded as a review point, never a recommendation), appears under Priority in the morning dispatch, and goes through the user's own alert channels (in-app, email, and
   any chat channel they set up). A breach is reported once and re-arms when the metric recovers. Users can turn a criterion off or remove it from the dossier.
   Not covered: persistence over time ("for two annual periods"), because the signals are a snapshot, not a history.
+- **Queue honesty (#140):** the worker builds dossiers oldest first, 4 per run, under the daily cap, so a long queue is a budget limit, not a stall. The roster compares the
+  budget left with the number waiting: analysts behind it are shown as "Scheduled for tomorrow (daily AI budget)" and the Root deck says how many. **Analyze now**
+  (`POST /api/analysts/{symbol}`) builds one dossier immediately (same initiation, same key, same cap) so the user picks what goes first; a failed build shows
+  "Dossier stalled" with its reason and **Retry now**. No progress percentages, step bars or new queue service: the build is one model call with nothing observable in
+  between. Chat does not wait for the dossier: it answers from the live figures and says the dossier is not built.
 
 ## Consequences
 

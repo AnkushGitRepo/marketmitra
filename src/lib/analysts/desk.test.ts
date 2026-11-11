@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attentionReason, deskHeadline, filterAnalysts, filterCounts, queueLabel, queueState, summarizeDesk, type RosterAnalyst } from './desk';
+import { attentionReason, canAnalyzeNow, deskHeadline, isStalled, tomorrowCount, filterAnalysts, filterCounts, queueLabel, queueState, summarizeDesk, type RosterAnalyst } from './desk';
 import type { JournalEntry } from './types';
 
 const NOW = new Date('2026-11-11T12:00:00Z');
@@ -41,11 +41,29 @@ describe('queueState', () => {
     expect(queueState(all[1], all, { used: 20, cap: 20 })).toEqual({ kind: 'cap_reached' });
     expect(queueState(all[2], all, usage)).toBeNull();
   });
+  it('moves analysts behind the day\'s remaining AI budget to "tomorrow" instead of a false queue', () => {
+    const all = ['A', 'B', 'C', 'D', 'E'].map((s, i) => pending(s, `2026-11-0${i + 1}T00:00:00Z`));
+    const usage2 = { used: 18, cap: 20 };
+    expect(all.map((a) => queueState(a, all, usage2)?.kind)).toEqual(['queued', 'queued', 'tomorrow', 'tomorrow', 'tomorrow']);
+    expect(tomorrowCount(all, usage2)).toBe(3);
+    expect(tomorrowCount(all, { used: 20, cap: 20 })).toBe(5);
+    expect(tomorrowCount(all, { used: 0, cap: 20 })).toBe(0);
+  });
+  it('lets the user build a waiting or stalled dossier now, but not a built, paused or keyless one', () => {
+    expect(canAnalyzeNow(pending('A', '2026-11-01T00:00:00Z'))).toBe(true);
+    expect(canAnalyzeNow(analyst('B', { status: 'error', hasDossier: false, statusNote: 'Failed.' }))).toBe(true);
+    expect(canAnalyzeNow(analyst('C'))).toBe(false);
+    expect(canAnalyzeNow(analyst('D', { status: 'paused', hasDossier: false }))).toBe(false);
+    expect(canAnalyzeNow(pending('E', '2026-11-01T00:00:00Z', 'Waiting for an AI key.'))).toBe(false);
+    expect(isStalled(analyst('F', { status: 'error', hasDossier: false }))).toBe(true);
+    expect(isStalled(analyst('G', { status: 'error', hasDossier: true }))).toBe(false);
+  });
   it('labels each state in plain words', () => {
     expect(queueLabel({ kind: 'queued', ahead: 0 })).toBe('Queued, next up');
     expect(queueLabel({ kind: 'queued', ahead: 3 })).toBe('Queued, 3 ahead');
     expect(queueLabel({ kind: 'needs_key' })).toBe('Waiting for an AI key');
     expect(queueLabel({ kind: 'cap_reached' })).toMatch(/cap/i);
+    expect(queueLabel({ kind: 'tomorrow' })).toBe('Scheduled for tomorrow (daily AI budget)');
     expect(queueLabel(null)).toBeNull();
   });
 });

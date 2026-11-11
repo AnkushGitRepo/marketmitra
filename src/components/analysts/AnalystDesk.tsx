@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { DESK_FILTERS, filterAnalysts, filterCounts, summarizeDesk, type DeskData, type DeskFilter } from '@/lib/analysts/desk';
+import { DESK_FILTERS, filterAnalysts, filterCounts, summarizeDesk, tomorrowCount, type DeskData, type DeskFilter } from '@/lib/analysts/desk';
 import { AnalystCard } from './AnalystCard';
 import { AnalystDrawer, type DrawerPanel } from './AnalystDrawer';
 import { RootDeck } from './RootDeck';
@@ -61,6 +61,9 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
   const setStatus = (s: string, status: 'active' | 'paused') =>
     act(`status-${s}`, () => fetch(`/api/analysts/${s}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }), 'Could not update the analyst.');
 
+  // Builds the dossier now instead of waiting for the sweep; one model call, so it can take up to a minute.
+  const analyze = (s: string) => act(`analyze-${s}`, () => fetch(`/api/analysts/${s}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'analyze' }) }), 'Could not build the dossier.');
+
   const remove = (s: string) => act(`rm-${s}`, () => fetch(`/api/analysts/${s}`, { method: 'DELETE' }), 'Could not remove the analyst.');
 
   const summary = summarizeDesk(initial.analysts, now);
@@ -69,7 +72,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
 
   return (
     <section className={styles.desk} aria-label="Analyst desk">
-      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} onChat={() => setPanel({ kind: 'chat', symbol: null })} onBrief={() => setPanel({ kind: 'brief' })} />
+      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} waitingTomorrow={tomorrowCount(initial.analysts, initial.usage)} onChat={() => setPanel({ kind: 'chat', symbol: null })} onBrief={() => setPanel({ kind: 'brief' })} />
 
       <div className={styles.autonomy}>
         <p className={styles.autonomyText}>
@@ -110,7 +113,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
           ) : (
             <ul className={styles.roster}>
               {visible.map((a) => (
-                <AnalystCard key={a.symbol} analyst={a} all={initial.analysts} usage={initial.usage} now={now} busy={busy} onRead={(sym) => setPanel({ kind: 'dossier', symbol: sym })} onChat={(sym) => setPanel({ kind: 'chat', symbol: sym })} onSetStatus={(s, st) => void setStatus(s, st)} onRemove={(s) => void remove(s)} />
+                <AnalystCard key={a.symbol} analyst={a} all={initial.analysts} usage={initial.usage} now={now} busy={busy} onRead={(sym) => setPanel({ kind: 'dossier', symbol: sym })} onChat={(sym) => setPanel({ kind: 'chat', symbol: sym })} onAnalyze={(sym) => void analyze(sym)} onSetStatus={(s, st) => void setStatus(s, st)} onRemove={(s) => void remove(s)} />
               ))}
             </ul>
           )}

@@ -186,6 +186,11 @@
   color: var(--app-text-muted);
 }
 
+.tone_warn {
+  background: var(--app-warn-bg);
+  color: var(--app-warn-text);
+}
+
 .tone_bad {
   background: var(--app-loss-bg);
   color: var(--app-loss-text);

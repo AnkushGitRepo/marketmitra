@@ -60,6 +60,8 @@ describe('POST /api/analysts/chat', () => {
     expect((await call({ symbol: 'acc', messages: [msg] })).status).toBe(200);
     expect(state.systems[0]).toContain('ANALYST CONTEXT');
     expect(state.systems[0]).not.toContain('DESK CONTEXT');
+    // The dossier is not built in this fixture: chat still works, and says so instead of inventing a thesis.
+    expect(state.systems[0]).toMatch(/dossier has not been built/);
     expect(state.budgets[0]).toBeGreaterThan(2048);
     expect(state.systems[0]).toMatch(/Never tell the user what to do with a position/);
   });
