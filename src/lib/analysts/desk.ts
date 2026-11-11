@@ -49,6 +49,8 @@ export type QueueState =
   | { kind: 'needs_key' }
   | { kind: 'cap_reached' }
   | { kind: 'queued'; ahead: number }
+  /** Behind the day's remaining AI budget: it cannot be built before tomorrow's budget opens. */
+  | { kind: 'tomorrow' }
   | null;
 
 /**
@@ -61,7 +63,9 @@ export function queueState(a: RosterAnalyst, all: readonly RosterAnalyst[], usag
   if (usage.used >= usage.cap) return { kind: 'cap_reached' };
   // The roster arrives oldest first, so the position in it is the queue position even when several analysts were created in the same instant.
   const waiting = all.filter((o) => o.status === 'initializing' && !/AI key/i.test(o.statusNote ?? ''));
-  return { kind: 'queued', ahead: Math.max(0, waiting.findIndex((o) => o.symbol === a.symbol)) };
+  const ahead = Math.max(0, waiting.findIndex((o) => o.symbol === a.symbol));
+  // Each build is one AI call, so only as many analysts as there are calls left in today's budget can finish today.
+  return ahead >= usage.cap - usage.used ? { kind: 'tomorrow' } : { kind: 'queued', ahead };
 }
 
 export function queueLabel(q: QueueState): string | null {
@@ -71,10 +75,30 @@ export function queueLabel(q: QueueState): string | null {
       return 'Waiting for an AI key';
     case 'cap_reached':
       return 'Daily AI cap reached, resumes tomorrow';
+    case 'tomorrow':
+      return 'Scheduled for tomorrow (daily AI budget)';
     case 'queued':
       return q.ahead === 0 ? 'Queued, next up' : `Queued, ${q.ahead} ahead`;
   }
 }
+
+/** How many waiting analysts cannot be built today because the day's AI budget is smaller than the queue. */
+export function tomorrowCount(all: readonly RosterAnalyst[], usage: { used: number; cap: number }): number {
+  return all.filter((a) => {
+    const q = queueState(a, all, usage);
+    return q?.kind === 'tomorrow' || q?.kind === 'cap_reached';
+  }).length;
+}
+
+/** The user can build this analyst's dossier right now: it is waiting (with a key) or its build failed. Not a paused or built analyst. */
+export function canAnalyzeNow(a: RosterAnalyst): boolean {
+  if (a.hasDossier) return false;
+  if (a.status === 'error') return true;
+  return a.status === 'initializing' && !/AI key/i.test(a.statusNote ?? '');
+}
+
+/** An analyst whose dossier build failed (as opposed to one whose later check failed). */
+export const isStalled = (a: RosterAnalyst): boolean => a.status === 'error' && !a.hasDossier;
 
 export function matchesFilter(a: RosterAnalyst, filter: DeskFilter, now: Date): boolean {
   switch (filter) {

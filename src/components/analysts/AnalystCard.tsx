@@ -1,4 +1,5 @@
-import { attentionReason, queueLabel, queueState, type RosterAnalyst } from '@/lib/analysts/desk';
+import Link from 'next/link';
+import { attentionReason, canAnalyzeNow, isStalled, queueLabel, queueState, type RosterAnalyst } from '@/lib/analysts/desk';
 import { agoLabel, statusView } from '@/lib/analysts/format';
 import styles from './AnalystDesk.module.css';
 
@@ -10,16 +11,26 @@ interface AnalystCardProps {
   readonly busy: string | null;
   readonly onRead: (symbol: string) => void;
   readonly onChat: (symbol: string) => void;
+  readonly onAnalyze: (symbol: string) => void;
   readonly onSetStatus: (symbol: string, status: 'active' | 'paused') => void;
   readonly onRemove: (symbol: string) => void;
 }
 
 const formatPrice = (n: number): string => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
-export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onChat, onSetStatus, onRemove }: AnalystCardProps) {
+export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onChat, onAnalyze, onSetStatus, onRemove }: AnalystCardProps) {
   const attention = attentionReason(a, now);
   const queue = queueLabel(queueState(a, all, usage));
-  const view = attention ? { label: 'Needs attention', tone: 'bad' as const } : queue ? { label: queue, tone: a.statusNote && /AI key/i.test(a.statusNote) ? ('bad' as const) : ('wait' as const) } : statusView(a.status, a.statusNote);
+  const stalled = isStalled(a);
+  const needsKey = queue === 'Waiting for an AI key';
+  const view = stalled
+    ? { label: 'Dossier stalled', tone: 'warn' as const }
+    : attention
+      ? { label: 'Needs attention', tone: 'bad' as const }
+      : queue
+        ? { label: queue, tone: needsKey ? ('bad' as const) : queue.startsWith('Scheduled') || queue.startsWith('Daily') ? ('warn' as const) : ('wait' as const) }
+        : statusView(a.status, a.statusNote);
+  const analyzing = busy === `analyze-${a.symbol}`;
   const up = (a.quote?.changePct ?? 0) >= 0;
   return (
     <li className={styles.card} data-attention={attention ? 'true' : undefined}>
@@ -62,6 +73,16 @@ export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onChat,
         <button type="button" className={styles.link} onClick={() => onChat(a.symbol)}>
           Chat with analyst
         </button>
+        {canAnalyzeNow(a) && (
+          <button type="button" className={styles.link} disabled={analyzing} onClick={() => onAnalyze(a.symbol)}>
+            {analyzing ? 'Analyzing…' : stalled ? 'Retry now' : 'Analyze now'}
+          </button>
+        )}
+        {needsKey && (
+          <Link href="/settings" className={styles.link}>
+            Add AI key
+          </Link>
+        )}
         {a.status === 'paused' || a.status === 'error' ? (
           <button type="button" className={styles.link} disabled={busy === `status-${a.symbol}`} onClick={() => onSetStatus(a.symbol, 'active')}>
             Resume

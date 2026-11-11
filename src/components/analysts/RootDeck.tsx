@@ -7,12 +7,14 @@ interface RootDeckProps {
   readonly now: Date;
   readonly used: number;
   readonly cap: number;
+  /** Analysts that cannot be built before tomorrow's AI budget opens. */
+  readonly waitingTomorrow: number;
   readonly onChat: () => void;
   readonly onBrief: () => void;
 }
 
 /** The Root Agent ("Mitra Portfolio CIO"): a deterministic read of the whole desk. Rendering it never calls an AI. */
-export function RootDeck({ summary, now, used, cap, onChat, onBrief }: RootDeckProps) {
+export function RootDeck({ summary, now, used, cap, waitingTomorrow, onChat, onBrief }: RootDeckProps) {
   return (
     <section className={styles.deck} aria-label="Mitra Portfolio CIO">
       <div className={styles.top}>
@@ -34,6 +36,11 @@ export function RootDeck({ summary, now, used, cap, onChat, onBrief }: RootDeckP
           ))}
           {summary.attention.length > 4 && <li>and {summary.attention.length - 4} more</li>}
         </ul>
+      )}
+      {waitingTomorrow > 0 && (
+        <p className={styles.budget}>
+          {waitingTomorrow} {waitingTomorrow === 1 ? 'analyst' : 'analysts'} will wait for tomorrow’s AI budget ({used} of {cap} calls used today). Use <strong>Analyze now</strong> on a card to choose which one goes next.
+        </p>
       )}
       {summary.latest && (
         <p className={styles.latest}>

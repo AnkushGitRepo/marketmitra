@@ -5612,6 +5612,72 @@
             "description": "No analyst for this stock."
           }
         }
+      },
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Analyze now / Retry a dossier",
+        "description": "Builds this analyst's dossier immediately instead of waiting for the scheduled sweep (the same initiation the worker runs, using your own AI key and counting against the daily cap). Use it to choose which stock goes first, or to retry a failed build. 409 when the dossier already exists, the analyst is paused, or today's budget is used up; 400 `no_ai_key`; 502 with the failure reason. Can take up to a minute. Browser session only.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "analyze"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ success, data: { symbol, result: \"initiated\" } }"
+          },
+          "400": {
+            "description": "no_ai_key"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "No analyst for this stock"
+          },
+          "409": {
+            "description": "Already built, paused, or the daily AI budget is used up"
+          },
+          "422": {
+            "description": "Invalid request"
+          },
+          "502": {
+            "description": "The build failed; error carries the reason"
+          }
+        }
       }
     },
     "/api/cron/stock-analysts": {
