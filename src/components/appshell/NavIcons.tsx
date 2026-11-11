@@ -156,16 +156,21 @@ export function ApiIcon() {
   );
 }
 
-export function SystemIcon() {
+/** A settings gear: eight teeth around a hole. (The sun-like ray icon this replaces read as "brightness".) */
+export function SettingsIcon({ size = 21 }: { size?: number }) {
+  return (
+    <svg {...ICON_PROPS} width={size} height={size}>
+      <path d="M9.5 4.9 L9.9 2.5 L12.1 2.5 L12.5 4.9 L14.3 5.6 L16.2 4.2 L17.8 5.8 L16.4 7.7 L17.1 9.5 L19.5 9.9 L19.5 12.1 L17.1 12.5 L16.4 14.3 L17.8 16.2 L16.2 17.8 L14.3 16.4 L12.5 17.1 L12.1 19.5 L9.9 19.5 L9.5 17.1 L7.7 16.4 L5.8 17.8 L4.2 16.2 L5.6 14.3 L4.9 12.5 L2.5 12.1 L2.5 9.9 L4.9 9.5 L5.6 7.7 L4.2 5.8 L5.8 4.2 L7.7 5.6 Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <circle cx="11" cy="11" r="2.7" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+/** System status: three rising bars. */
+export function StatusIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <circle cx="11" cy="11" r="3.4" stroke="currentColor" strokeWidth="1.7" />
-      <path
-        d="M11 3v2.4M11 16.6V19M19 11h-2.4M5.4 11H3M16.2 5.8l-1.7 1.7M7.5 14.5l-1.7 1.7M16.2 16.2l-1.7-1.7M7.5 7.5 5.8 5.8"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
+      <path d="M5 17V12M11 17V6M17 17V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -195,10 +200,10 @@ export const NAV_ICONS = {
   '/ipos': IposIcon,
   '/research': ResearchIcon,
   '/mitra': ChatIcon,
-  '/status': SystemIcon,
+  '/status': StatusIcon,
   '/agents': AgentsIcon,
   '/notes': NotesIcon,
   '/api-docs': ApiIcon,
-  '/settings': SystemIcon,
+  '/settings': SettingsIcon,
   '/mitra-activity': MitraActivityIcon,
 } as const;

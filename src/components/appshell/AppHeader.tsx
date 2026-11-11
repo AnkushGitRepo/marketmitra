@@ -7,6 +7,7 @@ import { SearchResultsDropdown } from '@/components/dashboard-charts/SearchResul
 import { useSymbolSearch } from '@/lib/dashboard/useSymbolSearch';
 import { Logo } from '@/components/landing/Logo';
 import { HostedUserBadge } from './HostedUserBadge';
+import { SettingsIcon } from './NavIcons';
 import { NotificationBell } from './NotificationBell';
 import { NotificationsProvider } from './NotificationsProvider';
 import { SEARCH_INPUT_ATTR, useIsMac } from './useKeyboardShortcuts';
@@ -73,15 +74,7 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
           <div className={styles.actions}>
             <NotificationBell />
             <Link href="/settings" title="Settings" className={styles.iconButton}>
-              <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <circle cx="10" cy="10" r="2.6" stroke="currentColor" strokeWidth="1.6" />
-                <path
-                  d="M10 2.5v2M10 15.5v2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M2.5 10h2M15.5 10h2M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <SettingsIcon size={16} />
             </Link>
             <button onClick={onToggleMask} title="Hide values" className={styles.iconButton} type="button">
               ₹
