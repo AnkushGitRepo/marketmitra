@@ -9,7 +9,7 @@ import { logEvent } from '@/lib/system/eventLog';
 
 const SOURCE = 'cron:stock-analysts';
 
-// Analyst Desk (#128, ADR 0058). Machine-to-machine: bearer CRON_SECRET, required everywhere except a non-hosted dev instance on localhost, driven by
+// Analyst Desk (#128, ADR 0058). Machine-to-machine: bearer CRON_SECRET, required in every environment (no dev-open path), driven by
 // `.github/workflows/stock-analysts.yml`. Each run: (1) gives every holding an analyst, (2) builds pending dossiers,
 // (3) runs the end-of-day check for analysts that are due. Bounded per run; the per-user daily AI cap is enforced inside the engine.
 
@@ -21,7 +21,7 @@ const MAX_INITIATIONS = 4;
 const MAX_HEARTBEATS = 12;
 
 async function handle(request: Request) {
-  const auth = authorizeCron(request, { secret: process.env.CRON_SECRET, nodeEnv: process.env.NODE_ENV, hosted: isHosted() });
+  const auth = authorizeCron(request, process.env.CRON_SECRET);
   if (!auth.ok) return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
   const started = Date.now();
   const deps = realDeps();

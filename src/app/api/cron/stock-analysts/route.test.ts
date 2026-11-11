@@ -46,7 +46,7 @@ beforeEach(() => {
 });
 
 describe('POST /api/cron/stock-analysts', () => {
-  it('fails closed with no secret configured on a hosted deployment, even outside production', async () => {
+  it('fails closed with no secret configured, in any environment', async () => {
     delete process.env.CRON_SECRET;
     state.pending = [{ userId: 'u1', symbol: 'ACC' }];
     expect((await call()).status).toBe(503);
