@@ -5,10 +5,14 @@
 > fell into. Rules and workflow live in [`AGENTS.md`](../AGENTS.md); this file is the *state*.
 > **Keep "Where we are" current** — update it at the end of every session (see AGENTS.md).
 
+> **Read this first (temporary):** [`docs/CURRENT_SITUATION.md`](./CURRENT_SITUATION.md) describes the one live problem (the Vercel Hobby
+> CPU allowance, 90% from the data service's price endpoint), the options and how to do each. The maintainer confirms, then it is
+> deleted along with this note. The last Claude Code session ended 2026-11-11; the next sessions are in Antigravity.
+
 ## If you remember only eight things
 
 1. `AGENTS.md` is the rulebook. Issue → branch `fix|feat|chore|docs/<issue#>-slug` → PR (template, `Closes #N`) → squash merge when checks are green → update `main`.
-2. Never deploy to production, run production migrations, or touch secrets without the maintainer's go-ahead.
+2. Never deploy to production, run production migrations, or touch secrets without the maintainer's go-ahead. **A deploy does not mean a new version** ([ADR 0059](./decisions/0059-deploys-do-not-imply-a-version.md)): deploy `main` as is; cut a release only when asked.
 3. Next.js is **v16 with breaking changes** — read `node_modules/next/dist/docs/` first. The middleware file is `src/proxy.ts`. App pages are top-level (`/portfolio`, not `/dashboard/portfolio`; only `/dashboard` is the home) — see [ADR 0037](./decisions/0037-top-level-app-routes.md); a new page must be registered in `src/lib/routes.ts` and `src/proxy.ts` (a test enforces it).
 4. CSS Modules + tokens only. No Tailwind. Every feature = UI **and** a documented API route (`public/openapi.json`).
 5. No paid tier, ever. Hosted vs self-host is gated by `isHosted()`.
@@ -17,6 +21,8 @@
 8. Keep this file and `docs/session-log.md` current.
 
 ## Where we are (as of 2026-11-11)
+
+**Live problem, 2026-11-11 (details and options in [`CURRENT_SITUATION.md`](./CURRENT_SITUATION.md)):** the Vercel **Hobby** account has used **4h 28m of its 4h** included Fluid Active CPU over the last 30 days (still climbing). By project: **`marketmitra-fundamentals-api` 4h 01m (90%)**, `marketmitra-v2` 26m 47s (10%), the rest about 0. The data service's newest 400 log lines are 395 `GET /companies/{symbol}/prices` (5-year history, about 0.5 s of CPU each, 25% cold starts). Cause from the code: the app caches price history for only 15 minutes (`getPrices` revalidate 900) and the data service sends no `Cache-Control`, so repeat requests always run the Python function. Production is healthy today (errors 0%), but two other projects on the account (`validation-of-ip`, `clipsync`) show **Paused**, and Vercel's exact enforcement for a Hobby project that stays over is **not confirmed**. Planned fixes, none started: cache price history much longer in the app and add `Cache-Control: public, s-maxage=…` to the data service's read-only endpoints; optionally move the data service to Cloud Run using the maintainer's Google Cloud credit (about ₹25,000). Not the cause: the app's scheduled jobs (the app is 10% of the CPU).
 
 **Production** (https://marketmitra-v2.vercel.app) runs commit **`c16be7f`** (package version 0.5.0, four commits after the `v0.5.0` tag, Ready, target production), deployed 2026-11-11 with `npm run deploy:prod` after the maintainer's go-ahead and **without a new version** ([ADR 0059](./decisions/0059-deploys-do-not-imply-a-version.md)). It is v0.5.0 plus: the lazy MongoDB connect fix (#158/#159: a failed cold-start connect no longer breaks every request on the instance, and the desk shows a Reload roster state), the deploy-process change (#156/#157) and the brief timeout fix (#162/#163: the six one-shot AI routes `insights/stock-brief`, `stock`, `portfolio`, `market`, `news` and `ipo` allow 300 s instead of 60 s, and the 360 brief turns a timeout, a non-JSON reply or a dropped connection into a plain message instead of Safari's "The string did not match the expected pattern."). `/api/version` reports `0.5.0` / `c16be7f`; smoke 6/6; anonymous `POST /api/insights/stock-brief` answers 401; no error logs in the first minutes after each deploy. **Not verified:** a real brief generation on the hosted site in Safari (the diagnosis was reasoned from the code because runtime logs for the request are not retained on this plan), the hosted desk as a signed-in user, recovery from a real cold-start Mongo failure, and the first scheduled `stock-analysts` run (no run existed yet; trigger it with "Run workflow" or wait). The v0.5.0 details follow. App only, no migration (the new `retryCount` field on analysts is optional and read as 0). v0.5.0 adds, on top of v0.4.0: analysts that hit an unexpected error are re-queued up to 3 times instead of stalling for good, and ones an earlier version left stalled are re-queued by the next sweep (#148/#150); one primary action per analyst card, a ⋯ menu and **Retry all stalled** (#149/#151); and one research container on the stock page with tabs and a computed valuation sensitivity check, replacing the separate "Longer AI read" (#152/#153, [ADR 0056](./decisions/0056-stock-brief-360.md) amendment). **Verified on production:** smoke 6/6; `/api/version` returns `0.5.0` / `e7d0edb`; `/openapi.json` is 0.5.0 and lists `/api/analysts/retry`; anonymous `GET /api/analysts` and `POST /api/analysts/retry` answer 401; the stock API answers 200. **Not verified (needs a signed-in browser or a scheduled run):** the hosted desk and the four previously stalled analysts healing on the first scheduled `stock-analysts` run, the redesigned stock page as a signed-in hosted user, and everything listed under v0.4.0 below. **From now on a deploy does not imply a new version** ([ADR 0059](./decisions/0059-deploys-do-not-imply-a-version.md)): deploy `main` as is and verify by commit; cut a release only when the maintainer asks for one.
 
@@ -72,6 +78,9 @@
 - **Wiki**: `docs/wiki/` is published to the GitHub wiki by `.github/workflows/wiki-sync.yml` on every push to `main`.
 
 ## Open work (verify before acting — this list ages)
+
+**Hosting capacity (live, see CURRENT_SITUATION.md)**
+- Vercel Hobby Fluid Active CPU is over its 4h allowance, 90% from `marketmitra-fundamentals-api`. Decisions waiting for the maintainer: which of the options to do (recommended: longer price caching in the app plus CDN `Cache-Control` on the data service, then re-measure), whether Vercel paused `validation-of-ip` and `clipsync`, and whether to move the data service to Cloud Run. Measure with the team Usage page (Fluid Active CPU, tab Projects) and `vercel logs` (Hobby keeps about an hour).
 
 **Analyst Desk** (phases 1 to 4 done; see Where we are)
 - Deployed in v0.4.0. Watch the first scheduled `stock-analysts` and `analyst-dispatch` runs (Actions tab) and the hosted user's desk after them.
@@ -166,7 +175,7 @@ Each has `workflow_dispatch`, so "Run workflow" (or `gh workflow run <file>`) tr
 |---|---|---|
 | Cursor | `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/*.mdc` | `.cursor/rules/marketmitra.mdc` is always-on and points here |
 | Antigravity | `GEMINI.md`, `AGENTS.md` (and a rules folder) | `GEMINI.md` just points at `AGENTS.md`; it takes precedence on conflicts, so it must not duplicate rules |
-| Claude Code | `CLAUDE.md` | imports `AGENTS.md` |
+| Claude Code | `CLAUDE.md` | imports `AGENTS.md` (used until 2026-11-11; later sessions are in Antigravity) |
 
 Things that existed only in Claude Code's private setup and are now in this repo: the workflow rules (AGENTS.md),
 the gotchas above, and the maintainer's coding preferences. Things that do **not** carry over: Claude's skills,
@@ -177,7 +186,7 @@ hooks and permission prompts — in another tool, simply follow the safety rules
 
 Paste this as the first message in Cursor / Antigravity / any new tool:
 
-> You are taking over the MarketMitra repo. Read `AGENTS.md` and `docs/HANDOFF.md` fully, then run
+> You are taking over the MarketMitra repo. Read `AGENTS.md`, `docs/HANDOFF.md` and, if it exists, `docs/CURRENT_SITUATION.md` fully, then run
 > `git log --oneline -10`, `gh issue list`, `gh pr list` and look at the project board. Reply with: (1) the
 > current state of `main` and production, (2) the open work and what you'd do first, (3) the exact workflow you
 > will follow for a bug I report and for a feature I request, (4) what you will never do without asking me.
