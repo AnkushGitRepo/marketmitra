@@ -13,7 +13,9 @@ Everything built so far is merged and deployed (production runs commit `c16be7f`
 The one live problem is **hosting capacity**: the Vercel **Hobby** account has used **4h 28m of its 4h included Fluid Active CPU**
 for the last 30 days, and it is still climbing. **About 90% of that CPU is the `marketmitra-fundamentals-api` project** (the
 Python data service), almost all of it the 5-year price-history endpoint, not the Next app. Production works today, but the
-account is over its free allowance, and two other projects on the account already show as **Paused**.
+account is over its free allowance. **Maintainer decision (2026-11-12): move the data service to Google Cloud (Cloud Run), using their
+Google Cloud credit, which also frees the Vercel allowance for future projects.** The work is tracked in issue #169 and is blocked
+on a few inputs from the maintainer (section 5, Option D).
 
 ## 2. What we measured (Vercel dashboard, read in the maintainer's Chrome on 2026-11-11)
 
@@ -51,13 +53,13 @@ account is over its free allowance, and two other projects on the account alread
 ## 4. What the risk is (and what is not confirmed)
 
 - **Confirmed:** the dashboard shows "Exceeded free resources" with Fluid Active CPU in red; the site and both projects are up and
-  healthy right now (errors 0%, timeouts under 0.1%); `validation-of-ip` and `clipsync` on the same account show **Paused** in
-  `vercel projects ls`.
-- **Not confirmed:** exactly what Vercel does to a Hobby project that stays over its allowance, and when usage resets (the
-  dashboard window is rolling 30 days). The docs search available in this session did not return the rule. My understanding is that
-  a Hobby project can be paused until usage drops or the plan changes, which would take the whole hosted site down, including the
-  cron endpoints. **First step for the next agent or the maintainer: check whether `validation-of-ip` and `clipsync` were paused by
-  Vercel (the Vercel notification emails say) or by hand.** If Vercel did it, treat this as urgent.
+  healthy right now (errors 0%, timeouts under 0.1%).
+- **Corrected (2026-11-12):** the maintainer says `validation-of-ip` and `clipsync` were **paused by them**, not by Vercel. So there
+  is **no evidence yet** that Vercel enforces anything on this account. (An earlier version of this file treated them as a warning sign.)
+- **Not confirmed:** what Vercel does to a Hobby project that stays over its allowance, and when usage resets (the dashboard window is
+  rolling 30 days). The docs search available in the Claude Code session did not return the rule; the Vercel notification emails or
+  the dashboard banner are the place to read it. The safe assumption is that it could eventually pause the project, which would take
+  the hosted site down, so do not leave this unaddressed.
 - Possible knock-on (unproven): the Safari "The string did not match the expected pattern." on the 360 brief (#162) could also have
   been a platform error page rather than a timeout. The timeout fix (300 s) is deployed but not yet confirmed in Safari.
 
@@ -97,27 +99,63 @@ below has been started.
   10% of CPU) but cheap.
 - Schedules: `stock-analysts` every 20 minutes could be hourly, `agents-tick` every 15 minutes, with early returns. Small saving.
 
-### Option D: move the data service off Vercel, using the maintainer's Google Cloud credit (about ₹25,000)
+### Option D: move the data service to Google Cloud Run (CHOSEN by the maintainer, 2026-11-12; issue #169)
 
-- **Why:** the data service is a standalone FastAPI app, 90% of the CPU, and a good fit for **Cloud Run** (its always-free tier alone
-  is about 180,000 vCPU-seconds a month, around 50 hours; the credit covers the rest). Cloud Scheduler could also run the heavy
-  scheduled jobs.
-- **How (outline):** write a `Dockerfile` for `services/fundamentals-api` (uvicorn, the same `requirements.txt`), deploy to Cloud Run in
-  `asia-south1` (Mumbai) with the same environment variables as the Vercel project (database URL for Neon, ingest tokens, etc.), set
-  min instances to 0, then point `FUNDAMENTALS_API_URL` in the `marketmitra-v2` Vercel project at the new URL and redeploy the app.
-  Check Neon's allowed IPs and the `CRON_SECRET`/ingest token flows. Keep the Vercel data service until the new one is verified.
-- **Cost of doing it:** a second deployment to maintain and a new ADR amending 0011/0013 (hosting). Do it only if A and B are not enough
-  or the maintainer prefers it. Google credits often expire after 90 days and billing continues on the card afterwards: set a budget alert.
+- **Why it fits:** the data service is a standalone FastAPI app and 90% of the CPU. Cloud Run runs a container, bills CPU only while
+  requests run, and has a free tier (check the current numbers at cloud.google.com/run/pricing; as of this writing about 2M requests
+  and 180,000 vCPU-seconds a month, around 50 hours, against Vercel Hobby's 4 hours of Active CPU). The Google Cloud credit (about
+  ₹25,000) covers anything beyond. Moving it takes about 90% of this account's Vercel CPU, so the allowance is free for future
+  projects; `marketmitra-v2` alone uses about 0.5 h a month.
+- **Inputs needed from the maintainer (the work is blocked on these):**
+  1. A Google Cloud **project with billing** and the credit attached, and a **budget alert** (for example at ₹500 and ₹2,000). Which
+     credit it is (a free trial is usually about $300 and expires after 90 days) and its expiry date. After it expires, usage inside
+     the free tier is still free and anything above is billed to the card.
+  2. The **Neon database region** (Neon console). It decides the Cloud Run region: the service talks to the database on almost every
+     request, so keep them in the same region. Also decide the Vercel app's function region: it has none set, so it runs in the
+     default US East. Every page view makes several calls to the data service, so a cross-ocean hop adds roughly 150 to 250 ms per
+     call. Either choose the Cloud Run region near the app or set `regions` on the `marketmitra-v2` Vercel project to match Neon and
+     Cloud Run (a Hobby project can pick one region).
+  3. The explicit go-ahead for each production step (create the service, switch `FUNDAMENTALS_API_URL`, redeploy the app). A deploy
+     does not mean a new version.
+- **Plan (small PRs, issue first; ADR 0060 supersedes the hosting parts of 0011 and 0013):**
+  1. **Container.** Add `services/fundamentals-api/Dockerfile` (python:3.12-slim, install `requirements.txt`, `CMD uvicorn
+     app.main:app --host 0.0.0.0 --port $PORT`), a `.dockerignore`, and **bake the `fastembed` model into the image** (the
+     requirements note says it downloads about 64 MB to `/tmp` on first use, about 18 s on a cold start). Check `app/config.py` for
+     the cache directory setting. Run it locally with Docker and hit `/health` and a prices call.
+  2. **Deploy to Cloud Run** in the agreed region: `gcloud run deploy marketmitra-fundamentals --source services/fundamentals-api
+     --region <region> --allow-unauthenticated --min-instances 0 --memory 2Gi --cpu 1`, with the environment variables from
+     `.env.example` (`DATABASE_URL`, `IPO_INGEST_TOKEN`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `RATE_LIMIT_PER_MINUTE`,
+     `NSE_REQUESTS_PER_SECOND`, `LOG_LEVEL`, and `SCREENER_INGEST_TOKEN` if the service reads it). **Values go in Secret Manager or
+     the service's env, never in the repo or in chat.** It stays public like today; the app-level rate limit (Upstash) still applies.
+     Prefer a CI deploy with **Workload Identity Federation** over a long-lived JSON key.
+  3. **Parity check** before cutover, against the Vercel deployment: `/health`, `/companies/{symbol}`, `/companies/{symbol}/prices?period=5y`,
+     `/ratios`, `/shareholding`, `/peers`, `/financials/...`, `/screener/...`, `/indices`, for a few symbols (shape and values).
+  4. **Cutover (each step needs the go-ahead):** set `FUNDAMENTALS_API_URL` to the Cloud Run URL in the `marketmitra-v2` Vercel
+     production environment and in the GitHub **repo variable** `FUNDAMENTALS_API_URL` (used by `refresh-ipos`, `refresh-screener`,
+     `refresh-screener-quotes`; those workflows fall back to the old Vercel URL when the variable is unset), then redeploy the app
+     with `npm run deploy:prod`. Database migrations are unchanged (the maintainer still runs Alembic against Neon).
+  5. **Watch for 24 hours and 7 days:** Cloud Run request latency, cold starts and errors; the app's pages; Vercel Usage by project
+     (the data service should drop to about 0). Keep the Vercel data service running for a week as the **rollback** (revert the env
+     var and the repo variable), then delete or pause that Vercel project.
+  6. **Docs:** ADR 0060, `AGENTS.md` (the stack bullet that scopes the Python exception and cites 0013), `docs/HANDOFF.md` (the
+     deploying section and gotchas), `docs/architecture.md`, `docs/data-sources.md` if hosts are listed.
+- **Trade-offs to accept knowingly:** a second place to operate (logs and metrics move to Google Cloud Logging and Monitoring, no
+  Vercel dashboard for it), cold starts after idle time (min instances 0; setting 1 removes them but is billed even when idle), the
+  cross-region latency above, and the credit expiring. Docker keeps lock-in low: the same container runs anywhere.
+- **Still worth doing alongside (Option A):** longer price caching in the Next app. It cuts the number of calls to the new service
+  and speeds pages up, whatever hosts it. Option B (CDN `Cache-Control`) is Vercel-specific and is not needed once the service
+  has moved.
 
 ### Option E: pay or self-host
 
 - Vercel Pro removes the Hobby limits but is a cost decision for the maintainer. Self-hosting is unaffected (it has no Vercel limits).
 
-### Recommended order
+### Recommended order (updated 2026-11-12)
 
-1. Confirm whether Vercel paused the two other projects (maintainer). 2. A and B together in two small PRs (issue first each).
-3. Deploy the data service (B) and the app (A) with the maintainer's go-ahead. 4. Re-measure after 24 hours and after 7 days.
-5. Only then consider C or D.
+1. Maintainer provides the inputs for Option D (Google Cloud project and credit, budget alert, Neon region). 2. Container and local
+parity (no production impact). 3. Deploy to Cloud Run and run the parity check. 4. Cutover with the go-ahead, then watch for 24
+hours. 5. Option A in parallel (small, independent). 6. After a week, retire the Vercel data service and record the re-measured
+numbers in the handoff. Option B is skipped if the move goes ahead; C only if wanted.
 
 ## 6. How to measure (no billing data is available through the CLI on Hobby)
 
@@ -146,10 +184,12 @@ below has been started.
 
 ## 8. Decisions waiting for the maintainer
 
-1. Which of A to E to pursue, and in what order (the recommendation is A and B first).
-2. Whether the two paused projects were paused by Vercel.
-3. Whether to move the data service to Cloud Run with the Google credit (D).
-4. Confirm this file can be deleted once the next session has absorbed it (then delete it and the HANDOFF pointer).
+1. **Decided (2026-11-12):** move the data service to Google Cloud Run (Option D, issue #169). The two paused projects were paused by
+   the maintainer, not Vercel.
+2. **Still needed for Option D:** the Google Cloud project, billing and credit details with a budget alert; the Neon region; the
+   Vercel app region choice; the go-ahead for each production step.
+3. Whether to do Option A (longer price caching) in parallel (recommended).
+4. Confirm this file can be deleted once the move is done or the next session has absorbed it (then delete it and the HANDOFF pointer).
 
 ## 9. Rules the next agent must follow (short list; full text in `AGENTS.md`)
 
