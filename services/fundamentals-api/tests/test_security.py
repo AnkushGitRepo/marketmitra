@@ -242,14 +242,14 @@ class TestResolveCompanyHardening:
         from app.api import deps
 
         async def boom(_session, nse_symbol):
-            raise RuntimeError('(sqlalchemy.dialects.postgresql.asyncpg.Error) [SQL: SELECT secret FROM companies] postgres://user:pw@host/db')
+            raise RuntimeError('(sqlalchemy.dialects.postgresql.asyncpg.Error) [SQL: SELECT secret FROM companies] CONNECTION_DETAILS_MARKER')
 
         monkeypatch.setattr(deps, "get_or_create_company", boom)
         with pytest.raises(HTTPException) as err:
             await deps.resolve_company("ACC", object())
         assert err.value.status_code == 502
         detail = str(err.value.detail).lower()
-        for leaked in ("sqlalchemy", "asyncpg", "select", "postgres", "user:pw", "runtimeerror"):
+        for leaked in ("sqlalchemy", "asyncpg", "select", "postgres", "connection_details_marker", "runtimeerror"):
             assert leaked not in detail
 
 
