@@ -11,6 +11,7 @@ On the Vercel Hobby account, Fluid Active CPU for the last 30 days was 4h 28m ag
 - Run the data service on **Google Cloud Run** in `us-east4` (Northern Virginia), next to the Neon database (Washington, D.C.) and the Vercel app (`iad1`), so there is no new cross-region latency. Scale to zero, 1 CPU, 2 GiB, at most 3 instances, public with the existing app-level rate limit (Upstash).
 - **Cutover is a configuration change:** `FUNDAMENTALS_API_URL` in the `marketmitra-v2` Vercel production environment and in the GitHub repo variable of the same name (used by the refresh workflows). The Vercel copy stays deployed but idle as a rollback (an idle deployment uses no CPU), is not changed after the cutover, and is deleted or paused after about a week of clean running. Both use the same Neon database and Upstash store.
 - Secrets live in Google Secret Manager and are passed to the service by name. A maintainer runs the upload script; no agent handles the values.
+- Cloud Run does not compress responses (Vercel's edge did, with brotli), so the service gzips JSON over 1 KB itself: a 5-year price series is about 187 KB.
 - Cloud Run behind Google's front end changes how the client IP arrives, so on Cloud Run (`K_SERVICE`) the rate limiter uses the last `X-Forwarded-For` hop.
 
 ## Consequences

@@ -2,6 +2,7 @@ import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import ORJSONResponse
+from starlette.middleware.gzip import GZipMiddleware
 
 from app.api.routes import (
     companies,
@@ -32,6 +33,9 @@ app = FastAPI(
     ),
     default_response_class=ORJSONResponse,
 )
+
+# Compress larger JSON (a 5-year price series is ~187 KB). Vercel's edge did this for us; Cloud Run does not (ADR 0060). Tiny bodies are left alone.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.include_router(companies.router)
 app.include_router(financials.router)
