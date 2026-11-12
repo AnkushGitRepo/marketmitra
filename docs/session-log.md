@@ -1209,3 +1209,9 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - The maintainer asked for a project rule from keepachangelog.com/en/1.1.0. Today's `CHANGELOG.md` is generated from commit subjects under "Features / Fixes / Refactors", the commit-log dump the guide warns against. **Rule (AGENTS.md rule 9 and ADR 0061):** written for humans; `[Unreleased]` on top that every PR adds to; one `[X.Y.Z] - YYYY-MM-DD` per release, newest first; only Added / Changed / Deprecated / Removed / Fixed / Security; compare links; always list breaking changes, deprecations, removals and security fixes; leave out noise; `[YANKED]` for pulled versions; a table of what is and is not notable; the PR template now asks for an entry.
 - **Not done, on purpose:** the release script and the existing sections still use the old format, and adding `[Unreleased]` now would make the script insert releases above it, so ADR 0061 has an explicit transition (the release PR hand-edits the generated section; no `[Unreleased]` heading yet). The tooling and a one-time conversion of 0.2.0 to 0.5.0 are issue #183.
+
+## 2026-11-12 — Release script and CHANGELOG.md follow Keep a Changelog (#183)
+
+- `npm run release` now moves `[Unreleased]` into the new `## [X.Y.Z] - date` section, regenerates the compare links, and seeds a marked draft only when `[Unreleased]` is empty. `validateChangelog` is enforced in CI by `consistency.test.ts`; the Release workflow stops its notes extraction at the link references.
+- `CHANGELOG.md` was rewritten by hand: curated 0.2.0 to 0.5.0 sections (all dated 2026-11-11, the day they were cut) and an `[Unreleased]` section covering the Cloud Run move and fixes since 0.5.0.
+- **Verified:** lint, typecheck, tests, build (see the PR). **Not verified:** a real release run against the new file (the next release does that).

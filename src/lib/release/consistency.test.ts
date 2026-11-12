@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { latestChangelogVersion, parseVersion } from './release';
+import { latestChangelogVersion, parseVersion, validateChangelog } from './release';
 import { APP_VERSION } from '../version';
 
 // The version lives in package.json. These tests fail CI the moment another place disagrees, so a half-done release cannot merge.
@@ -38,5 +38,9 @@ describe('one product version', () => {
     }
     if (changelog === null) return; // the first release creates it
     expect(latestChangelogVersion(changelog)).toBe(pkgVersion);
+  });
+
+  it('CHANGELOG.md follows Keep a Changelog 1.1.0 (ADR 0061)', () => {
+    expect(validateChangelog(read('CHANGELOG.md'))).toEqual([]);
   });
 });

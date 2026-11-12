@@ -58,11 +58,7 @@ The commit type helps draft an entry but does not decide it. `feat` is usually *
 
 ## Transition
 
-The release script (`scripts/release.mjs`, `src/lib/release/release.ts`) still writes "Features / Fixes / Refactors" sections from commit subjects and inserts a new section above the first `## [` heading, so adding an `[Unreleased]` heading to the file now would make releases land above it. Until issue #183 aligns the script and converts the existing 0.2.0 to 0.5.0 sections:
-
-- write every new entry in this format and keep the notes in the PR description;
-- the **release PR hand-edits the generated section** into this format (six headings, curated sentences, no commit subjects, nothing noisy) before it is merged, and adds the compare links;
-- do not add `## [Unreleased]` to `CHANGELOG.md` yet.
+Done in issue #183. `npm run release` moves the curated `[Unreleased]` entries into the new `## [X.Y.Z] - date` section, leaves an empty `[Unreleased]` and regenerates the compare links. If `[Unreleased]` is empty it seeds a draft from the commit subjects, marked with a `<!-- DRAFT -->` line that must be removed after rewriting. `validateChangelog` (checked by `consistency.test.ts` in CI) rejects a leftover draft marker, a wrong heading, an unknown section or a missing link. The existing 0.2.0 to 0.5.0 sections were rewritten into this format.
 
 The GitHub Release for a version uses that version's changelog section (the Release workflow already does this), so curated entries also make better release notes. Rewriting an existing changelog to fix it, for example to add a forgotten breaking change, is fine.
 
