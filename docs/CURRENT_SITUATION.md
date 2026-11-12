@@ -134,9 +134,19 @@ below has been started.
      production environment and in the GitHub **repo variable** `FUNDAMENTALS_API_URL` (used by `refresh-ipos`, `refresh-screener`,
      `refresh-screener-quotes`; those workflows fall back to the old Vercel URL when the variable is unset), then redeploy the app
      with `npm run deploy:prod`. Database migrations are unchanged (the maintainer still runs Alembic against Neon).
-  5. **Watch for 24 hours and 7 days:** Cloud Run request latency, cold starts and errors; the app's pages; Vercel Usage by project
-     (the data service should drop to about 0). Keep the Vercel data service running for a week as the **rollback** (revert the env
-     var and the repo variable), then delete or pause that Vercel project.
+  5. **Run both, then retire the old one (the maintainer's idea, 2026-11-12):** deploy the Cloud Run service first and test it
+     without sending it real traffic; link the app to it only after the parity check; then watch for 24 hours and 7 days (Cloud Run
+     request latency, cold starts and errors; the app's pages; Vercel Usage by project, where the data service should drop to
+     about 0). **Keep the Vercel data service deployed but idle rather than paused:** an idle Vercel deployment uses no CPU (Active
+     CPU is only billed while a request runs), and it can take traffic again in one step, whereas a paused project has to be
+     un-paused first. Rollback is: set `FUNDAMENTALS_API_URL` back to the Vercel URL in the `marketmitra-v2` production environment
+     and the GitHub repo variable, then redeploy the app. Both services use the same Neon database and the same Upstash rate-limit
+     store, so the data is identical; the only drift is code, so after the cutover **do not change the data service code on Vercel**
+     (the old copy is frozen as the backup) and make sure only one place triggers the ingestion workflows (they follow the repo
+     variable). After about a week of clean running, delete or pause the Vercel project. Optional, small and not part of the first
+     pass: an automatic fallback in `getJson` (`src/lib/dashboard/fundamentalsApi.ts`) that retries a failed call once against a
+     `FUNDAMENTALS_API_FALLBACK_URL`, so a Cloud Run outage fails over by itself; it would also make the Vercel copy used (and
+     billed in CPU) only during an outage.
   6. **Docs:** ADR 0060, `AGENTS.md` (the stack bullet that scopes the Python exception and cites 0013), `docs/HANDOFF.md` (the
      deploying section and gotchas), `docs/architecture.md`, `docs/data-sources.md` if hosts are listed.
 - **Trade-offs to accept knowingly:** a second place to operate (logs and metrics move to Google Cloud Logging and Monitoring, no
