@@ -5,7 +5,7 @@
 #   1. cd services/fundamentals-api && vercel env pull .env.cloudrun --environment production   (gitignored; delete it afterwards)
 #   2. GCP_PROJECT=<project-id> ./upload-cloud-run-secrets.sh .env.cloudrun
 #
-# Variables of Vercel's "Secret" type are NOT pulled (they come back empty), notably IPO_INGEST_TOKEN and SCREENER_INGEST_TOKEN. For any
+# Variables of Vercel's "Secret" type are NOT pulled: they come back empty or as the literal text [SENSITIVE] (treated as empty here), notably IPO_INGEST_TOKEN and SCREENER_INGEST_TOKEN. For any
 # empty one this script generates a new random token and stores it in Secret Manager only, so the service can be deployed and tested
 # BEFORE the cutover without touching the refresh workflows (they keep using the old tokens against the Vercel service).
 #
@@ -34,6 +34,8 @@ value_of() { # first match of NAME=value in the dotenv file, quotes stripped; em
   local line
   line="$(grep -E "^$1=" "$ENV_FILE" | head -1 || true)"
   line="${line#*=}"; line="${line%\"}"; line="${line#\"}"; line="${line%\'}"; line="${line#\'}"
+  # `vercel env pull` writes this literal placeholder for variables of Vercel's "Secret" type; it is not a value.
+  [ "$line" = "[SENSITIVE]" ] && line=""
   printf '%s' "$line"
 }
 
