@@ -179,9 +179,13 @@ export function linkReferences(versionsNewestFirst: readonly string[], repoUrl: 
  * on top. If [Unreleased] is empty, a draft is seeded from the commits and marked, for the release PR to rewrite. Older sections are kept
  * byte for byte; the link references are regenerated.
  */
+// Markdown links to the two specs the header must cite (matched as whole links, not as a substring of some other URL).
+const KAC_LINK = /\]\(https:\/\/keepachangelog\.com\/en\/1\.1\.0\/?\)/;
+const SEMVER_LINK = /\]\(https:\/\/semver\.org\/spec\/v2\.0\.0\.html\)/;
+
 export function releaseChangelog({ existing, version, date, commits, repoUrl }: { existing: string | null; version: string; date: string; commits: readonly Commit[]; repoUrl: string }): { text: string; drafted: boolean } {
   const parsed = existing ? parseChangelog(existing) : { header: CHANGELOG_HEADER, unreleased: '', versions: [] };
-  const header = parsed.header.includes('keepachangelog.com') ? parsed.header : CHANGELOG_HEADER;
+  const header = KAC_LINK.test(parsed.header) ? parsed.header : CHANGELOG_HEADER;
   let body = parsed.unreleased.trim();
   let drafted = false;
   if (body === '') {
@@ -215,8 +219,8 @@ export function validateChangelog(text: string): string[] {
   const problems: string[] = [];
   const { body, labels } = splitReferences(text);
   const parsed = parseChangelog(text);
-  if (!parsed.header.includes('keepachangelog.com/en/1.1.0')) problems.push('the header must say it follows Keep a Changelog 1.1.0');
-  if (!parsed.header.includes('semver.org')) problems.push('the header must say it follows Semantic Versioning');
+  if (!KAC_LINK.test(parsed.header)) problems.push('the header must say it follows Keep a Changelog 1.1.0');
+  if (!SEMVER_LINK.test(parsed.header)) problems.push('the header must say it follows Semantic Versioning');
   if (/<!--\s*DRAFT/i.test(text)) problems.push('a draft marker is still in the file: rewrite the seeded entries for humans, then delete the marker');
   const firstHeading = /^## \[([^\]]+)\]/m.exec(body)?.[1];
   if (firstHeading?.toLowerCase() !== 'unreleased') problems.push('the first section must be "## [Unreleased]"');
