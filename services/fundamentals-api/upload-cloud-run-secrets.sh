@@ -6,12 +6,16 @@
 #   2. GCP_PROJECT=<project-id> ./upload-cloud-run-secrets.sh .env.cloudrun
 #
 # Variables of Vercel's "Secret" type are NOT pulled (they come back empty), notably IPO_INGEST_TOKEN and SCREENER_INGEST_TOKEN. For any
-# empty one this script generates a new random token and ALSO sets it as the GitHub repo secret of the same name (needs `gh` signed in),
-# so the refresh workflows keep working with the new service. The value is piped, never printed.
+# empty one this script generates a new random token and stores it in Secret Manager only, so the service can be deployed and tested
+# BEFORE the cutover without touching the refresh workflows (they keep using the old tokens against the Vercel service).
+#
+# At cutover run it again with SET_GITHUB_SECRETS=yes: it then also sets the GitHub repo secret of the same name (needs `gh` signed in) to
+# the same new value, which is what the refresh workflows must use once FUNDAMENTALS_API_URL points at Cloud Run. Values are piped, never printed.
 set -euo pipefail
 
 PROJECT="${GCP_PROJECT:?set GCP_PROJECT to the Google Cloud project id}"
 ENV_FILE="${1:?usage: upload-cloud-run-secrets.sh <dotenv-file>}"
+SET_GITHUB_SECRETS="${SET_GITHUB_SECRETS:-no}"
 
 # dotenv variable -> Secret Manager secret name (a case statement, not an associative array: macOS ships bash 3.2)
 secret_name() {
@@ -39,9 +43,13 @@ for var in $VARS; do
   if [ -z "$value" ]; then
     if [[ "$GENERATED" == *" $var "* ]]; then
       value="$(openssl rand -hex 32)"
-      command -v gh >/dev/null || { echo "error: $var must be regenerated and set as a GitHub repo secret, but gh is not installed." >&2; exit 1; }
-      printf '%s' "$value" | gh secret set "$var" >/dev/null
-      echo "note: $var was empty in the file; generated a NEW value, stored it as secret '$name' and as the GitHub repo secret $var."
+      if [ "$SET_GITHUB_SECRETS" = "yes" ]; then
+        command -v gh >/dev/null || { echo "error: gh is not installed, cannot set the GitHub repo secret $var." >&2; exit 1; }
+        printf '%s' "$value" | gh secret set "$var" >/dev/null
+        echo "note: $var was empty in the file; generated a NEW value, stored it as secret '$name' AND set the GitHub repo secret $var."
+      else
+        echo "note: $var was empty in the file; generated a NEW value and stored it as secret '$name' only (GitHub secret untouched)."
+      fi
     else
       echo "error: $var is empty in $ENV_FILE and cannot be generated." >&2
       exit 1

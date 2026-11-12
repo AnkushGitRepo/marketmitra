@@ -188,10 +188,10 @@ numbers in the handoff. Option B is skipped if the move goes ahead; C only if wa
   3. Enable the APIs: `gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
      secretmanager.googleapis.com --project <id>` (the first Cloud Build may ask to create an Artifact Registry repository; answer yes).
   4. `cd services/fundamentals-api && vercel env pull .env.cloudrun --environment production`, then
-     `GCP_PROJECT=<id> ./upload-cloud-run-secrets.sh .env.cloudrun`, then **delete `.env.cloudrun`**. The script regenerates the two ingest
-     tokens (they are Vercel "Secret" type and cannot be pulled) and sets the GitHub repo secrets to match. **Do this at cutover time**: the
-     refresh workflows keep calling the Vercel service with the old token until `FUNDAMENTALS_API_URL` points at Cloud Run, so they fail
-     in between (low impact: the IPO and screener refreshes).
+     `GCP_PROJECT=<id> ./upload-cloud-run-secrets.sh .env.cloudrun`, then **delete `.env.cloudrun`**. The script generates the two ingest
+     tokens (Vercel "Secret" type cannot be pulled) and stores them in Secret Manager only, so the GitHub workflows are untouched. **At cutover**
+     run it again with `SET_GITHUB_SECRETS=yes` so the GitHub repo secrets match the new tokens (the refresh workflows then keep working
+     once `FUNDAMENTALS_API_URL` points at Cloud Run).
 - **Then an agent can:** run `GCP_PROJECT=<id> services/fundamentals-api/deploy-cloud-run.sh`, run the parity check against the Vercel
   service, and (with the go-ahead) switch `FUNDAMENTALS_API_URL` and redeploy the app.
 

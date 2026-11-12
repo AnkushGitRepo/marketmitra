@@ -205,7 +205,8 @@ The service also runs as a container on Google Cloud Run (the same code and `req
   app-level rate limit. It passes secrets by **name** from Secret Manager, never values.
 - `./upload-cloud-run-secrets.sh <dotenv-file>` copies the credentials into Secret Manager. **Run it yourself**: it reads credential values and never prints
   them. Get the file with `vercel env pull .env.cloudrun --environment production` (gitignored; delete it afterwards). Variables of Vercel's "Secret" type
-  are not pulled; for those the script generates a new token and also sets the GitHub repo secret of the same name.
+  are not pulled; for those the script generates a new token and stores it in Secret Manager only. At cutover run it again with `SET_GITHUB_SECRETS=yes`
+  to also set the GitHub repo secret of the same name to the same value.
 - On Cloud Run (`K_SERVICE` is set) the rate limiter trusts the **last** `X-Forwarded-For` hop (Google appends the real client IP there); elsewhere it keeps the
   first hop as before.
 - Environment variables: see `.env.example`. Database migrations are unchanged: the maintainer runs Alembic against Neon.
