@@ -1,0 +1,14 @@
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+fundamentals_api.egg-info
+tests
+migrations
+scripts
+.env
+.env.*
+README.md
+alembic.ini
+vercel.json

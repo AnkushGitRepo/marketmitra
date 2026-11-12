@@ -103,14 +103,18 @@ below has been started.
 
 - **Why it fits:** the data service is a standalone FastAPI app and 90% of the CPU. Cloud Run runs a container, bills CPU only while
   requests run, and has a free tier (check the current numbers at cloud.google.com/run/pricing; as of this writing about 2M requests
-  and 180,000 vCPU-seconds a month, around 50 hours, against Vercel Hobby's 4 hours of Active CPU). The Google Cloud credit (about
-  ₹25,000) covers anything beyond. Moving it takes about 90% of this account's Vercel CPU, so the allowance is free for future
+  and 180,000 vCPU-seconds a month, around 50 hours, against Vercel Hobby's 4 hours of Active CPU). **Credit, corrected
+  2026-11-12 (read in the Google Cloud console):** the ₹25,002 Free Trial credit **expired on 2024-03-07**. What is available on the
+  maintainer's active billing account is the **Google Developer Program monthly credits** (valid for a year each, usable on all of
+  Google Cloud), **about ₹6,400 in total**. That is plenty for a small service that should stay near the free tier. Moving it takes about 90% of this account's Vercel CPU, so the allowance is free for future
   projects; `marketmitra-v2` alone uses about 0.5 h a month.
 - **Inputs needed from the maintainer (the work is blocked on these):**
   1. A Google Cloud **project with billing** and the credit attached, and a **budget alert** (for example at ₹500 and ₹2,000). Which
      credit it is (a free trial is usually about $300 and expires after 90 days) and its expiry date. After it expires, usage inside
      the free tier is still free and anything above is billed to the card.
-  2. The **Neon database region** (Neon console). It decides the Cloud Run region: the service talks to the database on almost every
+  2. **Answered (2026-11-12): the Neon database is in Washington, D.C. (US East, `iad1`)** (Vercel Storage settings), and the Vercel
+     app has no region set, so it also runs in US East. **Use Cloud Run region `us-east4` (Northern Virginia).** No cross-ocean hop.
+     (Original question for reference: the Neon database region.) It decides the Cloud Run region: the service talks to the database on almost every
      request, so keep them in the same region. Also decide the Vercel app's function region: it has none set, so it runs in the
      default US East. Every page view makes several calls to the data service, so a cross-ocean hop adds roughly 150 to 250 ms per
      call. Either choose the Cloud Run region near the app or set `regions` on the `marketmitra-v2` Vercel project to match Neon and
@@ -166,6 +170,30 @@ below has been started.
 parity (no production impact). 3. Deploy to Cloud Run and run the parity check. 4. Cutover with the go-ahead, then watch for 24
 hours. 5. Option A in parallel (small, independent). 6. After a week, retire the Vercel data service and record the re-measured
 numbers in the handoff. Option B is skipped if the move goes ahead; C only if wanted.
+
+### Progress on Option D (2026-11-12)
+
+- **Done (PR for issue #169, nothing deployed):** `services/fundamentals-api/Dockerfile`, `.dockerignore`, `deploy-cloud-run.sh`,
+  `upload-cloud-run-secrets.sh`, a README section, ADR 0060, and a rate-limiter fix for Cloud Run's `X-Forwarded-For` (last hop, with a
+  pytest). The Python suite passes (227 tests) and the secrets script was dry-run against a fake `gcloud` on macOS bash 3.2.
+- **Found while checking:** the `gcloud` CLI on this Mac is signed in as a Google account that **cannot see any project or billing
+  account**, while the Google account signed in to the maintainer's browser can (it has an active billing account and several
+  projects, including one named `MarketMitra` that was auto-created for Gemini API keys). Neon's console asked for a login in that
+  browser. (Account, billing and project identifiers are deliberately not recorded in this repository.)
+- **Needs the maintainer's hands (an agent must not sign in, enter secrets or accept terms):**
+  1. `gcloud auth login` with the Google account that owns the billing account and projects (and pick the project: a new dedicated
+     one such as `marketmitra-data` linked to "My Billing Account" is recommended; the existing `MarketMitra` project was auto-created for
+     Gemini API keys).
+  2. Set a **budget alert** on the billing account (Billing > Budgets: for example ₹500 and ₹1,500).
+  3. Enable the APIs: `gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+     secretmanager.googleapis.com --project <id>` (the first Cloud Build may ask to create an Artifact Registry repository; answer yes).
+  4. `cd services/fundamentals-api && vercel env pull .env.cloudrun --environment production`, then
+     `GCP_PROJECT=<id> ./upload-cloud-run-secrets.sh .env.cloudrun`, then **delete `.env.cloudrun`**. The script regenerates the two ingest
+     tokens (they are Vercel "Secret" type and cannot be pulled) and sets the GitHub repo secrets to match. **Do this at cutover time**: the
+     refresh workflows keep calling the Vercel service with the old token until `FUNDAMENTALS_API_URL` points at Cloud Run, so they fail
+     in between (low impact: the IPO and screener refreshes).
+- **Then an agent can:** run `GCP_PROJECT=<id> services/fundamentals-api/deploy-cloud-run.sh`, run the parity check against the Vercel
+  service, and (with the go-ahead) switch `FUNDAMENTALS_API_URL` and redeploy the app.
 
 ## 6. How to measure (no billing data is available through the CLI on Hobby)
 
