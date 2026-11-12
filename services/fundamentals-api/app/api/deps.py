@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import CompanyMasterORM, CompanyORM
 from app.db.session import get_session
+from app.security import log_safe
 from app.services.fundamentals_service import get_or_create_company
 from app.services.search_service import ensure_company_master_populated
 
@@ -48,7 +49,7 @@ async def resolve_company(symbol: str, session: AsyncSession) -> CompanyORM:
     try:
         known = await _symbol_is_known(session, symbol)
     except Exception as exc:
-        logger.exception("could not check symbol %s", symbol)
+        logger.exception("could not check symbol %s", log_safe(symbol))
         raise HTTPException(status_code=502, detail="could not resolve company") from exc
     if not known:
         raise HTTPException(status_code=404, detail="unknown symbol")
@@ -56,5 +57,5 @@ async def resolve_company(symbol: str, session: AsyncSession) -> CompanyORM:
         return await get_or_create_company(session, nse_symbol=symbol)
     except Exception as exc:
         # The cause (SQL, driver, connection string) stays in the server log; the client only learns that it failed.
-        logger.exception("could not resolve company %s", symbol)
+        logger.exception("could not resolve company %s", log_safe(symbol))
         raise HTTPException(status_code=502, detail="could not resolve company") from exc

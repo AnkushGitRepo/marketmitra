@@ -20,6 +20,13 @@ RUNTIME_SA="${RUNTIME_SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
 SECRETS="fundamentals-database-url fundamentals-ipo-ingest-token fundamentals-screener-ingest-token fundamentals-kv-rest-api-url fundamentals-kv-rest-api-token"
 gcloud iam service-accounts describe "$RUNTIME_SA" --project "$PROJECT" >/dev/null 2>&1 \
   || gcloud iam service-accounts create "$RUNTIME_SA_NAME" --project "$PROJECT" --display-name "Fundamentals data service (runtime, least privilege)"
+# The build runs as the project's default compute service account. It must NOT hold the broad Editor role; these two narrow roles are what a
+# source deploy needs after the build steps (push the image, write the build log). Idempotent.
+BUILD_SA="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')-compute@developer.gserviceaccount.com"
+for role in roles/artifactregistry.writer roles/logging.logWriter; do
+  gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:${BUILD_SA}" --role "$role" --condition=None >/dev/null
+done
+
 # A service account created a moment ago is not visible to IAM everywhere yet ("does not exist"), so each grant retries for up to a minute.
 for secret in $SECRETS; do
   attempt=0
