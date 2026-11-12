@@ -77,6 +77,9 @@
 
 ## Open work (verify before acting — this list ages)
 
+**Changelog rule (ADR 0061, 2026-11-12)**
+- `CHANGELOG.md` must follow Keep a Changelog 1.1.0 (AGENTS.md rule 9). The release script and the existing 0.2.0 to 0.5.0 sections still use the old "Features / Fixes" commit-subject format: align them in issue #183. Until then the release PR hand-edits the generated section into the new format and `[Unreleased]` is not added to the file (the script would insert a release above it).
+
 **Hosting and security (see Where we are)**
 - The data service moved to Cloud Run on 2026-11-12 (issue #169, closed; ADR 0060). Follow-ups: issue #180. Remaining: re-measure Vercel CPU after 24 hours and 7 days, watch Cloud Run cost and the budget alert, then delete the paused Vercel data service (`marketmitra-fundamentals-api`) after about a week of clean running, rotate the Neon password. These follow-ups are tracked in issue #180 (the migration issue #169 is closed). **Junk rows:** the black-box security probe of 2026-11-12 made the old code create company rows for made-up symbols (for example `ZZZZNOPE` and strings containing `DROP TABLE`); they are harmless but should be deleted from `companies` (with their dependent rows) after the maintainer approves; the symbols are not in `company_master`. Optional: cache price history longer in the Next app (`getPrices` revalidates every 15 minutes). Measure with the team Usage page (Fluid Active CPU, tab Projects) and `vercel logs` (Hobby keeps about an hour).
 

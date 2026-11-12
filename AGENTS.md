@@ -85,6 +85,13 @@ The release script picks the bump from the commit types (SemVer: `fix` = patch, 
 say what was and was not verified. Don't claim something is fixed in production without checking
 production.
 
+**9. Changelog** ([0061](./docs/decisions/0061-changelog-keep-a-changelog.md)). `CHANGELOG.md` follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/)
+and SemVer: written for humans (one sentence per notable change, never a commit subject or a git log), an `## [Unreleased]` section on top that each
+PR adds its entry to, then one `## [X.Y.Z] - YYYY-MM-DD` per release, newest first, with only the sections Added / Changed / Deprecated / Removed /
+Fixed / Security (omit empty ones) and compare links at the bottom. Always list breaking changes (prefix **Breaking:**), deprecations, removals and
+security fixes; leave out docs, tests, chores, CI and invisible refactors. A pulled version is marked `[YANKED]`. Until the release script is aligned
+(issue #183) the release PR hand-edits the generated section into this format, and `[Unreleased]` is not added to the file yet.
+
 ## Safety rules (ask first)
 
 - **Never deploy to production or run production migrations without the maintainer's explicit
@@ -117,7 +124,7 @@ production.
   make it pass. Use Playwright for end-to-end flows.
 - **No `console.log`** in committed code. No hardcoded secrets or magic values.
 - Docs move with code: update `docs/` (architecture, api-surface, data-sources, ADR) and add an
-  ADR (next number: 0061) for a real decision. ADRs are never pruned.
+  ADR (next number: 0062) for a real decision. ADRs are never pruned.
 
 ## Commands
 
@@ -139,7 +146,7 @@ More (deploying, production migrations, scheduled jobs, environment) in `docs/HA
 - [`docs/HANDOFF.md`](./docs/HANDOFF.md) — **current state**, open work, environment, deploy, gotchas
 - `docs/architecture.md` — current system architecture (routes, components, data flow)
 - `docs/design-system.md` — colors/type/spacing/component patterns
-- `docs/decisions/` — ADRs, one per decision, numbered, **never pruned** (latest: 0060 data service on Cloud Run)
+- `docs/decisions/` — ADRs, one per decision, numbered, **never pruned** (latest: 0061 changelog format)
 - `docs/data-sources.md` — every external API/scraper: endpoint, auth, rate limits, cost, ToS
 - `docs/api-surface.md` and `public/openapi.json` — public API for agent consumers
 - `docs/session-log.md` — rolling log of what happened, session by session
