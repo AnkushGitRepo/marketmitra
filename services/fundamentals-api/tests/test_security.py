@@ -200,3 +200,138 @@ class TestResponseCompression:
         gzip_layers = [m for m in app.user_middleware if m.cls is GZipMiddleware]
         assert len(gzip_layers) == 1
         assert gzip_layers[0].kwargs.get("minimum_size", 500) >= 500  # tiny bodies are not worth compressing
+
+
+class TestResolveCompanyHardening:
+    """A symbol is untrusted input (#169 security review): validate it at the boundary and never echo internals back."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("bad", ["ACC\x00", "A" * 5000, "ACC;DROP TABLE x", "ACC OR 1=1", "../etc/passwd", "ACC%00", "<script>", "😀", "", "A" * 31])
+    async def test_rejects_an_invalid_symbol_before_touching_the_database(self, bad):
+        from fastapi import HTTPException
+
+        from app.api.deps import resolve_company
+
+        class NeverUsed:
+            def __getattr__(self, name):  # any DB access would be a bug
+                raise AssertionError("the database must not be touched for an invalid symbol")
+
+        with pytest.raises(HTTPException) as err:
+            await resolve_company(bad, NeverUsed())
+        assert err.value.status_code == 422
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("good", ["ACC", "acc", "M&M", "BAJAJ-AUTO", "NAM-INDIA", "LAURUSLABS", "A.B", "X_Y", "A" * 30])
+    async def test_accepts_real_nse_symbols(self, good, monkeypatch):
+        from app.api import deps
+
+        async def fake(_session, nse_symbol):
+            return nse_symbol
+
+        async def listed(_session, _symbol):
+            return True
+
+        monkeypatch.setattr(deps, "_symbol_is_known", listed)
+        monkeypatch.setattr(deps, "get_or_create_company", fake)
+        assert await deps.resolve_company(good, object()) == good.upper()
+
+    @pytest.mark.asyncio
+    async def test_a_database_failure_returns_a_generic_error_with_no_sql_or_driver_detail(self, monkeypatch):
+        from fastapi import HTTPException
+
+        from app.api import deps
+
+        async def boom(_session, nse_symbol):
+            raise RuntimeError('(sqlalchemy.dialects.postgresql.asyncpg.Error) [SQL: SELECT secret FROM companies] postgres://user:pw@host/db')
+
+        monkeypatch.setattr(deps, "get_or_create_company", boom)
+        with pytest.raises(HTTPException) as err:
+            await deps.resolve_company("ACC", object())
+        assert err.value.status_code == 502
+        detail = str(err.value.detail).lower()
+        for leaked in ("sqlalchemy", "asyncpg", "select", "postgres", "user:pw", "runtimeerror"):
+            assert leaked not in detail
+
+
+class TestApiDocsExposure:
+    def test_interactive_docs_and_the_openapi_schema_are_hidden_on_cloud_run(self, monkeypatch):
+        # The public service does not need to advertise its endpoint list (including the token-guarded ingest routes).
+        import importlib
+
+        from app import main
+
+        monkeypatch.setenv("K_SERVICE", "marketmitra-fundamentals")
+        try:
+            hidden = importlib.reload(main).app
+            assert (hidden.docs_url, hidden.redoc_url, hidden.openapi_url) == (None, None, None)
+        finally:
+            monkeypatch.delenv("K_SERVICE", raising=False)
+            visible = importlib.reload(main).app
+        assert (visible.docs_url, visible.redoc_url, visible.openapi_url) == ("/docs", "/redoc", "/openapi.json")
+
+
+class TestNoCompanyCreatedForUnknownSymbols:
+    """An anonymous GET must not insert rows or fire upstream scrapes for a symbol that is not a real NSE listing."""
+
+    @pytest.mark.asyncio
+    async def test_an_unlisted_symbol_is_a_404_and_creates_nothing(self, monkeypatch):
+        from fastapi import HTTPException
+
+        from app.api import deps
+
+        async def unknown(_session, _symbol):
+            return False
+
+        async def must_not_run(*_a, **_k):
+            raise AssertionError("no company may be created (or scraped) for an unlisted symbol")
+
+        monkeypatch.setattr(deps, "_symbol_is_known", unknown)
+        monkeypatch.setattr(deps, "get_or_create_company", must_not_run)
+        with pytest.raises(HTTPException) as err:
+            await deps.resolve_company("ZZZZNOPE", object())
+        assert err.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_a_listed_symbol_still_resolves(self, monkeypatch):
+        from app.api import deps
+
+        async def known(_session, _symbol):
+            return True
+
+        async def fake(_session, nse_symbol):
+            return f"company:{nse_symbol}"
+
+        monkeypatch.setattr(deps, "_symbol_is_known", known)
+        monkeypatch.setattr(deps, "get_or_create_company", fake)
+        assert await deps.resolve_company("acc", object()) == "company:ACC"
+
+    @pytest.mark.asyncio
+    async def test_known_means_an_existing_company_row_or_a_listing_in_the_nse_master(self, monkeypatch):
+        from app.api import deps
+
+        class Result:
+            def __init__(self, hit):
+                self._hit = hit
+
+            def first(self):
+                return ("x",) if self._hit else None
+
+        class Session:
+            def __init__(self, in_companies, in_master):
+                self.in_companies, self.in_master, self.queries = in_companies, in_master, 0
+
+            async def execute(self, stmt):
+                self.queries += 1
+                text = str(stmt).lower()
+                return Result(self.in_companies if "from companies" in text else self.in_master)
+
+        populated = []
+
+        async def fake_populate(_session):
+            populated.append(1)
+
+        monkeypatch.setattr(deps, "ensure_company_master_populated", fake_populate)
+        assert await deps._symbol_is_known(Session(True, False), "ACC") is True
+        assert populated == []  # an existing company never needs the master list
+        assert await deps._symbol_is_known(Session(False, True), "NEWLISTED") is True
+        assert await deps._symbol_is_known(Session(False, False), "ZZZZNOPE") is False

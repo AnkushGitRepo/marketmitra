@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.responses import ORJSONResponse
@@ -23,6 +24,8 @@ from app.rate_limit import check_rate_limit, client_ip
 
 logging.basicConfig(level=get_settings().log_level)
 
+_ON_CLOUD_RUN = bool(os.environ.get("K_SERVICE"))
+
 app = FastAPI(
     title="MarketMitra Fundamentals API",
     description=(
@@ -32,6 +35,10 @@ app = FastAPI(
         "no vendor keys required."
     ),
     default_response_class=ORJSONResponse,
+    # On Cloud Run (K_SERVICE is set) the public service does not publish its endpoint list; locally and on Vercel the docs stay.
+    docs_url=None if _ON_CLOUD_RUN else "/docs",
+    redoc_url=None if _ON_CLOUD_RUN else "/redoc",
+    openapi_url=None if _ON_CLOUD_RUN else "/openapi.json",
 )
 
 # Compress larger JSON (a 5-year price series is ~187 KB). Vercel's edge did this for us; Cloud Run does not (ADR 0060). Tiny bodies are left alone.
