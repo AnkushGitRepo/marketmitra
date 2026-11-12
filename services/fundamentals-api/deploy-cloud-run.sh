@@ -27,6 +27,11 @@ for role in roles/artifactregistry.writer roles/logging.logWriter; do
   gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:${BUILD_SA}" --role "$role" --condition=None >/dev/null
 done
 
+# ...and read the uploaded source from the build-source bucket (scoped to that one bucket, not the project). The bucket is created by the first
+# source deploy, so on a brand-new project this is skipped until it exists (the default account still has Editor then).
+SOURCE_BUCKET="gs://run-sources-${PROJECT}-${REGION}"
+gcloud storage buckets add-iam-policy-binding "$SOURCE_BUCKET" --member "serviceAccount:${BUILD_SA}" --role roles/storage.objectViewer >/dev/null 2>&1 || true
+
 # A service account created a moment ago is not visible to IAM everywhere yet ("does not exist"), so each grant retries for up to a minute.
 for secret in $SECRETS; do
   attempt=0
