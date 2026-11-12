@@ -13,6 +13,7 @@ closes the one remaining path — hitting this service's public URL directly.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from dataclasses import dataclass
 
@@ -83,6 +84,10 @@ def client_ip(headers: httpx.Headers | dict, fallback: str | None) -> str:
     are written by the edge and can't be forged, whereas the *first* hop of
     ``x-forwarded-for`` is whatever the client sent — rotating it would dodge
     the limit. ``x-forwarded-for`` is only a fallback, then the socket peer.
+
+    On Cloud Run (``K_SERVICE`` is set) Google's front end appends the real client
+    IP to the END of ``x-forwarded-for``, so the last hop is the trustworthy one
+    and the first is client-controlled.
     """
     get = headers.get if hasattr(headers, "get") else (lambda _k: None)
     for name in ("x-vercel-forwarded-for", "x-real-ip"):
@@ -91,7 +96,7 @@ def client_ip(headers: httpx.Headers | dict, fallback: str | None) -> str:
             return value.split(",")[0].strip()
     xff = get("x-forwarded-for")
     if xff:
-        first = xff.split(",")[0].strip()
-        if first:
-            return first
+        hops = [hop.strip() for hop in xff.split(",") if hop.strip()]
+        if hops:
+            return hops[-1] if os.environ.get("K_SERVICE") else hops[0]
     return fallback or "unknown-ip"

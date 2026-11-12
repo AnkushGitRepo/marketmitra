@@ -103,6 +103,19 @@ class TestClientIp:
         assert client_ip({}, "10.0.0.1") == "10.0.0.1"
         assert client_ip({}, None) == "unknown-ip"
 
+    def test_on_cloud_run_uses_the_last_xff_hop_that_google_appended(self, monkeypatch):
+        # Cloud Run sets K_SERVICE. Its front end appends the real client IP to the END of
+        # X-Forwarded-For; the first hop is whatever the client sent, so it must not be trusted.
+        monkeypatch.setenv("K_SERVICE", "marketmitra-fundamentals")
+        assert client_ip({"x-forwarded-for": "6.6.6.6, 203.0.113.9"}, "10.0.0.1") == "203.0.113.9"
+        assert client_ip({"x-forwarded-for": "203.0.113.9"}, "10.0.0.1") == "203.0.113.9"
+        assert client_ip({"x-forwarded-for": " , "}, "10.0.0.1") == "10.0.0.1"
+        assert client_ip({}, "10.0.0.1") == "10.0.0.1"
+
+    def test_off_cloud_run_still_uses_the_first_hop(self, monkeypatch):
+        monkeypatch.delenv("K_SERVICE", raising=False)
+        assert client_ip({"x-forwarded-for": "1.2.3.4, 5.6.7.8"}, "10.0.0.1") == "1.2.3.4"
+
 
 def test_responses_carry_security_headers():
     with TestClient(app) as client:

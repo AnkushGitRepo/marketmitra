@@ -194,3 +194,18 @@ package.
 See `app/services/fundamentals_service.py`'s module docstring for the same
 detail in code, and ROADMAP.md's Phase 4 checklist for what's tracked as
 still open.
+
+## Cloud Run (ADR 0060)
+
+The service also runs as a container on Google Cloud Run (the same code and `requirements.txt` as the Vercel deployment).
+
+- `Dockerfile` builds it (Python 3.12, the `fastembed` model baked in so there is no cold download); `.dockerignore` keeps tests, migrations and `.env*` out.
+- `./deploy-cloud-run.sh` deploys from source with Cloud Build (no local Docker): `GCP_PROJECT=<id> ./deploy-cloud-run.sh`. Region defaults to
+  `us-east4`, next to the Neon database (Washington, D.C.) and the Vercel app (`iad1`). 1 CPU, 2 GiB, scale to zero, at most 3 instances, public with the
+  app-level rate limit. It passes secrets by **name** from Secret Manager, never values.
+- `./upload-cloud-run-secrets.sh <dotenv-file>` copies the credentials into Secret Manager. **Run it yourself**: it reads credential values and never prints
+  them. Get the file with `vercel env pull .env.cloudrun --environment production` (gitignored; delete it afterwards). Variables of Vercel's "Secret" type
+  are not pulled; for those the script generates a new token and also sets the GitHub repo secret of the same name.
+- On Cloud Run (`K_SERVICE` is set) the rate limiter trusts the **last** `X-Forwarded-For` hop (Google appends the real client IP there); elsewhere it keeps the
+  first hop as before.
+- Environment variables: see `.env.example`. Database migrations are unchanged: the maintainer runs Alembic against Neon.
