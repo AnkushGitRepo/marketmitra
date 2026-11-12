@@ -3,6 +3,11 @@
   "version": "0.5.0",
   "private": true,
   "license": "MIT",
+  "description": "Free, open-source, self-hostable dashboard for Indian stock markets: NSE and BSE stock pages, portfolio tracker, price alerts, market news with sentiment, IPO tracker, stock screener, and AI analysis you run with your own key. Includes an MCP server and API for AI agents.",
+  "homepage": "https://marketmitra-v2.vercel.app",
+  "repository": { "type": "git", "url": "git+https://github.com/AnkushGitRepo/marketmitra.git" },
+  "bugs": { "url": "https://github.com/AnkushGitRepo/marketmitra/issues" },
+  "keywords": ["indian stock market", "nse", "bse", "nifty", "sensex", "portfolio tracker", "stock screener", "ipo tracker", "stock alerts", "market news", "fundamental analysis", "ai stock analysis", "mcp", "open source", "self-hosted", "nextjs"],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Search and sharing metadata: a descriptive page title and description, keywords, a canonical URL and structured data for search engines, and a clearer README opening and package description. ([#187](https://github.com/AnkushGitRepo/marketmitra/pull/187))
 - The hosted deployment uses the data service on Google Cloud Run instead of Vercel, which frees the Vercel CPU allowance, and the service now compresses larger responses with gzip. ([#174](https://github.com/AnkushGitRepo/marketmitra/pull/174))
 
 ### Fixed

@@ -1,8 +1,10 @@
 # MarketMitra
 
-A financial dashboard for Indian markets — one place to see your holdings, prices, and what
-moved your money. Free, open-source, and self-hostable, with a hosted option for people who'd
-rather not run their own infrastructure.
+**MarketMitra is a free, open-source Indian stock market dashboard.** Track NSE and BSE stocks
+and indices (Nifty, Sensex), your portfolio and watchlists, price alerts, market news with
+sentiment, IPOs, and a stock screener, with optional AI analysis using your own key. Self-host it
+for yourself or use the hosted site. No paid tier, no trial limits. It also exposes a documented
+API and an MCP server so AI agents can use the same data.
 
 [![CI](https://github.com/AnkushGitRepo/marketmitra/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AnkushGitRepo/marketmitra/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/AnkushGitRepo/marketmitra)](LICENSE)
@@ -25,6 +27,8 @@ rather not run their own infrastructure.
 - [License](#license)
 
 ## What it does
+
+MarketMitra is an Indian stock market portfolio tracker, stock screener, IPO tracker and news dashboard in one app:
 
 - **Dashboard** — real Indian indices, watchlist movers, a portfolio you actually hold, and a
   full stock detail page (ratios, historical financials, shareholding, peer comparison,
