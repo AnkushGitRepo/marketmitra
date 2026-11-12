@@ -2,6 +2,9 @@
 // Prepares a release: works out the next version from the Conventional Commits since the last `v*` tag, then updates package.json,
 // package-lock.json, public/openapi.json (info.version) and CHANGELOG.md. It changes files only; it does not commit, tag or push.
 //
+// CHANGELOG.md follows Keep a Changelog 1.1.0 (ADR 0061): the curated entries under "## [Unreleased]" become the new version's section. If
+// Unreleased is empty, a DRAFT is seeded from the commit subjects and marked; CI fails until a person rewrites it into curated entries.
+//
 //   npm run release             prepare the next release
 //   npm run release:dry         show what would happen, change nothing
 //   npm run release -- --bump minor          force a bump (major | minor | patch)
@@ -16,9 +19,9 @@ import {
   decideBump,
   isNewer,
   parseCommit,
-  prependChangelog,
+  releaseChangelog,
+  releaseNotesFor,
   setSpecVersion,
-  renderSection,
   versionFromReleaseSubject,
 } from '../src/lib/release/release.ts';
 
@@ -86,14 +89,26 @@ try {
 }
 
 const date = value('--date') ?? new Date().toISOString().slice(0, 10);
-const section = renderSection({ version: next, date, commits, repoUrl: remote });
+
+let existing = null;
+try {
+  existing = read('CHANGELOG.md');
+} catch {
+  existing = null;
+}
+const { text: changelog, drafted } = releaseChangelog({ existing, version: next, date, commits, repoUrl: remote });
 
 console.log(`Current version : ${current}`);
 console.log(`Since            : ${base}${lastTag ? '' : ' (first release)'}`);
 console.log(`Commits counted  : ${commits.length} (conventional)`);
 console.log(`Bump             : ${bump}${forced ? ' (forced)' : ''}`);
 console.log(`Next version     : ${next}\n`);
-console.log(section);
+console.log(`## [${next}] - ${date}\n`);
+console.log(`${releaseNotesFor(changelog, next)}\n`);
+if (drafted) {
+  console.log('Note: "## [Unreleased]" had no entries, so the section above is a DRAFT seeded from commit subjects.');
+  console.log('      Rewrite it into curated entries for humans (AGENTS.md rule 9, ADR 0061) and delete the DRAFT line; CI fails while it is there.\n');
+}
 
 if (dryRun) {
   console.log('Dry run: no files changed.');
@@ -112,16 +127,11 @@ writeFileSync('package-lock.json', `${JSON.stringify(lock, null, 2)}\n`);
 // The API reference version follows the product version. Edited as text so nothing else in the file moves.
 writeFileSync('public/openapi.json', setSpecVersion(read('public/openapi.json'), next));
 
-let existing = null;
-try {
-  existing = read('CHANGELOG.md');
-} catch {
-  existing = null;
-}
-writeFileSync('CHANGELOG.md', prependChangelog(existing, section));
+writeFileSync('CHANGELOG.md', changelog);
 
 console.log(`Updated package.json, package-lock.json, public/openapi.json and CHANGELOG.md for v${next}.\n`);
 console.log('Next steps:');
+if (drafted) console.log('  0. rewrite the DRAFT section of CHANGELOG.md into curated entries and delete the DRAFT line');
 console.log(`  1. git checkout -b chore/<issue>-release-v${next}`);
 console.log(`  2. git commit -am "chore(release): v${next}"   (keep this subject: the tag workflow looks for it; the " (#N)" a squash merge adds is fine)`);
 console.log('  3. open a PR, let the checks pass, squash-merge it keeping that subject');

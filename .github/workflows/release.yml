@@ -50,7 +50,7 @@ jobs:
           fi
 
           # The changelog section for this version, without its heading.
-          awk -v v="## [${version}]" 'index($0, v) == 1 { on = 1; next } on && /^## \[/ { exit } on { print }' CHANGELOG.md > notes.md
+          awk -v v="## [${version}]" 'index($0, v) == 1 { on = 1; next } on && (/^## \[/ || /^\[[^]]+\]: /) { exit } on { print }' CHANGELOG.md > notes.md
           if [ ! -s notes.md ]; then
             echo "::error::No CHANGELOG.md section for $version."
             exit 1

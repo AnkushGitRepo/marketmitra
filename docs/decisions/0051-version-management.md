@@ -16,7 +16,7 @@ GitHub Releases. Nothing in the app or API said which version was running, and a
 - **`npm run release`** (`scripts/release.mjs`, logic in `src/lib/release/release.ts`, tested) reads the Conventional Commits since
   the last `v*` tag: `feat` is a minor bump, `fix` / `perf` / `refactor` a patch, a breaking change (`!` or `BREAKING CHANGE:`) a
   major bump from 1.0.0 and a minor bump before it; docs, tests, chores and CI alone do not release. It rewrites the four files
-  and prepends a dated, grouped changelog section with PR links. `--dry-run`, `--bump`, and `--from` (first release only).
+  and writes the changelog section (the format was changed by ADR 0061: it now moves the curated `[Unreleased]` entries into the new version). `--dry-run`, `--bump`, and `--from` (first release only).
   It changes files only: committing, tagging and pushing stay deliberate steps.
 - **Tagging is automatic** (`.github/workflows/release.yml`): when a commit whose subject is exactly `chore(release): vX.Y.Z`
   lands on `main`, the workflow checks it matches `package.json`, creates the tag and a GitHub Release with that version's

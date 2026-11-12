@@ -6,9 +6,14 @@ import {
   latestChangelogVersion,
   parseCommit,
   parseVersion,
-  prependChangelog,
+  CHANGELOG_HEADER,
+  DRAFT_MARKER,
+  linkReferences,
+  parseChangelog,
+  releaseChangelog,
   releaseNotesFor,
-  renderSection,
+  renderDraftBody,
+  validateChangelog,
   setSpecVersion,
   versionFromReleaseSubject,
   type Commit,
@@ -82,49 +87,152 @@ describe('versions', () => {
   });
 });
 
-describe('changelog', () => {
-  const repo = 'https://github.com/o/r';
-  const commits = [c('feat(alerts): reliable emails (#86)'), c('fix: chart on iPhone (#65)'), c('docs: notes (#74)'), c('chore: tidy'), c('perf: faster (#3)'), c('refactor: split file (#4)')];
+const REPO = 'https://github.com/o/r';
 
-  it('groups features, fixes, performance and refactors with PR links and leaves out docs/chore', () => {
-    const s = renderSection({ version: '0.3.0', date: '2026-11-11', commits, repoUrl: repo });
-    expect(s).toContain('## [0.3.0] - 2026-11-11');
-    expect(s.indexOf('### Features')).toBeLessThan(s.indexOf('### Fixes'));
-    expect(s).toContain('- **alerts:** reliable emails ([#86](https://github.com/o/r/pull/86))');
-    expect(s).toContain('- chart on iPhone ([#65](https://github.com/o/r/pull/65))');
-    expect(s).toContain('### Performance');
-    expect(s).toContain('### Refactors');
-    expect(s).not.toContain('notes');
-    expect(s).not.toContain('tidy');
+describe('draft entries from commits (Keep a Changelog sections)', () => {
+  const body = (subjects: string[]) => renderDraftBody(subjects.map((x) => c(x)), REPO);
+
+  it('maps commit types to Added, Changed, Fixed and Security, in the guide\'s order, and leaves out docs, tests, chores and CI', () => {
+    const s = body(['fix: chart on iPhone (#65)', 'feat(alerts): reliable emails (#86)', 'perf: faster (#3)', 'docs: notes', 'chore: tidy', 'ci: cache', 'test: more', 'fix(security): stop leaking SQL (#9)']);
+    expect(s.indexOf('### Added')).toBeLessThan(s.indexOf('### Changed'));
+    expect(s.indexOf('### Changed')).toBeLessThan(s.indexOf('### Fixed'));
+    expect(s.indexOf('### Fixed')).toBeLessThan(s.indexOf('### Security'));
+    expect(s).toContain('- **alerts:** Reliable emails. ([#86](https://github.com/o/r/pull/86))');
+    expect(s).toContain('- Chart on iPhone. ([#65](https://github.com/o/r/pull/65))');
+    expect(s).toContain('### Security\n\n- **security:** Stop leaking SQL.');
+    for (const noise of ['notes', 'tidy', 'cache', 'more']) expect(s).not.toContain(noise);
+    expect(s).not.toMatch(/### (Features|Fixes|Refactors|Performance|Breaking changes)/);
   });
 
-  it('lists breaking changes first, once', () => {
-    const s = renderSection({ version: '1.0.0', date: '2026-12-01', commits: [c('feat: a'), c('feat(api)!: rename (#9)')], repoUrl: repo });
-    expect(s.indexOf('### Breaking changes')).toBeLessThan(s.indexOf('### Features'));
-    expect(s.match(/rename/g)).toHaveLength(1);
+  it('puts a breaking change under Changed with a Breaking prefix, and a security-worded fix under Security', () => {
+    const s = body(['feat(api)!: rename the route (#9)', 'fix: close an XSS hole in the news page']);
+    expect(s).toContain('### Changed\n\n- **api:** **Breaking:** Rename the route.');
+    expect(s).toContain('### Security\n\n- Close an XSS hole in the news page.');
+    expect(s).not.toContain('### Added');
   });
 
-  it('omits empty groups', () => {
-    const s = renderSection({ version: '0.2.1', date: '2026-11-12', commits: [c('fix: only a fix')], repoUrl: repo });
-    expect(s).toContain('### Fixes');
-    expect(s).not.toContain('### Features');
+  it('omits empty sections and capitalises and ends each entry like a sentence', () => {
+    const s = body(['fix: only a fix.']);
+    expect(s).toBe('### Fixed\n\n- Only a fix.\n');
+  });
+});
+
+const OLD = `${CHANGELOG_HEADER}
+## [Unreleased]
+
+## [0.2.0] - 2026-11-11
+
+### Added
+
+- First thing.
+
+[Unreleased]: ${REPO}/compare/v0.2.0...HEAD
+[0.2.0]: ${REPO}/releases/tag/v0.2.0
+`;
+
+describe('parseChangelog and linkReferences', () => {
+  it('reads the header, the Unreleased body and every version, ignoring the link references', () => {
+    const p = parseChangelog(OLD);
+    expect(p.header).toContain('Keep a Changelog');
+    expect(p.unreleased).toBe('');
+    expect(p.versions.map((v) => v.version)).toEqual(['0.2.0']);
+    expect(p.versions[0].body).toBe('### Added\n\n- First thing.');
   });
 
-  it('prepends under the header, above older releases, and creates the file when missing', () => {
-    const first = prependChangelog(null, renderSection({ version: '0.2.0', date: '2026-11-11', commits, repoUrl: repo }));
-    expect(first.startsWith('# Changelog')).toBe(true);
-    const second = prependChangelog(first, renderSection({ version: '0.2.1', date: '2026-11-12', commits: [c('fix: x')], repoUrl: repo }));
-    expect(second.indexOf('## [0.2.1]')).toBeLessThan(second.indexOf('## [0.2.0]'));
-    expect(second.startsWith('# Changelog')).toBe(true);
-    expect(latestChangelogVersion(second)).toBe('0.2.1');
+  it('builds compare links for each version, a tag link for the oldest, and Unreleased against the newest', () => {
+    expect(linkReferences(['0.3.0', '0.2.0'], REPO)).toBe(
+      `[Unreleased]: ${REPO}/compare/v0.3.0...HEAD\n[0.3.0]: ${REPO}/compare/v0.2.0...v0.3.0\n[0.2.0]: ${REPO}/releases/tag/v0.2.0\n`,
+    );
+    expect(linkReferences([], REPO)).toBe('');
+  });
+});
+
+describe('releaseChangelog', () => {
+  const next = (existing: string | null, commits: string[] = ['fix: draft me'], version = '0.3.0') => releaseChangelog({ existing, version, date: '2026-11-12', commits: commits.map((x) => c(x)), repoUrl: REPO });
+
+  it('moves the curated Unreleased entries into the new version and leaves an empty Unreleased on top', () => {
+    const withEntries = OLD.replace('## [Unreleased]\n', '## [Unreleased]\n\n### Fixed\n\n- A curated fix.\n');
+    const r = next(withEntries);
+    expect(r.drafted).toBe(false);
+    expect(r.text.indexOf('## [Unreleased]')).toBeLessThan(r.text.indexOf('## [0.3.0] - 2026-11-12'));
+    expect(r.text.indexOf('## [0.3.0]')).toBeLessThan(r.text.indexOf('## [0.2.0]'));
+    expect(parseChangelog(r.text).unreleased).toBe('');
+    expect(releaseNotesFor(r.text, '0.3.0')).toBe('### Fixed\n\n- A curated fix.');
+    expect(r.text).not.toContain(DRAFT_MARKER);
   });
 
-  it('extracts the notes for one version only', () => {
-    const log = prependChangelog(prependChangelog(null, renderSection({ version: '0.2.0', date: 'd', commits: [c('feat: old')], repoUrl: repo })), renderSection({ version: '0.2.1', date: 'd', commits: [c('fix: new')], repoUrl: repo }));
-    const notes = releaseNotesFor(log, '0.2.1');
-    expect(notes).toContain('new');
-    expect(notes).not.toContain('old');
-    expect(releaseNotesFor(log, '9.9.9')).toBeNull();
+  it('seeds a clearly marked draft from the commits when Unreleased is empty', () => {
+    const r = next(OLD);
+    expect(r.drafted).toBe(true);
+    expect(releaseNotesFor(r.text, '0.3.0')).toContain(DRAFT_MARKER);
+    expect(releaseNotesFor(r.text, '0.3.0')).toContain('- Draft me.');
+  });
+
+  it('regenerates the link references for every version and keeps older sections byte for byte', () => {
+    const r = next(OLD);
+    expect(r.text).toContain(`[Unreleased]: ${REPO}/compare/v0.3.0...HEAD`);
+    expect(r.text).toContain(`[0.3.0]: ${REPO}/compare/v0.2.0...v0.3.0`);
+    expect(r.text).toContain(`[0.2.0]: ${REPO}/releases/tag/v0.2.0`);
+    expect(r.text).not.toContain(`[Unreleased]: ${REPO}/compare/v0.2.0...HEAD`);
+    expect(releaseNotesFor(r.text, '0.2.0')).toBe('### Added\n\n- First thing.');
+  });
+
+  it('creates the file with the Keep a Changelog header when there is none', () => {
+    const r = next(null);
+    expect(r.text.startsWith('# Changelog')).toBe(true);
+    expect(r.text).toContain('keepachangelog.com/en/1.1.0');
+    expect(latestChangelogVersion(r.text)).toBe('0.3.0');
+  });
+
+  it('keeps a [YANKED] marker on an older version', () => {
+    const yanked = OLD.replace('## [0.2.0] - 2026-11-11', '## [0.2.0] - 2026-11-11 [YANKED]');
+    expect(next(yanked).text).toContain('## [0.2.0] - 2026-11-11 [YANKED]');
+  });
+});
+
+describe('releaseNotesFor and latestChangelogVersion', () => {
+  it('extracts one version without the heading or the link references, and null for a version that is not there', () => {
+    expect(releaseNotesFor(OLD, '0.2.0')).toBe('### Added\n\n- First thing.');
+    expect(releaseNotesFor(OLD, '9.9.9')).toBeNull();
+    expect(releaseNotesFor(OLD, 'Unreleased')).toBe('');
+  });
+
+  it('skips the Unreleased heading when finding the newest version', () => {
+    expect(latestChangelogVersion(OLD)).toBe('0.2.0');
+    expect(latestChangelogVersion('# Changelog\n\n## [Unreleased]\n')).toBeNull();
+  });
+});
+
+describe('validateChangelog (the Keep a Changelog rule, ADR 0061)', () => {
+  it('accepts a well-formed changelog', () => {
+    expect(validateChangelog(OLD)).toEqual([]);
+  });
+
+  const problems = (text: string) => validateChangelog(text).join(' | ');
+
+  it('requires the header to name Keep a Changelog and Semantic Versioning, and Unreleased to come first', () => {
+    expect(problems(OLD.replace('keepachangelog.com/en/1.1.0', 'example.com'))).toMatch(/Keep a Changelog/);
+    expect(problems(OLD.replace('semver.org', 'example.com'))).toMatch(/Semantic Versioning/);
+    expect(problems(OLD.replace('## [Unreleased]\n\n', ''))).toMatch(/Unreleased/);
+  });
+
+  it('requires ISO dates, newest first, and rejects a draft marker left behind', () => {
+    expect(problems(OLD.replace('2026-11-11', '11/11/2026'))).toMatch(/heading/);
+    const two = OLD.replace('## [0.2.0]', '## [0.1.0] - 2026-01-01\n\n### Added\n\n- Old.\n\n## [0.2.0]');
+    expect(problems(two)).toMatch(/newest first/);
+    expect(problems(OLD.replace('- First thing.', `${DRAFT_MARKER}\n- First thing.`))).toMatch(/draft/i);
+  });
+
+  it('allows only the six section headings, in order, each with at least one entry, and no empty release', () => {
+    expect(problems(OLD.replace('### Added', '### Features'))).toMatch(/Features/);
+    expect(problems(OLD.replace('### Added\n\n- First thing.', '### Fixed\n\n- b.\n\n### Added\n\n- a.'))).toMatch(/order/);
+    expect(problems(OLD.replace('- First thing.\n', ''))).toMatch(/empty|no entries/i);
+    expect(problems(OLD.replace('### Added\n\n- First thing.', 'Just prose.'))).toMatch(/empty|no entries|section/i);
+  });
+
+  it('requires a link reference for Unreleased and for every version', () => {
+    expect(problems(OLD.replace(`[0.2.0]: ${REPO}/releases/tag/v0.2.0\n`, ''))).toMatch(/link reference.*0\.2\.0/);
+    expect(problems(OLD.replace(`[Unreleased]: ${REPO}/compare/v0.2.0...HEAD\n`, ''))).toMatch(/link reference.*Unreleased/);
   });
 });
 

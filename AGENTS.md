@@ -89,8 +89,8 @@ production.
 and SemVer: written for humans (one sentence per notable change, never a commit subject or a git log), an `## [Unreleased]` section on top that each
 PR adds its entry to, then one `## [X.Y.Z] - YYYY-MM-DD` per release, newest first, with only the sections Added / Changed / Deprecated / Removed /
 Fixed / Security (omit empty ones) and compare links at the bottom. Always list breaking changes (prefix **Breaking:**), deprecations, removals and
-security fixes; leave out docs, tests, chores, CI and invisible refactors. A pulled version is marked `[YANKED]`. Until the release script is aligned
-(issue #183) the release PR hand-edits the generated section into this format, and `[Unreleased]` is not added to the file yet.
+security fixes; leave out docs, tests, chores, CI and invisible refactors. A pulled version is marked `[YANKED]`. `npm run release` moves the
+`[Unreleased]` entries into the new version and rewrites the compare links; if `[Unreleased]` is empty it seeds a marked draft that must be rewritten by hand.
 
 ## Safety rules (ask first)
 
