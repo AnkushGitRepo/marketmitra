@@ -188,3 +188,15 @@ class TestResolvePublicTarget:
     def test_refuses_when_any_answer_is_internal(self):
         with pytest.raises(security.UnsafeUrlError):
             security.resolve_public_target("https://evil.example/x", resolve=lambda h: ["93.184.216.34", "10.0.0.5"])
+
+
+class TestResponseCompression:
+    def test_large_json_is_gzip_compressed_when_the_client_accepts_it(self):
+        # Cloud Run does not compress for us (Vercel's edge did), and a 5-year price series is ~187 KB of JSON.
+        from starlette.middleware.gzip import GZipMiddleware
+
+        from app.main import app
+
+        gzip_layers = [m for m in app.user_middleware if m.cls is GZipMiddleware]
+        assert len(gzip_layers) == 1
+        assert gzip_layers[0].kwargs.get("minimum_size", 500) >= 500  # tiny bodies are not worth compressing
