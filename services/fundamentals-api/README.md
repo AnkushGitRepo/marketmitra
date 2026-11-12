@@ -202,7 +202,7 @@ The service also runs as a container on Google Cloud Run (the same code and `req
 - `Dockerfile` builds it (Python 3.12, the `fastembed` model baked in so there is no cold download); `.dockerignore` keeps tests, migrations and `.env*` out.
 - `./deploy-cloud-run.sh` deploys from source with Cloud Build (no local Docker): `GCP_PROJECT=<id> ./deploy-cloud-run.sh`. Region defaults to
   `us-east4`, next to the Neon database (Washington, D.C.) and the Vercel app (`iad1`). 1 CPU, 2 GiB, scale to zero, at most 3 instances, public with the
-  app-level rate limit. It passes secrets by **name** from Secret Manager, never values.
+  app-level rate limit. It runs as its own least-privilege service account (`fundamentals-runtime`, created by the script, readable access to only its five secrets) and passes secrets by **name** from Secret Manager, never values. API docs are hidden on Cloud Run.
 - `./upload-cloud-run-secrets.sh <dotenv-file>` copies the credentials into Secret Manager. **Run it yourself**: it reads credential values and never prints
   them. Get the file with `vercel env pull .env.cloudrun --environment production` (gitignored; delete it afterwards). Variables of Vercel's "Secret" type
   are not pulled; for those the script generates a new token and stores it in Secret Manager only. At cutover run it again with `SET_GITHUB_SECRETS=yes`
