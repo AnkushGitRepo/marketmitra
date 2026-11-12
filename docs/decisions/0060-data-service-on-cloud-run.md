@@ -1,6 +1,6 @@
 # 0060 — The fundamentals data service moves to Google Cloud Run
 
-Status: accepted (2026-11-12, issue #169); implementation in progress. Supersedes the hosting parts of [0011](./0011-three-tier-fundamentals-data-sourcing.md) and [0013](./0013-fundamentals-api-vercel-hosting.md) once the cutover is done.
+Status: accepted (2026-11-12, issue #169); **cutover done 2026-11-12** (the app uses Cloud Run; the Vercel data service stays idle as a backup for about a week). Supersedes the hosting parts of [0011](./0011-three-tier-fundamentals-data-sourcing.md) and [0013](./0013-fundamentals-api-vercel-hosting.md) once the cutover is done.
 
 ## Context
 
