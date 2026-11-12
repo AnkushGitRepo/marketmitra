@@ -18,6 +18,7 @@ Closes #<!-- issue number, if any -->
 - [ ] `npm run typecheck` passes
 - [ ] `npm test` passes
 - [ ] `npm run build` passes
+- [ ] `CHANGELOG.md` has an entry for a notable change (user-visible, API, config, deprecation, removal, security) or this change is not notable (ADR 0061)
 - [ ] New pure logic has unit tests
 - [ ] Docs updated if this touches architecture, the API surface, data sources, or adds an
       environment variable
