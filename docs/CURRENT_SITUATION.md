@@ -7,6 +7,10 @@
 >
 > Read `AGENTS.md` and `docs/HANDOFF.md` first. This file is only about what is live right now.
 
+## 0. Status update (2026-11-12): the cutover is DONE
+
+The data service runs on Google Cloud Run and the app uses it (see `docs/HANDOFF.md` "Hosting change" for the verified facts, the rollback and what is not yet verified). **What remains:** (1) re-measure the Vercel CPU after 24 hours and after 7 days; (2) watch Cloud Run cost and the budget alert; (3) after about a week of clean running, delete or pause the idle Vercel data service and close issue #169; (4) optionally cache price history longer in the app. Sections 1 to 8 below are the original analysis and plan, kept until the maintainer confirms this file can be deleted.
+
 ## 1. In one paragraph
 
 Everything built so far is merged and deployed (production runs commit `c16be7f`, package version 0.5.0; no open issues or PRs).
