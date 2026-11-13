@@ -35,6 +35,8 @@ cp .env.example .env                # defaults work against a local Postgres
 alembic upgrade head
 ```
 
+The screener table stays empty until you fill it. Set `SCREENER_INGEST_TOKEN` in this `.env` to the same throwaway value as in the app's `.env.local` (not the production secret), start this service and the Next app, then run the quote job and the fundamentals backfill. The commands, and what `/screener` shows after each one, are in the wiki [Getting Started](../../docs/wiki/Getting-Started.md#6-fill-the-screener).
+
 ## Running
 
 ```bash

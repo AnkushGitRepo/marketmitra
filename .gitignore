@@ -30,9 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (committed example is the opt-in exception)
+# env files (committed examples are the opt-in exceptions)
 .env*
 !.env.local.example
+!services/fundamentals-api/.env.example
 
 # vercel
 .vercel
