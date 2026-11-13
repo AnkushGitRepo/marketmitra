@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The landing page open-source panel shows this repository's live GitHub stars, contributor count, licence and latest release. ([#189](https://github.com/AnkushGitRepo/marketmitra/issues/189))
 - The data service can run on Google Cloud Run: a Dockerfile (with the embedding model baked in) and deploy scripts for it. ([#171](https://github.com/AnkushGitRepo/marketmitra/pull/171), [#178](https://github.com/AnkushGitRepo/marketmitra/pull/178))
 
 ### Changed

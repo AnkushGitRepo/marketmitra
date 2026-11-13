@@ -1,3 +1,11 @@
+import { Suspense } from 'react';
+import {
+  EMPTY_GITHUB_REPO_STATS,
+  GITHUB_REPO_URL,
+  fetchGithubRepoStats,
+  formatGithubStat,
+  type GithubRepoStats,
+} from '@/lib/github/repoStats';
 import { Reveal } from './Reveal';
 import styles from './OpenSourceSection.module.css';
 
@@ -9,16 +17,16 @@ function GitHubIcon() {
   );
 }
 
-// Star/contributor/release counts come from the GitHub API once the repo is public —
-// not wired up yet, so these stay unfilled rather than showing invented numbers.
-const STATS = [
-  { label: 'Stars', value: '—' },
-  { label: 'Contributors', value: '—' },
-  { label: 'Licence', value: 'MIT', solid: true },
-  { label: 'Latest release', value: '—' },
-];
+function statItems(stats: GithubRepoStats) {
+  return [
+    { label: 'Stars', value: formatGithubStat(stats.stars), text: false },
+    { label: 'Contributors', value: formatGithubStat(stats.contributors), text: false },
+    { label: 'Licence', value: formatGithubStat(stats.licence), text: true },
+    { label: 'Latest release', value: formatGithubStat(stats.latestRelease), text: true },
+  ];
+}
 
-export function OpenSourceSection() {
+function OpenSourcePanel({ stats }: { stats: GithubRepoStats }) {
   return (
     <section id="opensource" className={styles.section}>
       <Reveal>
@@ -31,17 +39,12 @@ export function OpenSourceSection() {
               an issue, or send a fix. Contributions are welcome from investors and builders alike.
             </p>
             <div className={styles.actions}>
-              <a
-                href="https://github.com/AnkushGitRepo/marketmitra"
-                target="_blank"
-                rel="noreferrer"
-                className={styles.primary}
-              >
+              <a href={GITHUB_REPO_URL} target="_blank" rel="noreferrer" className={styles.primary}>
                 <GitHubIcon />
                 View on GitHub
               </a>
               <a
-                href="https://github.com/AnkushGitRepo/marketmitra/tree/main/docs"
+                href={`${GITHUB_REPO_URL}/tree/main/docs`}
                 target="_blank"
                 rel="noreferrer"
                 className={styles.secondary}
@@ -51,17 +54,32 @@ export function OpenSourceSection() {
             </div>
           </div>
           <div className={styles.statGrid}>
-            {STATS.map((stat) => (
-              <div className={styles.stat} key={stat.label}>
-                <div className={styles.statLabel}>{stat.label}</div>
-                <div className={`${styles.statValue} ${stat.solid ? styles.solid : ''}`}>
-                  {stat.value}
+            {statItems(stats).map((stat) => {
+              const missing = stat.value === '—';
+              const tone = missing ? '' : stat.text ? styles.solid : styles.filled;
+              return (
+                <div className={styles.stat} key={stat.label}>
+                  <div className={styles.statLabel}>{stat.label}</div>
+                  <div className={`${styles.statValue} ${tone}`}>{stat.value}</div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </Reveal>
     </section>
+  );
+}
+
+async function OpenSourcePanelLive() {
+  const stats = await fetchGithubRepoStats();
+  return <OpenSourcePanel stats={stats} />;
+}
+
+export function OpenSourceSection() {
+  return (
+    <Suspense fallback={<OpenSourcePanel stats={EMPTY_GITHUB_REPO_STATS} />}>
+      <OpenSourcePanelLive />
+    </Suspense>
   );
 }

@@ -165,7 +165,8 @@ implemented natively with fonts swapped to Manrope / JetBrains Mono.
   search, company logos, news cards, and AI insight cards are all live. Build detail,
   gotchas, and what was *dropped rather than faked*: [archive/fundamentals-data-service.md](./archive/fundamentals-data-service.md).
 - The landing page's `DashboardPreview` is still static mock data — marketing content, not
-  the logged-in app.
+  the logged-in app. The open-source panel's stars, contributors, licence and latest release
+  come from the GitHub API (`GET /api/github/repo`), cached for an hour; a missing field stays an em dash.
 
 ## Fundamentals data service (`services/fundamentals-api/`)
 

@@ -93,6 +93,16 @@ and are not shown.
 - **Cost:** free
 - **ToS notes:** Reviewed 2026-09-06. Chittorgarh's Disclaimer & Privacy Statement (`chittorgarh.com/article/disclaimer-and-privacy-statement/238/`) states *"no user may distribute, modify, transmit, or use the contents in any manner for public or commercial purposes without prior written permission"*, and the site returns `403` to non-browser clients. This is **not a sanctioned integration** — it is an accepted known risk on the same terms as Screener.in (ADR 0011): kept in one isolated, swappable module; GMP shown only with an "unofficial grey-market estimate, not from any exchange" caveat and degrading to "unavailable" on any scrape failure; alerts on GMP skip rather than fire on missing data. If the source becomes unworkable, the module is swapped or GMP is dropped, without touching the rest of the IPO tracker.
 
+### GitHub REST API (this repository)
+
+- **Type:** public API
+- **Used for:** the landing open-source panel and `GET /api/github/repo` (stars, contributor count, SPDX licence, latest release tag for `AnkushGitRepo/marketmitra`)
+- **Endpoint(s):** `GET https://api.github.com/repos/AnkushGitRepo/marketmitra`, `GET .../contributors?per_page=1` (the `Link` `rel="last"` page is the count), `GET .../releases/latest`
+- **Auth:** none required. `GITHUB_TOKEN` is optional and only raises the rate limit. The request sends a `User-Agent` and `X-GitHub-Api-Version: 2022-11-28`.
+- **Rate limits:** 60 requests per hour per IP without a token; 5,000 per hour with one. The app caches the three calls for one hour.
+- **Cost:** free
+- **ToS notes:** official public API for a public repository. A failed or missing field stays null and the page shows an em dash.
+
 <!--
 Template for a new entry:
 
