@@ -63,6 +63,29 @@ Consequences worth knowing:
 
 The operator-side detail (schedules, backfill, tokens) is in the [Operations Runbook](Operations-Runbook).
 
+## On your own machine
+
+A clone does not receive the hosted screener table. With both services running, set one throwaway `SCREENER_INGEST_TOKEN` to the same value in `.env.local` and `services/fundamentals-api/.env` (see `.env.example` there). It must not be the production secret.
+
+Quotes, about a minute. Omit the header when `CRON_SECRET` is empty.
+
+```bash
+curl -X POST http://localhost:3000/api/cron/refresh-screener-quotes \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+**Clear all** then lists every quoted company. The first screen stays “market cap at least ₹5,000 Cr” until 300 companies have fundamentals.
+
+Fundamentals, about 55 minutes, from `services/fundamentals-api`:
+
+```bash
+FUNDAMENTALS_API_URL=http://localhost:8420 \
+SCREENER_INGEST_TOKEN=<the same throwaway value> \
+.venv/bin/python scripts/refresh_screener_universe.py
+```
+
+Afterwards the opening screen is ROE at least 15% and debt/equity at most 1. `curl localhost:8420/screener/stats` shows how far the fill has got. A stopped run is safe to repeat. Keep it fresh with the quote command on weekdays and `scripts/refresh_screener_universe.py --stale-first --limit 400` about once a day. The same steps are in [Getting Started](Getting-Started#6-fill-the-screener).
+
 ## Limits to keep in mind
 
 - A screen filters on **past** figures. It finds companies that *have* grown or look financially sound, not companies that *will*. It is a way to build a research shortlist, not a buy list.

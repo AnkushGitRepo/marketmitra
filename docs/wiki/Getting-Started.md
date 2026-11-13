@@ -80,7 +80,50 @@ Everything below **degrades gracefully** — if it isn't configured the feature 
 | Retrieval-grounded answers | `IPO_INGEST_TOKEN` (same value in both services) |
 | Alert evaluation | A scheduler hitting `/api/cron/evaluate-alerts` with `CRON_SECRET` |
 | Email alerts | `RESEND_API_KEY`, `ALERT_EMAIL_TO` |
-| A populated screener | See [Screener Guide → How the data is kept fresh](Screener-Guide#how-the-data-is-kept-fresh) |
+| A populated screener | [Fill the screener](#6-fill-the-screener) below |
+
+## 6. Fill the screener
+
+The company list fills itself (about 2,630 names). The screener table does not, so a fresh clone shows no stocks, or only a handful. Do not point the app at the hosted data service, and do not import a copy of that database. Run the same two jobs against your own Postgres.
+
+Invent one throwaway string. It is not the production secret. Set it as `SCREENER_INGEST_TOKEN` in both `.env.local` and `services/fundamentals-api/.env` (the name is in `services/fundamentals-api/.env.example`), then restart both services. Both must be running.
+
+**Quotes, about a minute.** This posts market cap, price, P/E, P/B and dividend yield for every listed company.
+
+```bash
+# CRON_SECRET empty in .env.local:
+curl -X POST http://localhost:3000/api/cron/refresh-screener-quotes
+
+# CRON_SECRET set:
+curl -X POST http://localhost:3000/api/cron/refresh-screener-quotes \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+**Clear all** on `/screener` then lists every quoted company. The first screen stays “market cap at least ₹5,000 Cr” until 300 companies have fundamentals.
+
+**Fundamentals, about 55 minutes.** From `services/fundamentals-api`, with the same token:
+
+```bash
+FUNDAMENTALS_API_URL=http://localhost:8420 \
+SCREENER_INGEST_TOKEN=<the same throwaway value> \
+.venv/bin/python scripts/refresh_screener_universe.py
+```
+
+That is the full scrape. When it finishes, the opening screen matches the hosted one: ROE at least 15% and debt/equity at most 1. Check progress any time:
+
+```bash
+curl localhost:8420/screener/stats
+```
+
+A stopped run is safe to repeat. Ingest updates rows in place, and a later incremental run continues from the companies still missing data:
+
+```bash
+FUNDAMENTALS_API_URL=http://localhost:8420 \
+SCREENER_INGEST_TOKEN=<the same throwaway value> \
+.venv/bin/python scripts/refresh_screener_universe.py --stale-first --limit 400
+```
+
+Repeat the quote command on weekdays, and the incremental command about once a day, if you want the table to stay current. What each field means is in the [Screener Guide](Screener-Guide).
 
 ## Everyday commands
 

@@ -36,6 +36,23 @@ curl https://<data-service>/screener/stats
 
 If a full run is cancelled partway, nothing is lost: ingestion is batched, and the next incremental run picks up the stalest companies first.
 
+### On your own machine
+
+The workflows in the list above write to the hosted database. A clone fills its own Postgres with the same jobs. Both services must be running, and `SCREENER_INGEST_TOKEN` must be the same throwaway value in `.env.local` and `services/fundamentals-api/.env`. Do not copy the production secret.
+
+```bash
+# Quotes, about a minute. Drop the header when CRON_SECRET is empty.
+curl -X POST http://localhost:3000/api/cron/refresh-screener-quotes \
+  -H "Authorization: Bearer $CRON_SECRET"
+
+# Fundamentals, about 55 minutes. Run from services/fundamentals-api.
+FUNDAMENTALS_API_URL=http://localhost:8420 \
+SCREENER_INGEST_TOKEN=<the same throwaway value> \
+.venv/bin/python scripts/refresh_screener_universe.py
+```
+
+**Clear all** lists every quoted company after the first command. The opening screen stays “market cap at least ₹5,000 Cr” until 300 companies have fundamentals, then it is ROE at least 15% and debt/equity at most 1. Check with `curl localhost:8420/screener/stats`. Later, repeat the quote command on weekdays and `scripts/refresh_screener_universe.py --stale-first --limit 400` about once a day.
+
 ## Health checks
 
 - **`/status`** — public status page; **`/system`** — operator view with the event log. It is hidden (no sidebar entry) and returns 404 to everyone but admins (hosted: only users in `ADMIN_USER_IDS`; self-host: the local user). The landing page footer links to `/status` ("System status").
