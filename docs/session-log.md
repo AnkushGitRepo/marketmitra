@@ -1215,3 +1215,8 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 - `npm run release` now moves `[Unreleased]` into the new `## [X.Y.Z] - date` section, regenerates the compare links, and seeds a marked draft only when `[Unreleased]` is empty. `validateChangelog` is enforced in CI by `consistency.test.ts`; the Release workflow stops its notes extraction at the link references.
 - `CHANGELOG.md` was rewritten by hand: curated 0.2.0 to 0.5.0 sections (all dated 2026-11-11, the day they were cut) and an `[Unreleased]` section covering the Cloud Run move and fixes since 0.5.0.
 - **Verified:** lint, typecheck, tests, build (see the PR). **Not verified:** a real release run against the new file (the next release does that).
+
+## 2026-11-13 — Live GitHub stats on the landing page (#189)
+
+- The open-source panel was four placeholders (stars, contributors and latest release as em dashes, licence hardcoded MIT). It now reads the public GitHub API for `AnkushGitRepo/marketmitra` and shows the real figures. The same payload is `GET /api/github/repo`, cached for an hour. A field GitHub does not return stays null and the page shows an em dash.
+- **Verified locally:** unit tests for the parser; `GET /api/github/repo` returned stars 1, contributors 3, licence MIT, latest release v0.5.0; the landing panel rendered those four values. **Not verified:** production (not deployed).

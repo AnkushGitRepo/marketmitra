@@ -212,6 +212,11 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 - **Auth:** session. **Purpose:** two-sentence Mitra read on today's indices, breadth and sector moves, grounded only in those figures. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when market data is unavailable; `ai` rate tier.
 
+### `GET /api/github/repo`
+
+- **Auth:** public. **Purpose:** stars, contributor count, SPDX licence and latest release tag for `AnkushGitRepo/marketmitra`. The landing open-source panel uses the same fetch. Cached for about an hour.
+- **Response:** `{ success, data: { stars, contributors, licence, latestRelease } }`. Each field is `null` when GitHub did not return it (no release, no licence, or the request failed). No invented numbers.
+
 ### `GET /api/version`
 
 - **Auth:** public. **Purpose:** the running product version (SemVer; one version for the app and this API) and the short commit id the build was made from. `npm run deploy:prod` checks it after each deploy.

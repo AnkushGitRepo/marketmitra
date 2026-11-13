@@ -4658,6 +4658,21 @@
         }
       }
     },
+    "/api/github/repo": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Public GitHub stats for this repository",
+        "description": "Stars, contributor count, SPDX licence and latest release tag for AnkushGitRepo/marketmitra, cached for about an hour. A field GitHub did not return is null. Public.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { stars, contributors, licence, latestRelease } }. Each field is a number or string, or null."
+          }
+        }
+      }
+    },
     "/api/version": {
       "get": {
         "tags": [

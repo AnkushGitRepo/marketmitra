@@ -107,6 +107,10 @@
   color: var(--color-text-on-dark-subtle);
 }
 
+.statValue.filled {
+  color: var(--color-text-on-dark);
+}
+
 .statValue.solid {
   color: var(--color-text-on-dark);
   font-size: var(--text-xl);
