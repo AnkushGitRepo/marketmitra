@@ -5633,7 +5633,7 @@
           "AI"
         ],
         "summary": "Analyze now / Retry a dossier",
-        "description": "Builds this analyst's dossier immediately instead of waiting for the scheduled sweep (the same initiation the worker runs, using your own AI key and counting against the daily cap). Use it to choose which stock goes first, or to retry a failed build. 409 when the dossier already exists, the analyst is paused, or today's budget is used up; 400 `no_ai_key`; 502 with the failure reason. Can take up to a minute. Browser session only.",
+        "description": "Builds this analyst's dossier immediately instead of waiting for the scheduled sweep (the same initiation the worker runs, using your own AI key and counting against the daily cap). Use it to choose which stock goes first, to retry a failed build, or to generate one dossier when automatic analysts are off. A paused analyst can be built this way and then becomes active. 409 when the dossier already exists or today's budget is used up; 400 `no_ai_key`; 502 with the failure reason. Can take up to a minute. Browser session only.",
         "security": [
           {
             "cookieAuth": []
@@ -5684,7 +5684,7 @@
             "description": "No analyst for this stock"
           },
           "409": {
-            "description": "Already built, paused, or the daily AI budget is used up"
+            "description": "Already built, or the daily AI budget is used up"
           },
           "422": {
             "description": "Invalid request"
@@ -5717,7 +5717,7 @@
           }
         },
         "summary": "Run the stock analyst sweep",
-        "description": "Analyst Desk worker (ADR 0058): gives every holding an analyst, builds pending dossiers and runs the end-of-day check for analysts that are due. Bounded per run; AI is only called for a new dossier or a material event, under a per-user daily cap. Bearer `CRON_SECRET`. An unexpected failure for one analyst puts it back in the queue (up to 3 attempts) instead of stalling it for good; analysts an earlier version left stalled by an unexpected error are re-queued the same way."
+        "description": "Analyst Desk worker (ADR 0058): gives every holding an analyst, builds pending dossiers and runs the end-of-day check for analysts that are due. Bounded per run; AI is only called for a new dossier or a material event, under a per-user daily cap. Bearer `CRON_SECRET`. On the hosted site, `.github/workflows/stock-analysts.yml` calls this every 20 minutes. A non-hosted process runs the same sweep for the user `local` when the app is up (ADR 0062). An unexpected failure for one analyst puts it back in the queue (up to 3 attempts) instead of stalling it for good; analysts an earlier version left stalled by an unexpected error are re-queued the same way."
       }
     },
     "/api/analysts/chat": {
@@ -5802,7 +5802,7 @@
           }
         },
         "summary": "Analyst morning dispatch (cron)",
-        "description": "Called by the `analyst-dispatch` workflow at 08:30 IST. For each user with a vigilant analyst (and automatic analysts on), rolls the last 24 hours of analyst journals into one brief: saved in the app and emailed to the account address. Free (no AI call); skips users with nothing material; one brief per user per India day. Bearer `CRON_SECRET`, required in every environment."
+        "description": "Called by the `analyst-dispatch` workflow at 08:30 IST on the hosted site, and by a non-hosted process for the user `local` when the app is up (ADR 0062). For each user with a vigilant analyst (and automatic analysts on), rolls the last 24 hours of analyst journals into one brief: saved in the app and emailed to the account address. Free (no AI call); skips users with nothing material; one brief per user per India day. Bearer `CRON_SECRET`, required in every environment."
       }
     },
     "/api/analysts/dispatch": {

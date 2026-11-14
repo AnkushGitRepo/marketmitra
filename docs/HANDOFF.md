@@ -85,6 +85,7 @@
 
 **Analyst Desk** (phases 1 to 4 done; see Where we are)
 - Deployed in v0.4.0. Watch the first scheduled `stock-analysts` and `analyst-dispatch` runs (Actions tab) and the hosted user's desk after them.
+- Local and self-hosted ([ADR 0062](./decisions/0062-local-analyst-catch-up.md), #193): when the app is running it catches up dossiers, the evening check and the morning brief for the user `local`, then keeps the hosted cadence. `LOCAL_AI_SCHEDULE=off` disables it. Nothing runs while the machine is off. The hosted site still uses GitHub Actions.
 - Not built because the data does not exist: concall commentary, management and board profiles, pledged-share trends (analysts say "not available in our data"). Thesis criteria cannot express "for two annual periods" (snapshot signals, no history). No designed email template for the dispatch yet.
 
 **Mitra Advisor**
@@ -146,7 +147,7 @@ A deploy does **not** imply a new version ([ADR 0059](./decisions/0059-deploys-d
 `evaluate-alerts` (every 10 min, market hours), `refresh-ipos` (every 2 h, 03–15 UTC), `refresh-screener-quotes`
 (weekdays 11:00 UTC), `refresh-screener` (daily 20:30 UTC), `index-corpus` (every 2 h), `agents-tick` (every 5 min),
 `agents-reflect` (daily), `stock-analysts` (every 20 min: gives holdings analysts, builds dossiers, runs the evening check and thesis criteria), `analyst-dispatch` (daily 03:00 UTC = 08:30 IST morning brief), `codeql` (weekly), plus `ci`, `dependency-review`, `post-deploy-smoke`, `wiki-sync`.
-Each has `workflow_dispatch`, so "Run workflow" (or `gh workflow run <file>`) triggers it by hand.
+Each has `workflow_dispatch`, so "Run workflow" (or `gh workflow run <file>`) triggers it by hand. On a local or self-hosted app, `stock-analysts` and `analyst-dispatch` also run inside the process for the user `local` (catch-up on start, then every 20 minutes and hourly). See ADR 0062.
 
 ## Gotchas that already cost us time
 

@@ -1220,3 +1220,13 @@ src/lib/ai/providers.ts` and the full `npm run lint` both clean.
 
 - The open-source panel was four placeholders (stars, contributors and latest release as em dashes, licence hardcoded MIT). It now reads the public GitHub API for `AnkushGitRepo/marketmitra` and shows the real figures. The same payload is `GET /api/github/repo`, cached for an hour. A field GitHub does not return stays null and the page shows an em dash.
 - **Verified locally:** unit tests for the parser; `GET /api/github/repo` returned stars 1, contributors 3, licence MIT, latest release v0.5.0; the landing panel rendered those four values. **Not verified:** production (not deployed).
+
+## 2026-11-14 — Local catch-up for scheduled analyst work (#193)
+
+- The hosted desk stays current because GitHub Actions calls the analyst sweep every 20 minutes and the morning brief at 08:30 IST. A local app never received those calls, so dossiers, the evening check and the brief only happened on the live site. A non-hosted process now runs that same work for the user `local` when it is up: a catch-up as soon as the server starts, then the sweep every 20 minutes and the brief check every hour. `LOCAL_AI_SCHEDULE=off` disables it. The hosted site is unchanged. Nothing runs while the machine is off. ADR 0062.
+- **Verified:** unit tests (1732), lint and typecheck. On the local dev server, opening `/agents` while the catch-up was running showed the day's AI count climb from 2 to 4 of 200 and new evening notes appear (Bandhan Bank, then Equitas, then HDFC Life) without using Analyze now. The Next.js "1 Issue" badge was the browser tool's `data-cursor-ref` hydration mismatch, not an app error. **Not verified:** a second server start after the catch-up finished (the first pass was still running), a brand-new dossier from `initializing`, and production.
+
+## 2026-11-14 — Generate dossier when automatic analysts are off (#194)
+
+- With the switch off, a card that still needs a dossier leads with **Generate dossier** (including a paused one) and no longer says it is queued. Cards that already have a dossier stay on View dossier. The build is the same one-off initiation, so a paused analyst is no longer refused.
+- **Verified:** unit tests for the button and the paused build. In the browser, with automatic analysts off, a TCS watcher that had no dossier showed **Generate dossier** and the status "Not scheduled", while cards that already had a dossier stayed on View dossier. The test watcher was removed and automatic analysts was turned back on.

@@ -27,12 +27,12 @@ the first release covers dossier + journal, morning dispatch, thesis invalidatio
 - **Dossier (initiation, one AI call):** summary, business, three strengths, up to two vulnerabilities and an explicit "not assessed" list,
   from the same computed figures as the stock brief (ADR 0056). Our free sources do not have concalls, pledged shares, management or board
   profiles, or analyst reports, so the analyst says so instead of inventing them.
-- **Worker:** `POST /api/cron/stock-analysts` (bearer `CRON_SECRET`), run every 20 minutes by `.github/workflows/stock-analysts.yml`. Each run
+- **Worker:** `POST /api/cron/stock-analysts` (bearer `CRON_SECRET`), run every 20 minutes by `.github/workflows/stock-analysts.yml` on the hosted site. Each run
   backfills analysts, builds up to 4 pending dossiers and runs up to 12 due end-of-day checks (after the 15:30 IST close plus a buffer,
   once per India day). **Only the hosted deployment processes every user. A non-hosted instance only ever touches the user `local`**, because
   a local instance can be pointed at a database that also holds real users (found when the first local run created records for a hosted
   user; nothing was spent on their key because their key could not be decrypted with the local encryption key, and the records were
-  reported to the maintainer).
+  reported to the maintainer). **Amended by [0062](./0062-local-analyst-catch-up.md):** that non-hosted process also runs the sweep and the morning dispatch for `local` while it is up, including a catch-up after it was off. The hosted site stays on the workflows.
 - **Guardrail:** analysts report facts and observable thresholds. No buy / sell / hold, and no stop-loss revisions or rebalancing in guarded
   mode (the prompts forbid it).
 - **UI:** `/agents` is now the analyst roster (status, last check, latest entry, Read dossier, Pause or Resume, Remove for watchers,

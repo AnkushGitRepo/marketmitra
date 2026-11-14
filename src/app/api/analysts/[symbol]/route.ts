@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CRITERION_METRICS } from '@/lib/analysts/criteria';
 import { realDeps } from '@/lib/analysts/deps';
 import { initiate } from '@/lib/analysts/engine';
+import { releaseInitiate, tryClaimInitiate } from '@/lib/analysts/inFlight';
 import { deleteAnalyst, getAnalyst, listJournal, setStatus, updateCriterion } from '@/lib/analysts/store';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { withRateLimit } from '@/lib/rateLimit';
@@ -73,8 +74,8 @@ export async function DELETE(_request: Request, { params }: Ctx) {
 }
 
 /**
- * "Analyze now" and "Retry": builds this analyst's dossier immediately instead of waiting for the scheduled sweep. It is the same
- * initiation the worker runs, so it uses the user's own key and counts against the daily cap.
+ * "Analyze now", "Retry" and "Generate dossier": builds this analyst's dossier immediately instead of waiting for the scheduled sweep. It is the same
+ * initiation the worker runs, so it uses the user's own key and counts against the daily cap. A paused analyst can be built this way (#194).
  */
 async function handlePOST(request: Request, { params }: Ctx) {
   const userId = await getCurrentUserId({ allowPat: false });
@@ -84,7 +85,9 @@ async function handlePOST(request: Request, { params }: Ctx) {
   const analyst = await getAnalyst(userId, symbol);
   if (!analyst) return NextResponse.json({ success: false, error: 'No analyst for this stock' }, { status: 404 });
   if (analyst.dossier) return NextResponse.json({ success: false, error: 'This analyst already has its dossier.' }, { status: 409 });
-  if (analyst.status === 'paused') return NextResponse.json({ success: false, error: 'This analyst is paused. Resume it first.' }, { status: 409 });
+  if (!tryClaimInitiate(userId, analyst.symbol)) {
+    return NextResponse.json({ success: false, error: 'This analyst is already being built.' }, { status: 409 });
+  }
   try {
     const result = await initiate(analyst, realDeps());
     if (result === 'initiated') return NextResponse.json({ success: true, data: { symbol: analyst.symbol, result } });
@@ -94,6 +97,8 @@ async function handlePOST(request: Request, { params }: Ctx) {
     return NextResponse.json({ success: false, error: after?.statusNote ?? 'The analyst could not finish the dossier. Try again.' }, { status: 502 });
   } catch {
     return NextResponse.json({ success: false, error: 'Could not build the dossier. Try again.' }, { status: 500 });
+  } finally {
+    releaseInitiate(userId, analyst.symbol);
   }
 }
 

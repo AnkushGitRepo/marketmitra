@@ -49,6 +49,14 @@ describe('queueState', () => {
     expect(tomorrowCount(all, { used: 20, cap: 20 })).toBe(5);
     expect(tomorrowCount(all, { used: 0, cap: 20 })).toBe(0);
   });
+  it('does not pretend there is a queue when automatic analysts are off', () => {
+    const all = [pending('A', '2026-11-01T00:00:00Z'), pending('B', '2026-11-02T00:00:00Z')];
+    expect(queueState(all[1], all, usage, false)).toEqual({ kind: 'manual' });
+    expect(queueLabel({ kind: 'manual' })).toBe('Not scheduled');
+    expect(tomorrowCount(all, usage, false)).toBe(0);
+    expect(canAnalyzeNow(analyst('P', { status: 'paused', hasDossier: false }), false)).toBe(true);
+    expect(canAnalyzeNow(analyst('P', { status: 'paused', hasDossier: false }), true)).toBe(false);
+  });
   it('lets the user build a waiting or stalled dossier now, but not a built, paused or keyless one', () => {
     expect(canAnalyzeNow(pending('A', '2026-11-01T00:00:00Z'))).toBe(true);
     expect(canAnalyzeNow(analyst('B', { status: 'error', hasDossier: false, statusNote: 'Failed.' }))).toBe(true);
@@ -105,6 +113,13 @@ describe('card actions (#149)', () => {
     expect(primaryAction(analyst('C', { status: 'initializing', hasDossier: false })).kind).toBe('analyze');
     expect(primaryAction(analyst('D', { status: 'initializing', hasDossier: false, statusNote: 'Waiting for an AI key. Add one in Settings.' })).kind).toBe('key');
     expect(primaryAction(analyst('E', { status: 'paused', hasDossier: false })).kind).toBe('resume');
+  });
+  it('offers Generate dossier on a card without one when automatic analysts are off', () => {
+    expect(primaryAction(analyst('A', { status: 'initializing', hasDossier: false }), false)).toEqual({ kind: 'analyze', label: 'Generate dossier' });
+    expect(primaryAction(analyst('B', { status: 'paused', hasDossier: false }), false)).toEqual({ kind: 'analyze', label: 'Generate dossier' });
+    expect(primaryAction(analyst('C', { hasDossier: true }), false).kind).toBe('dossier');
+    expect(primaryAction(stalled, false)).toEqual({ kind: 'retry', label: 'Retry' });
+    expect(primaryAction(analyst('D', { status: 'initializing', hasDossier: false, statusNote: 'Waiting for an AI key. Add one in Settings.' }), false).kind).toBe('key');
   });
   it('keeps management actions in the menu, with no Resume next to a stalled analyst\'s Retry', () => {
     expect(menuActions(analyst('A')).map((m) => m.id)).toEqual(['pause']);
