@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { releaseInitiate, tryClaimInitiate } from '@/lib/analysts/inFlight';
 
-const state = { initiated: 'initiated' as string, builds: 0, note: null as string | null, userId: 'u1' as string | null, criteria: [{ id: 'roce' }] as Array<{ id: string }> | null, calls: [] as unknown[], analyst: { symbol: 'ACC', dossier: {} } as { symbol: string; dossier: object | null } | null };
+const state = { initiated: 'initiated' as string, builds: 0, note: null as string | null, userId: 'u1' as string | null, criteria: [{ id: 'roce' }] as Array<{ id: string }> | null, calls: [] as unknown[], analyst: { symbol: 'ACC', dossier: {} } as { symbol: string; dossier: object | null; status?: string } | null };
 
 vi.mock('@/lib/rateLimit', () => ({ withRateLimit: (h: unknown) => h }));
 vi.mock('@/lib/analysts/deps', () => ({ realDeps: () => ({}) }));
@@ -19,6 +20,7 @@ const post = (body: unknown) => (POST as (r: Request, c: { params: Promise<{ sym
 const patch = (body: unknown) => PATCH(new Request('http://x', { method: 'PATCH', body: JSON.stringify(body) }), { params: Promise.resolve({ symbol: 'acc' }) });
 
 beforeEach(() => {
+  releaseInitiate('u1', 'ACC');
   state.userId = 'u1';
   state.criteria = [{ id: 'roce' }];
   state.calls = [];
@@ -67,7 +69,20 @@ describe('POST /api/analysts/[symbol] - Analyze now and Retry', () => {
     expect(res.status).toBe(200);
     expect(state.builds).toBe(1);
   });
-  it('refuses to rebuild a finished dossier and does not build for a paused analyst or an unknown stock', async () => {
+  it('builds a paused analyst when the user asks for that dossier', async () => {
+    state.analyst = { symbol: 'ACC', dossier: null, status: 'paused' };
+    const res = await post({ action: 'analyze' });
+    expect(res.status).toBe(200);
+    expect(state.builds).toBe(1);
+  });
+  it('does not start a second build while one is already running', async () => {
+    expect(tryClaimInitiate('u1', 'ACC')).toBe(true);
+    const res = await post({ action: 'analyze' });
+    expect(res.status).toBe(409);
+    expect(state.builds).toBe(0);
+    releaseInitiate('u1', 'ACC');
+  });
+  it('refuses to rebuild a finished dossier and does not build an unknown stock', async () => {
     state.analyst = { symbol: 'ACC', dossier: {} };
     expect((await post({ action: 'analyze' })).status).toBe(409);
     state.analyst = null;

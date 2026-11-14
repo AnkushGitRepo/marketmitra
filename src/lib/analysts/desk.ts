@@ -52,16 +52,20 @@ export type QueueState =
   | { kind: 'queued'; ahead: number }
   /** Behind the day's remaining AI budget: it cannot be built before tomorrow's budget opens. */
   | { kind: 'tomorrow' }
+  /** Automatic analysts are off, so nothing is queued. The user builds this dossier from the card. */
+  | { kind: 'manual' }
   | null;
 
 /**
  * What an analyst without a dossier is honestly waiting for. No percentages: the build is one AI call and we do not know when it will
  * run, only that analysts are built oldest first (roster order), a few per scheduled run, and not at all once the day's cap is spent.
  */
-export function queueState(a: RosterAnalyst, all: readonly RosterAnalyst[], usage: { used: number; cap: number }): QueueState {
+export function queueState(a: RosterAnalyst, all: readonly RosterAnalyst[], usage: { used: number; cap: number }, auto = true): QueueState {
   if (a.status !== 'initializing') return null;
   if (/AI key/i.test(a.statusNote ?? '')) return { kind: 'needs_key' };
   if (usage.used >= usage.cap) return { kind: 'cap_reached' };
+  // With the schedule off there is no queue: the user picks a card and builds that dossier.
+  if (!auto) return { kind: 'manual' };
   // The roster arrives oldest first, so the position in it is the queue position even when several analysts were created in the same instant.
   const waiting = all.filter((o) => o.status === 'initializing' && !/AI key/i.test(o.statusNote ?? ''));
   const ahead = Math.max(0, waiting.findIndex((o) => o.symbol === a.symbol));
@@ -80,22 +84,26 @@ export function queueLabel(q: QueueState): string | null {
       return 'Scheduled for tomorrow (daily AI budget)';
     case 'queued':
       return q.ahead === 0 ? 'Queued, next up' : `Queued, ${q.ahead} ahead`;
+    case 'manual':
+      return 'Not scheduled';
   }
 }
 
 /** How many waiting analysts cannot be built today because the day's AI budget is smaller than the queue. */
-export function tomorrowCount(all: readonly RosterAnalyst[], usage: { used: number; cap: number }): number {
+export function tomorrowCount(all: readonly RosterAnalyst[], usage: { used: number; cap: number }, auto = true): number {
+  if (!auto) return 0;
   return all.filter((a) => {
     const q = queueState(a, all, usage);
     return q?.kind === 'tomorrow' || q?.kind === 'cap_reached';
   }).length;
 }
 
-/** The user can build this analyst's dossier right now: it is waiting (with a key) or its build failed. Not a paused or built analyst. */
-export function canAnalyzeNow(a: RosterAnalyst): boolean {
+/** The user can build this analyst's dossier right now: it is waiting (with a key) or its build failed. A paused analyst can be built only when the schedule is off, because that click is the user's choice. */
+export function canAnalyzeNow(a: RosterAnalyst, auto = true): boolean {
   if (a.hasDossier) return false;
-  if (a.status === 'error') return true;
-  return a.status === 'initializing' && !/AI key/i.test(a.statusNote ?? '');
+  if (/AI key/i.test(a.statusNote ?? '')) return false;
+  if (a.status === 'error' || a.status === 'initializing') return true;
+  return !auto && a.status === 'paused';
 }
 
 /** An analyst whose dossier build failed (as opposed to one whose later check failed). */
@@ -106,19 +114,21 @@ export const stalledCount = (list: readonly RosterAnalyst[]): number => list.fil
 export type PrimaryAction =
   | { kind: 'dossier'; label: 'View dossier' }
   | { kind: 'retry'; label: 'Retry' }
-  | { kind: 'analyze'; label: 'Analyze now' }
+  | { kind: 'analyze'; label: 'Analyze now' | 'Generate dossier' }
   | { kind: 'key'; label: 'Add AI key' }
   | { kind: 'resume'; label: 'Resume' };
 
 /**
  * The one button a card leads with, by state: read the dossier when there is one, otherwise the step that moves it forward. A stalled analyst
- * gets Retry (never Resume beside it), a waiting one Analyze now, one without a key a link to Settings.
+ * gets Retry (never Resume beside it), a waiting one Analyze now, one without a key a link to Settings. When automatic analysts are off,
+ * a card without a dossier leads with Generate dossier so the user chooses which one to build (#194).
  */
-export function primaryAction(a: RosterAnalyst): PrimaryAction {
+export function primaryAction(a: RosterAnalyst, auto = true): PrimaryAction {
   if (a.hasDossier) return { kind: 'dossier', label: 'View dossier' };
   if (isStalled(a)) return { kind: 'retry', label: 'Retry' };
+  if (/AI key/i.test(a.statusNote ?? '')) return { kind: 'key', label: 'Add AI key' };
+  if (!auto) return { kind: 'analyze', label: 'Generate dossier' };
   if (a.status === 'paused') return { kind: 'resume', label: 'Resume' };
-  if (a.status === 'initializing' && /AI key/i.test(a.statusNote ?? '')) return { kind: 'key', label: 'Add AI key' };
   return { kind: 'analyze', label: 'Analyze now' };
 }
 

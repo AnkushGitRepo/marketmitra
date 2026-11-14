@@ -1,4 +1,5 @@
 import { getCurrentUserId } from '@/lib/currentUserId';
+import { isHosted } from '@/lib/deployment-mode';
 import { AnalystDesk } from '@/components/analysts/AnalystDesk';
 import { logEvent } from '@/lib/system/eventLog';
 import { RosterUnavailable } from '@/components/analysts/RosterUnavailable';
@@ -34,7 +35,7 @@ export default async function AgentsPage() {
     <div className={styles.pageRoot}>
       <p className={styles.eyebrow}>Agents</p>
       <h1 className={styles.h1}>Analyst desk</h1>
-      {desk ? <AnalystDesk initial={desk} /> : <RosterUnavailable />}
+      {desk ? <AnalystDesk initial={desk} refreshWhileDue={!isHosted()} /> : <RosterUnavailable />}
       <AgentsPageClient />
     </div>
   );

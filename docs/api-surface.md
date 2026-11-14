@@ -360,6 +360,16 @@ All require auth. `/api/settings/*` is never reachable by Mitra's `call_platform
 - **Auth:** `CRON_SECRET` bearer (dev-open, prod-`503`). `.github/workflows/agents-tick.yml` sweeps every 5 min as a safety net.
 - **Response:** `data` = `{ picked: false }` when nothing to do, else `{ id, phase, status, done }`.
 
+### `GET|POST /api/cron/stock-analysts`  _(Analyst Desk, ADR 0058 / 0062 — machine-to-machine)_
+- **Purpose:** Gives every holding an analyst, builds pending dossiers (at most 4) and runs due end-of-day checks (at most 12). AI is called only for a new dossier or a material event, under the daily cap. On the hosted site, `.github/workflows/stock-analysts.yml` calls this every 20 minutes. A non-hosted process runs the same sweep for the user `local` when the app is up, including a catch-up after it was off. `LOCAL_AI_SCHEDULE=off` disables that runner.
+- **Auth:** `CRON_SECRET` bearer, required in every environment (503 when unset). A non-hosted call only touches the user `local`.
+- **Response:** `data` = `{ initiated, deferred, needsKey, checked, journaled, quiet, skippedOff, requeued, errors[] }`.
+
+### `GET|POST /api/cron/analyst-dispatch`  _(Analyst Desk, ADR 0058 / 0062 — machine-to-machine)_
+- **Purpose:** Rolls the last 24 hours of analyst journals into one morning brief per user, saved in the app and emailed when the user has email on. No AI call. One brief per user per India day. Hosted: `.github/workflows/analyst-dispatch.yml` at 08:30 IST. Non-hosted: the same run for the user `local` when the app is up.
+- **Auth:** `CRON_SECRET` bearer, required in every environment.
+- **Response:** `data` = `{ users, sent, nothing, already, skippedOff, errors }`.
+
 ### `GET|POST /api/cron/agents-reflect`  _(Phase 11 Part C — machine-to-machine)_
 - **Purpose:** For each `done` run older than the reflection horizon (~21 days) with no reflection, write a hindsight **lessons** note (debate's key claims vs. the stock's actual move — per-user, never a verdict) and prune runs older than 120 days. `.github/workflows/agents-reflect.yml` daily.
 - **Auth:** `CRON_SECRET` bearer (dev-open, prod-`503`).

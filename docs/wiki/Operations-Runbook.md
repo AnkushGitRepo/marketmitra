@@ -15,7 +15,11 @@ All jobs run as **GitHub Actions** (times are UTC; GitHub only runs `schedule:` 
 | `refresh-ipos` | every 2 hours, 03:00–15:00 | Scrapes the IPO calendar, subscription and GMP into the data service | `IPO_INGEST_TOKEN` |
 | `refresh-screener-quotes` | weekdays 11:00 | Daily Yahoo quotes → market cap, price, P/E, P/B, yield for **all** listed companies | `CRON_SECRET` (+ `SCREENER_INGEST_TOKEN` on the app) |
 | `refresh-screener` | daily 20:30 | Incremental Screener.in scrape of the ~400 stalest companies | `SCREENER_INGEST_TOKEN` |
+| `stock-analysts` | every 20 min | Gives holdings an analyst, builds dossiers, runs the evening check | `CRON_SECRET` |
+| `analyst-dispatch` | daily 03:00 (08:30 IST) | Morning brief from the last day of analyst journals | `CRON_SECRET` |
 | `CodeQL`, `Dependency review` | push / PR / weekly | Security scanning — see [Security](Security) | — |
+
+On a local or self-hosted app the analyst sweep and the morning brief also run inside the process, for the user `local` only: once when the app starts (to catch up on time the machine was off), then every 20 minutes and hourly while it stays up. Set `LOCAL_AI_SCHEDULE=off` to disable that. Nothing runs while the machine is off. The hosted site still uses the workflows above. The other jobs in the table are not started by the app.
 
 ## First data load
 

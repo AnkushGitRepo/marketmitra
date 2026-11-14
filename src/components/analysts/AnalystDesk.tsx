@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DESK_FILTERS, filterAnalysts, filterCounts, summarizeDesk, tomorrowCount, type DeskData, type DeskFilter } from '@/lib/analysts/desk';
 import { AnalystCard } from './AnalystCard';
 import { AnalystDrawer, type DrawerPanel } from './AnalystDrawer';
@@ -9,6 +9,8 @@ import { RootDeck } from './RootDeck';
 import styles from './AnalystDesk.module.css';
 
 const FILTER_LABEL: Record<DeskFilter, string> = { all: 'All', attention: 'Needs attention', vigilant: 'Vigilant', waiting: 'Waiting' };
+const REFRESH_MS = 20_000;
+const WARM_MS = 3 * 60 * 1000;
 
 async function errorOf(res: Response, fallback: string): Promise<string> {
   const data = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -16,7 +18,7 @@ async function errorOf(res: Response, fallback: string): Promise<string> {
 }
 
 /** The analyst roster: one analyst per holding, kept up to date in the background with the user's own AI key. */
-export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
+export function AnalystDesk({ initial, refreshWhileDue = false }: { readonly initial: DeskData; readonly refreshWhileDue?: boolean }) {
   const router = useRouter();
   const [auto, setAuto] = useState(initial.auto);
   const [symbol, setSymbol] = useState('');
@@ -27,6 +29,19 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
   // Captured once so server and client render the same relative times.
   const [now] = useState(() => new Date());
   const [filter, setFilter] = useState<DeskFilter>('all');
+  const [openedAt] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!refreshWhileDue) return;
+    const initializing = initial.analysts.some((a) => a.status === 'initializing');
+    const warming = Date.now() - openedAt < WARM_MS;
+    if (!initializing && !warming) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      router.refresh();
+    }, REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [refreshWhileDue, router, initial, openedAt]);
 
   const act = async (key: string, run: () => Promise<Response>, failure: string) => {
     setBusy(key);
@@ -94,7 +109,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
 
   return (
     <section className={styles.desk} aria-label="Analyst desk">
-      <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} waitingTomorrow={tomorrowCount(initial.analysts, initial.usage)} busy={busy === 'retry-all'} onRetryAll={() => void retryAll()} onChat={() => setPanel({ kind: 'chat', symbol: null })} onBrief={() => setPanel({ kind: 'brief' })} />
+        <RootDeck summary={summary} now={now} used={initial.usage.used} cap={initial.usage.cap} waitingTomorrow={tomorrowCount(initial.analysts, initial.usage, auto)} busy={busy === 'retry-all'} onRetryAll={() => void retryAll()} onChat={() => setPanel({ kind: 'chat', symbol: null })} onBrief={() => setPanel({ kind: 'brief' })} />
 
       <div className={styles.autonomy}>
         <p className={styles.autonomyText}>
@@ -105,7 +120,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
           <button type="button" role="switch" aria-checked={auto} aria-label="Automatic analysts" className={styles.switch} onClick={() => void toggleAuto()} />
         </label>
       </div>
-      {!auto && <p className={styles.off}>Automatic analysts are off: no new analysts are created and none run on a schedule. Your existing journals are kept.</p>}
+      {!auto && <p className={styles.off}>Automatic analysts are off, so nothing runs on a schedule. Use Generate dossier on a card to build the one you want. Cards that already have a dossier are unchanged.</p>}
 
       <div className={styles.deploy}>
         <input className={styles.input} value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="Watch another stock, e.g. RELIANCE" aria-label="Symbol to watch" maxLength={20} />
@@ -140,7 +155,7 @@ export function AnalystDesk({ initial }: { readonly initial: DeskData }) {
           ) : (
             <ul className={styles.roster}>
               {visible.map((a) => (
-                <AnalystCard key={a.symbol} analyst={a} all={initial.analysts} usage={initial.usage} now={now} busy={busy} onRead={(sym) => setPanel({ kind: 'dossier', symbol: sym })} onChat={(sym) => setPanel({ kind: 'chat', symbol: sym })} onAnalyze={(sym) => void analyze(sym)} onSetStatus={(s, st) => void setStatus(s, st)} onRemove={(s) => void remove(s)} />
+                <AnalystCard key={a.symbol} analyst={a} all={initial.analysts} usage={initial.usage} now={now} busy={busy} auto={auto} onRead={(sym) => setPanel({ kind: 'dossier', symbol: sym })} onChat={(sym) => setPanel({ kind: 'chat', symbol: sym })} onAnalyze={(sym) => void analyze(sym)} onSetStatus={(s, st) => void setStatus(s, st)} onRemove={(s) => void remove(s)} />
               ))}
             </ul>
           )}

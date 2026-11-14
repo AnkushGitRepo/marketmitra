@@ -15,13 +15,15 @@ interface AnalystCardProps {
   readonly onAnalyze: (symbol: string) => void;
   readonly onSetStatus: (symbol: string, status: 'active' | 'paused') => void;
   readonly onRemove: (symbol: string) => void;
+  /** When false, a card without a dossier offers Generate dossier instead of waiting on the schedule. */
+  readonly auto: boolean;
 }
 
 const formatPrice = (n: number): string => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
-export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onChat, onAnalyze, onSetStatus, onRemove }: AnalystCardProps) {
+export function AnalystCard({ analyst: a, all, usage, now, busy, auto, onRead, onChat, onAnalyze, onSetStatus, onRemove }: AnalystCardProps) {
   const attention = attentionReason(a, now);
-  const queue = queueLabel(queueState(a, all, usage));
+  const queue = queueLabel(queueState(a, all, usage, auto));
   const stalled = isStalled(a);
   const needsKey = queue === 'Waiting for an AI key';
   const view = stalled
@@ -31,7 +33,7 @@ export function AnalystCard({ analyst: a, all, usage, now, busy, onRead, onChat,
       : queue
         ? { label: queue, tone: needsKey ? ('bad' as const) : queue.startsWith('Scheduled') || queue.startsWith('Daily') ? ('warn' as const) : ('wait' as const) }
         : statusView(a.status, a.statusNote);
-  const primary = primaryAction(a);
+  const primary = primaryAction(a, auto);
   const primaryBusy = busy === `analyze-${a.symbol}` || (primary.kind === 'resume' && busy === `status-${a.symbol}`);
   const runPrimary = () => {
     if (primary.kind === 'dossier') onRead(a.symbol);
