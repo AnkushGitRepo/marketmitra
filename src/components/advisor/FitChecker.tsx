@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { CheckStatus, FitCheck } from '@/lib/advisor/diagnostics/fit';
+import type { FitCheck } from '@/lib/advisor/diagnostics/fit';
 import styles from './advisor.module.css';
 
 interface FitData {
@@ -14,8 +14,6 @@ interface FitData {
 interface Props {
   profile: string;
 }
-
-const MARK: Record<CheckStatus, string> = { pass: 'Within', fail: 'Over', unknown: 'Unknown' };
 
 export function FitChecker({ profile }: Props) {
   const [symbol, setSymbol] = useState('');
@@ -50,20 +48,27 @@ export function FitChecker({ profile }: Props) {
       <h2 id="fit-h" className={styles.h2}>Does it fit my rules?</h2>
       <form className={styles.formRow} onSubmit={(e) => { e.preventDefault(); void run(); }}>
         <input className={styles.input} placeholder="Ticker, e.g. TCS" aria-label="Ticker symbol" value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <input className={`${styles.input} ${styles.narrow}`} type="number" min={1} step={1000} aria-label="Amount in rupees" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <input className={`${styles.input} ${styles.narrow}`} type="number" min={1} step="any" aria-label="Amount in rupees" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <button type="submit" className={styles.btnPrimary} disabled={busy || symbol.trim() === ''}>{busy ? 'Checking…' : 'Check'}</button>
       </form>
       {error && <p className={styles.error} role="alert">{error}</p>}
       {result && (
         <>
           <p className={result.breaches === 0 ? styles.verdictOk : styles.verdictWarn} role="status">
-            {result.breaches === 0 ? 'Within your rules' : `Over ${result.breaches === 1 ? 'one rule' : `${result.breaches} rules`}`}
+            {result.breaches === 0 ? `Passes all ${result.checks.length} rules` : `Over ${result.breaches === 1 ? 'one rule' : `${result.breaches} rules`}`}
           </p>
-          <ul className={styles.claims}>
+          <ul className={styles.pills} aria-label="Rule results">
             {result.checks.map((c) => (
-              <li key={c.id} className={styles.claim}><span className={styles.tag}>{MARK[c.status]}</span> <strong>{c.label}.</strong> {c.detail}</li>
+              <li key={c.id} className={`${styles.pill} ${c.status === 'fail' ? styles.pillOver : c.status === 'unknown' ? styles.pillWatch : ''}`}>{c.chip}</li>
             ))}
           </ul>
+          {result.checks.some((c) => c.status !== 'pass') && (
+            <ul className={styles.claims}>
+              {result.checks.filter((c) => c.status !== 'pass').map((c) => (
+                <li key={c.id} className={styles.claim}><strong>{c.label}.</strong> {c.detail}</li>
+              ))}
+            </ul>
+          )}
           <p className={styles.note}>This checks your own rules, not the company.</p>
         </>
       )}

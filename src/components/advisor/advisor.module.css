@@ -1,4 +1,4 @@
-.pageRoot { padding-bottom: 34px; }
+.pageRoot { padding-bottom: 34px; container-type: inline-size; }
 .banner {
   margin: 0 0 14px;
   padding: 9px 14px;
@@ -99,8 +99,8 @@
 }
 .drawer::backdrop { background: rgba(22, 25, 28, 0.35); }
 .drawerBar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
-.twoCol { display: grid; grid-template-columns: 11fr 9fr; gap: 18px; align-items: start; }
-@media (max-width: 860px) { .twoCol { grid-template-columns: 1fr; } }
+.twoCol { display: grid; grid-template-columns: 7fr 5fr; gap: 18px; align-items: start; }
+@container (max-width: 720px) { .twoCol { grid-template-columns: 1fr; } }
 .barRow { display: grid; grid-template-columns: 120px 1fr 92px; gap: 10px; align-items: center; margin-bottom: 10px; font-size: 12.5px; }
 .barName { color: var(--app-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .barTrack { position: relative; height: 8px; border-radius: var(--radius-pill); background: var(--app-border-soft); }

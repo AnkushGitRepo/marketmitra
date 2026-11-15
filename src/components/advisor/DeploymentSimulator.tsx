@@ -54,7 +54,7 @@ export function DeploymentSimulator({ holdings, limits, target }: Props) {
           )}
         </details>
       )}
-      <p className={styles.note}>New money only, so nothing needs a sale. This is arithmetic on your own targets, not a recommendation.</p>
+      <p className={styles.note}>New money only: nothing needs a sale.</p>
     </section>
   );
 }

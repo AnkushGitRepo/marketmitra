@@ -18,13 +18,6 @@ export const dynamic = 'force-dynamic';
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
-const TOOLS = [
-  { href: '/advisor/screen', label: 'Screen a company' },
-  { href: '/advisor/research', label: 'Cited research memo' },
-  { href: '/advisor/journal', label: 'Manual journal' },
-  { href: '/advisor/performance', label: 'Paper performance' },
-] as const;
-
 export default async function AdvisorPage({ searchParams }: { searchParams: Promise<{ profile?: string }> }) {
   const userId = await advisorPageUser();
   if (!userId) return null;
@@ -59,6 +52,7 @@ export default async function AdvisorPage({ searchParams }: { searchParams: Prom
           <h1 className={styles.h1}>Your portfolio against your own limits</h1>
         </div>
         <div className={styles.formActions}>
+          <Link href="/advisor/performance" className={styles.btnGhost}>Benchmark vs Nifty</Link>
           <RulesDrawer initial={saved ?? policyFromProfile(profile, DEFAULT_POLICY)} hasSaved={saved !== null} />
         </div>
       </div>
@@ -75,7 +69,7 @@ export default async function AdvisorPage({ searchParams }: { searchParams: Prom
       )}
       {holdings.length > 0 && (
         <>
-          <p className={styles.score}><strong>{summary.healthy} of {summary.total}</strong> guardrails healthy. Every check is arithmetic on your own rules; none is a buy or sell call.</p>
+          <p className={styles.score}><strong>{summary.healthy} of {summary.total}</strong> guardrails healthy.</p>
           <ul className={styles.pills} aria-label="Guardrails">
             {summary.pills.map((p) => (
               <li key={p.id} className={`${styles.pill} ${p.status === 'watch' ? styles.pillWatch : p.status === 'over' ? styles.pillOver : ''}`}>
@@ -89,7 +83,7 @@ export default async function AdvisorPage({ searchParams }: { searchParams: Prom
         {usingPreset
           ? `No policy saved, so the ${PROFILES[profile].label} preset applies: ${rules.limits.maxStockPct}% per stock, ${rules.limits.maxSectorPct}% per sector. Open Allocation rules to write your own.`
           : `Using your saved policy: ${rules.limits.maxStockPct}% per stock, ${rules.limits.maxSectorPct}% per sector.`}{' '}
-        Everything below is computed from your holdings. It is decision support: you place any order yourself.
+        Everything below is computed from your holdings.
       </p>
 
       {holdings.length === 0 ? (
@@ -141,12 +135,6 @@ export default async function AdvisorPage({ searchParams }: { searchParams: Prom
         </>
       )}
 
-      <section className={styles.card} aria-labelledby="tools-h">
-        <h2 id="tools-h" className={styles.h2}>Deeper tools</h2>
-        <div className={styles.linkRow}>
-          {TOOLS.map((t) => <Link key={t.href} href={t.href} className={styles.btnGhost}>{t.label}</Link>)}
-        </div>
-      </section>
     </>
   );
 }

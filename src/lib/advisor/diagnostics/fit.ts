@@ -6,6 +6,8 @@ export type CheckStatus = 'pass' | 'fail' | 'unknown';
 export interface FitCheck {
   readonly id: 'exclusion' | 'stock-limit' | 'sector-limit' | 'overlap';
   readonly label: string;
+  /** A few words with the key figure, for compact display. */
+  readonly chip: string;
   readonly status: CheckStatus;
   readonly detail: string;
 }
@@ -52,26 +54,30 @@ export function checkFit(input: FitInput): FitResult {
     {
       id: 'exclusion',
       label: 'Your exclusions',
+      chip: 'Exclusions',
       status: excluded ? 'fail' : 'pass',
       detail: excluded ? 'This ticker or its sector is on your exclusion list.' : 'Not on your exclusion list.',
     },
     {
       id: 'stock-limit',
       label: 'Single-stock limit',
+      chip: `Stock ${stockPct.toFixed(1)}%`,
       status: stockPct > limits.maxStockPct ? 'fail' : 'pass',
       detail: `${symbol} goes from ${stockBefore.toFixed(1)}% to ${stockPct.toFixed(1)}% of the portfolio, against your ${limits.maxStockPct}% limit.`,
     },
     sector === null
-      ? { id: 'sector-limit', label: 'Sector limit', status: 'unknown', detail: 'The sector for this ticker is not known, so the sector limit was not checked.' }
+      ? { id: 'sector-limit', label: 'Sector limit', chip: 'Sector ?', status: 'unknown', detail: 'The sector for this ticker is not known, so the sector limit was not checked.' }
       : {
           id: 'sector-limit',
           label: 'Sector limit',
+          chip: `${sector} ${sectorPct.toFixed(1)}%`,
           status: sectorPct > limits.maxSectorPct ? 'fail' : 'pass',
           detail: `${sector} goes from ${sectorBefore.toFixed(1)}% to ${sectorPct.toFixed(1)}% of the portfolio, against your ${limits.maxSectorPct}% limit.`,
         },
     {
       id: 'overlap',
       label: 'Overlap',
+      chip: names.size === 0 ? 'No overlap' : `${names.size} in sector`,
       status: 'pass',
       detail:
         sector === null

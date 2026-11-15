@@ -43,6 +43,6 @@ export async function loadOverview(userId: string, profile: ProfileId): Promise<
     holdings: like,
     audit: auditPortfolio(like, rules.limits),
     drawdowns: reviewDrawdowns(like),
-    tracker: trackerRows(like, views),
+    tracker: trackerRows(like, views, rules.limits),
   };
 }

@@ -36,6 +36,12 @@ describe('checkFit', () => {
     expect(status(checkFit({ ...base, symbol: 'ZZZ', sector: null, amountINR: 100 }), 'sector-limit')).toBe('unknown');
   });
 
+  it('gives each check a short chip for compact display', () => {
+    const r = checkFit({ ...base, symbol: 'AAA', sector: 'Financials', amountINR: 500 });
+    expect(r.checks.map((c) => c.chip)).toEqual(['Exclusions', 'Stock 60.0%', 'Financials 73.3%', '1 in sector']);
+    expect(checkFit({ ...base, symbol: 'ZZZ', sector: null, amountINR: 10 }).checks[2].chip).toBe('Sector ?');
+  });
+
   it('mentions overlap with sectors already held', () => {
     const r = checkFit({ ...base, symbol: 'ZZZ', sector: 'Financials', amountINR: 10 });
     expect(r.checks.find((c) => c.id === 'overlap')?.detail).toContain('2 holdings');
