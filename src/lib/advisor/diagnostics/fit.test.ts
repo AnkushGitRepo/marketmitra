@@ -21,6 +21,11 @@ describe('checkFit', () => {
     expect(r.breaches).toBe(2);
   });
 
+  it('shows the weight before and after', () => {
+    const r = checkFit({ ...base, symbol: 'AAA', sector: 'Financials', amountINR: 500 });
+    expect(r.checks.find((c) => c.id === 'sector-limit')?.detail).toBe('Financials goes from 60.0% to 73.3% of the portfolio, against your 50% limit.');
+  });
+
   it('fails an excluded ticker or sector', () => {
     expect(status(checkFit({ ...base, symbol: 'ZZZ', sector: 'Tobacco', amountINR: 100, excludedSectors: ['tobacco'] }), 'exclusion')).toBe('fail');
     expect(status(checkFit({ ...base, symbol: 'zzz', sector: null, amountINR: 100, excludedTickers: ['ZZZ'] }), 'exclusion')).toBe('fail');

@@ -13,5 +13,8 @@ The Advisor opened on "No policy yet" and a 14-field form, had six sub-tabs that
 - **Nothing shipped is removed.** Screen, Research memo, Journal and Performance keep their routes and APIs, linked from the page; the sub-nav now appears only on those pages, as a way back.
 - All new logic is pure (`src/lib/advisor/diagnostics/`) and reads only MongoDB holdings and cached quotes, so it no longer depends on the NIFTYBEES benchmark. New read routes: `GET /api/advisor/overview`, `GET /api/advisor/fit`.
 
+## Follow-up: less math on the page (same issue)
+First review: the page read as a dense audit. It now shows five traffic-light guardrails (stock limit, sector limit, top-3 concentration, deep drawdowns, stress tolerance) with a "X of 5 healthy" count rather than an invented 0 to 100 score, and a two-column layout: drift bars and drawdown watch on the left; the fit check, the fresh-money split (three cards, limit detail collapsed) and a what-if stress test on the right. The stress test cuts every affected price by the same percentage (everything, or one sector) and compares the loss with the policy's `maxTolerableDrawdownPct` (presets: 15, 25, 35); it is an illustration, not a forecast, and uses no beta. "Criteria clear" links to the Analyst Desk rather than opening a drawer.
+
 ## Consequences
 The decision tracker's "thesis" column shows whether an analyst's enabled criteria are breached, not a verdict on the stock. The monthly plan view was replaced on the page; `GET /api/advisor/plan` remains.

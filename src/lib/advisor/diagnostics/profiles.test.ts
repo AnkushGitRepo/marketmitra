@@ -27,14 +27,16 @@ describe('profiles', () => {
     expect(rules.source).toBe('preset');
     expect(rules.limits).toEqual(PROFILES.conservative.limits);
     expect(rules.excludedSectors).toEqual([]);
+    expect(rules.drawdownTolerancePct).toBe(PROFILES.conservative.drawdownTolerancePct);
   });
 
   it('uses the saved policy over the preset', () => {
-    const policy = { ...DEFAULT_POLICY, maxPositionPct: 12, maxSectorPct: 35, excludedSectors: ['Tobacco'], excludedTickers: ['XYZ'] };
+    const policy = { ...DEFAULT_POLICY, maxPositionPct: 12, maxSectorPct: 35, maxTolerableDrawdownPct: 40, excludedSectors: ['Tobacco'], excludedTickers: ['XYZ'] };
     const rules = effectiveRules('aggressive', policy);
     expect(rules.source).toBe('policy');
     expect(rules.limits).toEqual({ maxStockPct: 12, maxSectorPct: 35 });
     expect(rules.target).toEqual(policy.targetAllocation);
+    expect(rules.drawdownTolerancePct).toBe(40);
     expect(rules.excludedSectors).toEqual(['Tobacco']);
     expect(rules.excludedTickers).toEqual(['XYZ']);
   });

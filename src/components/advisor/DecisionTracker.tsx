@@ -29,7 +29,7 @@ export function DecisionTracker({ rows }: { rows: readonly TrackerRow[] }) {
                 <td>{price(r.avgPrice)}</td>
                 <td>{price(r.ltp)}</td>
                 <td>{r.returnPct === null ? '–' : `${r.returnPct > 0 ? '+' : ''}${r.returnPct.toFixed(1)}%`}</td>
-                <td>{THESIS_LABEL[r.thesis]}</td>
+                <td>{r.thesis === 'none' ? THESIS_LABEL[r.thesis] : <Link href="/agents">{THESIS_LABEL[r.thesis]}</Link>}</td>
               </tr>
             ))}
           </tbody>

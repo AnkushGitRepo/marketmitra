@@ -39,9 +39,12 @@ export function checkFit(input: FitInput): FitResult {
 
   const excluded = input.excludedTickers.some((t) => same(t, symbol)) || (sector !== null && input.excludedSectors.some((s) => same(s, sector)));
   const heldValue = holdings.filter((h) => same(h.symbol, symbol)).reduce((sum, h) => sum + valueOf(h), 0);
+  const stockBefore = total > 0 ? (heldValue / total) * 100 : 0;
   const stockPct = after > 0 ? ((heldValue + amount) / after) * 100 : 0;
   const sectorHeld = sector === null ? [] : holdings.filter((h) => h.sector !== null && same(h.sector, sector));
-  const sectorPct = after > 0 ? ((sectorHeld.reduce((sum, h) => sum + valueOf(h), 0) + amount) / after) * 100 : 0;
+  const sectorValue = sectorHeld.reduce((sum, h) => sum + valueOf(h), 0);
+  const sectorBefore = total > 0 ? (sectorValue / total) * 100 : 0;
+  const sectorPct = after > 0 ? ((sectorValue + amount) / after) * 100 : 0;
   const names = new Set(sectorHeld.map((h) => h.symbol.toUpperCase()));
   names.delete(symbol);
 
@@ -56,7 +59,7 @@ export function checkFit(input: FitInput): FitResult {
       id: 'stock-limit',
       label: 'Single-stock limit',
       status: stockPct > limits.maxStockPct ? 'fail' : 'pass',
-      detail: `It would be ${stockPct.toFixed(1)}% of the portfolio against your ${limits.maxStockPct}% limit.`,
+      detail: `${symbol} goes from ${stockBefore.toFixed(1)}% to ${stockPct.toFixed(1)}% of the portfolio, against your ${limits.maxStockPct}% limit.`,
     },
     sector === null
       ? { id: 'sector-limit', label: 'Sector limit', status: 'unknown', detail: 'The sector for this ticker is not known, so the sector limit was not checked.' }
@@ -64,7 +67,7 @@ export function checkFit(input: FitInput): FitResult {
           id: 'sector-limit',
           label: 'Sector limit',
           status: sectorPct > limits.maxSectorPct ? 'fail' : 'pass',
-          detail: `${sector} would be ${sectorPct.toFixed(1)}% of the portfolio against your ${limits.maxSectorPct}% limit.`,
+          detail: `${sector} goes from ${sectorBefore.toFixed(1)}% to ${sectorPct.toFixed(1)}% of the portfolio, against your ${limits.maxSectorPct}% limit.`,
         },
     {
       id: 'overlap',

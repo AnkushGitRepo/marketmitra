@@ -56,14 +56,15 @@ export function FitChecker({ profile }: Props) {
       {error && <p className={styles.error} role="alert">{error}</p>}
       {result && (
         <>
+          <p className={result.breaches === 0 ? styles.verdictOk : styles.verdictWarn} role="status">
+            {result.breaches === 0 ? 'Within your rules' : `Over ${result.breaches === 1 ? 'one rule' : `${result.breaches} rules`}`}
+          </p>
           <ul className={styles.claims}>
             {result.checks.map((c) => (
               <li key={c.id} className={styles.claim}><span className={styles.tag}>{MARK[c.status]}</span> <strong>{c.label}.</strong> {c.detail}</li>
             ))}
           </ul>
-          <p className={styles.note}>
-            {result.breaches === 0 ? `${result.symbol} stays inside your limits at this amount.` : `${result.symbol} would break ${result.breaches} of your rules at this amount.`} This checks your own rules, not the company.
-          </p>
+          <p className={styles.note}>This checks your own rules, not the company.</p>
         </>
       )}
     </section>
