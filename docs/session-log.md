@@ -82,3 +82,10 @@ Rolling log of work sessions. Append new entries at the **bottom** (oldest first
 
 
 - **Follow-up 2, same day:** removed the "Deeper tools" footer (header "Benchmark vs Nifty" and tracker "+ Log a decision" links instead), 7/5 grid driven by a container query, compact fit-check chips, and a tracker status that follows the rules (written test-first). Found by screenshot: the fit amount field had `step=1000`, so the browser rejected 5000; now `step="any"`. **Verified:** lint, typecheck, tests, the INFY / 5000 check in the browser at 1100px. **Not verified:** mobile layout, hosted. **Open:** Screen and Research routes are now unlinked; delete or relink?
+
+## 2026-11-15 — Advisor thesis review on the local schedule (#204)
+
+- Asked whether the Advisor has scheduled work that runs locally. It has one job, the thesis monitor (`runKillReview`), which nothing called: no workflow by design, and the ADR 0062 runner covered analysts only. Added it to the runner: once after the start-up catch-up (even if the dispatch fails), then every 6 hours from the existing tick, only with `ADVISOR_MODE=enabled`, never hosted, off with `LOCAL_AI_SCHEDULE=off`. New pure `decideAdvisorReview`, `runAdvisorReviewJob` (logs `advisor:review`), and a "last ran" line on the Advisor page. Tests first. ADR 0062 amended.
+- **Not changed, on purpose (ADR 0062):** price-alert evaluation, screener quotes, IPO refresh, corpus indexing and agent reflection still run only on the hosted site's schedules. A local-only user gets none of them unless they call the cron routes themselves.
+- **Verified:** lint, typecheck, full suite (1800 tests). **Not verified live:** the runner starts at server start, so it needs a dev-server restart to run; I did not restart the maintainer's server or start a second one against the shared database.
+

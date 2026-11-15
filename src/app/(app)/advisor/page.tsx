@@ -5,7 +5,9 @@ import { PROFILES, PROFILE_IDS, parseProfile, policyFromProfile } from '@/lib/ad
 import { guardrailSummary, HEADLINE_STRESS_FALL_PCT } from '@/lib/advisor/diagnostics/guardrails';
 import { stressTest } from '@/lib/advisor/diagnostics/stress';
 import { DEFAULT_POLICY } from '@/lib/advisor/policy/schema';
+import { ADVISOR_REVIEW_SOURCE } from '@/lib/advisor/journal/reviewJob';
 import { getPolicy } from '@/lib/advisor/policy/store';
+import { latestEventPerSource } from '@/lib/system/eventLog';
 import { DeploymentSimulator } from '@/components/advisor/DeploymentSimulator';
 import { FitChecker } from '@/components/advisor/FitChecker';
 import { LimitBars } from '@/components/advisor/LimitBars';
@@ -23,10 +25,12 @@ export default async function AdvisorPage({ searchParams }: { searchParams: Prom
   if (!userId) return null;
   const profile = parseProfile((await searchParams).profile);
 
-  const [overview, saved] = await Promise.all([
+  const [overview, saved, monitor] = await Promise.all([
     loadOverview(userId, profile).catch(() => null),
     getPolicy(userId).catch(() => null),
+    latestEventPerSource([ADVISOR_REVIEW_SOURCE]).catch(() => ({ [ADVISOR_REVIEW_SOURCE]: null })),
   ]);
+  const monitorLastRunAt = monitor[ADVISOR_REVIEW_SOURCE]?.ts.toISOString() ?? null;
   if (!overview) {
     return (
       <div className={styles.card}>
@@ -131,7 +135,7 @@ export default async function AdvisorPage({ searchParams }: { searchParams: Prom
             </div>
           </div>
 
-          <DecisionTracker rows={tracker} />
+          <DecisionTracker rows={tracker} monitorLastRunAt={monitorLastRunAt} />
         </>
       )}
 

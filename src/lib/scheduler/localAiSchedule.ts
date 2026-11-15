@@ -1,9 +1,12 @@
+import { isAdvisorEnabled } from '@/lib/advisor/flag';
+import { runAdvisorReviewJob } from '@/lib/advisor/journal/reviewJob';
 import { runAnalystDispatch } from '@/lib/analysts/dispatchJob';
 import { runStockAnalystSweep } from '@/lib/analysts/sweep';
 import { isHosted } from '@/lib/deployment-mode';
 import {
   TICK_EVERY_MS,
   catchUpLocalAnalysts,
+  decideAdvisorReview,
   decideScheduleTick,
   localScheduleEnabled,
   shouldRearmSchedule,
@@ -18,6 +21,7 @@ const SOURCE = 'scheduler:local-ai';
 interface ScheduleState extends ScheduleClock {
   timer: ReturnType<typeof setInterval> | null;
   lastTickAt: number | null;
+  lastAdvisorReviewAt: number | null;
   catchUpStarted: boolean;
 }
 
@@ -30,6 +34,7 @@ function state(): ScheduleState {
       lastTickAt: null,
       lastSweepAt: null,
       lastDispatchAt: null,
+      lastAdvisorReviewAt: null,
       runStarts: [],
       catchUpStarted: false,
     };
@@ -54,14 +59,16 @@ async function runJob(job: () => Promise<unknown>): Promise<void> {
   }
 }
 
-/** Runs the sweep and the dispatch when each is due. The tick is skipped while no run slot is free. */
+/** Runs the sweep, the dispatch and the Advisor review when each is due. The tick is skipped while no run slot is free. */
 async function runDue(now: number): Promise<void> {
   const s = state();
   const decision = decideScheduleTick(s, now);
-  if (!decision.runSweep && !decision.runDispatch) return;
+  const runReview = decideAdvisorReview(s, now, isAdvisorEnabled());
+  if (!decision.runSweep && !decision.runDispatch && !runReview) return;
   s.runStarts = withRun(s.runStarts, now);
   if (decision.runSweep) s.lastSweepAt = now;
   if (decision.runDispatch) s.lastDispatchAt = now;
+  if (runReview) s.lastAdvisorReviewAt = now;
   try {
     if (decision.runSweep) {
       await runJob(() => runStockAnalystSweep('local'));
@@ -70,6 +77,10 @@ async function runDue(now: number): Promise<void> {
     if (decision.runDispatch) {
       await runJob(() => runAnalystDispatch('local'));
       s.lastDispatchAt = Date.now();
+    }
+    if (runReview) {
+      await runJob(() => runAdvisorReviewJob('local'));
+      s.lastAdvisorReviewAt = Date.now();
     }
   } finally {
     s.runStarts = withoutRun(s.runStarts, now);
@@ -117,6 +128,7 @@ export function startLocalAiSchedule(now: number = Date.now()): void {
   s.runStarts = withRun(s.runStarts, now);
   s.lastSweepAt = now;
   s.lastDispatchAt = now;
+  s.lastAdvisorReviewAt = now;
   void catchUpLocalAnalysts({
     sweep: async () => {
       const { counts } = await runStockAnalystSweep('local');
@@ -125,12 +137,14 @@ export function startLocalAiSchedule(now: number = Date.now()): void {
     dispatch: async () => {
       await runAnalystDispatch('local');
     },
+    advisorReview: isAdvisorEnabled() ? () => runJob(() => runAdvisorReviewJob('local')) : undefined,
   })
     .then(() => {
       const current = state();
       const finished = Date.now();
       current.lastSweepAt = finished;
       current.lastDispatchAt = finished;
+      current.lastAdvisorReviewAt = finished;
     })
     .catch((err: unknown) => {
       logFailure(err);

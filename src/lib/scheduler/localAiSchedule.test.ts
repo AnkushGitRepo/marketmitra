@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DISPATCH_EVERY_MS, SWEEP_EVERY_MS, TICK_EVERY_MS } from './localSchedule';
+import { ADVISOR_REVIEW_EVERY_MS, DISPATCH_EVERY_MS, SWEEP_EVERY_MS, TICK_EVERY_MS } from './localSchedule';
 
 const quietSweep = async (userId: string) => ({
   counts: { initiated: 0, deferred: 0, checked: 0, requeued: 0 },
@@ -15,6 +15,10 @@ vi.mock('@/lib/analysts/sweep', () => ({
 vi.mock('@/lib/analysts/dispatchJob', () => ({
   runAnalystDispatch: (userId: string) => dispatch(userId),
 }));
+const advisorEnabled = vi.fn(() => false);
+const advisorReview = vi.fn<(userId: string) => Promise<null>>(async () => null);
+vi.mock('@/lib/advisor/flag', () => ({ isAdvisorEnabled: () => advisorEnabled() }));
+vi.mock('@/lib/advisor/journal/reviewJob', () => ({ runAdvisorReviewJob: (userId: string) => advisorReview(userId) }));
 vi.mock('@/lib/deployment-mode', () => ({ isHosted: () => false }));
 vi.mock('@/lib/system/eventLog', () => ({ logEvent: vi.fn(async () => undefined) }));
 
@@ -32,6 +36,9 @@ describe('startLocalAiSchedule', () => {
     sweep.mockReset();
     sweep.mockImplementation(quietSweep);
     dispatch.mockClear();
+    advisorEnabled.mockReset();
+    advisorEnabled.mockReturnValue(false);
+    advisorReview.mockClear();
     if (globalState.__mmLocalAiSchedule?.timer) clearInterval(globalState.__mmLocalAiSchedule.timer);
     delete globalState.__mmLocalAiSchedule;
     delete process.env.LOCAL_AI_SCHEDULE;
@@ -136,5 +143,46 @@ describe('startLocalAiSchedule', () => {
     await vi.advanceTimersByTimeAsync(DISPATCH_EVERY_MS);
     await flush();
     expect(dispatch).toHaveBeenCalledTimes(2);
+  });
+
+  describe('Advisor thesis review', () => {
+    it('runs once on start, again after six hours, and only for the user `local`', async () => {
+      advisorEnabled.mockReturnValue(true);
+      const { startLocalAiSchedule } = await import('./localAiSchedule');
+      startLocalAiSchedule();
+      await flush();
+      expect(advisorReview).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(ADVISOR_REVIEW_EVERY_MS - TICK_EVERY_MS);
+      await flush();
+      expect(advisorReview).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(TICK_EVERY_MS);
+      await flush();
+      expect(advisorReview).toHaveBeenCalledTimes(2);
+      for (const [userId] of advisorReview.mock.calls) expect(userId).toBe('local');
+    });
+
+    it('never runs when the Advisor is off', async () => {
+      const { startLocalAiSchedule } = await import('./localAiSchedule');
+      startLocalAiSchedule();
+      await vi.advanceTimersByTimeAsync(ADVISOR_REVIEW_EVERY_MS + TICK_EVERY_MS);
+      await flush();
+      expect(advisorReview).not.toHaveBeenCalled();
+    });
+
+    it('still runs on start when the dispatch fails, and does not stop the analyst jobs when it throws', async () => {
+      advisorEnabled.mockReturnValue(true);
+      dispatch.mockRejectedValueOnce(new Error('dispatch down'));
+      advisorReview.mockRejectedValueOnce(new Error('review down'));
+      const { startLocalAiSchedule } = await import('./localAiSchedule');
+      startLocalAiSchedule();
+      await flush();
+      expect(advisorReview).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(SWEEP_EVERY_MS);
+      await flush();
+      expect(sweep).toHaveBeenCalledTimes(2);
+    });
   });
 });

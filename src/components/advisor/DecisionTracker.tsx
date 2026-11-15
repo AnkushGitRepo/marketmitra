@@ -19,7 +19,15 @@ const ANALYST_LABEL: Record<AnalystState, string> = { ready: 'View dossier', pre
 const price = (n: number | null) => (n === null ? '–' : `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`);
 
 /** Built from the holdings, their analysts and your limits, so nothing is entered by hand. */
-export function DecisionTracker({ rows }: { rows: readonly TrackerRow[] }) {
+interface Props {
+  rows: readonly TrackerRow[];
+  /** When the thesis monitor last ran (ISO), or null if it has not run yet. */
+  monitorLastRunAt: string | null;
+}
+
+const stamp = (iso: string) => new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+export function DecisionTracker({ rows, monitorLastRunAt }: Props) {
   return (
     <section className={styles.card} aria-labelledby="track-h">
       <div className={styles.headRow}>
@@ -29,6 +37,11 @@ export function DecisionTracker({ rows }: { rows: readonly TrackerRow[] }) {
         </div>
         <Link href="/advisor/journal" className={styles.btnGhost}>+ Log a decision</Link>
       </div>
+      <p className={styles.note}>
+        {monitorLastRunAt
+          ? `Thesis monitor for your journal decisions last ran ${stamp(monitorLastRunAt)}.`
+          : 'Thesis monitor has not run yet. It runs when the app starts and every 6 hours while it stays open.'}
+      </p>
       <div style={{ overflowX: 'auto' }}>
         <table className={styles.table}>
           <thead>

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- On a local app with the Advisor on, the thesis monitor for your journal decisions now runs when the app starts and every 6 hours while it stays open, and the Advisor page shows when it last ran. ([#204](https://github.com/AnkushGitRepo/marketmitra/issues/204))
 - On a local or self-hosted app, analyst dossiers, the evening check and the morning brief catch up when the app is running, then keep going on the same schedule as the hosted site. Set `LOCAL_AI_SCHEDULE=off` to turn that off. Nothing runs while the machine is off. ([#193](https://github.com/AnkushGitRepo/marketmitra/issues/193))
 - The landing page open-source panel shows this repository's live GitHub stars, contributor count, licence and latest release. ([#189](https://github.com/AnkushGitRepo/marketmitra/issues/189))
 - The data service can run on Google Cloud Run: a Dockerfile (with the embedding model baked in) and deploy scripts for it. ([#171](https://github.com/AnkushGitRepo/marketmitra/pull/171), [#178](https://github.com/AnkushGitRepo/marketmitra/pull/178))
