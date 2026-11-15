@@ -7,6 +7,8 @@ import {
   decideScheduleTick,
   localScheduleEnabled,
   shouldRearmSchedule,
+  withRun,
+  withoutRun,
   type ScheduleClock,
 } from '@/lib/scheduler/localSchedule';
 import { logEvent } from '@/lib/system/eventLog';
@@ -28,7 +30,7 @@ function state(): ScheduleState {
       lastTickAt: null,
       lastSweepAt: null,
       lastDispatchAt: null,
-      busySince: null,
+      runStarts: [],
       catchUpStarted: false,
     };
   }
@@ -52,12 +54,12 @@ async function runJob(job: () => Promise<unknown>): Promise<void> {
   }
 }
 
-/** Runs the sweep and the dispatch when each is due. A run still inside the busy cap is skipped. */
+/** Runs the sweep and the dispatch when each is due. The tick is skipped while no run slot is free. */
 async function runDue(now: number): Promise<void> {
   const s = state();
   const decision = decideScheduleTick(s, now);
   if (!decision.runSweep && !decision.runDispatch) return;
-  s.busySince = now;
+  s.runStarts = withRun(s.runStarts, now);
   if (decision.runSweep) s.lastSweepAt = now;
   if (decision.runDispatch) s.lastDispatchAt = now;
   try {
@@ -70,7 +72,7 @@ async function runDue(now: number): Promise<void> {
       s.lastDispatchAt = Date.now();
     }
   } finally {
-    if (s.busySince === now) s.busySince = null;
+    s.runStarts = withoutRun(s.runStarts, now);
   }
 }
 
@@ -112,7 +114,7 @@ export function startLocalAiSchedule(now: number = Date.now()): void {
   if (shouldRearmSchedule({ hasTimer: s.timer !== null, lastTickAt: s.lastTickAt }, now)) arm(now);
   if (s.catchUpStarted) return;
   s.catchUpStarted = true;
-  s.busySince = now;
+  s.runStarts = withRun(s.runStarts, now);
   s.lastSweepAt = now;
   s.lastDispatchAt = now;
   void catchUpLocalAnalysts({
@@ -126,7 +128,6 @@ export function startLocalAiSchedule(now: number = Date.now()): void {
   })
     .then(() => {
       const current = state();
-      if (current.busySince !== now) return;
       const finished = Date.now();
       current.lastSweepAt = finished;
       current.lastDispatchAt = finished;
@@ -136,6 +137,6 @@ export function startLocalAiSchedule(now: number = Date.now()): void {
     })
     .finally(() => {
       const current = state();
-      if (current.busySince === now) current.busySince = null;
+      current.runStarts = withoutRun(current.runStarts, now);
     });
 }
