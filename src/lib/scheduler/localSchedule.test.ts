@@ -9,6 +9,8 @@ import {
   TICK_STALE_MS,
   canStartRun,
   catchUpLocalAnalysts,
+  ADVISOR_REVIEW_EVERY_MS,
+  decideAdvisorReview,
   decideScheduleTick,
   isJobDue,
   localScheduleEnabled,
@@ -170,5 +172,55 @@ describe('wall-clock cadence', () => {
     expect(shouldRearmSchedule({ hasTimer: true, lastTickAt: null }, t0)).toBe(true);
     expect(shouldRearmSchedule({ hasTimer: true, lastTickAt: t0 }, t0 + TICK_STALE_MS - 1)).toBe(false);
     expect(shouldRearmSchedule({ hasTimer: true, lastTickAt: t0 }, t0 + TICK_STALE_MS)).toBe(true);
+  });
+});
+
+describe('decideAdvisorReview', () => {
+  const t0 = 1_700_000_000_000;
+  const idle = { lastSweepAt: t0, lastDispatchAt: t0, runStarts: [] as number[] };
+
+  it('is due when it has never run and again after six hours', () => {
+    expect(decideAdvisorReview({ ...idle, lastAdvisorReviewAt: null }, t0, true)).toBe(true);
+    expect(decideAdvisorReview(idle, t0, true)).toBe(true);
+    expect(decideAdvisorReview({ ...idle, lastAdvisorReviewAt: t0 }, t0 + ADVISOR_REVIEW_EVERY_MS - 1, true)).toBe(false);
+    expect(decideAdvisorReview({ ...idle, lastAdvisorReviewAt: t0 }, t0 + ADVISOR_REVIEW_EVERY_MS, true)).toBe(true);
+  });
+
+  it('never runs when the Advisor is off', () => {
+    expect(decideAdvisorReview({ ...idle, lastAdvisorReviewAt: null }, t0, false)).toBe(false);
+  });
+
+  it('waits while a fresh run holds the slot', () => {
+    expect(decideAdvisorReview({ ...idle, lastAdvisorReviewAt: null, runStarts: [t0 - 1_000] }, t0, true)).toBe(false);
+  });
+});
+
+describe('catchUpLocalAnalysts with the Advisor review', () => {
+  it('runs the review after the dispatch, and still runs it when the dispatch fails', async () => {
+    const order: string[] = [];
+    await catchUpLocalAnalysts({
+      sweep: async () => quiet,
+      dispatch: async () => {
+        order.push('dispatch');
+      },
+      advisorReview: async () => {
+        order.push('review');
+      },
+    });
+    expect(order).toEqual(['dispatch', 'review']);
+
+    const failed: string[] = [];
+    await expect(
+      catchUpLocalAnalysts({
+        sweep: async () => quiet,
+        dispatch: async () => {
+          throw new Error('dispatch down');
+        },
+        advisorReview: async () => {
+          failed.push('review');
+        },
+      }),
+    ).rejects.toThrow('dispatch down');
+    expect(failed).toEqual(['review']);
   });
 });

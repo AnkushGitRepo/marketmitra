@@ -24,3 +24,8 @@ Running that work while the machine is off would need an always-on process that 
 - Opening the local app spends the configured AI key on dossiers that are still waiting, under the existing local daily cap. A second start does not rebuild a dossier that already exists.
 - Hours the machine is off are still dark: no dossiers, no evening check and no morning email until the next time the app is running.
 - `LOCAL_AI_SCHEDULE` is documented in `.env.local.example`. Unset means on.
+
+## Amendment (2026-11-15, #204): the Advisor thesis review
+
+The same runner also runs the Advisor's thesis monitor (`runKillReview`, ADR 0035 phase 4) for the user `local`, only when `ADVISOR_MODE=enabled`. It runs once at the end of the start-up catch-up, even if the dispatch failed, then again from the one-minute tick once 6 hours have passed (`ADVISOR_REVIEW_EVERY_MS`), sharing the run slots with the analyst jobs. The review is idempotent (a criterion notifies once; the firing is recorded before delivery), so a few runs a day are safe. Each run logs to the system log as `advisor:review`, and the Advisor page shows when it last ran. `/api/cron/advisor-review` stays for manual use and is still in no workflow.
+

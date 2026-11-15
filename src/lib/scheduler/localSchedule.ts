@@ -44,6 +44,8 @@ export function shouldContinueCatchUp(result: CatchUpPass): boolean {
 export async function catchUpLocalAnalysts(deps: {
   sweep: () => Promise<CatchUpPass>;
   dispatch: () => Promise<void>;
+  /** Runs after the dispatch whether or not it failed, so one broken job cannot skip the Advisor review. */
+  advisorReview?: () => Promise<void>;
   maxPasses?: number;
 }): Promise<number> {
   const max = deps.maxPasses ?? MAX_CATCHUP_PASSES;
@@ -53,12 +55,18 @@ export async function catchUpLocalAnalysts(deps: {
     const result = await deps.sweep();
     if (!shouldContinueCatchUp(result)) break;
   }
-  await deps.dispatch();
+  try {
+    await deps.dispatch();
+  } finally {
+    if (deps.advisorReview) await deps.advisorReview();
+  }
   return passes;
 }
 
 export const SWEEP_EVERY_MS = 20 * 60 * 1000;
 export const DISPATCH_EVERY_MS = 60 * 60 * 1000;
+/** The Advisor thesis review is idempotent (a criterion notifies once), so a few runs a day are enough. */
+export const ADVISOR_REVIEW_EVERY_MS = 6 * 60 * 60 * 1000;
 /** How often the process checks the wall clock. The jobs themselves stay on the cadence above. */
 export const TICK_EVERY_MS = 60 * 1000;
 /** A run younger than this is never overlapped. Past it, a stalled run does not stop the next one. */
@@ -77,6 +85,8 @@ export const TICK_STALE_MS = 2 * 60 * 1000;
 export interface ScheduleClock {
   lastSweepAt: number | null;
   lastDispatchAt: number | null;
+  /** Absent until the Advisor review has run in this process. */
+  lastAdvisorReviewAt?: number | null;
   /** Start times of the runs that have not finished. */
   runStarts: readonly number[];
 }
@@ -131,4 +141,11 @@ export function decideScheduleTick(clock: ScheduleClock, now: number): TickDecis
     runSweep: isJobDue(clock.lastSweepAt, now, SWEEP_EVERY_MS),
     runDispatch: isJobDue(clock.lastDispatchAt, now, DISPATCH_EVERY_MS),
   };
+}
+
+/** Whether this tick should run the Advisor thesis review: only with the Advisor on, in a free run slot, and once it is due. */
+export function decideAdvisorReview(clock: ScheduleClock, now: number, advisorEnabled: boolean): boolean {
+  if (!advisorEnabled) return false;
+  if (!canStartRun(clock.runStarts, now)) return false;
+  return isJobDue(clock.lastAdvisorReviewAt ?? null, now, ADVISOR_REVIEW_EVERY_MS);
 }
