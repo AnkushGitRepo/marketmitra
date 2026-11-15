@@ -65,3 +65,12 @@ describe('policy import/export', () => {
     expect(r.ok).toBe(false);
   });
 });
+
+describe('maxSectorPct', () => {
+  it('defaults to 30 for policies saved before the field existed', async () => {
+    const older: Record<string, unknown> = { ...DEFAULT_POLICY };
+    delete older.maxSectorPct;
+    const parsed = policySchema.parse(older);
+    expect(parsed.maxSectorPct).toBe(30);
+  });
+});

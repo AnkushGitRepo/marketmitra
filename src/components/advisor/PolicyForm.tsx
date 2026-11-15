@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { importPolicy } from '@/lib/advisor/policy/io';
+import { PROFILES, PROFILE_IDS, policyFromProfile } from '@/lib/advisor/diagnostics/profiles';
 import { REBALANCE_CADENCES, type InvestmentPolicy } from '@/lib/advisor/policy/schema';
 import styles from './advisor.module.css';
 
@@ -124,6 +125,15 @@ export function PolicyForm({ initial, hasSaved }: Props) {
         Importing a file only fills the form — nothing is saved until you press Save.
       </p>
 
+      <div className={styles.presetRow} role="group" aria-label="Start from a preset">
+        <span className={styles.fieldLabel}>Start from</span>
+        {PROFILE_IDS.map((id) => (
+          <button key={id} type="button" className={styles.btnGhost} onClick={() => { setSaved(false); setP((prev) => policyFromProfile(id, prev)); }}>
+            {PROFILES[id].label}
+          </button>
+        ))}
+      </div>
+
       <div className={styles.card}>
         <h2 className={styles.h2}>Money and horizon</h2>
         <div className={styles.grid}>
@@ -181,6 +191,7 @@ export function PolicyForm({ initial, hasSaved }: Props) {
         <h2 className={styles.h2}>Satellite and discipline rules</h2>
         <div className={styles.grid}>
           {field('maxpos', 'Max per stock (%)', p.maxPositionPct, (n) => set('maxPositionPct', n))}
+          {field('maxsec', 'Max per sector (%)', p.maxSectorPct, (n) => set('maxSectorPct', n))}
           {field('maxsat', 'Max satellite stocks', p.maxSatelliteStocks, (n) => set('maxSatelliteStocks', n))}
           {field('hold', 'Minimum hold (months)', p.minHoldMonths, (n) => set('minHoldMonths', n))}
           {field('tranche', 'Lump-sum tranches (months)', p.trancheMonths, (n) => set('trancheMonths', n))}
