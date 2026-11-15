@@ -99,6 +99,33 @@ describe('startLocalAiSchedule', () => {
     expect(dispatch).toHaveBeenCalledTimes(2);
   });
 
+  it('lets at most two stalled runs overlap while the machine sleeps, and carries on once they finish', async () => {
+    const { startLocalAiSchedule } = await import('./localAiSchedule');
+    startLocalAiSchedule();
+    await flush();
+    expect(sweep).toHaveBeenCalledTimes(1);
+
+    // From here on every sweep stalls, as it does when the laptop goes back to sleep mid-run.
+    const result = await quietSweep('local');
+    const finishStalled: Array<() => void> = [];
+    sweep.mockImplementation(() => new Promise((resolve) => finishStalled.push(() => resolve(result))));
+
+    await vi.advanceTimersByTimeAsync(3 * 60 * 60 * 1000);
+    await flush();
+    // The catch-up plus two stalled runs. Hours of due ticks did not start a third.
+    expect(sweep).toHaveBeenCalledTimes(3);
+    expect(finishStalled).toHaveLength(2);
+
+    // The machine wakes: both stalled runs finish, and the next due ticks run normally again.
+    sweep.mockImplementation(quietSweep);
+    finishStalled.forEach((finish) => finish());
+    await flush();
+    await vi.advanceTimersByTimeAsync(SWEEP_EVERY_MS + TICK_EVERY_MS);
+    await flush();
+    expect(sweep).toHaveBeenCalledTimes(4);
+    expect(dispatch.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('still runs a due dispatch when the sweep throws', async () => {
     const { startLocalAiSchedule } = await import('./localAiSchedule');
     startLocalAiSchedule();

@@ -61,15 +61,24 @@ export const SWEEP_EVERY_MS = 20 * 60 * 1000;
 export const DISPATCH_EVERY_MS = 60 * 60 * 1000;
 /** How often the process checks the wall clock. The jobs themselves stay on the cadence above. */
 export const TICK_EVERY_MS = 60 * 1000;
-/** A run older than this no longer blocks the next one. */
+/** A run younger than this is never overlapped. Past it, a stalled run does not stop the next one. */
 export const BUSY_CAP_MS = 15 * 60 * 1000;
+/** How many runs may be in flight at once: one that stalled, for example in sleep, and the current one. */
+export const MAX_RUNS_IN_FLIGHT = 2;
+/**
+ * A run still pending after this long is treated as lost and stops holding a slot, so a run that never
+ * returns cannot stop the schedule for good. Longer than a night's sleep, so stalled runs from a
+ * sleeping laptop never claim a third slot.
+ */
+export const RUN_ABANDON_MS = 12 * 60 * 60 * 1000;
 /** A tick older than this means the timer is gone and must be armed again. */
 export const TICK_STALE_MS = 2 * 60 * 1000;
 
 export interface ScheduleClock {
   lastSweepAt: number | null;
   lastDispatchAt: number | null;
-  busySince: number | null;
+  /** Start times of the runs that have not finished. */
+  runStarts: readonly number[];
 }
 
 export interface TickDecision {
@@ -83,10 +92,26 @@ export function isJobDue(lastAt: number | null, now: number, everyMs: number): b
   return now - lastAt >= everyMs;
 }
 
-/** True while a run started recently enough that another one should wait. */
-export function isRunBlocking(busySince: number | null, now: number, capMs: number = BUSY_CAP_MS): boolean {
-  if (busySince === null) return false;
-  return now - busySince < capMs;
+/**
+ * A new run may start when no live run is still fresh (inside `BUSY_CAP_MS`) and fewer than
+ * `MAX_RUNS_IN_FLIGHT` are live. A run pending for `RUN_ABANDON_MS` or more is not live.
+ */
+export function canStartRun(runStarts: readonly number[], now: number): boolean {
+  const live = runStarts.filter((startedAt) => now - startedAt < RUN_ABANDON_MS);
+  if (live.some((startedAt) => now - startedAt < BUSY_CAP_MS)) return false;
+  return live.length < MAX_RUNS_IN_FLIGHT;
+}
+
+/** `runStarts` with a run that started at `startedAt` added. Runs that were abandoned by then are dropped. */
+export function withRun(runStarts: readonly number[], startedAt: number): number[] {
+  return [...runStarts.filter((other) => startedAt - other < RUN_ABANDON_MS), startedAt];
+}
+
+/** `runStarts` without one run that started at `startedAt`. A start that is not in the list changes nothing. */
+export function withoutRun(runStarts: readonly number[], startedAt: number): number[] {
+  const index = runStarts.indexOf(startedAt);
+  if (index === -1) return [...runStarts];
+  return [...runStarts.slice(0, index), ...runStarts.slice(index + 1)];
 }
 
 /**
@@ -99,9 +124,9 @@ export function shouldRearmSchedule(input: { hasTimer: boolean; lastTickAt: numb
   return now - input.lastTickAt >= TICK_STALE_MS;
 }
 
-/** Which jobs this tick should start. A run that is still inside the busy cap starts neither. */
+/** Which jobs this tick should start. While no run slot is free, it starts neither. */
 export function decideScheduleTick(clock: ScheduleClock, now: number): TickDecision {
-  if (isRunBlocking(clock.busySince, now)) return { runSweep: false, runDispatch: false };
+  if (!canStartRun(clock.runStarts, now)) return { runSweep: false, runDispatch: false };
   return {
     runSweep: isJobDue(clock.lastSweepAt, now, SWEEP_EVERY_MS),
     runDispatch: isJobDue(clock.lastDispatchAt, now, DISPATCH_EVERY_MS),

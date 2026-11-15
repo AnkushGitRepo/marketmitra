@@ -3,15 +3,19 @@ import { MAX_HEARTBEATS } from '@/lib/analysts/sweepLimits';
 import {
   BUSY_CAP_MS,
   DISPATCH_EVERY_MS,
+  MAX_RUNS_IN_FLIGHT,
+  RUN_ABANDON_MS,
   SWEEP_EVERY_MS,
   TICK_STALE_MS,
+  canStartRun,
   catchUpLocalAnalysts,
   decideScheduleTick,
   isJobDue,
-  isRunBlocking,
   localScheduleEnabled,
   shouldContinueCatchUp,
   shouldRearmSchedule,
+  withRun,
+  withoutRun,
   type CatchUpPass,
 } from './localSchedule';
 
@@ -92,29 +96,73 @@ describe('wall-clock cadence', () => {
     expect(isJobDue(t0, t0 + DISPATCH_EVERY_MS, DISPATCH_EVERY_MS)).toBe(true);
   });
 
-  it('blocks only while the current run is inside the cap', () => {
-    expect(isRunBlocking(null, t0)).toBe(false);
-    expect(isRunBlocking(t0, t0 + BUSY_CAP_MS - 1)).toBe(true);
-    expect(isRunBlocking(t0, t0 + BUSY_CAP_MS)).toBe(false);
-  });
-
-  it('starts a due job and skips both while a run is still blocking', () => {
-    expect(decideScheduleTick({ lastSweepAt: null, lastDispatchAt: t0, busySince: null }, t0)).toEqual({
+  it('starts a due job and skips both while a fresh run is going', () => {
+    expect(decideScheduleTick({ lastSweepAt: null, lastDispatchAt: t0, runStarts: [] }, t0)).toEqual({
       runSweep: true,
       runDispatch: false,
     });
     expect(
       decideScheduleTick(
-        { lastSweepAt: t0 - SWEEP_EVERY_MS, lastDispatchAt: t0 - DISPATCH_EVERY_MS, busySince: t0 },
+        { lastSweepAt: t0 - SWEEP_EVERY_MS, lastDispatchAt: t0 - DISPATCH_EVERY_MS, runStarts: [t0] },
         t0 + 1_000,
       ),
     ).toEqual({ runSweep: false, runDispatch: false });
     expect(
       decideScheduleTick(
-        { lastSweepAt: t0 - SWEEP_EVERY_MS, lastDispatchAt: t0 - DISPATCH_EVERY_MS, busySince: t0 - BUSY_CAP_MS },
+        { lastSweepAt: t0 - SWEEP_EVERY_MS, lastDispatchAt: t0 - DISPATCH_EVERY_MS, runStarts: [t0 - BUSY_CAP_MS] },
         t0,
       ),
     ).toEqual({ runSweep: true, runDispatch: true });
+  });
+
+  it('starts nothing once the stalled runs fill every slot', () => {
+    const due = { lastSweepAt: t0 - SWEEP_EVERY_MS, lastDispatchAt: t0 - DISPATCH_EVERY_MS };
+    const stalled = [t0 - 2 * BUSY_CAP_MS, t0 - 3 * BUSY_CAP_MS];
+    expect(decideScheduleTick({ ...due, runStarts: stalled }, t0)).toEqual({ runSweep: false, runDispatch: false });
+    expect(decideScheduleTick({ ...due, runStarts: stalled.slice(0, 1) }, t0)).toEqual({
+      runSweep: true,
+      runDispatch: true,
+    });
+  });
+
+  describe('run slots', () => {
+    it('starts when nothing is running', () => {
+      expect(canStartRun([], t0)).toBe(true);
+    });
+
+    it('waits for a fresh run, then lets one more start beside a stalled one', () => {
+      expect(canStartRun([t0], t0 + BUSY_CAP_MS - 1)).toBe(false);
+      expect(canStartRun([t0], t0 + BUSY_CAP_MS)).toBe(true);
+    });
+
+    it('never has more than MAX_RUNS_IN_FLIGHT runs going', () => {
+      expect(MAX_RUNS_IN_FLIGHT).toBe(2);
+      const now = t0 + 2 * BUSY_CAP_MS;
+      expect(canStartRun([t0, t0 + 1_000], now)).toBe(false);
+      // A fresh run still blocks, however many slots are free.
+      expect(canStartRun([t0, now - 1_000], now)).toBe(false);
+    });
+
+    it('stops counting a run that has been pending for RUN_ABANDON_MS', () => {
+      const stalled = [t0, t0 + 60 * 60 * 1000];
+      expect(canStartRun(stalled, t0 + RUN_ABANDON_MS - 1)).toBe(false);
+      expect(canStartRun(stalled, t0 + RUN_ABANDON_MS)).toBe(true);
+    });
+
+    it('adds a run without mutating the list, and drops runs that were abandoned', () => {
+      const before = [t0, t0 + 1_000];
+      expect(withRun(before, t0 + 2_000)).toEqual([t0, t0 + 1_000, t0 + 2_000]);
+      expect(before).toEqual([t0, t0 + 1_000]);
+      expect(withRun(before, t0 + RUN_ABANDON_MS)).toEqual([t0 + 1_000, t0 + RUN_ABANDON_MS]);
+    });
+
+    it('removes one run by its start, leaves the others, and ignores a start it does not know', () => {
+      const before = [t0, t0 + 1_000, t0 + 2_000];
+      expect(withoutRun(before, t0 + 1_000)).toEqual([t0, t0 + 2_000]);
+      expect(withoutRun(before, t0 + 5_000)).toEqual(before);
+      expect(withoutRun([t0, t0], t0)).toEqual([t0]);
+      expect(before).toEqual([t0, t0 + 1_000, t0 + 2_000]);
+    });
   });
 
   it('re-arms when there is no timer or the last tick is stale', () => {
