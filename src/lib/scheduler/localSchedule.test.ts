@@ -1,6 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MAX_HEARTBEATS } from '@/lib/analysts/sweepLimits';
-import { catchUpLocalAnalysts, localScheduleEnabled, shouldContinueCatchUp, type CatchUpPass } from './localSchedule';
+import {
+  BUSY_CAP_MS,
+  DISPATCH_EVERY_MS,
+  SWEEP_EVERY_MS,
+  TICK_STALE_MS,
+  catchUpLocalAnalysts,
+  decideScheduleTick,
+  isJobDue,
+  isRunBlocking,
+  localScheduleEnabled,
+  shouldContinueCatchUp,
+  shouldRearmSchedule,
+  type CatchUpPass,
+} from './localSchedule';
 
 const quiet: CatchUpPass = { initiated: 0, deferred: 0, checked: 0, requeued: 0 };
 
@@ -65,5 +78,49 @@ describe('catchUpLocalAnalysts', () => {
     const dispatch = vi.fn(async () => undefined);
     expect(await catchUpLocalAnalysts({ sweep, dispatch })).toBe(1);
     expect(sweep).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('wall-clock cadence', () => {
+  const t0 = 1_700_000_000_000;
+
+  it('treats a missing last run as due, and a run as due once its interval has elapsed', () => {
+    expect(isJobDue(null, t0, SWEEP_EVERY_MS)).toBe(true);
+    expect(isJobDue(t0, t0 + SWEEP_EVERY_MS - 1, SWEEP_EVERY_MS)).toBe(false);
+    expect(isJobDue(t0, t0 + SWEEP_EVERY_MS, SWEEP_EVERY_MS)).toBe(true);
+    expect(isJobDue(t0, t0 + DISPATCH_EVERY_MS - 1, DISPATCH_EVERY_MS)).toBe(false);
+    expect(isJobDue(t0, t0 + DISPATCH_EVERY_MS, DISPATCH_EVERY_MS)).toBe(true);
+  });
+
+  it('blocks only while the current run is inside the cap', () => {
+    expect(isRunBlocking(null, t0)).toBe(false);
+    expect(isRunBlocking(t0, t0 + BUSY_CAP_MS - 1)).toBe(true);
+    expect(isRunBlocking(t0, t0 + BUSY_CAP_MS)).toBe(false);
+  });
+
+  it('starts a due job and skips both while a run is still blocking', () => {
+    expect(decideScheduleTick({ lastSweepAt: null, lastDispatchAt: t0, busySince: null }, t0)).toEqual({
+      runSweep: true,
+      runDispatch: false,
+    });
+    expect(
+      decideScheduleTick(
+        { lastSweepAt: t0 - SWEEP_EVERY_MS, lastDispatchAt: t0 - DISPATCH_EVERY_MS, busySince: t0 },
+        t0 + 1_000,
+      ),
+    ).toEqual({ runSweep: false, runDispatch: false });
+    expect(
+      decideScheduleTick(
+        { lastSweepAt: t0 - SWEEP_EVERY_MS, lastDispatchAt: t0 - DISPATCH_EVERY_MS, busySince: t0 - BUSY_CAP_MS },
+        t0,
+      ),
+    ).toEqual({ runSweep: true, runDispatch: true });
+  });
+
+  it('re-arms when there is no timer or the last tick is stale', () => {
+    expect(shouldRearmSchedule({ hasTimer: false, lastTickAt: t0 }, t0)).toBe(true);
+    expect(shouldRearmSchedule({ hasTimer: true, lastTickAt: null }, t0)).toBe(true);
+    expect(shouldRearmSchedule({ hasTimer: true, lastTickAt: t0 }, t0 + TICK_STALE_MS - 1)).toBe(false);
+    expect(shouldRearmSchedule({ hasTimer: true, lastTickAt: t0 }, t0 + TICK_STALE_MS)).toBe(true);
   });
 });
