@@ -465,7 +465,7 @@ live run, and deployed to production. Full detail: [archive/multi-agent-analysis
 
 ## Analyst desk
 
-Every holding gets a persistent analyst (`stockAnalysts`) with a dossier, a journal and a morning brief ([ADR 0058](./decisions/0058-analyst-desk.md)). The hosted site runs `POST /api/cron/stock-analysts` every 20 minutes and `POST /api/cron/analyst-dispatch` at 08:30 IST from GitHub Actions. A local or self-hosted process runs the same work for the user `local` when the app is up, including a catch-up after the machine was off ([ADR 0062](./decisions/0062-local-analyst-catch-up.md)). Set `LOCAL_AI_SCHEDULE=off` to disable that. Nothing runs while the process is down.
+Every holding gets a persistent analyst (`stockAnalysts`) with a dossier, a journal and a morning brief ([ADR 0058](./decisions/0058-analyst-desk.md)). The hosted site runs `POST /api/cron/stock-analysts` every 20 minutes and `POST /api/cron/analyst-dispatch` at 08:30 IST from GitHub Actions. A local or self-hosted process runs the same work for the user `local` when the app is up, including a catch-up after the machine was off, and keeps the cadence from the wall clock while that process stays up ([ADR 0062](./decisions/0062-local-analyst-catch-up.md)). Set `LOCAL_AI_SCHEDULE=off` to disable that. Nothing runs while the process is down.
 
 ## Shipped features (see `/docs/archive/` for detail)
 

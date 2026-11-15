@@ -59,3 +59,51 @@ export async function catchUpLocalAnalysts(deps: {
 
 export const SWEEP_EVERY_MS = 20 * 60 * 1000;
 export const DISPATCH_EVERY_MS = 60 * 60 * 1000;
+/** How often the process checks the wall clock. The jobs themselves stay on the cadence above. */
+export const TICK_EVERY_MS = 60 * 1000;
+/** A run older than this no longer blocks the next one. */
+export const BUSY_CAP_MS = 15 * 60 * 1000;
+/** A tick older than this means the timer is gone and must be armed again. */
+export const TICK_STALE_MS = 2 * 60 * 1000;
+
+export interface ScheduleClock {
+  lastSweepAt: number | null;
+  lastDispatchAt: number | null;
+  busySince: number | null;
+}
+
+export interface TickDecision {
+  runSweep: boolean;
+  runDispatch: boolean;
+}
+
+/** True when `lastAt` is missing or at least `everyMs` has passed. */
+export function isJobDue(lastAt: number | null, now: number, everyMs: number): boolean {
+  if (lastAt === null) return true;
+  return now - lastAt >= everyMs;
+}
+
+/** True while a run started recently enough that another one should wait. */
+export function isRunBlocking(busySince: number | null, now: number, capMs: number = BUSY_CAP_MS): boolean {
+  if (busySince === null) return false;
+  return now - busySince < capMs;
+}
+
+/**
+ * A timer that was never armed, or whose last tick is older than `TICK_STALE_MS`, has to be armed again.
+ * A live timer with a recent tick stays as it is.
+ */
+export function shouldRearmSchedule(input: { hasTimer: boolean; lastTickAt: number | null }, now: number): boolean {
+  if (!input.hasTimer) return true;
+  if (input.lastTickAt === null) return true;
+  return now - input.lastTickAt >= TICK_STALE_MS;
+}
+
+/** Which jobs this tick should start. A run that is still inside the busy cap starts neither. */
+export function decideScheduleTick(clock: ScheduleClock, now: number): TickDecision {
+  if (isRunBlocking(clock.busySince, now)) return { runSweep: false, runDispatch: false };
+  return {
+    runSweep: isJobDue(clock.lastSweepAt, now, SWEEP_EVERY_MS),
+    runDispatch: isJobDue(clock.lastDispatchAt, now, DISPATCH_EVERY_MS),
+  };
+}
