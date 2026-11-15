@@ -32,6 +32,8 @@ export const policyBaseSchema = z.object({
   }),
   indexCoreHoldings: z.array(indexCoreHoldingSchema).max(10),
   maxPositionPct: z.number().gt(0).max(100).default(8),
+  /** The most one sector may be of the whole portfolio; the drift audit and fit check read it. */
+  maxSectorPct: z.number().gt(0).max(100).default(30),
   maxSatelliteStocks: z.number().int().min(0).max(50).default(8),
   minHoldMonths: z.number().int().min(0).max(120).default(12),
   trancheMonths: z.number().int().min(1).max(36).default(6),
@@ -106,6 +108,7 @@ export const DEFAULT_POLICY: InvestmentPolicy = {
   targetAllocation: { indexCorePct: 70, satellitePct: 20, cashPct: 10 },
   indexCoreHoldings: [{ name: 'Nifty 50 index fund', weightPct: 100 }],
   maxPositionPct: 8,
+  maxSectorPct: 30,
   maxSatelliteStocks: 8,
   minHoldMonths: 12,
   trancheMonths: 6,

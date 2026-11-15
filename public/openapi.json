@@ -5892,6 +5892,134 @@
           }
         }
       }
+    },
+    "/api/advisor/overview": {
+      "get": {
+        "tags": [
+          "Advisor"
+        ],
+        "summary": "Portfolio against your limits",
+        "description": "Drift audit (single-stock and sector weights against limits), drawdown review, the holdings-synced decision tracker and, with `amount`, how new money sits against the limits. Works with no saved policy (a preset applies). Recommend-only; nothing is executed. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profile",
+            "in": "query",
+            "required": false,
+            "description": "Preset used when no policy is saved.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "conservative",
+                "balanced",
+                "aggressive"
+              ],
+              "default": "balanced"
+            }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "required": false,
+            "description": "Fresh money in rupees to place against the limits.",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "The Advisor disclaimer has not been accepted."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "422": {
+            "description": "Invalid query."
+          },
+          "500": {
+            "description": "Could not load the portfolio."
+          }
+        }
+      }
+    },
+    "/api/advisor/fit": {
+      "get": {
+        "tags": [
+          "Advisor"
+        ],
+        "summary": "Does a stock fit my rules",
+        "description": "Checks whether adding an amount of one ticker would break your single-stock limit, sector limit or exclusions. It checks your own rules, not the company. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "default": 10000
+            }
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "conservative",
+                "balanced",
+                "aggressive"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "403": {
+            "description": "The Advisor disclaimer has not been accepted."
+          },
+          "404": {
+            "description": "Advisor is not enabled."
+          },
+          "422": {
+            "description": "Invalid symbol."
+          },
+          "500": {
+            "description": "Could not run the check."
+          }
+        }
+      }
     }
   }
 }
