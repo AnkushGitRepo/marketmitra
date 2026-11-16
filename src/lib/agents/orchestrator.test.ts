@@ -5,6 +5,8 @@ import type { AnalystReport, DebateTurn } from './types';
 const generateInsightText = vi.fn();
 vi.mock('@/lib/ai/generate', () => ({ generateInsightText: (...a: unknown[]) => generateInsightText(...a) }));
 
+vi.mock('@/lib/ai/decisions/screens', () => ({ tradeAdviceCheck: () => async () => false }));
+
 const { runAnalysts, runDebateRound, runSynthesis, extractKeyClaims } = await import('./orchestrator');
 
 const cfg = { provider: 'gemini', apiKey: 'k' } as never;

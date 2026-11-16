@@ -1,4 +1,4 @@
-import { modelSaysTradeAdvice } from '@/lib/ai/decisions/screens';
+import { tradeAdviceCheck } from '@/lib/ai/decisions/screens';
 import { generateInsightText } from '@/lib/ai/generate';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { getDocuments } from '@/lib/dashboard/fundamentalsApi';
@@ -76,7 +76,7 @@ export async function createMemo(
     sector: screened.sector,
     sources,
     generate: (system, prompt) => generateInsightText(config, system, prompt, { maxOutputTokens: 6000 }),
-    adviceCheck: async (text) => (await modelSaysTradeAdvice(config, text)).flagged,
+    adviceCheck: tradeAdviceCheck(config),
   });
   if (!run.ok) {
     return {

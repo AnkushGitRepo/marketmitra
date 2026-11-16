@@ -13,7 +13,7 @@ import {
   CLAIMS_SYSTEM,
   SYNTHESIS_SYSTEM,
 } from './prompts';
-import { modelSaysTradeAdvice } from '@/lib/ai/decisions/screens';
+import { tradeAdviceCheck } from '@/lib/ai/decisions/screens';
 import { scanForTradeActions } from './tradeActionCheck';
 import {
   ANALYST_ROLES,
@@ -105,7 +105,7 @@ export async function runSynthesis(
   debate: DebateTurn[],
   lessons?: string,
   /** A second opinion beyond the regex (a decision model): true means the draft reads as trade advice. */
-  readsAsAdvice: (text: string) => Promise<boolean> = async (text) => (await modelSaysTradeAdvice(config, text)).flagged
+  readsAsAdvice: (text: string) => Promise<boolean> = tradeAdviceCheck(config)
 ): Promise<{ briefing: string; regenerated: boolean } | PhaseError> {
   const lessonBlock = lessons ? `\n\n${lessons}` : '';
   const prompt = `Analyst reports:\n${analystDigest(reports)}${lessonBlock}\n\nFull debate:\n${debateBlock(debate)}`;

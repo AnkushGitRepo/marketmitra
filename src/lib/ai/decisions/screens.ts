@@ -44,7 +44,8 @@ async function ask(config: AiConfig | null, text: string, question: string, thre
   if (!config || input === '') return NOT_CONSULTED;
   const result = await askYesNo(config, input, { [VERDICT]: question }, deps);
   if (!result.ok) {
-    if (result.reason !== 'unavailable') void (deps.log ?? defaultLog)(result.message);
+    // A logging failure must never break the caller, or surface as an unhandled rejection.
+    if (result.reason !== 'unavailable') void (async () => (deps.log ?? defaultLog)(result.message))().catch(() => undefined);
     return NOT_CONSULTED;
   }
   const yes = result.answers[VERDICT].yes;
@@ -59,4 +60,9 @@ export function modelSaysDipRequest(config: AiConfig | null, text: string, deps:
 /** Does the model read this text as telling the reader to buy, sell or hold? */
 export function modelSaysTradeAdvice(config: AiConfig | null, text: string, deps: ScreenDeps = {}): Promise<ScreenVerdict> {
   return ask(config, text, TRADE_ADVICE_QUESTION, TRADE_ADVICE_THRESHOLD, deps);
+}
+
+/** The trade-advice check as a plain predicate, for the places that only need a yes or no. */
+export function tradeAdviceCheck(config: AiConfig | null, deps: ScreenDeps = {}): (text: string) => Promise<boolean> {
+  return async (text) => (await modelSaysTradeAdvice(config, text, deps)).flagged;
 }

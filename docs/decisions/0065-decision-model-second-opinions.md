@@ -17,3 +17,13 @@ A decision model (a "System One" model) answers typed questions about an input w
 - Each Advisor chat message that the regex misses costs one small call; the memo and synthesis cost one more call each. Output tokens are free; input is billed. Context caching and the Batch API are not supported by the model.
 - A false positive on the memo can reject a good memo after the repair attempt; this is the thing to watch once a key is available.
 - Deliberately not done here, each needing its own labelled evaluation: replacing the VADER headline sentiment, materiality gating for the Analyst Desk, prompt-injection screens on filing text, and cost routing.
+
+## Checking it against the real API
+`src/lib/ai/decisions/live.test.ts` runs the probe phrases (the dip questions and advice wordings the regexes miss, plus ordinary questions and neutral analysis that must not be flagged) through the real Gemini Decisions API. It is skipped unless a key is supplied, so CI and `npm test` make no network call:
+
+```bash
+GEMINI_DECISIONS_TEST_KEY=... npx vitest run src/lib/ai/decisions/live.test.ts
+```
+
+Run it before trusting `DIP_THRESHOLD` and `TRADE_ADVICE_THRESHOLD`, and again if either threshold or a question's wording changes. The other tests use a stubbed `fetch`: `contract.test.ts` pins the request and reply to Google's documented quickstart, and the wiring tests (`chat.decisions.test.ts`, `orchestrator.decisions.test.ts`, `adviceCheck.test.ts`) run each caller through the real client with only the network stubbed.
+
