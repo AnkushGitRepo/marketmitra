@@ -94,6 +94,13 @@ function allClaims(memo: Memo): Array<{ path: string; claim: Claim }> {
   return out;
 }
 
+/** The text of every claim in the memo, one per line, for checks that read the memo as a whole. */
+export function memoClaimText(memo: Memo): string {
+  return allClaims(memo)
+    .map(({ claim }) => claim.text)
+    .join('\n');
+}
+
 export type ValidationResult = { ok: true; memo: Memo } | { ok: false; issues: ClaimIssue[] };
 
 /** Validate raw model output (already JSON-parsed) against schema, citations and tone. */

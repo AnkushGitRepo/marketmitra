@@ -13,6 +13,8 @@ vi.mock('@/lib/dashboard/fundamentalsApi', () => ({
     { trade_date: '2026-11-05', close: '95' },
   ]),
 }));
+const modelSaysDip = vi.fn<(config: unknown, text: string) => Promise<{ flagged: boolean; probability: number | null; via: 'decision-model' | 'none' }>>(async () => ({ flagged: false, probability: 0.1, via: 'decision-model' }));
+vi.mock('@/lib/ai/decisions/screens', () => ({ modelSaysDipRequest: (config: unknown, text: string) => modelSaysDip(config, text) }));
 vi.mock('../performance/service', () => ({ BENCHMARK_SYMBOL: 'NIFTYBEES' }));
 vi.mock('../chatTools', () => ({ buildAdvisorChatTools: vi.fn(() => ({ advisor_current_plan: {} })) }));
 
@@ -29,6 +31,23 @@ beforeEach(() => {
 });
 
 describe('prepareAdvisorChat', () => {
+  it('treats a phrasing the regexes miss as a dip question when the decision model says so', async () => {
+    vi.stubEnv('ADVISOR_MODE', 'enabled');
+    modelSaysDip.mockResolvedValueOnce({ flagged: true, probability: 0.93, via: 'decision-model' });
+    const config = { provider: 'gemini', apiKey: 'k', model: null } as const;
+    const p = await prepareAdvisorChat('local', 'Nifty is bleeding today, is this the bottom?', NOW, config);
+    expect(p?.advisorToolsOnly).toBe(true);
+    expect(markDipServed).toHaveBeenCalledWith('local', NOW);
+    expect(modelSaysDip).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not consult the model without an AI config', async () => {
+    vi.stubEnv('ADVISOR_MODE', 'enabled');
+    const p = await prepareAdvisorChat('local', 'Nifty is bleeding today, is this the bottom?', NOW);
+    expect(p?.advisorToolsOnly).toBe(false);
+    expect(modelSaysDip).not.toHaveBeenCalled();
+  });
+
   it('does nothing when the flag is off — chat is untouched', async () => {
     vi.stubEnv('ADVISOR_MODE', '');
     expect(await prepareAdvisorChat('local', 'should I buy the dip?', NOW)).toBeNull();

@@ -1,4 +1,4 @@
-import { issuesToText, validateMemo, type ClaimIssue } from './cite';
+import { issuesToText, memoClaimText, validateMemo, type ClaimIssue } from './cite';
 import { buildMemoPrompt, buildRetryPrompt, MEMO_PROMPT_VERSION, MEMO_SYSTEM } from './prompts/v1';
 import type { Memo, SourceRef } from './types';
 
@@ -12,6 +12,11 @@ export type MemoRun =
   | { ok: false; reason: 'generation_failed' | 'rejected'; error: string; issues: ClaimIssue[]; attempts: number };
 
 const MAX_ATTEMPTS = 2;
+
+const ADVICE_ISSUE: ClaimIssue = {
+  path: 'memo',
+  message: 'Some of the text reads as telling the reader to buy, sell or hold. Describe the evidence only.',
+};
 
 /** Pulls the JSON object out of a model reply (tolerates code fences / prose). */
 export function extractJson(text: string): unknown {
@@ -33,6 +38,8 @@ export async function generateMemo(args: {
   sector: string | null;
   sources: SourceRef[];
   generate: GenerateFn;
+  /** A second opinion on the memo's wording as a whole (a decision model): true means it reads as trade advice. */
+  adviceCheck?: (text: string) => Promise<boolean>;
 }): Promise<MemoRun> {
   const base = buildMemoPrompt(args);
   let prompt = base;
@@ -45,8 +52,10 @@ export async function generateMemo(args: {
       issues = [{ path: 'memo', message: 'The reply was not a valid JSON object.' }];
     } else {
       const v = validateMemo(json, args.sources);
-      if (v.ok) return { ok: true, memo: v.memo, model: res.model, attempts: attempt, promptVersion: MEMO_PROMPT_VERSION };
-      issues = v.issues;
+      if (v.ok && !(args.adviceCheck && (await args.adviceCheck(memoClaimText(v.memo))))) {
+        return { ok: true, memo: v.memo, model: res.model, attempts: attempt, promptVersion: MEMO_PROMPT_VERSION };
+      }
+      issues = v.ok ? [ADVICE_ISSUE] : v.issues;
     }
     prompt = buildRetryPrompt(base, res.text, issuesToText(issues));
   }
