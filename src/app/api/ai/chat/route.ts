@@ -102,7 +102,7 @@ async function handlePOST(request: Request) {
 
   // Mitra Advisor (local-only, ADR 0035): null unless the flag is on and a
   // policy exists, in which case chat is exactly what it was before.
-  const advisor = await prepareAdvisorChat(userId, lastUserMessage, new Date()).catch(() => null);
+  const advisor = await prepareAdvisorChat(userId, lastUserMessage, new Date(), aiConfig).catch(() => null);
   if (advisor?.blockedReply) return textReply(advisor.blockedReply);
 
   // Guarded unless a local user opted in (ADR 0054); the hosted site is always guarded.

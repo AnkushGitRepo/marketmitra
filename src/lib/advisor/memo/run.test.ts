@@ -55,4 +55,22 @@ describe('generateMemo', () => {
     expect(!r.ok && r.reason).toBe('generation_failed');
     expect(generate).toHaveBeenCalledTimes(1);
   });
+
+  it('sends a grounded memo that reads as advice back for repair, then accepts the rewrite', async () => {
+    const generate = vi
+      .fn<GenerateFn>()
+      .mockResolvedValueOnce({ ok: true, text: JSON.stringify(goodMemo), model: 'm' })
+      .mockResolvedValueOnce({ ok: true, text: JSON.stringify(goodMemo), model: 'm' });
+    const adviceCheck = vi.fn<(text: string) => Promise<boolean>>().mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    const r = await generateMemo({ ...base, generate, adviceCheck });
+    expect(r.ok && r.attempts).toBe(2);
+    expect(generate.mock.calls[1][1]).toMatch(/buy, sell or hold/i);
+    expect(adviceCheck.mock.calls[0][0]).toContain('Sticky clients.');
+  });
+
+  it('rejects a memo the model keeps flagging as advice', async () => {
+    const generate = vi.fn<GenerateFn>(async () => ({ ok: true, text: JSON.stringify(goodMemo), model: 'm' }));
+    const r = await generateMemo({ ...base, generate, adviceCheck: async () => true });
+    expect(r.ok).toBe(false);
+  });
 });

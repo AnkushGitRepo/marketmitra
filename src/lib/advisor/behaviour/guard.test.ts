@@ -79,3 +79,17 @@ describe('policy wording', () => {
     expect(calm).not.toMatch(/under stress/);
   });
 });
+
+describe('known gaps in the regexes, covered by the decision model (#206)', () => {
+  // These are real questions a user could ask. The fixed patterns do not recognise them, which is why the
+  // Gemini decision model is asked as well. If a pattern is ever widened to catch one, move it above.
+  it.each([
+    'Nifty is bleeding today, is this the bottom? Time to go in?',
+    'Market crashed 4%, my SIP feels too small, should I put in my savings now?',
+    'Everything is red. Is it a good moment to average down on Nykaa?',
+    'Prices are way lower than last month, worth loading up?',
+  ])('does not match: %s', (text) => {
+    expect(isDipRequest(text)).toBe(false);
+  });
+});
+

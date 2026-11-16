@@ -5,6 +5,8 @@ import type { AnalystReport, DebateTurn } from './types';
 const generateInsightText = vi.fn();
 vi.mock('@/lib/ai/generate', () => ({ generateInsightText: (...a: unknown[]) => generateInsightText(...a) }));
 
+vi.mock('@/lib/ai/decisions/screens', () => ({ tradeAdviceCheck: () => async () => false }));
+
 const { runAnalysts, runDebateRound, runSynthesis, extractKeyClaims } = await import('./orchestrator');
 
 const cfg = { provider: 'gemini', apiKey: 'k' } as never;
@@ -96,6 +98,37 @@ describe('runSynthesis', () => {
     expect(out.regenerated).toBe(true);
     expect(out.briefing).toBe('A neutral assessment of the arguments.');
     expect(generateInsightText).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('runSynthesis with the decision-model check', () => {
+  const debate: DebateTurn[] = [{ side: 'bull', round: 1, text: 'b' }];
+
+  it('regenerates a draft the regex passes but the model reads as advice', async () => {
+    generateInsightText
+      .mockResolvedValueOnce({ ok: true, text: 'It would be wise to pick up more shares on weakness.', model: 'm' })
+      .mockResolvedValueOnce({ ok: true, text: 'A neutral assessment of the arguments.', model: 'm' });
+    const screen = vi.fn(async () => true);
+    const out = (await runSynthesis(cfg, reports, debate, undefined, screen)) as { briefing: string; regenerated: boolean };
+    expect(out.regenerated).toBe(true);
+    expect(generateInsightText).toHaveBeenCalledTimes(2);
+    expect(screen).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a draft both checks accept', async () => {
+    generateInsightText.mockResolvedValue({ ok: true, text: 'The bear case is better evidenced on margins.', model: 'm' });
+    const out = await runSynthesis(cfg, reports, debate, undefined, async () => false);
+    expect(out).toEqual({ briefing: 'The bear case is better evidenced on margins.', regenerated: false });
+    expect(generateInsightText).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not ask the model when the regex already caught the draft', async () => {
+    generateInsightText
+      .mockResolvedValueOnce({ ok: true, text: 'We would recommend investors to buy the stock.', model: 'm' })
+      .mockResolvedValueOnce({ ok: true, text: 'Neutral.', model: 'm' });
+    const screen = vi.fn(async () => false);
+    await runSynthesis(cfg, reports, debate, undefined, screen);
+    expect(screen).not.toHaveBeenCalled();
   });
 });
 

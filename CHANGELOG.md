@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- With a Gemini key, the Advisor's "buy the dip" detection and the "no trade advice" checks on agent briefings and research memos also use Google's Gemini Decisions model, so ordinary wording is caught as well as the fixed phrases. Without a Gemini key nothing changes. ([#206](https://github.com/AnkushGitRepo/marketmitra/issues/206))
 - The Advisor opens on your own holdings with no setup: weights against single-stock and sector limits, a fresh-money view, holdings down 30% or more, a check of whether a stock fits your rules, and a decision tracker built from your holdings. A preset applies until you save a policy, which now also has a sector limit. It stays local-only. ([#202](https://github.com/AnkushGitRepo/marketmitra/issues/202))
 - With automatic analysts turned off, a card that does not yet have a dossier offers Generate dossier, so you choose which one to build. A paused analyst can be built that way. ([#194](https://github.com/AnkushGitRepo/marketmitra/issues/194))
 - Search and sharing metadata: a descriptive page title and description, keywords, a canonical URL and structured data for search engines, and a clearer README opening and package description. ([#187](https://github.com/AnkushGitRepo/marketmitra/pull/187))

@@ -30,3 +30,17 @@ describe('scanForTradeActions', () => {
     ).toBe(true);
   });
 });
+
+describe('known gaps in the patterns, covered by the decision model (#206)', () => {
+  // Trade advice in wording the fixed patterns do not recognise. The Gemini decision model is asked as well.
+  // If a pattern is ever widened to catch one, move it into a test above.
+  it.each([
+    'It would be wise to pick up more shares of Laurus on weakness.',
+    'Investors may want to take some money off the table here.',
+    'This one looks like a screaming bargain at current levels.',
+    'Consider lightening the position before results.',
+  ])('passes the scan: %s', (text) => {
+    expect(scanForTradeActions(text).ok).toBe(true);
+  });
+});
+

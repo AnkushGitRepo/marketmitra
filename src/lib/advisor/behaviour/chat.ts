@@ -1,10 +1,12 @@
 import type { ToolSet } from 'ai';
+import type { AiConfig } from '@/lib/ai/providers';
 import { getPrices } from '@/lib/dashboard/fundamentalsApi';
 import { buildAdvisorChatTools } from '../chatTools';
 import { isAdvisorEnabled } from '../flag';
 import { BENCHMARK_SYMBOL } from '../performance/service';
 import { getPolicy, hasAcknowledged } from '../policy/store';
-import { assessMarket, checkCooldown, dipCooldownReply, isDipRequest, policyPromptBlock } from './guard';
+import { detectDipRequest } from './dip';
+import { assessMarket, checkCooldown, dipCooldownReply, policyPromptBlock } from './guard';
 import { getLastDipAt, markDipServed } from './store';
 
 export interface AdvisorChatPlan {
@@ -20,7 +22,7 @@ export interface AdvisorChatPlan {
 
 /** Everything the chat route needs to put Mitra on the user's policy. Null when
  * the Advisor is off, un-acknowledged, or has no policy — chat is then untouched. */
-export async function prepareAdvisorChat(userId: string, userText: string, now: Date): Promise<AdvisorChatPlan | null> {
+export async function prepareAdvisorChat(userId: string, userText: string, now: Date, aiConfig: AiConfig | null = null): Promise<AdvisorChatPlan | null> {
   if (!isAdvisorEnabled()) return null;
   if (!(await hasAcknowledged(userId))) return null;
   const policy = await getPolicy(userId);
@@ -32,7 +34,7 @@ export async function prepareAdvisorChat(userId: string, userText: string, now: 
     .filter((p) => Number.isFinite(p.close))
     .sort((a, b) => a.date.localeCompare(b.date));
   const market = assessMarket(series);
-  const dip = isDipRequest(userText);
+  const { dip } = await detectDipRequest(userText, aiConfig);
 
   let blockedReply: string | null = null;
   if (dip) {
