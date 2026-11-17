@@ -8,10 +8,20 @@ const state = {
   route: { kind: 'send', to: 'me@example.com' } as { kind: 'send'; to: string } | { kind: 'skip'; reason: string },
   emailStatus: 'sent' as 'sent' | 'skipped' | 'error',
   claimed: true,
+  holdings: [{ symbol: 'ACC', quantity: 10 }] as Array<{ symbol: string; quantity: number }>,
+  quotes: [{ symbol: 'ACC', price: 100 }] as Array<{ symbol: string; price: number }>,
+  quotesDown: false,
   delivered: [] as Array<{ title: string; body: string; channels: unknown }>,
   outcomes: [] as Array<[string, string | null]>,
 };
 
+vi.mock('@/lib/holdings', () => ({ listHoldings: async () => state.holdings }));
+vi.mock('@/lib/dashboard/quotes', () => ({
+  getQuotes: async () => {
+    if (state.quotesDown) throw new Error('quotes down');
+    return state.quotes;
+  },
+}));
 vi.mock('./store', () => ({ listAnalysts: async () => state.analysts, recentEntries: async () => state.entries }));
 vi.mock('./dispatchStore', () => ({
   saveDispatch: async () => state.claimed,
@@ -26,10 +36,13 @@ vi.mock('@/lib/notifications/deliver', () => ({
 }));
 
 const { previewDispatch, runDispatch, sendTestDispatch } = await import('./dispatchRun');
-const entry = (over: Partial<JournalEntry> = {}): JournalEntry => ({ id: 'e', symbol: 'ACC', ts: '2026-11-11T14:00:00Z', kind: 'earnings', title: 'Results out', body: null, impact: null, alert: 'low', ...over });
+const entry = (over: Partial<JournalEntry> = {}): JournalEntry => ({ id: 'e', symbol: 'ACC', ts: '2026-11-11T14:00:00Z', kind: 'price', title: 'Big drop', body: null, impact: null, alert: 'high', ...over });
 
 beforeEach(() => {
   state.entries = [entry()];
+  state.holdings = [{ symbol: 'ACC', quantity: 10 }];
+  state.quotes = [{ symbol: 'ACC', price: 100 }];
+  state.quotesDown = false;
   state.route = { kind: 'send', to: 'me@example.com' };
   state.emailStatus = 'sent';
   state.claimed = true;
@@ -67,8 +80,17 @@ describe('runDispatch', () => {
 
 describe('previewDispatch and sendTestDispatch', () => {
   it('previews without delivering anything', async () => {
-    expect((await previewDispatch('u1', NOW))?.priority).toHaveLength(1);
+    expect((await previewDispatch('u1', NOW))?.attention).toHaveLength(1);
     expect(state.delivered).toHaveLength(0);
+  });
+  it('weights each item by its share of the portfolio', async () => {
+    state.holdings = [{ symbol: 'ACC', quantity: 10 }, { symbol: 'PNB', quantity: 30 }];
+    state.quotes = [{ symbol: 'ACC', price: 100 }, { symbol: 'PNB', price: 100 }];
+    expect((await previewDispatch('u1', NOW))?.attention[0]?.weightPct).toBe(25);
+  });
+  it('still previews, without weights, when quotes or holdings cannot be read', async () => {
+    state.quotesDown = true;
+    expect((await previewDispatch('u1', NOW))?.attention[0]?.weightPct).toBeNull();
   });
   it('sends a [Test] email of the preview, or a short test note when nothing is material', async () => {
     await sendTestDispatch('u1', NOW);

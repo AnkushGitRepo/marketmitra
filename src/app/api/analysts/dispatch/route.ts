@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { renderDispatchText } from '@/lib/analysts/dispatch';
+import { renderDispatchText, upgradeDispatch } from '@/lib/analysts/dispatch';
 import { previewDispatch, sendTestDispatch } from '@/lib/analysts/dispatchRun';
 import { latestDispatch } from '@/lib/analysts/dispatchStore';
 import { getCurrentUserId } from '@/lib/currentUserId';
@@ -21,7 +21,7 @@ export async function GET() {
   try {
     const now = new Date();
     const [latest, preview] = await Promise.all([latestDispatch(userId), previewDispatch(userId, now)]);
-    return NextResponse.json({ success: true, data: { latest, preview: preview ? { ...preview, body: renderDispatchText(preview) } : null } });
+    return NextResponse.json({ success: true, data: { latest: latest ? { ...latest, dispatch: upgradeDispatch(latest.dispatch) } : null, preview: preview ? { ...preview, body: renderDispatchText(preview) } : null } });
   } catch {
     return NextResponse.json({ success: false, error: 'Could not load the morning brief' }, { status: 500 });
   }

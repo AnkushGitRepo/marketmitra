@@ -12,20 +12,26 @@ import styles from './AnalystChat.module.css';
 interface AnalystChatProps {
   /** The analyst's symbol, or null for the Root Agent. */
   readonly symbol: string | null;
+  /** Text to put in the box when the chat opens (from the morning brief). Never sent for the user. */
+  readonly initialPrompt?: string;
 }
 
 const MAX_CHARS = 2000;
 
 /** A compact chat with one stock analyst, or with the Root Agent. Not saved: it lives as long as the drawer is open. */
-export function AnalystChat({ symbol }: AnalystChatProps) {
+export function AnalystChat({ symbol, initialPrompt }: AnalystChatProps) {
   const [transport] = useState(() => new DefaultChatTransport({ api: '/api/analysts/chat', body: symbol ? { symbol } : {} }));
   const { messages, sendMessage, stop, status, error, clearError } = useChat({ transport });
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState(initialPrompt ?? '');
   const box = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
   const busy = status === 'submitted' || status === 'streaming';
   const starters = symbol ? analystStarters(symbol) : [...ROOT_STARTERS];
   const err = error ? chatErrorMessage(error) : null;
+
+  useEffect(() => {
+    if (initialPrompt) box.current?.focus();
+  }, [initialPrompt]);
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: 'end' });

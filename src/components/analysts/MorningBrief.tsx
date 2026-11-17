@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { agoLabel, kindLabel } from '@/lib/analysts/format';
-import type { Dispatch, DispatchItem } from '@/lib/analysts/dispatch';
+import { agoLabel, briefAskPrompt } from '@/lib/analysts/format';
+import type { Dispatch } from '@/lib/analysts/dispatch';
+import { BriefSections } from './BriefSections';
 import styles from './MorningBrief.module.css';
+
+type EmailOutcome = 'sent' | 'skipped' | 'failed';
 
 interface SavedBrief {
   day: string;
   title: string;
   dispatch: Dispatch;
-  email: 'sent' | 'skipped' | 'failed';
+  email: EmailOutcome;
   emailDetail: string | null;
   createdAt: string;
 }
@@ -21,47 +24,18 @@ interface BriefData {
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: BriefData };
 
-const EMAIL_NOTE: Record<SavedBrief['email'], string> = { sent: 'Emailed.', skipped: 'Not emailed (email is off or not set up).', failed: 'The email could not be sent.' };
+const EMAIL_NOTE: Record<EmailOutcome, string> = { sent: 'Emailed.', skipped: 'Not emailed (email is off or not set up).', failed: 'The email could not be sent.' };
 
-function Items({ heading, items }: { readonly heading: string; readonly items: readonly DispatchItem[] }) {
-  if (items.length === 0) return null;
-  return (
-    <section>
-      <h3 className={styles.h}>{heading}</h3>
-      <ul className={styles.list}>
-        {items.map((i, n) => (
-          <li key={`${i.symbol}-${n}`} className={styles.item} data-alert={i.alert}>
-            <strong>{i.symbol}</strong> <span className={styles.kind}>{kindLabel(i.kind)}</span> {i.title}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+interface MorningBriefProps {
+  /** Opens that analyst's chat with the question already in the box. */
+  readonly onAsk: (symbol: string, prompt: string) => void;
+  readonly onDossier: (symbol: string) => void;
+  /** Opens the chat with the Root Agent (the CIO). */
+  readonly onDiscuss: () => void;
 }
 
-function DispatchView({ d }: { readonly d: Dispatch }) {
-  return (
-    <div className={styles.view}>
-      <Items heading="Priority" items={d.priority} />
-      <Items heading="Overnight developments" items={d.developments} />
-      {d.highlights.length > 0 && (
-        <section>
-          <h3 className={styles.h}>Where each analyst stands</h3>
-          <ul className={styles.list}>
-            {d.highlights.map((h) => (
-              <li key={h.symbol} className={styles.item}>
-                <strong>{h.symbol}</strong> {h.text}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
-  );
-}
-
-/** The saved morning briefs: the latest one, what today's would contain right now, and a test email. */
-export function MorningBrief() {
+/** Today's morning brief in one view: what the last 24 hours would produce right now, or else the last saved brief. Plus a test email. */
+export function MorningBrief({ onAsk, onDossier, onDiscuss }: MorningBriefProps) {
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -101,30 +75,30 @@ export function MorningBrief() {
   if (load.state === 'loading') return <p className={styles.note}>Loading the morning brief…</p>;
   if (load.state === 'error') return <p className={styles.note}>Could not load the morning brief right now.</p>;
   const { latest, preview } = load.data;
+  const shown = preview ?? latest?.dispatch ?? null;
+  const sameDay = latest !== null && preview !== null && latest.day === preview.day;
 
   return (
     <div className={styles.root}>
       <p className={styles.banner}>Sent every day at 08:30 AM IST when your analysts logged something material in the last 24 hours. Built from their journals, so it costs no AI calls.</p>
       <section>
-        <h3 className={styles.h}>Latest brief</h3>
-        {latest ? (
+        {shown ? (
           <>
-            <p className={styles.title}>{latest.title}</p>
+            <p className={styles.title}>{shown.title}</p>
             <p className={styles.note}>
-              {latest.day} · {agoLabel(latest.createdAt, now)} · {EMAIL_NOTE[latest.email]}
+              {preview ? `Today · ${preview.day} · the last 24 hours as they stand now.` : `${latest?.day} · ${agoLabel(latest?.createdAt ?? null, now)}. Nothing material in the last 24 hours, so no brief would be sent today.`} {latest && (sameDay || !preview) ? EMAIL_NOTE[latest.email] : ''}
             </p>
-            <DispatchView d={latest.dispatch} />
+            <BriefSections d={shown} onAsk={(symbol, title) => onAsk(symbol, briefAskPrompt(title))} onDossier={onDossier} />
           </>
         ) : (
-          <p className={styles.note}>No brief has been sent yet. The first one arrives after 08:30 AM IST on a day with something material to report.</p>
+          <p className={styles.note}>No brief yet. The first one arrives after 08:30 AM IST on a day when an analyst logs something that needs a look or a positive development.</p>
         )}
       </section>
-      <section>
-        <h3 className={styles.h}>Today’s dispatch so far</h3>
-        {preview ? <DispatchView d={preview} /> : <p className={styles.note}>Nothing material in the last 24 hours, so no brief would be sent today.</p>}
-      </section>
-      <div className={styles.actions}>
-        <button type="button" className={styles.btn} disabled={sending} onClick={() => void sendTest()}>
+      <div className={styles.footer}>
+        <button type="button" className={styles.btn} onClick={onDiscuss}>
+          Discuss with the CIO
+        </button>
+        <button type="button" className={styles.btnGhost} disabled={sending} onClick={() => void sendTest()}>
           {sending ? 'Sending…' : 'Send test email'}
         </button>
         {message && (
@@ -132,8 +106,8 @@ export function MorningBrief() {
             {message}
           </span>
         )}
+        <p className={styles.disclaimer}>Not investment advice.</p>
       </div>
-      <p className={styles.note}>Not investment advice.</p>
     </div>
   );
 }

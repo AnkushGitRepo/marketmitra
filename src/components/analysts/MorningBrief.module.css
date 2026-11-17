@@ -41,7 +41,46 @@
 .view {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+}
+
+.pulse {
+  padding: 14px 16px;
+  border: 1px solid var(--app-teal-bg-strong);
+  border-radius: var(--radius-lg);
+  background: var(--app-teal-tint);
+}
+
+.pulseText {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--app-ink);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--app-pill-bg);
+  color: var(--app-text-muted);
+}
+
+.pill[data-tone='attention'] {
+  background: var(--app-loss-bg);
+  color: var(--app-loss-text);
+}
+
+.pill[data-tone='catalyst'] {
+  background: var(--app-teal-bg);
+  color: var(--app-teal-strong);
 }
 
 .list {
@@ -50,11 +89,11 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .item {
-  padding: 8px 12px;
+  padding: 10px 12px;
   border: 1px solid var(--app-border-soft);
   border-left: 3px solid var(--app-border);
   border-radius: var(--radius-lg);
@@ -63,9 +102,23 @@
   color: var(--app-ink);
 }
 
-.item[data-alert='high'],
-.item[data-alert='medium'] {
-  border-left-color: var(--app-loss-text);
+.item[data-tone='attention'] {
+  border-left-color: var(--app-loss);
+}
+
+.item[data-tone='catalyst'] {
+  border-left-color: var(--app-gain);
+}
+
+.itemHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.itemTitle {
+  margin: 4px 0 6px;
 }
 
 .kind {
@@ -76,26 +129,96 @@
   color: var(--app-text-faint);
 }
 
-.actions {
+.weight {
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--app-pill-bg);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.itemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.link {
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-teal-strong);
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.quiet {
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+}
+
+.quietSummary {
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.quietList {
+  margin: 0;
+  padding: 0 12px 10px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
+
+/* Sticks to the bottom of the scrolling drawer body. The drawer body has 20px side and 28px bottom padding: the negative offset and margins carry the footer to the drawer edges. */
+.footer {
+  position: sticky;
+  bottom: -28px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
+  gap: 8px 10px;
+  margin: 0 -20px -28px;
+  padding: 12px 20px 14px;
+  border-top: 1px solid var(--app-border);
+  background: var(--color-surface);
 }
 
-.btn {
+.btn,
+.btnGhost {
   padding: 9px 18px;
-  border: none;
   border-radius: var(--radius-pill);
-  background: var(--app-ink);
-  color: var(--color-surface);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.btn:disabled {
+.btn {
+  border: none;
+  background: var(--app-ink);
+  color: var(--color-surface);
+}
+
+.btnGhost {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
+.btnGhost:disabled {
   opacity: 0.5;
   cursor: wait;
 }
@@ -103,4 +226,11 @@
 .message {
   font-size: 12.5px;
   color: var(--app-text-muted);
+}
+
+.disclaimer {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--app-text-faint);
 }

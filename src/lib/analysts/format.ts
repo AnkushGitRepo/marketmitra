@@ -39,3 +39,6 @@ const KIND_LABEL: Record<JournalKind, string> = {
 };
 
 export const kindLabel = (kind: JournalKind): string => KIND_LABEL[kind];
+
+/** The question the brief's "Ask the analyst" button puts in the chat box: the item in the user's own words, ready to send. */
+export const briefAskPrompt = (title: string): string => `This was in my morning brief: "${title}". Based on your dossier and recent journal, what is driving it, and does it affect the thesis?`;
