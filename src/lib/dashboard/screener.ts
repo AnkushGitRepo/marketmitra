@@ -10,6 +10,7 @@ const FUNDAMENTALS_BASE_URL = process.env.FUNDAMENTALS_API_URL ?? 'http://localh
 import {
   buildScreenerQuery,
   type ScreenerFacets,
+  type ScreenerBoard,
   type ScreenerFilters,
   type ScreenerPage,
   type ScreenerResultRow,
@@ -56,14 +57,17 @@ export async function runScreenerPage(filters: ScreenerFilters): Promise<Screene
  * they're cached only briefly — an hour-long cache froze the dropdown at
  * whatever the first (nearly empty) scrape had produced. `sector` narrows
  * `industries` to that sector. */
-export async function getScreenerFacets(sector?: string): Promise<ScreenerFacets> {
-  const path = sector ? `/screener/facets?sector=${encodeURIComponent(sector)}` : '/screener/facets';
+export async function getScreenerFacets(sector?: string, board?: ScreenerBoard): Promise<ScreenerFacets> {
+  const qs = new URLSearchParams();
+  if (sector) qs.set('sector', sector);
+  if (board) qs.set('board', board);
+  const path = qs.size > 0 ? `/screener/facets?${qs.toString()}` : '/screener/facets';
   const result = await getJson<ScreenerFacets>(path, 300);
   return result ?? { sectors: [], industries: [] };
 }
 
 /** Coverage + freshness of the screener table; null if fundamentals-api is
  * unreachable. Short cache — it changes only when the daily jobs run. */
-export function getScreenerStats(): Promise<ScreenerStats | null> {
-  return getJson<ScreenerStats>('/screener/stats', 600);
+export function getScreenerStats(board: ScreenerBoard = 'mainboard'): Promise<ScreenerStats | null> {
+  return getJson<ScreenerStats>(`/screener/stats?board=${board}`, 600);
 }

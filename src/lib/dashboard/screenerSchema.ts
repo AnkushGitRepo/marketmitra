@@ -74,11 +74,18 @@ const rangeShape = Object.fromEntries(
 
 const RANGE_FIELD_KEYS = RANGE_FIELD_DEFS.map((f) => f.key) as [RangeFieldKey, ...RangeFieldKey[]];
 
+/** Listing boards (ADR 0066). The API default, with no `board`, is the main board only. */
+export const SCREENER_BOARDS = ['mainboard', 'sme', 'all'] as const;
+export type ScreenerBoard = (typeof SCREENER_BOARDS)[number];
+export const BOARD_LABELS: Record<ScreenerBoard, string> = { all: 'All stocks', mainboard: 'Main board', sme: 'SME' };
+
 export const screenerFiltersSchema = z.object({
   ...rangeShape,
   /** Server-side sort column (any range field); omitted = market cap desc. */
   sort_by: z.enum(RANGE_FIELD_KEYS).optional(),
   order: z.enum(['asc', 'desc']).optional(),
+  /** Which listing board: `mainboard` (the default), `sme` (NSE SME platform: small, thinly traded companies) or `all`. */
+  board: z.enum(SCREENER_BOARDS).optional(),
   sector: z.string().trim().min(1).optional(),
   industry: z.string().trim().min(1).optional(),
   /** Company name / symbol contains-match. */
@@ -114,6 +121,8 @@ export interface ScreenerResultRow {
   debt_to_equity: number | null;
   sales_growth_3y_cagr: number | null;
   profit_growth_3y_cagr: number | null;
+  /** True for a company on the NSE SME platform (absent from older API versions). */
+  is_sme?: boolean;
   fetch_status: string;
   source_tier: string;
   fetched_at: string;
@@ -123,6 +132,8 @@ export interface ScreenerResultRow {
 
 export interface ScreenerStats {
   universe: number;
+  /** Both boards' universe sizes, whatever board the rest of the stats are for. */
+  by_board?: { mainboard: number; sme: number };
   with_quotes: number;
   with_fundamentals: number;
   quotes_updated_at: string | null;

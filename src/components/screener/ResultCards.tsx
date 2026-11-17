@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SmeBadge } from '@/components/common/SmeBadge';
 import type { ScreenerResultRow } from '@/lib/dashboard/screenerSchema';
 import { columnByKey } from '@/lib/screener/columns';
 import type { RangeFieldKey } from '@/lib/dashboard/screenerSchema';
@@ -22,7 +23,9 @@ export function ResultCards({ rows, metrics, highlighted, loading }: ResultCards
             <div className={styles.top}>
               <div className={styles.title}>
                 <p className={styles.name}>{row.name}</p>
-                <p className={styles.symbol}>{row.symbol}</p>
+                <p className={styles.symbol}>
+                  {row.symbol} {row.is_sme && <SmeBadge />}
+                </p>
               </div>
               {row.sector && <span className={styles.sector}>{row.sector}</span>}
             </div>

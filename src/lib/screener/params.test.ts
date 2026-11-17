@@ -3,6 +3,20 @@ import { parseScreenerParams } from './params';
 
 const parse = (qs: string) => parseScreenerParams(new URLSearchParams(qs));
 
+describe('parseScreenerParams board', () => {
+  const parse = (q: string) => parseScreenerParams(new URLSearchParams(q));
+
+  it('reads a valid board and leaves it out when absent (the API then means main board)', () => {
+    expect(parse('board=sme')).toEqual({ ok: true, filters: { board: 'sme' } });
+    expect(parse('board=all')).toEqual({ ok: true, filters: { board: 'all' } });
+    expect(parse('roe_min=10')).toEqual({ ok: true, filters: { roe_min: 10 } });
+  });
+
+  it('rejects an unknown board', () => {
+    expect(parse('board=nasdaq').ok).toBe(false);
+  });
+});
+
 describe('parseScreenerParams', () => {
   it('parses ranges, text filters, sort and paging', () => {
     expect(

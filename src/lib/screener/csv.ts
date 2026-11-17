@@ -20,6 +20,7 @@ const NUMERIC_COLUMNS: CsvColumn[] = [
 export const CSV_COLUMNS: CsvColumn[] = [
   { header: 'Symbol', value: (r) => r.symbol },
   { header: 'Company', value: (r) => r.name },
+  { header: 'Board', value: (r) => (r.is_sme ? 'SME' : 'Main board') },
   { header: 'Sector', value: (r) => r.sector },
   { header: 'Industry', value: (r) => r.industry },
   ...NUMERIC_COLUMNS,

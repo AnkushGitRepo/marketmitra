@@ -5,7 +5,7 @@ import { rangeKey, type Draft, type RangeKey } from '@/lib/screener/draft';
 import { FILTER_GROUPS } from '@/lib/screener/presets';
 import styles from './FilterFields.module.css';
 
-export type DraftKey = RangeKey | 'sector' | 'industry' | 'q';
+export type DraftKey = RangeKey | 'board' | 'sector' | 'industry' | 'q';
 
 interface FilterFieldsProps {
   readonly draft: Draft;

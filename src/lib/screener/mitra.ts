@@ -45,6 +45,8 @@ export function screenerUrl(filters: ScreenerFilters): string {
 export interface CompactScreenRow {
   symbol: string;
   name: string;
+  /** `sme` for a company on the NSE SME platform (small, thinly traded). */
+  board: 'mainboard' | 'sme';
   sector: string | null;
   market_cap_cr: number | null;
   price: number | null;
@@ -62,6 +64,7 @@ function compact(row: ScreenerResultRow): CompactScreenRow {
   return {
     symbol: row.symbol,
     name: row.name,
+    board: row.is_sme ? 'sme' : 'mainboard',
     sector: row.sector,
     market_cap_cr: row.market_cap === null ? null : Math.round(row.market_cap),
     price: row.current_price,

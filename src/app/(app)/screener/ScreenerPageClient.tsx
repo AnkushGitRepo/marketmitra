@@ -12,6 +12,7 @@ import {
   type ScreenerFilters,
   type ScreenerResultRow,
 } from '@/lib/dashboard/screenerSchema';
+import { isUntouchedSizeDefault } from '@/lib/screener/defaults';
 import { buildFilters, describeFilters, draftFromFilters, withoutKeys, type Draft } from '@/lib/screener/draft';
 import type { ScreenerPreset } from '@/lib/screener/presets';
 import { activeFilterCount, cardMetricKeys, highlightedKeys, parseSortValue, sortValueOf } from '@/lib/screener/view';
@@ -25,12 +26,13 @@ interface ScreenerPageClientProps {
   initialPage: number;
   initialPageSize: number;
   facets: ScreenerFacets;
+  boardCounts?: { mainboard: number; sme: number };
   fundamentalsReady: boolean;
 }
 
 const PAGE_PATH = '/screener';
 // What "Clear all" returns to: every company, biggest first.
-const CLEARED: ScreenerFilters = { sort_by: 'market_cap' };
+const CLEARED: ScreenerFilters = { board: 'all', sort_by: 'market_cap' };
 /** Typing pauses this long before the screen re-runs. */
 const DEBOUNCE_MS = 300;
 
@@ -45,6 +47,7 @@ export function ScreenerPageClient({
   initialPage,
   initialPageSize,
   facets,
+  boardCounts,
   fundamentalsReady,
 }: ScreenerPageClientProps) {
   const [draft, setDraft] = useState<Draft>(() => draftFromFilters(initialFilters));
@@ -124,14 +127,16 @@ export function ScreenerPageClient({
   );
 
   const handleChange = (key: DraftKey, value: string) => {
-    const next: Draft = { ...draft, [key]: value, ...(key === 'sector' ? { industry: '' } : {}) };
+    // SME companies are small, so the opening screen's size floor would hide nearly all of them: step it aside.
+    const dropSizeFloor = key === 'board' && value === 'sme' && isUntouchedSizeDefault(appliedRef.current);
+    const next: Draft = { ...draft, [key]: value, ...(key === 'sector' ? { industry: '' } : {}), ...(dropSizeFloor ? { market_cap_min: '' } : {}) };
     setDraft(next);
 
     if (key === 'sector') {
       // Industry options follow the chosen sector.
       if (!value) setIndustries(facets.industries);
       else {
-        fetch(`/api/screener/facets?sector=${encodeURIComponent(value)}`)
+        fetch(`/api/screener/facets?sector=${encodeURIComponent(value)}&board=${next.board}`)
           .then((res) => (res.ok ? res.json() : null))
           .then((f: ScreenerFacets | null) => setIndustries(f?.industries ?? []))
           .catch(() => setIndustries([]));
@@ -140,7 +145,7 @@ export function ScreenerPageClient({
 
     cancelPending();
     // Dropdowns apply at once; text and number inputs wait for a pause in typing.
-    const delay = key === 'sector' || key === 'industry' ? 0 : DEBOUNCE_MS;
+    const delay = key === 'board' || key === 'sector' || key === 'industry' ? 0 : DEBOUNCE_MS;
     timer.current = setTimeout(() => applyDraft(next), delay);
   };
 
@@ -161,8 +166,10 @@ export function ScreenerPageClient({
     cancelPending();
     setActivePresetId(preset.id);
     setError(null);
-    syncDraft(preset.filters);
-    void load(preset.filters, 0, pageSize);
+    // A quick screen narrows the criteria, not the board the user chose.
+    const filters: ScreenerFilters = { ...preset.filters, board: appliedRef.current.board ?? 'all' };
+    syncDraft(filters);
+    void load(filters, 0, pageSize);
   };
 
   const handleSort = (key: RangeFieldKey) => {
@@ -180,7 +187,8 @@ export function ScreenerPageClient({
 
   const handleRemoveChip = (keys: (keyof ScreenerFilters)[]) => {
     cancelPending();
-    const next = withoutKeys(applied, keys);
+    // Dismissing the board chip means "all boards"; a missing board would mean main board only.
+    const next = keys.includes('board') ? { ...applied, board: 'all' as const } : withoutKeys(applied, keys);
     setActivePresetId(null);
     setError(null);
     syncDraft(next);
@@ -198,6 +206,7 @@ export function ScreenerPageClient({
       <ScreenerToolbar
         draft={draft}
         facets={facets}
+        boardCounts={boardCounts}
         industries={industries}
         chips={chips}
         activePresetId={activePresetId}

@@ -11,11 +11,14 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import CompanyMasterORM, ScreenerMetricsORM
+from app.ingestion.company_master import better_name, is_placeholder_name
+from app.services.board import blend_stale
+from app.services.search_service import invalidate_snapshot
 
 logger = logging.getLogger("fundamentals.screener_service")
 
@@ -37,6 +40,10 @@ _ORM_FIELDS = {
 # its own (older, consolidated-vs-standalone-ambiguous) numbers.
 _QUOTE_OWNED_FIELDS = ("market_cap", "current_price", "pe", "pb", "dividend_yield")
 
+# At most this share of a stalest-first run goes to SME, so a newly added SME
+# universe cannot starve the main-board refresh (ADR 0066).
+_SME_STALE_SHARE = 0.25
+
 
 def _row_to_values(row: dict) -> dict | None:
     values = {k: v for k, v in row.items() if k in _ORM_FIELDS}
@@ -50,6 +57,21 @@ def _row_to_values(row: dict) -> dict | None:
     values["fetched_at"] = now
     values["fundamentals_updated_at"] = now
     return values
+
+
+def _scrape_update_cols(stmt, values: dict, *, quoted: bool) -> dict:
+    """What a Screener.in scrape writes on conflict. Everything it scraped, except: a
+    placeholder name (the symbol itself) never replaces a real one, and on a symbol that
+    already has a live quote the quote-owned figures are only filled in where the quote
+    left them empty (Yahoo gives an SME stock a price but no market cap, P/E or P/B)."""
+    cols = {k: stmt.excluded[k] for k in values if k != "symbol"}
+    if is_placeholder_name(values["symbol"], str(values["name"])):
+        cols.pop("name", None)
+    if quoted:
+        for field in _QUOTE_OWNED_FIELDS:
+            if field in cols:
+                cols[field] = func.coalesce(getattr(ScreenerMetricsORM, field), stmt.excluded[field])
+    return cols
 
 
 async def ingest_screener_metrics(session: AsyncSession, rows: list[dict]) -> dict:
@@ -69,15 +91,9 @@ async def ingest_screener_metrics(session: AsyncSession, rows: list[dict]) -> di
         values = _row_to_values(row)
         if values is None:
             continue
-        update_cols = {k: v for k, v in values.items() if k != "symbol"}
-        if values["symbol"] in quoted:
-            for field in _QUOTE_OWNED_FIELDS:
-                update_cols.pop(field, None)
-        await session.execute(
-            insert(ScreenerMetricsORM)
-            .values(**values)
-            .on_conflict_do_update(index_elements=["symbol"], set_=update_cols)
-        )
+        stmt = insert(ScreenerMetricsORM).values(**values)
+        update_cols = _scrape_update_cols(stmt, values, quoted=values["symbol"] in quoted)
+        await session.execute(stmt.on_conflict_do_update(index_elements=["symbol"], set_=update_cols))
         count += 1
     await session.commit()
     return {"ingested": count}
@@ -106,6 +122,7 @@ async def ingest_quotes(session: AsyncSession, rows: list[dict]) -> dict:
     )
     now = datetime.now(tz=UTC)
     count = skipped = 0
+    renamed = False
     for row in rows:
         symbol = str(row.get("symbol", "")).upper()
         if symbol not in names:
@@ -115,28 +132,34 @@ async def ingest_quotes(session: AsyncSession, rows: list[dict]) -> dict:
         if not quote:
             skipped += 1
             continue
+        # An SME row starts with its symbol as the name; the quote feed carries the real one.
+        real = better_name(symbol, names[symbol], row.get("name"))
+        if real:
+            await session.execute(update(CompanyMasterORM).where(CompanyMasterORM.symbol == symbol).values(name=real))
+            names[symbol] = real
+            renamed = True
         values = {"symbol": symbol, "name": names[symbol], "fetch_status": "quote_only",
                   "source_tier": "yahoo_bulk_quote", "quote_updated_at": now, **quote}
+        set_cols = {**quote, "quote_updated_at": now}
+        if not is_placeholder_name(symbol, names[symbol]):
+            set_cols["name"] = names[symbol]
         await session.execute(
             insert(ScreenerMetricsORM)
             .values(**values)
-            .on_conflict_do_update(
-                index_elements=["symbol"], set_={**quote, "quote_updated_at": now}
-            )
+            .on_conflict_do_update(index_elements=["symbol"], set_=set_cols)
         )
         count += 1
     await session.commit()
+    if renamed:
+        invalidate_snapshot()
     return {"ingested": count, "skipped": skipped}
 
 
-async def stale_symbols(session: AsyncSession, limit: int) -> list[dict]:
-    """Main-board companies whose Screener.in fundamentals are missing or
-    oldest, never-scraped first, bigger companies first within a tier — what
-    the incremental job refreshes each run instead of the whole universe."""
+async def _stale_on(session: AsyncSession, is_sme: bool, limit: int) -> list[dict]:
     stmt = (
         select(CompanyMasterORM.symbol, CompanyMasterORM.name)
         .outerjoin(ScreenerMetricsORM, ScreenerMetricsORM.symbol == CompanyMasterORM.symbol)
-        .where(CompanyMasterORM.is_sme.is_(False))
+        .where(CompanyMasterORM.is_sme.is_(is_sme))
         .order_by(
             ScreenerMetricsORM.fundamentals_updated_at.asc().nullsfirst(),
             ScreenerMetricsORM.market_cap.desc().nullslast(),
@@ -144,7 +167,17 @@ async def stale_symbols(session: AsyncSession, limit: int) -> list[dict]:
         )
         .limit(limit)
     )
-    return [{"symbol": sym, "name": name} for sym, name in (await session.execute(stmt)).all()]
+    return [{"symbol": sym, "name": name, "is_sme": is_sme} for sym, name in (await session.execute(stmt)).all()]
+
+
+async def stale_symbols(session: AsyncSession, limit: int) -> list[dict]:
+    """Companies whose Screener.in fundamentals are missing or oldest,
+    never-scraped first, bigger companies first within a tier — what the
+    incremental job refreshes each run instead of the whole universe. SME is
+    capped to a share of the run (ADR 0066); `is_sme` lets the job judge the two
+    boards' failures separately."""
+    mainboard, sme = await _stale_on(session, False, limit), await _stale_on(session, True, limit)
+    return blend_stale(mainboard, sme, limit, _SME_STALE_SHARE)
 
 
 def _apply_range_filters(stmt, filters: dict):
@@ -173,24 +206,33 @@ def _order_by(filters: dict) -> list:
     return [primary.nullslast(), *tiebreak]
 
 
-async def get_screener_stats(session: AsyncSession) -> dict:
-    """Coverage + freshness, so the UI can say how much of the universe a
-    fundamentals-based filter can actually see."""
-    universe = await session.scalar(
-        select(func.count()).select_from(CompanyMasterORM).where(CompanyMasterORM.is_sme.is_(False))
-    )
+async def get_screener_stats(session: AsyncSession, board: str = "mainboard") -> dict:
+    """Coverage + freshness for one board (or `all`), so the UI can say how much
+    of the universe a fundamentals-based filter can actually see. `by_board`
+    always carries both universe sizes."""
+    def universe_count(is_sme: bool | None):
+        stmt = select(func.count()).select_from(CompanyMasterORM)
+        return stmt if is_sme is None else stmt.where(CompanyMasterORM.is_sme.is_(is_sme))
+
+    mainboard = await session.scalar(universe_count(False))
+    sme = await session.scalar(universe_count(True))
+    universe = {"mainboard": mainboard, "sme": sme, "all": (mainboard or 0) + (sme or 0)}[board]
     quoted, quote_at, with_fundamentals, fundamentals_at = (
         await session.execute(
-            select(
-                func.count(ScreenerMetricsORM.quote_updated_at),
-                func.max(ScreenerMetricsORM.quote_updated_at),
-                func.count(ScreenerMetricsORM.fundamentals_updated_at),
-                func.max(ScreenerMetricsORM.fundamentals_updated_at),
+            _on_board(
+                select(
+                    func.count(ScreenerMetricsORM.quote_updated_at),
+                    func.max(ScreenerMetricsORM.quote_updated_at),
+                    func.count(ScreenerMetricsORM.fundamentals_updated_at),
+                    func.max(ScreenerMetricsORM.fundamentals_updated_at),
+                ),
+                board,
             )
         )
     ).one()
     return {
         "universe": universe or 0,
+        "by_board": {"mainboard": mainboard or 0, "sme": sme or 0},
         "with_quotes": quoted,
         "with_fundamentals": with_fundamentals,
         "quotes_updated_at": quote_at,
@@ -202,10 +244,20 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+def _on_board(stmt, board: str):
+    """Restricts to one listing board through the company master, which owns
+    `is_sme` (no column on screener_metrics, so no migration). `all` adds nothing."""
+    if board == "all":
+        return stmt
+    boards = select(CompanyMasterORM.symbol).where(CompanyMasterORM.is_sme.is_(board == "sme"))
+    return stmt.where(ScreenerMetricsORM.symbol.in_(boards))
+
+
 def _filtered(stmt, filters: dict):
     """Shared by the page query and the total count so they can never
     disagree about what "matching" means."""
     stmt = stmt.where(ScreenerMetricsORM.fetch_status != "failed")
+    stmt = _on_board(stmt, filters.get("board") or "mainboard")
     sector = filters.get("sector")
     if sector:
         stmt = stmt.where(ScreenerMetricsORM.sector == sector)
@@ -224,10 +276,15 @@ def _filtered(stmt, filters: dict):
     return _apply_range_filters(stmt, filters)
 
 
-async def query_screener_metrics(session: AsyncSession, filters: dict) -> list[ScreenerMetricsORM]:
-    stmt = _filtered(select(ScreenerMetricsORM), filters).order_by(*_order_by(filters))
+async def query_screener_metrics(session: AsyncSession, filters: dict) -> list[tuple[ScreenerMetricsORM, bool]]:
+    """Each row paired with whether it is an SME company (from the master)."""
+    stmt = (
+        select(ScreenerMetricsORM, CompanyMasterORM.is_sme)
+        .outerjoin(CompanyMasterORM, CompanyMasterORM.symbol == ScreenerMetricsORM.symbol)
+    )
+    stmt = _filtered(stmt, filters).order_by(*_order_by(filters))
     stmt = stmt.offset(filters.get("offset") or 0).limit(filters.get("limit") or 100)
-    return list((await session.execute(stmt)).scalars())
+    return [(row, bool(is_sme)) for row, is_sme in (await session.execute(stmt)).all()]
 
 
 async def count_screener_metrics(session: AsyncSession, filters: dict) -> int:
@@ -235,22 +292,26 @@ async def count_screener_metrics(session: AsyncSession, filters: dict) -> int:
     return int(await session.scalar(stmt) or 0)
 
 
-async def get_screener_facets(session: AsyncSession, sector: str | None = None) -> dict:
+async def get_screener_facets(session: AsyncSession, sector: str | None = None, board: str = "mainboard") -> dict:
     """Sector/industry options with company counts, from what's actually in
     the data. `industries` is narrowed to `sector` when given, so the UI's
     industry dropdown only offers industries that exist inside that sector."""
     base = ScreenerMetricsORM.fetch_status != "failed"
     sector_rows = (
         await session.execute(
-            select(ScreenerMetricsORM.sector, func.count())
-            .where(base, ScreenerMetricsORM.sector.is_not(None))
-            .group_by(ScreenerMetricsORM.sector)
+            _on_board(
+                select(ScreenerMetricsORM.sector, func.count())
+                .where(base, ScreenerMetricsORM.sector.is_not(None))
+                .group_by(ScreenerMetricsORM.sector),
+                board,
+            )
         )
     ).all()
-    industry_stmt = (
+    industry_stmt = _on_board(
         select(ScreenerMetricsORM.industry, func.count())
         .where(base, ScreenerMetricsORM.industry.is_not(None))
-        .group_by(ScreenerMetricsORM.industry)
+        .group_by(ScreenerMetricsORM.industry),
+        board,
     )
     if sector:
         industry_stmt = industry_stmt.where(ScreenerMetricsORM.sector == sector)

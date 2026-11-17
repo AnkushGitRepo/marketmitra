@@ -7,8 +7,11 @@ Source: NSE's own published CSVs at `archives.nseindia.com`
 (EQUITY_L.csv, SME_EQUITY_L.csv). Unlike `www.nseindia.com` (blocked by
 Akamai in this project's dev environment — see tier1_nse_bse.py), the
 `archives.` subdomain was reachable during development, but it can still
-403 a datacenter IP, so a copy of both files ships in `app/data/` as the
-fallback. This is still NSE's own unofficial-access surface, not a
+403 a datacenter IP, so a copy ships in `app/data/` as the fallback: the main
+board's EQUITY_L.csv, and for SME `SME_SYMBOLS.csv` (symbol, name and series:
+the symbols come from NSE's SME Market Watch download and the names from Yahoo,
+since neither NSE file is reachable; ADR 0066). A row without a name falls back
+to its symbol as a placeholder that the daily quote feed replaces. This is still NSE's own unofficial-access surface, not a
 documented public API — same accepted trade-off as the rest of Tier 1
 (ADR 0011).
 """
@@ -74,6 +77,46 @@ def parse_equity_csv(text: str, *, is_sme: bool) -> list[dict]:
     return companies
 
 
+def parse_symbol_list(text: str, *, is_sme: bool) -> list[dict]:
+    """Parses the bundled `SYMBOL,NAME OF COMPANY,SERIES` list. A row with no name
+    gets its symbol as a placeholder (see `is_placeholder_name`), which the daily
+    quote feed replaces."""
+    companies: list[dict] = []
+    seen: set[str] = set()
+    for raw in csv.DictReader(io.StringIO(text)):
+        row = {(k or "").strip(): (v or "").strip() for k, v in raw.items()}
+        symbol = row.get("SYMBOL", "").upper()
+        if not symbol or symbol in seen:
+            continue
+        seen.add(symbol)
+        companies.append(
+            {
+                "symbol": symbol,
+                "name": row.get("NAME OF COMPANY") or symbol,
+                "isin": None,
+                "series": row.get("SERIES") or None,
+                "listing_date": None,
+                "face_value": None,
+                "is_sme": is_sme,
+            }
+        )
+    return companies
+
+
+def is_placeholder_name(symbol: str, name: str) -> bool:
+    """A name equal to the symbol means "not known yet", never a real company name."""
+    return name.strip().upper() == symbol.strip().upper()
+
+
+def better_name(symbol: str, current: str, candidate: str | None) -> str | None:
+    """The real company name to store, or None to leave the row alone: only a
+    placeholder gets replaced, and only by a name that is not itself the symbol."""
+    new = (candidate or "").strip()
+    if not new or is_placeholder_name(symbol, new) or not is_placeholder_name(symbol, current):
+        return None
+    return new[:256]
+
+
 async def _fetch_text(url: str) -> str | None:
     try:
         async with httpx.AsyncClient(timeout=20.0, headers={"User-Agent": "Mozilla/5.0"}) as client:
@@ -94,28 +137,39 @@ def _bundled_text(filename: str) -> str | None:
         return None
 
 
+async def fetch_sme_list(*, live: bool = True) -> list[dict]:
+    """Every NSE SME-platform company: NSE's published file when it parses,
+    otherwise the bundled symbol list (`live=False` skips the network entirely,
+    for callers that must not wait on NSE). Only [] if both fail."""
+    text = await _fetch_text(SME_LIST_URL) if live else None
+    parsed = parse_equity_csv(text, is_sme=True) if text else []
+    if parsed:
+        return parsed
+    if live:
+        logger.warning("SME_EQUITY_L.csv: live copy unusable, using the bundled symbol list")
+    bundled = _bundled_text("SME_SYMBOLS.csv")
+    parsed = parse_symbol_list(bundled, is_sme=True) if bundled else []
+    if not parsed:
+        logger.warning("the SME list parsed to zero rows — format may have changed")
+    return parsed
+
+
 async def fetch_equity_list() -> list[dict]:
     """Every NSE-listed equity (main board + SME), freshest source first:
     NSE's published file, falling back to the copy bundled in app/data/.
     Returns [] only if both sources fail."""
-    companies: list[dict] = []
-    for url, filename, is_sme in (
-        (EQUITY_LIST_URL, "EQUITY_L.csv", False),
-        (SME_LIST_URL, "SME_EQUITY_L.csv", True),
-    ):
-        live = await _fetch_text(url)
-        parsed = parse_equity_csv(live, is_sme=is_sme) if live else []
-        if not parsed:
-            # Live fetch failed, was blocked, or returned a non-CSV page.
-            logger.warning("%s: live copy unusable, using bundled copy", filename)
-            bundled = _bundled_text(filename)
-            parsed = parse_equity_csv(bundled, is_sme=is_sme) if bundled else []
-        if not parsed:
-            logger.warning("%s parsed to zero rows — format may have changed", filename)
-        companies.extend(parsed)
+    live = await _fetch_text(EQUITY_LIST_URL)
+    main = parse_equity_csv(live, is_sme=False) if live else []
+    if not main:
+        # Live fetch failed, was blocked, or returned a non-CSV page.
+        logger.warning("EQUITY_L.csv: live copy unusable, using bundled copy")
+        bundled = _bundled_text("EQUITY_L.csv")
+        main = parse_equity_csv(bundled, is_sme=False) if bundled else []
+    if not main:
+        logger.warning("EQUITY_L.csv parsed to zero rows — format may have changed")
 
     # A symbol on both lists keeps its main-board row.
     by_symbol: dict[str, dict] = {}
-    for company in companies:
+    for company in [*main, *await fetch_sme_list()]:
         by_symbol.setdefault(company["symbol"], company)
     return list(by_symbol.values())

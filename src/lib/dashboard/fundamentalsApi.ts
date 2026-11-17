@@ -17,6 +17,8 @@ export interface CompanyOut {
   sector: string | null;
   about: string | null;
   source_tier: string | null;
+  /** True for a company on the NSE SME platform (absent from older API versions). */
+  is_sme?: boolean;
 }
 
 export interface PeerOut {

@@ -50,6 +50,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.ingestion.rate_limit import RateLimiter
 from app.ingestion.tier3_screener_scrapling.scraper import fetch_screener_snapshot
+from app.services.board import failure_rate_exceeded
 
 _REQUESTS_PER_SECOND = 2.0
 _INGEST_BATCH_SIZE = 100
@@ -58,7 +59,7 @@ _FAILURE_RATE_THRESHOLD = 0.20
 
 async def _fetch_universe(base_url: str) -> list[dict]:
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(f"{base_url}/companies/master")
+        response = await client.get(f"{base_url}/companies/master", params={"board": "all"})
         response.raise_for_status()
         return response.json()
 
@@ -114,6 +115,11 @@ async def run(limit: int | None, dry_run: bool, stale_first: bool = False) -> in
     attempted = 0
     succeeded = 0
     failed = 0
+    # The health check judges the main board only (see failure_rate_exceeded).
+    main_attempted = 0
+    main_failed = 0
+    sme_attempted = 0
+    sme_failed = 0
     batch: list[dict] = []
 
     async def flush_batch() -> None:
@@ -128,18 +134,25 @@ async def run(limit: int | None, dry_run: bool, stale_first: bool = False) -> in
 
     for company in universe:
         symbol, name = company["symbol"], company["name"]
+        is_sme = bool(company.get("is_sme"))
         attempted += 1
+        if is_sme:
+            sme_attempted += 1
+        else:
+            main_attempted += 1
         await limiter.wait()
         try:
             snapshot = await fetch_screener_snapshot(symbol)
         except Exception as exc:  # noqa: BLE001 — one bad symbol must never abort the run
             print(f"  {symbol}: unexpected error, skipping ({exc})", file=sys.stderr)
             failed += 1
+            sme_failed, main_failed = (sme_failed + 1, main_failed) if is_sme else (sme_failed, main_failed + 1)
             continue
 
         if snapshot is None:
             print(f"  {symbol}: page fetch failed, skipping", file=sys.stderr)
             failed += 1
+            sme_failed, main_failed = (sme_failed + 1, main_failed) if is_sme else (sme_failed, main_failed + 1)
             continue
 
         succeeded += 1
@@ -150,9 +163,10 @@ async def run(limit: int | None, dry_run: bool, stale_first: bool = False) -> in
     await flush_batch()
 
     print(f"done: attempted={attempted} succeeded={succeeded} failed={failed}", flush=True)
-    if attempted and failed / attempted > _FAILURE_RATE_THRESHOLD:
+    print(f"  main board: {main_attempted - main_failed}/{main_attempted} ok; SME: {sme_attempted - sme_failed}/{sme_attempted} ok", flush=True)
+    if failure_rate_exceeded(main_attempted, main_failed, _FAILURE_RATE_THRESHOLD):
         print(
-            f"failure rate {failed / attempted:.0%} exceeds {_FAILURE_RATE_THRESHOLD:.0%} — "
+            f"main-board failure rate {main_failed / main_attempted:.0%} exceeds {_FAILURE_RATE_THRESHOLD:.0%} — "
             "Screener's markup may have changed or this run got blocked",
             file=sys.stderr,
         )

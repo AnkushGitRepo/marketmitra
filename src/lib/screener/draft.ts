@@ -3,7 +3,9 @@
 // are validated numbers.
 
 import {
+  BOARD_LABELS,
   SCREENER_RANGE_FIELDS,
+  type ScreenerBoard,
   type RangeFieldKey,
   type ScreenerFilters,
   type ScreenerRangeField,
@@ -11,6 +13,7 @@ import {
 
 export type RangeKey = `${RangeFieldKey}_min` | `${RangeFieldKey}_max`;
 export type Draft = Partial<Record<RangeKey, string>> & {
+  board: ScreenerBoard;
   sector: string;
   industry: string;
   q: string;
@@ -22,6 +25,7 @@ export function rangeKey(key: RangeFieldKey, suffix: 'min' | 'max'): RangeKey {
 
 export function draftFromFilters(filters: ScreenerFilters): Draft {
   const draft = {
+    board: filters.board ?? 'mainboard',
     sector: filters.sector ?? '',
     industry: filters.industry ?? '',
     q: filters.q ?? '',
@@ -64,6 +68,7 @@ export function buildFilters(
     if (min !== undefined) filters[rangeKey(field.key, 'min')] = min;
     if (max !== undefined) filters[rangeKey(field.key, 'max')] = max;
   }
+  filters.board = draft.board;
   if (draft.sector) filters.sector = draft.sector;
   if (draft.industry) filters.industry = draft.industry;
   const q = draft.q.trim();
@@ -89,6 +94,8 @@ function formatBound(field: ScreenerRangeField, value: number): string {
 /** Human-readable chips for what's currently applied (sort/paging excluded). */
 export function describeFilters(filters: ScreenerFilters): ActiveFilter[] {
   const chips: ActiveFilter[] = [];
+  if (filters.board && filters.board !== 'all')
+    chips.push({ id: 'board', label: `${BOARD_LABELS[filters.board]} only`, keys: ['board'] });
   if (filters.q) chips.push({ id: 'q', label: `“${filters.q}”`, keys: ['q'] });
   if (filters.sector)
     chips.push({ id: 'sector', label: filters.sector, keys: ['sector', 'industry'] });

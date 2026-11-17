@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, resolve_company
 from app.db.models import CompanyMasterORM
+from app.ingestion.company_master import better_name
 from app.services import fundamentals_service as svc
-from app.services.search_service import ensure_company_master_populated
+from app.services.board import resolve_board
+from app.services.search_service import ensure_company_master_populated, master_info
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 
@@ -24,6 +26,7 @@ class CompanyMasterOut(BaseModel):
 @router.get("/master", response_model=list[CompanyMasterOut])
 async def get_company_master(
     include_sme: bool = Query(default=False),
+    board: str | None = Query(default=None, pattern="^(mainboard|sme|all)$"),
     session: AsyncSession = Depends(get_db),
 ) -> list[CompanyMasterOut]:
     """The full NSE-listed-equity symbol/name list (~2,570 rows) — used by
@@ -33,9 +36,10 @@ async def get_company_master(
     never swallowed as a symbol path param."""
     await ensure_company_master_populated(session)
     stmt = select(CompanyMasterORM).order_by(CompanyMasterORM.symbol)
-    if not include_sme:
-        # Main-board only by default: the screener universe excludes SME.
-        stmt = stmt.where(CompanyMasterORM.is_sme.is_(False))
+    chosen = resolve_board(board, include_sme)
+    if chosen != "all":
+        # Main board by default, so callers that predate SME see what they always did.
+        stmt = stmt.where(CompanyMasterORM.is_sme.is_(chosen == "sme"))
     rows = (await session.execute(stmt)).scalars()
     return [
         CompanyMasterOut(symbol=r.symbol, name=r.name, isin=r.isin, series=r.series, is_sme=r.is_sme)
@@ -50,6 +54,7 @@ class CompanyOut(BaseModel):
     sector: str | None
     about: str | None
     source_tier: str | None
+    is_sme: bool = False
 
 
 class RatioOut(BaseModel):
@@ -88,13 +93,18 @@ class PeerOut(BaseModel):
 async def get_company(symbol: str, session: AsyncSession = Depends(get_db)) -> CompanyOut:
     company = await resolve_company(symbol, session)
     about = await svc.get_about(session, company)
+    key = (company.nse_symbol or symbol).upper()
+    is_sme, master_name = await master_info(session, key)
+    # A company created on first view can carry just its symbol as the name; the master has the real one.
+    name = better_name(key, company.name, master_name) or company.name
     return CompanyOut(
         symbol=company.nse_symbol or company.bse_code or symbol,
-        name=company.name,
+        name=name,
         industry=company.industry,
         sector=company.sector,
         about=about,
         source_tier=company.source_tier,
+        is_sme=is_sme,
     )
 
 

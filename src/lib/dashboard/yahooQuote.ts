@@ -6,6 +6,7 @@
 
 import YahooFinance from 'yahoo-finance2';
 import type { PricePeriod, PricePointOut, QuoteOut } from './fundamentalsApi';
+import { isFreshQuote } from './quoteFreshness';
 
 // One client instance reused across warm invocations so the library's
 // internal cookie/crumb handshake against Yahoo isn't repeated on every
@@ -66,22 +67,35 @@ function toQuoteOut(originalSymbol: string, q: Record<string, unknown>): QuoteOu
   };
 }
 
+/** The live quote for one symbol, or null. A quote older than a week is a dead line, not a price: Yahoo keeps serving
+ * stale plain `SYMBOL.NS` tickers for NSE SME stocks, which trade under `SYMBOL-SM.NS` / `SYMBOL-ST.NS`. So when the
+ * plain ticker has no live quote, the series-suffixed ones are tried (a main-board stock never gets this far). */
+async function liveQuote(original: string, now: Date): Promise<Record<string, unknown> | null> {
+  const key = original.trim().toUpperCase();
+  const plain = await yahooFinance.quote(toYahooSymbol(original)).catch(() => undefined);
+  if (plain && (plain as Record<string, unknown>).regularMarketPrice != null && isFreshQuote(plain as Record<string, unknown>, now)) {
+    return plain as Record<string, unknown>;
+  }
+  if (key in TRACKED_INDICES) return null;
+  const suffixed = await Promise.all(['SM', 'ST'].map((series) => yahooFinance.quote(`${key}-${series}.NS`).catch(() => undefined)));
+  const live = suffixed.find((q) => q && (q as Record<string, unknown>).regularMarketPrice != null && isFreshQuote(q as Record<string, unknown>, now));
+  return (live as Record<string, unknown> | undefined) ?? null;
+}
+
 /** One quote per requested symbol, keyed by the caller's original spelling.
  * A symbol yahoo-finance2 couldn't resolve (network failure, unknown ticker,
- * no last price) is simply absent from the map — callers fall back to the
- * fundamentals-api chain for anything missing, never a fabricated price. */
-export async function fetchYahooQuotes(symbols: string[]): Promise<Map<string, QuoteOut>> {
+ * no last price, or only a stale one) is simply absent from the map — callers
+ * fall back to the fundamentals-api chain for anything missing, never a
+ * fabricated price. */
+export async function fetchYahooQuotes(symbols: string[], now: Date = new Date()): Promise<Map<string, QuoteOut>> {
   const result = new Map<string, QuoteOut>();
   const settled = await Promise.allSettled(
-    symbols.map(async (original) => {
-      const quote = await yahooFinance.quote(toYahooSymbol(original));
-      return { original, quote };
-    })
+    symbols.map(async (original) => ({ original, quote: await liveQuote(original, now) }))
   );
 
   for (const outcome of settled) {
-    if (outcome.status !== 'fulfilled') continue;
-    const mapped = toQuoteOut(outcome.value.original, outcome.value.quote as Record<string, unknown>);
+    if (outcome.status !== 'fulfilled' || !outcome.value.quote) continue;
+    const mapped = toQuoteOut(outcome.value.original, outcome.value.quote);
     if (mapped) result.set(mapped.symbol, mapped);
   }
 

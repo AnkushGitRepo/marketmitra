@@ -24,6 +24,31 @@ beforeEach(() => {
 });
 afterEach(() => vi.clearAllMocks());
 
+describe('fetchYahooQuotes for SME stocks', () => {
+  const NOW = new Date('2026-11-17T09:00:00Z');
+  const fresh = (price: number) => ({ regularMarketPrice: price, regularMarketTime: new Date('2026-11-17T08:47:31Z') });
+  const dead = (price: number) => ({ regularMarketPrice: price, regularMarketTime: new Date('2024-07-23T20:00:00Z') });
+
+  it('uses the series-suffixed ticker when the plain one is a dead line (Oriana: 2,077.8 stale vs 212.15 live)', async () => {
+    quoteMock.mockImplementation(async (t: string) => (t === 'ORIANA.NS' ? dead(2077.8) : t === 'ORIANA-SM.NS' ? fresh(212.15) : undefined));
+    const result = await fetchYahooQuotes(['ORIANA'], NOW);
+    expect(result.get('ORIANA')?.price).toBe('212.15');
+  });
+
+  it('tries the ST series too, and returns nothing rather than a stale price', async () => {
+    quoteMock.mockImplementation(async (t: string) => (t === 'HGSINDIALT-ST.NS' ? fresh(230) : t === 'HGSINDIALT.NS' ? dead(10) : undefined));
+    expect((await fetchYahooQuotes(['HGSINDIALT'], NOW)).get('HGSINDIALT')?.price).toBe('230');
+    quoteMock.mockImplementation(async () => dead(10));
+    expect((await fetchYahooQuotes(['GONE'], NOW)).has('GONE')).toBe(false);
+  });
+
+  it('does not look further when the plain ticker is live (the main board costs one call)', async () => {
+    quoteMock.mockResolvedValue(fresh(1400));
+    await fetchYahooQuotes(['RELIANCE'], NOW);
+    expect(quoteMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('fetchYahooQuotes', () => {
   it('maps a normal quote to QuoteOut, using the .NS suffix for an equity symbol', async () => {
     quoteMock.mockResolvedValue({
@@ -35,7 +60,7 @@ describe('fetchYahooQuotes', () => {
       regularMarketTime: new Date('2026-09-12T10:00:00Z'),
     });
 
-    const result = await fetchYahooQuotes(['RELIANCE']);
+    const result = await fetchYahooQuotes(['RELIANCE'], new Date('2026-09-13T00:00:00Z'));
     expect(quoteMock).toHaveBeenCalledWith('RELIANCE.NS');
     const quote = result.get('RELIANCE');
     expect(quote).toEqual({
@@ -72,7 +97,7 @@ describe('fetchYahooQuotes', () => {
 
   it('one rejected symbol does not fail the others in the same batch', async () => {
     quoteMock.mockImplementation((symbol: string) => {
-      if (symbol === 'BOOM.NS') return Promise.reject(new Error('upstream 503'));
+      if (symbol.startsWith('BOOM')) return Promise.reject(new Error('upstream 503'));
       return Promise.resolve({ regularMarketPrice: 500 });
     });
 

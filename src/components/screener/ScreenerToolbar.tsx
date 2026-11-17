@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { ScreenerFacets } from '@/lib/dashboard/screenerSchema';
+import { BoardTabs } from './BoardTabs';
 import type { ActiveFilter, Draft } from '@/lib/screener/draft';
 import { SCREENER_PRESETS, type ScreenerPreset } from '@/lib/screener/presets';
 import { FilterFields, type DraftKey } from './FilterFields';
@@ -10,6 +11,7 @@ import styles from './ScreenerToolbar.module.css';
 interface ScreenerToolbarProps {
   readonly draft: Draft;
   readonly facets: ScreenerFacets;
+  readonly boardCounts?: { readonly mainboard: number; readonly sme: number };
   readonly industries: readonly string[];
   readonly chips: readonly ActiveFilter[];
   readonly activePresetId: string | null;
@@ -26,6 +28,7 @@ interface ScreenerToolbarProps {
 export function ScreenerToolbar({
   draft,
   facets,
+  boardCounts,
   industries,
   chips,
   activePresetId,
@@ -38,10 +41,12 @@ export function ScreenerToolbar({
   onClear,
 }: ScreenerToolbarProps) {
   const [expanded, setExpanded] = useState(false);
-  const detailCount = chips.filter((c) => c.id !== 'q' && c.id !== 'sector' && c.id !== 'industry').length;
+  const detailCount = chips.filter((c) => c.id !== 'q' && c.id !== 'board' && c.id !== 'sector' && c.id !== 'industry').length;
 
   return (
     <section className={styles.card} aria-label="Screener filters">
+      <BoardTabs value={draft.board} counts={boardCounts} onChange={(board) => onChange('board', board)} />
+
       <div className={styles.presets} role="group" aria-label="Quick screens">
         {SCREENER_PRESETS.map((preset) => (
           <button

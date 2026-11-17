@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { RangeFieldKey, ScreenerResultRow } from '@/lib/dashboard/screenerSchema';
+import { SmeBadge } from '@/components/common/SmeBadge';
 import { RESULT_COLUMNS, SORTABLE_KEYS } from '@/lib/screener/columns';
 import { orderColumns } from '@/lib/screener/view';
 import styles from './ResultsTable.module.css';
@@ -66,6 +67,12 @@ export function ResultsTable({ rows, sort, highlighted, loading, onSort }: Resul
                   {row.name}
                   <span className={styles.symbol}> · {row.symbol}</span>
                 </Link>
+                {row.is_sme && (
+                  <>
+                    {' '}
+                    <SmeBadge />
+                  </>
+                )}
               </th>
               {columns.map((col) => (
                 <td

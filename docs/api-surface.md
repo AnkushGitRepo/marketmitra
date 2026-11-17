@@ -80,6 +80,9 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Errors:** `400` if any `_min`/`_max`/`limit` value isn't a valid number.
 - **Note:** a thin proxy to fundamentals-api's `GET /screener`, backed by a table whose price-derived fields (market cap, price, P/E, P/B, dividend yield) refresh daily for the whole universe and whose fundamentals (ROE, ROCE, debt/equity, growth) are scraped incrementally, stalest first ([ADR 0033](./decisions/0033-screener-hybrid-refresh-and-ranked-search.md)) — not the same freshness as this stock's live detail page. Fundamentals filters only match companies scraped so far. Same shared filter schema (`src/lib/dashboard/screenerSchema.ts`) as Mitra's `run_screener` MCP tool below, so the two can never drift apart.
 
+### `GET /api/screener` — `board` (update, #216)
+- **`board=mainboard|sme|all`** selects the listing board (ADR 0066). Omitted = `mainboard`, which is what the API returned before SME was added. Every row carries `is_sme`. The same `board` is accepted by `/api/screener/export` (which adds a Board column) and `/api/screener/facets`, and by Mitra's and the MCP `run_screener` tool (compact rows carry `board`). Data service: `GET /screener`, `/screener/facets`, `/screener/stats` (adds `by_board`) and `/companies/master` take `board`; `GET /companies/{symbol}` reports `is_sme`.
+
 ### `GET /api/screener` — pagination, text search (update)
 - Adds `q` (company/symbol contains-match), `industry`, `limit` (1–500, default 100) and `offset`. The body is still the plain array; the **total** matches (ignoring paging) is in the `X-Total-Count` response header. The Screener page pages with `limit` 25/50/100/200 + `offset`, and keeps the whole screen in the URL so it is shareable.
 

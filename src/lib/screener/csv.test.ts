@@ -47,15 +47,22 @@ describe('csvCell', () => {
   });
 });
 
+describe('toCsv board column', () => {
+  it('labels an SME company so an exported list can be split by board', () => {
+    expect(toCsv([row({ symbol: 'ANONDITA', is_sme: true })]).split('\r\n')[1]).toContain('ANONDITA,');
+    expect(toCsv([row({ symbol: 'ANONDITA', is_sme: true })])).toContain(',SME,');
+  });
+});
+
 describe('toCsv', () => {
   it('emits a header plus one CRLF-terminated line per row', () => {
     const lines = toCsv([row(), row({ symbol: 'X', name: '=cmd', sector: null })]).split('\r\n');
-    expect(lines[0]).toMatch(/^Symbol,Company,Sector,Industry,Price \(INR\),Market cap \(INR Cr\)/);
+    expect(lines[0]).toMatch(/^Symbol,Company,Board,Sector,Industry,Price \(INR\),Market cap \(INR Cr\)/);
     expect(lines[1]).toContain(
-      'TCS,Tata Consultancy Services Limited,Information Technology,IT Services,3500,1280000,28.4',
+      'TCS,Tata Consultancy Services Limited,Main board,Information Technology,IT Services,3500,1280000,28.4',
     );
     expect(lines[1]).toContain(',-2.5');
-    expect(lines[2]).toContain("X,'=cmd,,");
+    expect(lines[2]).toContain("X,'=cmd,Main board,,");
     expect(lines[3]).toBe('');
   });
 });
