@@ -1,6 +1,6 @@
 {
   "name": "marketmitra-v2",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "license": "MIT",
   "description": "Free, open-source, self-hostable dashboard for Indian stock markets: NSE and BSE stock pages, portfolio tracker, price alerts, market news with sentiment, IPO tracker, stock screener, and AI analysis you run with your own key. Includes an MCP server and API for AI agents.",
