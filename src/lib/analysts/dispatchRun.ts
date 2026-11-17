@@ -1,21 +1,36 @@
 // Builds and delivers one user's morning dispatch (#129): in-app notification plus email, through the same fan-out the alerts use.
 // Only the in-app record and email: no Slack, Telegram, WhatsApp or webhook in this phase.
 
+import { getQuotes } from '@/lib/dashboard/quotes';
+import { listHoldings } from '@/lib/holdings';
 import { deliverNotification, resolveEmailRoute } from '@/lib/notifications/deliver';
-import { buildDispatch, DISPATCH_WINDOW_MS, renderDispatchText, type Dispatch } from './dispatch';
+import { buildDispatch, DISPATCH_WINDOW_MS, portfolioWeights, renderDispatchText, type Dispatch } from './dispatch';
 import { saveDispatch, setDispatchOutcome, type DispatchEmail } from './dispatchStore';
 import { istDay } from './caps';
 import { listAnalysts, recentEntries } from './store';
 
 export const DISPATCH_HREF = '/agents';
 
+/** Each holding's share of the portfolio. Weights are a nicety: when holdings or live prices cannot be read the brief simply has none. */
+async function loadWeights(userId: string): Promise<Record<string, number>> {
+  try {
+    const holdings = await listHoldings(userId);
+    if (holdings.length === 0) return {};
+    const quotes = await getQuotes([...new Set(holdings.map((h) => h.symbol))]);
+    return portfolioWeights(holdings, Object.fromEntries(quotes.map((q) => [q.symbol.toUpperCase(), q.price])));
+  } catch {
+    return {};
+  }
+}
+
 /** Today's dispatch for the user, computed from their analysts and journal. Null when there is nothing worth sending. */
 export async function previewDispatch(userId: string, now: Date): Promise<Dispatch | null> {
-  const [analysts, entries] = await Promise.all([listAnalysts(userId), recentEntries(userId, new Date(now.getTime() - DISPATCH_WINDOW_MS))]);
+  const [analysts, entries, weights] = await Promise.all([listAnalysts(userId), recentEntries(userId, new Date(now.getTime() - DISPATCH_WINDOW_MS)), loadWeights(userId)]);
   return buildDispatch(
     analysts.map((a) => ({ symbol: a.symbol, status: a.status, summary: a.dossier?.summary ?? null })),
     entries,
-    now
+    now,
+    weights
   );
 }
 

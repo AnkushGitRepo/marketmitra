@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agoLabel, kindLabel, statusView } from './format';
+import { agoLabel, kindLabel, statusView, briefAskPrompt } from './format';
 
 const NOW = new Date('2026-11-11T12:00:00Z');
 
@@ -33,5 +33,11 @@ describe('kindLabel', () => {
     expect(kindLabel('earnings')).toBe('Results');
     expect(kindLabel('initiation')).toBe('Initiation');
     expect(kindLabel('range')).toBe('52-week range');
+  });
+});
+
+describe('briefAskPrompt', () => {
+  it('quotes the brief item and asks what is driving it and whether the thesis holds', () => {
+    expect(briefAskPrompt('LAURUSLABS moved -8.4% to ₹812')).toBe('This was in my morning brief: "LAURUSLABS moved -8.4% to ₹812". Based on your dossier and recent journal, what is driving it, and does it affect the thesis?');
   });
 });

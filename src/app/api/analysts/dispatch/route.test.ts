@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const state = { userId: 'u1' as string | null, preview: null as null | { title: string; priority: unknown[] }, report: { email: 'sent', detail: null } as { email: string; detail: string | null }, tested: 0 };
+const state = { userId: 'u1' as string | null, preview: null as null | { title: string; attention: unknown[] }, report: { email: 'sent', detail: null } as { email: string; detail: string | null }, tested: 0 };
 
 vi.mock('@/lib/rateLimit', () => ({ withRateLimit: (h: unknown) => h }));
 vi.mock('@/lib/currentUserId', () => ({ getCurrentUserId: async () => state.userId }));
-vi.mock('@/lib/analysts/dispatch', () => ({ renderDispatchText: () => 'BODY' }));
-vi.mock('@/lib/analysts/dispatchStore', () => ({ latestDispatch: async () => ({ day: '2026-11-11', title: 'Old brief' }) }));
+vi.mock('@/lib/analysts/dispatch', () => ({ renderDispatchText: () => 'BODY', upgradeDispatch: (d: { upgraded?: boolean }) => ({ ...d, upgraded: true }) }));
+vi.mock('@/lib/analysts/dispatchStore', () => ({ latestDispatch: async () => ({ day: '2026-11-11', title: 'Old brief', dispatch: { day: '2026-11-11' } }) }));
 vi.mock('@/lib/analysts/dispatchRun', () => ({ previewDispatch: async () => state.preview, sendTestDispatch: async () => (state.tested++, state.report) }));
 
 const { GET, POST } = await import('./route');
@@ -26,7 +26,9 @@ describe('/api/analysts/dispatch', () => {
   });
   it('returns the latest saved brief and a preview with its text, or no preview when nothing is material', async () => {
     expect(((await (await GET()).json()) as { data: { latest: { title: string }; preview: unknown } }).data).toMatchObject({ latest: { title: 'Old brief' }, preview: null });
-    state.preview = { title: 'Morning brief: 1 item needs a look', priority: [{}] };
+    // A brief saved in an older shape is brought up to date before it leaves the server.
+    expect(((await (await GET()).json()) as { data: { latest: { dispatch: { upgraded: boolean } } } }).data.latest.dispatch.upgraded).toBe(true);
+    state.preview = { title: 'Morning brief: 1 item needs a look', attention: [{}] };
     expect(((await (await GET()).json()) as { data: { preview: { body: string } } }).data.preview.body).toBe('BODY');
   });
   it('rejects anything but a test action', async () => {

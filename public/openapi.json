@@ -5853,7 +5853,7 @@
           "AI"
         ],
         "summary": "Morning brief: latest and today's preview",
-        "description": "The last saved morning brief and what today's would contain right now (`preview` is null when nothing is material, in which case no brief would be sent). Nothing is sent. Browser session only.",
+        "description": "The last saved morning brief and what today's would contain right now: a pulse sentence, items that need attention, catalysts, and quiet analysts (`preview` is null when nothing material or worth attention happened, in which case no brief would be sent; routine price and volume logs do not count). Nothing is sent. Browser session only.",
         "security": [
           {
             "cookieAuth": []
@@ -5861,7 +5861,7 @@
         ],
         "responses": {
           "200": {
-            "description": "{ success, data: { latest: { day, title, dispatch, email, emailDetail, createdAt } | null, preview: { day, title, priority, developments, highlights, analystCount, body } | null } }"
+            "description": "{ success, data: { latest: { day, title, dispatch, email, emailDetail, createdAt } | null, preview: { day, title, pulse, attention[], catalysts[], quiet[], analystCount, body } | null } }. Items are { symbol, kind, alert, title, impact, weightPct }; `weightPct` is the holding's share of the portfolio or null. Briefs saved in the older shape (priority, developments, highlights) are returned upgraded to this one."
           },
           "401": {
             "description": "Not authenticated"

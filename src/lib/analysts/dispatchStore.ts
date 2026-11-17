@@ -2,7 +2,7 @@
 
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
-import type { Dispatch } from './dispatch';
+import type { Dispatch, LegacyDispatch } from './dispatch';
 
 export type DispatchEmail = 'sent' | 'skipped' | 'failed';
 
@@ -10,7 +10,8 @@ export interface StoredDispatch {
   day: string;
   title: string;
   body: string;
-  dispatch: Dispatch;
+  /** Briefs saved before #214 are in the older shape; read them through `upgradeDispatch`. */
+  dispatch: Dispatch | LegacyDispatch;
   email: DispatchEmail;
   emailDetail: string | null;
   createdAt: string;

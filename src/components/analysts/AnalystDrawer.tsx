@@ -7,7 +7,7 @@ import { MorningBrief } from './MorningBrief';
 import styles from './AnalystDrawer.module.css';
 
 /** What the drawer shows: one analyst's dossier, the morning brief, or a chat with an analyst (`symbol`) or with the Root Agent (`symbol: null`). */
-export type DrawerPanel = { readonly kind: 'dossier'; readonly symbol: string } | { readonly kind: 'chat'; readonly symbol: string | null } | { readonly kind: 'brief' };
+export type DrawerPanel = { readonly kind: 'dossier'; readonly symbol: string } | { readonly kind: 'chat'; readonly symbol: string | null; readonly prompt?: string } | { readonly kind: 'brief' };
 
 interface AnalystDrawerProps {
   readonly panel: DrawerPanel | null;
@@ -61,8 +61,8 @@ export function AnalystDrawer({ panel, onChange, onClose }: AnalystDrawerProps) 
           </div>
           <div className={panel.kind === 'chat' ? styles.bodyChat : styles.body}>
             {panel.kind === 'dossier' && <DossierReader key={panel.symbol} symbol={panel.symbol} tabbed />}
-            {panel.kind === 'chat' && <AnalystChat key={panel.symbol ?? 'root'} symbol={panel.symbol} />}
-            {panel.kind === 'brief' && <MorningBrief />}
+            {panel.kind === 'chat' && <AnalystChat key={`${panel.symbol ?? 'root'}:${panel.prompt ?? ''}`} symbol={panel.symbol} initialPrompt={panel.prompt} />}
+            {panel.kind === 'brief' && <MorningBrief onAsk={(symbol, prompt) => onChange({ kind: 'chat', symbol, prompt })} onDossier={(symbol) => onChange({ kind: 'dossier', symbol })} onDiscuss={() => onChange({ kind: 'chat', symbol: null })} />}
           </div>
         </div>
       )}
