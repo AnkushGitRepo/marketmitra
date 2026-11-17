@@ -46,9 +46,9 @@ def test_get_company(client, monkeypatch):
     monkeypatch.setattr("app.api.routes.companies.svc.get_about", fake_get_about)
 
     async def not_sme(session, symbol):
-        return False
+        return (False, "Reliance Industries Limited")
 
-    monkeypatch.setattr("app.api.routes.companies.is_sme_symbol", not_sme)
+    monkeypatch.setattr("app.api.routes.companies.master_info", not_sme)
 
     response = client.get("/companies/RELIANCE")
     assert response.status_code == 200

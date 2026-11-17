@@ -7,9 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, resolve_company
 from app.db.models import CompanyMasterORM
+from app.ingestion.company_master import better_name
 from app.services import fundamentals_service as svc
 from app.services.board import resolve_board
-from app.services.search_service import ensure_company_master_populated, is_sme_symbol
+from app.services.search_service import ensure_company_master_populated, master_info
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 
@@ -92,10 +93,13 @@ class PeerOut(BaseModel):
 async def get_company(symbol: str, session: AsyncSession = Depends(get_db)) -> CompanyOut:
     company = await resolve_company(symbol, session)
     about = await svc.get_about(session, company)
-    is_sme = await is_sme_symbol(session, company.nse_symbol or symbol)
+    key = (company.nse_symbol or symbol).upper()
+    is_sme, master_name = await master_info(session, key)
+    # A company created on first view can carry just its symbol as the name; the master has the real one.
+    name = better_name(key, company.name, master_name) or company.name
     return CompanyOut(
         symbol=company.nse_symbol or company.bse_code or symbol,
-        name=company.name,
+        name=name,
         industry=company.industry,
         sector=company.sector,
         about=about,

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { BOARD_LABELS, SCREENER_BOARDS, type ScreenerFacets } from '@/lib/dashboard/screenerSchema';
+import type { ScreenerFacets } from '@/lib/dashboard/screenerSchema';
+import { BoardTabs } from './BoardTabs';
 import type { ActiveFilter, Draft } from '@/lib/screener/draft';
 import { SCREENER_PRESETS, type ScreenerPreset } from '@/lib/screener/presets';
 import { FilterFields, type DraftKey } from './FilterFields';
@@ -10,6 +11,7 @@ import styles from './ScreenerToolbar.module.css';
 interface ScreenerToolbarProps {
   readonly draft: Draft;
   readonly facets: ScreenerFacets;
+  readonly boardCounts?: { readonly mainboard: number; readonly sme: number };
   readonly industries: readonly string[];
   readonly chips: readonly ActiveFilter[];
   readonly activePresetId: string | null;
@@ -26,6 +28,7 @@ interface ScreenerToolbarProps {
 export function ScreenerToolbar({
   draft,
   facets,
+  boardCounts,
   industries,
   chips,
   activePresetId,
@@ -42,6 +45,8 @@ export function ScreenerToolbar({
 
   return (
     <section className={styles.card} aria-label="Screener filters">
+      <BoardTabs value={draft.board} counts={boardCounts} onChange={(board) => onChange('board', board)} />
+
       <div className={styles.presets} role="group" aria-label="Quick screens">
         {SCREENER_PRESETS.map((preset) => (
           <button
@@ -72,16 +77,6 @@ export function ScreenerToolbar({
             value={draft.q}
             onChange={(e) => onChange('q', e.target.value)}
           />
-        </label>
-        <label className={styles.control}>
-          <span className={styles.srOnly}>Board</span>
-          <select className={styles.input} value={draft.board} onChange={(e) => onChange('board', e.target.value)}>
-            {SCREENER_BOARDS.map((b) => (
-              <option key={b} value={b}>
-                {BOARD_LABELS[b]}
-              </option>
-            ))}
-          </select>
         </label>
         <label className={styles.control}>
           <span className={styles.srOnly}>Sector</span>

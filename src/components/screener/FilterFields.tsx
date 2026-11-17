@@ -1,6 +1,6 @@
 'use client';
 
-import { BOARD_LABELS, SCREENER_BOARDS, SCREENER_RANGE_FIELDS, type ScreenerFacets } from '@/lib/dashboard/screenerSchema';
+import { SCREENER_RANGE_FIELDS, type ScreenerFacets } from '@/lib/dashboard/screenerSchema';
 import { rangeKey, type Draft, type RangeKey } from '@/lib/screener/draft';
 import { FILTER_GROUPS } from '@/lib/screener/presets';
 import styles from './FilterFields.module.css';
@@ -36,16 +36,6 @@ export function FilterFields({ draft, facets, industries, onChange, includeBasic
               value={draft.q}
               onChange={(e) => onChange('q', e.target.value)}
             />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.label}>Board</span>
-            <select className={styles.input} value={draft.board} onChange={(e) => onChange('board', e.target.value)}>
-              {SCREENER_BOARDS.map((b) => (
-                <option key={b} value={b}>
-                  {BOARD_LABELS[b]}
-                </option>
-              ))}
-            </select>
           </label>
           <label className={styles.field}>
             <span className={styles.label}>Sector</span>

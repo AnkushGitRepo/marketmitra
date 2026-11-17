@@ -59,6 +59,21 @@ def _row_to_values(row: dict) -> dict | None:
     return values
 
 
+def _scrape_update_cols(stmt, values: dict, *, quoted: bool) -> dict:
+    """What a Screener.in scrape writes on conflict. Everything it scraped, except: a
+    placeholder name (the symbol itself) never replaces a real one, and on a symbol that
+    already has a live quote the quote-owned figures are only filled in where the quote
+    left them empty (Yahoo gives an SME stock a price but no market cap, P/E or P/B)."""
+    cols = {k: stmt.excluded[k] for k in values if k != "symbol"}
+    if is_placeholder_name(values["symbol"], str(values["name"])):
+        cols.pop("name", None)
+    if quoted:
+        for field in _QUOTE_OWNED_FIELDS:
+            if field in cols:
+                cols[field] = func.coalesce(getattr(ScreenerMetricsORM, field), stmt.excluded[field])
+    return cols
+
+
 async def ingest_screener_metrics(session: AsyncSession, rows: list[dict]) -> dict:
     """Upsert on symbol — a `failed` row (page fetch itself failed, per
     scraper.fetch_screener_snapshot's contract) is never passed in here at
@@ -76,17 +91,9 @@ async def ingest_screener_metrics(session: AsyncSession, rows: list[dict]) -> di
         values = _row_to_values(row)
         if values is None:
             continue
-        update_cols = {k: v for k, v in values.items() if k != "symbol"}
-        if is_placeholder_name(values["symbol"], str(values["name"])):
-            update_cols.pop("name", None)  # never overwrite a real name with the symbol stand-in
-        if values["symbol"] in quoted:
-            for field in _QUOTE_OWNED_FIELDS:
-                update_cols.pop(field, None)
-        await session.execute(
-            insert(ScreenerMetricsORM)
-            .values(**values)
-            .on_conflict_do_update(index_elements=["symbol"], set_=update_cols)
-        )
+        stmt = insert(ScreenerMetricsORM).values(**values)
+        update_cols = _scrape_update_cols(stmt, values, quoted=values["symbol"] in quoted)
+        await session.execute(stmt.on_conflict_do_update(index_elements=["symbol"], set_=update_cols))
         count += 1
     await session.commit()
     return {"ingested": count}

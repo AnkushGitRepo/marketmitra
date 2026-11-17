@@ -2,6 +2,8 @@
 the board filter that replaces the hard-coded main-board-only universe, and the
 stalest-first blend that keeps SME from starving the main-board refresh."""
 
+from typing import ClassVar
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -39,10 +41,16 @@ class TestSymbolListParser:
             "listing_date": None, "face_value": None, "is_sme": True,
         }
 
+    def test_a_list_with_names_keeps_them(self):
+        rows = cm.parse_symbol_list("SYMBOL,NAME OF COMPANY,SERIES\nAAKAAR,AAKAAR MEDICAL TECHNO LTD,SM\n", is_sme=True)
+        assert rows[0]["name"] == "AAKAAR MEDICAL TECHNO LTD" and rows[0]["series"] == "SM"
+
     def test_bundled_list_is_real_and_clean(self):
         rows = cm.parse_symbol_list(cm._bundled_text("SME_SYMBOLS.csv") or "", is_sme=True)
         assert len(rows) >= 500
         assert all(r["symbol"] == r["symbol"].upper() and r["series"] in {"SM", "ST"} for r in rows)
+        # Search finds a company by name, so almost every row must carry a real one.
+        assert sum(1 for r in rows if cm.is_placeholder_name(r["symbol"], r["name"])) <= 5
 
     def test_a_placeholder_name_is_recognised(self):
         assert cm.is_placeholder_name("ANONDITA", "ANONDITA")
@@ -240,10 +248,11 @@ class TestSelfHealingSmeRows:
         assert self.calls == []
 
 
-def test_company_route_reports_whether_it_is_an_sme(client, monkeypatch):
+def test_company_route_reports_sme_and_prefers_the_masters_real_name(client, monkeypatch):
     from types import SimpleNamespace
 
-    company = SimpleNamespace(nse_symbol="ANONDITA", bse_code=None, name="Anondita", industry=None, sector=None, source_tier="t")
+    # A company created on first view carries just its symbol as the name.
+    company = SimpleNamespace(nse_symbol="ANONDITA", bse_code=None, name="ANONDITA", industry=None, sector=None, source_tier="t")
 
     async def fake_resolve(symbol, session):
         return company
@@ -251,10 +260,103 @@ def test_company_route_reports_whether_it_is_an_sme(client, monkeypatch):
     async def fake_about(session, c):
         return None
 
-    async def sme(session, symbol):
-        return symbol == "ANONDITA"
+    async def info(session, symbol):
+        return (symbol == "ANONDITA", "ANONDITA MEDICARE LIMITED")
 
     monkeypatch.setattr("app.api.routes.companies.resolve_company", fake_resolve)
     monkeypatch.setattr("app.api.routes.companies.svc.get_about", fake_about)
-    monkeypatch.setattr("app.api.routes.companies.is_sme_symbol", sme)
-    assert client.get("/companies/ANONDITA").json()["is_sme"] is True
+    monkeypatch.setattr("app.api.routes.companies.master_info", info)
+    body = client.get("/companies/ANONDITA").json()
+    assert body["is_sme"] is True
+    assert body["name"] == "ANONDITA MEDICARE LIMITED"
+
+    company.name = "Anondita Medicare Limited"  # a real name already there is never overridden
+    assert client.get("/companies/ANONDITA").json()["name"] == "Anondita Medicare Limited"
+
+
+class TestScrapeUpdateColumns:
+    """The Screener.in scrape must not overwrite a live quote's figures, but must fill in the ones
+    the quote left empty: Yahoo gives an SME stock a price and no market cap, P/E or P/B."""
+
+    @staticmethod
+    def _sql(quoted: bool) -> str:
+        from sqlalchemy.dialects.postgresql import insert
+
+        values = {"symbol": "AAKAAR", "name": "Aakaar", "market_cap": 120, "current_price": 66, "pe": 18, "roe": 14}
+        stmt = insert(ScreenerMetricsORM).values(**values)
+        cols = svc._scrape_update_cols(stmt, values, quoted=quoted)
+        return str(stmt.on_conflict_do_update(index_elements=["symbol"], set_=cols).compile(dialect=postgresql.dialect()))
+
+    def test_an_unquoted_symbol_takes_every_scraped_value(self):
+        sql = self._sql(False)
+        assert "market_cap = excluded.market_cap" in sql and "coalesce" not in sql
+
+    def test_a_quoted_symbol_keeps_the_quotes_figures_and_fills_only_the_gaps(self):
+        sql = self._sql(True)
+        for field in ("market_cap", "current_price", "pe"):
+            assert f"{field} = coalesce(screener_metrics.{field}, excluded.{field})" in sql
+        assert "roe = excluded.roe" in sql  # fundamentals always come from the scrape
+
+    def test_a_placeholder_name_never_overwrites_a_real_one(self):
+        from sqlalchemy.dialects.postgresql import insert
+
+        values = {"symbol": "AAKAAR", "name": "AAKAAR"}
+        stmt = insert(ScreenerMetricsORM).values(**values)
+        assert "name" not in svc._scrape_update_cols(stmt, values, quoted=False)
+
+
+class _FakeTicker:
+    """Stands in for yf.Ticker: history keyed by Yahoo symbol, `None` meaning no data."""
+
+    histories: ClassVar[dict] = {}
+    asked: ClassVar[list] = []
+
+    def __init__(self, symbol):
+        self.symbol = symbol
+
+    def history(self, period="1y"):
+        import pandas as pd
+
+        _FakeTicker.asked.append(self.symbol)
+        days = _FakeTicker.histories.get(self.symbol)
+        if not days:
+            return pd.DataFrame()
+        index = pd.to_datetime(days)
+        return pd.DataFrame({"Open": 1.0, "High": 2.0, "Low": 0.5, "Close": 1.5, "Volume": 10}, index=index)
+
+
+@pytest.mark.asyncio
+class TestPriceHistoryForSme:
+    TODAY = __import__("datetime").date(2026, 11, 17)
+
+    @pytest.fixture(autouse=True)
+    def _fake_yahoo(self, monkeypatch):
+        from app.ingestion import tier2_yfinance
+
+        _FakeTicker.histories, _FakeTicker.asked = {}, []
+        monkeypatch.setattr(tier2_yfinance.yf, "Ticker", _FakeTicker)
+        self.t2 = tier2_yfinance
+
+    async def test_a_live_plain_history_is_used_as_before_with_one_call(self):
+        _FakeTicker.histories = {"TCS.NS": ["2026-11-16", "2026-11-17"]}
+        bars = await self.t2.get_price_history("TCS", None, "1y", today=self.TODAY)
+        assert len(bars) == 2 and _FakeTicker.asked == ["TCS.NS"]
+
+    async def test_an_sme_stock_falls_back_to_its_series_suffixed_ticker(self):
+        _FakeTicker.histories = {"ANONDITA-SM.NS": ["2026-11-17"]}
+        bars = await self.t2.get_price_history("ANONDITA", None, "1y", today=self.TODAY)
+        assert len(bars) == 1 and _FakeTicker.asked == ["ANONDITA.NS", "ANONDITA-SM.NS"]
+
+    async def test_a_dead_plain_line_does_not_beat_a_live_suffixed_one(self):
+        _FakeTicker.histories = {"KDL.NS": ["2024-07-23"], "KDL-SM.NS": ["2026-11-17"]}
+        bars = await self.t2.get_price_history("KDL", None, "1y", today=self.TODAY)
+        assert [b["trade_date"].isoformat() for b in bars] == ["2026-11-17"]
+
+    async def test_a_stale_history_with_nothing_better_is_still_returned(self):
+        # A suspended main-board stock keeps its real, old history: that is today's behaviour.
+        _FakeTicker.histories = {"HALTED.NS": ["2026-09-01"]}
+        bars = await self.t2.get_price_history("HALTED", None, "1y", today=self.TODAY)
+        assert len(bars) == 1
+
+    async def test_no_data_anywhere_is_an_empty_list(self):
+        assert await self.t2.get_price_history("NOPE", None, "1y", today=self.TODAY) == []

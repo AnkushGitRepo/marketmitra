@@ -8,10 +8,10 @@ Source: NSE's own published CSVs at `archives.nseindia.com`
 Akamai in this project's dev environment — see tier1_nse_bse.py), the
 `archives.` subdomain was reachable during development, but it can still
 403 a datacenter IP, so a copy ships in `app/data/` as the fallback: the main
-board's EQUITY_L.csv, and for SME `SME_SYMBOLS.csv` (symbol and series only,
-from NSE's SME Market Watch download — it has no company names, so an SME row
-starts with its symbol as a placeholder name and the daily quote feed fills in
-the real one; ADR 0066). This is still NSE's own unofficial-access surface, not a
+board's EQUITY_L.csv, and for SME `SME_SYMBOLS.csv` (symbol, name and series:
+the symbols come from NSE's SME Market Watch download and the names from Yahoo,
+since neither NSE file is reachable; ADR 0066). A row without a name falls back
+to its symbol as a placeholder that the daily quote feed replaces. This is still NSE's own unofficial-access surface, not a
 documented public API — same accepted trade-off as the rest of Tier 1
 (ADR 0011).
 """
@@ -78,8 +78,9 @@ def parse_equity_csv(text: str, *, is_sme: bool) -> list[dict]:
 
 
 def parse_symbol_list(text: str, *, is_sme: bool) -> list[dict]:
-    """Parses the bundled `SYMBOL,SERIES` list. It carries no names, so the symbol
-    stands in as a placeholder name (see `is_placeholder_name`)."""
+    """Parses the bundled `SYMBOL,NAME OF COMPANY,SERIES` list. A row with no name
+    gets its symbol as a placeholder (see `is_placeholder_name`), which the daily
+    quote feed replaces."""
     companies: list[dict] = []
     seen: set[str] = set()
     for raw in csv.DictReader(io.StringIO(text)):
@@ -91,7 +92,7 @@ def parse_symbol_list(text: str, *, is_sme: bool) -> list[dict]:
         companies.append(
             {
                 "symbol": symbol,
-                "name": symbol,
+                "name": row.get("NAME OF COMPANY") or symbol,
                 "isin": None,
                 "series": row.get("SERIES") or None,
                 "listing_date": None,

@@ -3,7 +3,8 @@
 // price, P/E, P/B and dividend yield; the stalest-first Screener.in job owns
 // everything else (ROE, ROCE, debt/equity, growth, sector).
 
-import { fetchYahooQuoteChunk } from '@/lib/dashboard/yahooQuote';
+import { isFreshQuote } from '@/lib/dashboard/quoteFreshness';
+import { fetchYahooQuoteChunk, fetchYahooTickerQuotes } from '@/lib/dashboard/yahooQuote';
 
 export const QUOTE_CHUNK_SIZE = 100;
 const INGEST_BATCH_SIZE = 500;
@@ -59,11 +60,48 @@ export function chunk<T>(items: readonly T[], size: number): T[][] {
   return out;
 }
 
-export async function fetchScreenerQuoteRows(symbols: string[]): Promise<ScreenerQuoteRow[]> {
+/** One company of the universe, as `GET /companies/master?board=all` lists it. */
+export interface UniverseEntry {
+  symbol: string;
+  series?: string | null;
+  is_sme?: boolean;
+}
+
+const SME_SERIES = new Set(['SM', 'ST']);
+
+/** Yahoo often lists an NSE SME share under its series, as `ANONDITA-SM.NS`, not `ANONDITA.NS`. In a trial
+ * run about half of the SME symbols (including the busiest) were missing under the plain ticker and all of
+ * them were found under the suffixed one. Null for the main board or a series we do not know. */
+export function seriesTicker(entry: UniverseEntry): string | null {
+  const series = entry.series?.toUpperCase();
+  if (!entry.is_sme || !series || !SME_SERIES.has(series)) return null;
+  return `${entry.symbol.toUpperCase()}-${series}.NS`;
+}
+
+/** Quotes the universe. Main board: the plain `SYMBOL.NS` ticker. SME: only the series-suffixed ticker, and only a quote
+ * that is still live. The plain ticker is not a fallback for SME: in a trial it returned a dead line (last traded
+ * 2024-07-23, 84% more than 25% off NSE's price) for most SME symbols, so using it would store wrong prices. Yahoo
+ * carries the suffixed ticker for about 84% of SME and gives a price but no market cap or P/E; Screener.in fills those in. */
+export async function fetchScreenerQuoteRows(universe: readonly UniverseEntry[], now: Date = new Date()): Promise<ScreenerQuoteRow[]> {
   const rows: ScreenerQuoteRow[] = [];
-  for (const group of chunk(symbols, QUOTE_CHUNK_SIZE)) {
+  const main = universe.filter((u) => !u.is_sme).map((u) => u.symbol);
+  for (const group of chunk(main, QUOTE_CHUNK_SIZE)) {
     for (const quote of await fetchYahooQuoteChunk(group)) {
       const row = toScreenerQuoteRow(quote);
+      if (row) rows.push(row);
+    }
+  }
+
+  const sme = universe.flatMap((u) => {
+    const ticker = seriesTicker(u);
+    return u.is_sme && ticker ? [{ ticker, symbol: u.symbol.toUpperCase() }] : [];
+  });
+  const symbolOf = new Map(sme.map((u) => [u.ticker, u.symbol]));
+  for (const group of chunk(sme, QUOTE_CHUNK_SIZE)) {
+    for (const quote of await fetchYahooTickerQuotes(group.map((u) => u.ticker))) {
+      const symbol = symbolOf.get(String(quote.symbol ?? '').toUpperCase());
+      if (!symbol || !isFreshQuote(quote, now)) continue;
+      const row = toScreenerQuoteRow({ ...quote, symbol });
       if (row) rows.push(row);
     }
   }
@@ -86,7 +124,7 @@ export async function refreshScreenerQuotes(env: {
 }): Promise<BulkQuoteResult> {
   const masterResponse = await fetch(`${env.baseUrl}/companies/master?board=all`, { cache: 'no-store' });
   if (!masterResponse.ok) throw new Error(`companies/master returned ${masterResponse.status}`);
-  const universe = ((await masterResponse.json()) as { symbol: string }[]).map((c) => c.symbol);
+  const universe = (await masterResponse.json()) as UniverseEntry[];
 
   const rows = await fetchScreenerQuoteRows(universe);
   let ingested = 0;

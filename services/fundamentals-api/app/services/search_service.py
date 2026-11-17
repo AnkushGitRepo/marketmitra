@@ -115,9 +115,14 @@ async def refresh_company_master(session: AsyncSession) -> int:
     return len(companies)
 
 
-async def is_sme_symbol(session: AsyncSession, symbol: str) -> bool:
-    """Whether a symbol is on the NSE SME platform (False when it is not in the master)."""
-    return bool(await session.scalar(select(CompanyMasterORM.is_sme).where(CompanyMasterORM.symbol == symbol.upper())))
+async def master_info(session: AsyncSession, symbol: str) -> tuple[bool, str | None]:
+    """(is it on the NSE SME platform, the master's name for it); (False, None) when it is not in the master."""
+    row = (
+        await session.execute(
+            select(CompanyMasterORM.is_sme, CompanyMasterORM.name).where(CompanyMasterORM.symbol == symbol.upper())
+        )
+    ).first()
+    return (bool(row[0]), row[1]) if row else (False, None)
 
 
 def invalidate_snapshot() -> None:

@@ -1,0 +1,65 @@
+.group {
+  display: inline-flex;
+  max-width: 100%;
+  margin-bottom: 12px;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--app-pill-bg);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 16px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--app-text-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--app-ink);
+}
+
+.tab[aria-checked='true'] {
+  background: var(--app-ink);
+  color: var(--color-surface);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+/* On a phone the three choices share the card's width, each count under its label. */
+@media (max-width: 480px) {
+  .group {
+    display: flex;
+    width: 100%;
+  }
+
+  .tab {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 7px 6px;
+    font-size: 12.5px;
+    line-height: 1.25;
+  }
+
+  .count {
+    font-size: 10.5px;
+  }
+}

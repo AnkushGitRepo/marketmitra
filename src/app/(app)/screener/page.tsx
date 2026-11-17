@@ -1,5 +1,6 @@
 import { runScreenerPage, getScreenerFacets, getScreenerStats } from '@/lib/dashboard/screener';
 import type { ScreenerBoard, ScreenerFilters } from '@/lib/dashboard/screenerSchema';
+import { QUOTE_ONLY_MIN_MARKET_CAP } from '@/lib/screener/defaults';
 import { parseScreenerParams, MAX_PAGE_SIZE } from '@/lib/screener/params';
 import { ScreenerInfo } from '@/components/screener/ScreenerInfo';
 import { ScreenerPageClient } from './ScreenerPageClient';
@@ -18,7 +19,7 @@ const FUNDAMENTALS_DEFAULT: ScreenerFilters = {
 };
 // Until the incremental Screener.in job has covered enough of the universe, an
 // ROE/debt default would show a tiny, biased list — start from size instead.
-const QUOTE_ONLY_DEFAULT: ScreenerFilters = { board: 'all', market_cap_min: 5000, sort_by: 'market_cap' };
+const QUOTE_ONLY_DEFAULT: ScreenerFilters = { board: 'all', market_cap_min: QUOTE_ONLY_MIN_MARKET_CAP, sort_by: 'market_cap' };
 const MIN_FUNDAMENTALS_FOR_DEFAULT = 300;
 
 function formatDate(iso: string | null): string | null {
@@ -100,6 +101,7 @@ export default async function ScreenerPage({
         initialPage={pageIndex}
         initialPageSize={pageSize}
         facets={facets}
+        boardCounts={statsAll?.by_board}
         fundamentalsReady={(statsAll?.with_fundamentals ?? 0) >= MIN_FUNDAMENTALS_FOR_DEFAULT}
       />
     </div>

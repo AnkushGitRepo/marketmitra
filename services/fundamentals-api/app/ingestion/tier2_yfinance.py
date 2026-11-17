@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 import yfinance as yf
@@ -29,25 +30,60 @@ def _yahoo_symbol(nse_symbol: str | None, bse_code: str | None) -> str | None:
     return None
 
 
+# A history whose last bar is older than this is a dead line, not the live one (ADR 0066).
+_LIVE_WITHIN = timedelta(days=14)
+# NSE SME shares trade on Yahoo under their series, e.g. ANONDITA-SM.NS; the plain
+# ANONDITA.NS is often empty or last traded in 2024.
+_SME_SERIES = ("SM", "ST")
+
+
+def _history_candidates(nse_symbol: str | None, bse_code: str | None) -> list[str]:
+    plain = _yahoo_symbol(nse_symbol, bse_code)
+    if plain is None:
+        return []
+    if not nse_symbol:
+        return [plain]
+    return [plain, *(f"{nse_symbol}-{series}.NS" for series in _SME_SERIES)]
+
+
+async def _fetch_history(symbol: str, period: str):
+    try:
+        return await asyncio.to_thread(lambda: yf.Ticker(symbol).history(period=period))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("yfinance history(%s) failed: %s", symbol, exc)
+        return None
+
+
+def _is_live(history, today: date) -> bool:
+    last = history.index[-1]
+    last_day = last.date() if hasattr(last, "date") else last
+    return today - last_day <= _LIVE_WITHIN
+
+
 async def get_price_history(
-    nse_symbol: str | None, bse_code: str | None, period: str = "1y"
+    nse_symbol: str | None,
+    bse_code: str | None,
+    period: str = "1y",
+    today: date | None = None,
 ) -> list[dict]:
     """Returns [{"trade_date": date, "open": Decimal, "high": ..., "low": ...,
     "close": ..., "volume": int}, ...] or [] if no Yahoo symbol could be
-    resolved or the fetch failed."""
-    symbol = _yahoo_symbol(nse_symbol, bse_code)
-    if symbol is None:
-        return []
-
-    try:
-        history = await asyncio.to_thread(
-            lambda: yf.Ticker(symbol).history(period=period)
-        )
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("yfinance history(%s) failed: %s", symbol, exc)
-        return []
-
-    if history.empty:
+    resolved or the fetch failed. The plain ticker wins when its history is live;
+    otherwise the SME series-suffixed tickers are tried, and if none is live either
+    the plain history (if it had any) is returned as it always was."""
+    today = today or datetime.now(tz=UTC).date()
+    history = None
+    fallback = None
+    for symbol in _history_candidates(nse_symbol, bse_code):
+        candidate = await _fetch_history(symbol, period)
+        if candidate is None or candidate.empty:
+            continue
+        if _is_live(candidate, today):
+            history = candidate
+            break
+        fallback = fallback if fallback is not None else candidate
+    history = history if history is not None else fallback
+    if history is None:
         return []
 
     points = []

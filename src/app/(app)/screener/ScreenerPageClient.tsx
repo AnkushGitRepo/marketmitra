@@ -12,6 +12,7 @@ import {
   type ScreenerFilters,
   type ScreenerResultRow,
 } from '@/lib/dashboard/screenerSchema';
+import { isUntouchedSizeDefault } from '@/lib/screener/defaults';
 import { buildFilters, describeFilters, draftFromFilters, withoutKeys, type Draft } from '@/lib/screener/draft';
 import type { ScreenerPreset } from '@/lib/screener/presets';
 import { activeFilterCount, cardMetricKeys, highlightedKeys, parseSortValue, sortValueOf } from '@/lib/screener/view';
@@ -25,6 +26,7 @@ interface ScreenerPageClientProps {
   initialPage: number;
   initialPageSize: number;
   facets: ScreenerFacets;
+  boardCounts?: { mainboard: number; sme: number };
   fundamentalsReady: boolean;
 }
 
@@ -45,6 +47,7 @@ export function ScreenerPageClient({
   initialPage,
   initialPageSize,
   facets,
+  boardCounts,
   fundamentalsReady,
 }: ScreenerPageClientProps) {
   const [draft, setDraft] = useState<Draft>(() => draftFromFilters(initialFilters));
@@ -124,7 +127,9 @@ export function ScreenerPageClient({
   );
 
   const handleChange = (key: DraftKey, value: string) => {
-    const next: Draft = { ...draft, [key]: value, ...(key === 'sector' ? { industry: '' } : {}) };
+    // SME companies are small, so the opening screen's size floor would hide nearly all of them: step it aside.
+    const dropSizeFloor = key === 'board' && value === 'sme' && isUntouchedSizeDefault(appliedRef.current);
+    const next: Draft = { ...draft, [key]: value, ...(key === 'sector' ? { industry: '' } : {}), ...(dropSizeFloor ? { market_cap_min: '' } : {}) };
     setDraft(next);
 
     if (key === 'sector') {
@@ -201,6 +206,7 @@ export function ScreenerPageClient({
       <ScreenerToolbar
         draft={draft}
         facets={facets}
+        boardCounts={boardCounts}
         industries={industries}
         chips={chips}
         activePresetId={activePresetId}
