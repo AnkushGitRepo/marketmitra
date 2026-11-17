@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useNotifications, type NotificationItem } from './NotificationsProvider';
+import { previewNotificationBody } from './notificationPreview';
 import styles from './NotificationBell.module.css';
 
 function relative(iso: string): string {
@@ -85,19 +86,29 @@ export function NotificationBell({ goTo }: { goTo?: string } = {}) {
             <p className={styles.empty}>Nothing yet. Alerts you set will show up here.</p>
           ) : (
             <ul className={styles.list}>
-              {items.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    className={`${styles.item} ${item.read ? '' : styles.itemUnread}`}
-                    onClick={() => onItemClick(item)}
-                  >
-                    <span className={styles.itemTitle}>{item.title}</span>
-                    <span className={styles.itemBody}>{item.body}</span>
-                    <span className={styles.itemTime}>{relative(item.createdAt)}</span>
-                  </button>
-                </li>
-              ))}
+              {items.map((item) => {
+                const preview = previewNotificationBody(item.body);
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      className={`${styles.item} ${item.read ? '' : styles.itemUnread}`}
+                      onClick={() => onItemClick(item)}
+                    >
+                      <span className={styles.itemTitle}>{item.title}</span>
+                      <span className={styles.itemBody}>
+                        {preview.lines.map((line, i) => (
+                          <span key={i} className={styles.itemLine}>
+                            {line}
+                          </span>
+                        ))}
+                        {preview.hidden > 0 && <span className={styles.itemMore}>+{preview.hidden} more</span>}
+                      </span>
+                      <span className={styles.itemTime}>{relative(item.createdAt)}</span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
