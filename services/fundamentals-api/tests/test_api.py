@@ -45,6 +45,11 @@ def test_get_company(client, monkeypatch):
 
     monkeypatch.setattr("app.api.routes.companies.svc.get_about", fake_get_about)
 
+    async def not_sme(session, symbol):
+        return (False, "Reliance Industries Limited")
+
+    monkeypatch.setattr("app.api.routes.companies.master_info", not_sme)
+
     response = client.get("/companies/RELIANCE")
     assert response.status_code == 200
     body = response.json()
@@ -52,6 +57,7 @@ def test_get_company(client, monkeypatch):
     assert body["name"] == "Reliance Industries Limited"
     assert body["source_tier"] == "tier2_yfinance"
     assert body["about"] == "Reliance Industries is a diversified conglomerate."
+    assert body["is_sme"] is False
 
 
 def test_get_company_ratios_includes_source_tier(client, monkeypatch):

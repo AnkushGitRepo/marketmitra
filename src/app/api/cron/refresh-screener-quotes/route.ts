@@ -6,8 +6,8 @@ import { logEvent } from '@/lib/system/eventLog';
 const SOURCE = 'cron:refresh-screener-quotes';
 const DEFAULT_FUNDAMENTALS_API_URL = 'http://localhost:8420';
 
-// Daily bulk price refresh for the screener (ADR 0033): quotes the whole NSE
-// main-board universe from Yahoo in 100-symbol chunks (~26 requests) and posts
+// Daily bulk price refresh for the screener (ADR 0033, 0066): quotes the whole NSE
+// universe, main board and SME, from Yahoo in 100-symbol chunks (~32 requests) and posts
 // market cap / price / P/E / P/B / dividend yield to fundamentals-api. Invoked
 // by the `refresh-screener-quotes` GitHub Actions schedule with
 // `Authorization: Bearer <CRON_SECRET>`, like the other cron routes.

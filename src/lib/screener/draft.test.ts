@@ -7,7 +7,7 @@ describe('draft round trip', () => {
     expect(draft.roe_min).toBe('15');
     expect(buildFilters(draft, { sort_by: 'roe', order: 'asc' })).toEqual({
       ok: true,
-      filters: { roe_min: 15, sector: 'Capital Goods', q: 'bharat', sort_by: 'roe', order: 'asc' },
+      filters: { board: 'mainboard', roe_min: 15, sector: 'Capital Goods', q: 'bharat', sort_by: 'roe', order: 'asc' },
     });
   });
 
@@ -15,6 +15,20 @@ describe('draft round trip', () => {
     const base = draftFromFilters({});
     expect(buildFilters({ ...base, pe_min: '30', pe_max: '10' }, {}).ok).toBe(false);
     expect(buildFilters({ ...base, roe_min: 'abc' }, {}).ok).toBe(false);
+  });
+});
+
+describe('board in the draft', () => {
+  it('carries the chosen board through, defaulting to the main board', () => {
+    expect(draftFromFilters({}).board).toBe('mainboard');
+    expect(draftFromFilters({ board: 'sme' }).board).toBe('sme');
+    expect(buildFilters({ ...draftFromFilters({}), board: 'all' }, {})).toEqual({ ok: true, filters: { board: 'all' } });
+  });
+
+  it('shows a chip for one board, and none when every board is shown', () => {
+    expect(describeFilters({ board: 'sme' }).map((c) => c.label)).toEqual(['SME only']);
+    expect(describeFilters({ board: 'mainboard' }).map((c) => c.label)).toEqual(['Main board only']);
+    expect(describeFilters({ board: 'all' })).toEqual([]);
   });
 });
 

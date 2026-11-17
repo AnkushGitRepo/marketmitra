@@ -259,9 +259,23 @@
           "Market data"
         ],
         "summary": "Screen stocks by financial criteria",
-        "description": "Filter the NSE stock universe (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending unless `sort_by`/`order` are given (server-side, over the whole matching set; NULLs last). Market cap, price, P/E, P/B and dividend yield refresh daily for the whole universe; ROE, ROCE, debt/equity and growth are scraped incrementally, so those filters only match companies that have been scraped yet. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope). Paginate with `limit` + `offset`; the total number of matches (ignoring paging) is returned in the `X-Total-Count` response header.",
+        "description": "Filter the NSE stock universe (main board by default; SME with `board=sme` or `board=all`) (bulk-refreshed at most once daily from a screener_metrics table — see ADR 0025) by market cap, P/E, P/B, ROE, ROCE, dividend yield, debt/equity, and 3y sales/profit growth CAGR, plus sector/industry equality. Fixed-field min/max only — no free-form query expressions (deferred to a later phase). Excludes companies whose last scrape failed. Sorted by market cap descending unless `sort_by`/`order` are given (server-side, over the whole matching set; NULLs last). Market cap, price, P/E, P/B and dividend yield refresh daily for the whole universe; ROE, ROCE, debt/equity and growth are scraped incrementally, so those filters only match companies that have been scraped yet. Same schema Mitra's run_screener MCP tool uses. Returns the array directly (not the standard envelope). Paginate with `limit` + `offset`; the total number of matches (ignoring paging) is returned in the `X-Total-Count` response header.",
         "security": [],
         "parameters": [
+          {
+            "name": "board",
+            "in": "query",
+            "required": false,
+            "description": "Listing board: `mainboard` (default, what the API always returned), `sme` (NSE SME platform: small, thinly traded companies) or `all`. Each result row carries `is_sme`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mainboard",
+                "sme",
+                "all"
+              ]
+            }
+          },
           {
             "name": "market_cap_min",
             "in": "query",
@@ -2882,6 +2896,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "board",
+            "in": "query",
+            "required": false,
+            "description": "Count one listing board: `mainboard` (default), `sme` or `all`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mainboard",
+                "sme",
+                "all"
+              ]
+            }
           }
         ],
         "responses": {
@@ -2900,6 +2928,20 @@
         "description": "Same filter and sort parameters as GET /api/screener; `limit`/`offset` are ignored and EVERY matching row is exported (capped at 5,000). Returns text/csv with a Content-Disposition attachment filename. Text cells that start with = + - @ are prefixed with an apostrophe to defuse spreadsheet formula injection.",
         "security": [],
         "parameters": [
+          {
+            "name": "board",
+            "in": "query",
+            "required": false,
+            "description": "Listing board: `mainboard` (default, what the API always returned), `sme` (NSE SME platform: small, thinly traded companies) or `all`. Each result row carries `is_sme`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mainboard",
+                "sme",
+                "all"
+              ]
+            }
+          },
           {
             "name": "market_cap_min",
             "in": "query",

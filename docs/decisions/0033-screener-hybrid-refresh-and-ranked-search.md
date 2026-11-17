@@ -42,7 +42,8 @@ listings and ISINs, and had no typo tolerance.
   filters only match scraped companies, and the page says so
   (`GET /screener/stats` → coverage line).
 - Universe = main-board only (`company_master.is_sme = false`); SME stays
-  searchable but out of the screener.
+  searchable but out of the screener. *Amended by [0066](./0066-sme-stocks.md): SME is now
+  in the screener behind a `board` filter.*
 - Sorting is now **server-side** (`sort_by` allow-listed against the range
   fields, `order`, NULLs last, market cap tie-break) so "sort by ROE" ranks the
   whole matching set, not just the 100 rows on screen. `sort_by`/`order` are part

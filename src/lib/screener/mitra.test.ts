@@ -39,6 +39,14 @@ describe('screenerUrl', () => {
   });
 });
 
+describe('board in screen links and rows', () => {
+  it('keeps the board through the screen URL', async () => {
+    const { parseScreenerParams } = await import('./params');
+    const parsed = parseScreenerParams(new URL(`http://x${screenerUrl({ board: 'sme', pe_max: 20 })}`).searchParams);
+    expect(parsed).toEqual({ ok: true, filters: { board: 'sme', pe_max: 20 } });
+  });
+});
+
 describe('usesFundamentals', () => {
   it('is false for price-derived fields only', () => {
     expect(
