@@ -55,7 +55,7 @@ def test_get_screener_route_shape(client, monkeypatch):
 
     async def fake_query(session, filters):
         seen.update(filters)
-        return [_fake_row()]
+        return [(_fake_row(), False)]
 
     async def fake_count(session, filters):
         return 137
@@ -75,7 +75,7 @@ def test_get_screener_route_shape(client, monkeypatch):
 def test_get_screener_facets_route_shape(client, monkeypatch):
     seen = {}
 
-    async def fake_facets(session, sector=None):
+    async def fake_facets(session, sector=None, board="mainboard"):
         seen["sector"] = sector
         return {"sectors": ["Banking", "Information Technology"], "industries": ["IT Services"]}
 
@@ -182,7 +182,7 @@ def test_sort_by_is_allow_listed():
 
 
 def test_stats_route_shape(client, monkeypatch):
-    async def fake_stats(session):
+    async def fake_stats(session, board="mainboard"):
         return {"universe": 2400, "with_quotes": 2300, "with_fundamentals": 400,
                 "quotes_updated_at": None, "fundamentals_updated_at": None}
 

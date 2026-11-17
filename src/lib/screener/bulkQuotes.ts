@@ -18,6 +18,8 @@ export interface ScreenerQuoteRow {
   pe?: number;
   pb?: number;
   dividend_yield?: number;
+  /** The company's name from Yahoo; fills in an SME company that only has its symbol so far. */
+  name?: string;
 }
 
 function positive(value: unknown): number | undefined {
@@ -38,6 +40,8 @@ export function toScreenerQuoteRow(quote: Record<string, unknown>): ScreenerQuot
   const marketCap = positive(quote.marketCap);
   const dividendYield = positive(quote.dividendYield);
   const row: ScreenerQuoteRow = { symbol, current_price: price };
+  const name = [quote.longName, quote.shortName].find((n): n is string => typeof n === 'string' && n.trim().length > 0);
+  if (name) row.name = name.trim();
   if (marketCap !== undefined) row.market_cap = marketCap / RUPEES_PER_CRORE;
   const pe = positive(quote.trailingPE);
   if (pe !== undefined) row.pe = pe;
@@ -73,14 +77,14 @@ export interface BulkQuoteResult {
   skipped: number;
 }
 
-/** Pulls the main-board universe from fundamentals-api, quotes it, and posts
+/** Pulls the whole universe (main board and SME) from fundamentals-api, quotes it, and posts
  * the rows to /screener/quotes. Throws on a configuration or ingest failure
  * so the cron route reports it instead of silently succeeding. */
 export async function refreshScreenerQuotes(env: {
   baseUrl: string;
   token: string;
 }): Promise<BulkQuoteResult> {
-  const masterResponse = await fetch(`${env.baseUrl}/companies/master`, { cache: 'no-store' });
+  const masterResponse = await fetch(`${env.baseUrl}/companies/master?board=all`, { cache: 'no-store' });
   if (!masterResponse.ok) throw new Error(`companies/master returned ${masterResponse.status}`);
   const universe = ((await masterResponse.json()) as { symbol: string }[]).map((c) => c.symbol);
 

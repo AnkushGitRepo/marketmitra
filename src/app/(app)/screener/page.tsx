@@ -1,5 +1,5 @@
 import { runScreenerPage, getScreenerFacets, getScreenerStats } from '@/lib/dashboard/screener';
-import type { ScreenerFilters } from '@/lib/dashboard/screenerSchema';
+import type { ScreenerBoard, ScreenerFilters } from '@/lib/dashboard/screenerSchema';
 import { parseScreenerParams, MAX_PAGE_SIZE } from '@/lib/screener/params';
 import { ScreenerInfo } from '@/components/screener/ScreenerInfo';
 import { ScreenerPageClient } from './ScreenerPageClient';
@@ -11,13 +11,14 @@ export const dynamic = 'force-dynamic';
 // A defensible "reasonably profitable, not overleveraged" starting screen
 // (ADR 0025) — adjustable in the UI, just not blank on first load.
 const FUNDAMENTALS_DEFAULT: ScreenerFilters = {
+  board: 'all',
   roe_min: 15,
   debt_to_equity_max: 1,
   sort_by: 'roe',
 };
 // Until the incremental Screener.in job has covered enough of the universe, an
 // ROE/debt default would show a tiny, biased list — start from size instead.
-const QUOTE_ONLY_DEFAULT: ScreenerFilters = { market_cap_min: 5000, sort_by: 'market_cap' };
+const QUOTE_ONLY_DEFAULT: ScreenerFilters = { board: 'all', market_cap_min: 5000, sort_by: 'market_cap' };
 const MIN_FUNDAMENTALS_FOR_DEFAULT = 300;
 
 function formatDate(iso: string | null): string | null {
@@ -41,9 +42,10 @@ export default async function ScreenerPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const stats = await getScreenerStats();
+  // Which default screen to start from is judged on every board together.
+  const statsAll = await getScreenerStats('all');
   const defaultFilters =
-    (stats?.with_fundamentals ?? 0) >= MIN_FUNDAMENTALS_FOR_DEFAULT
+    (statsAll?.with_fundamentals ?? 0) >= MIN_FUNDAMENTALS_FOR_DEFAULT
       ? FUNDAMENTALS_DEFAULT
       : QUOTE_ONLY_DEFAULT;
 
@@ -54,7 +56,10 @@ export default async function ScreenerPage({
   const fromUrl = parsed.ok ? parsed.filters : {};
   const { limit, offset, ...urlFilters } = fromUrl;
   const hasUrlState = Object.keys(urlFilters).length > 0;
-  const filters: ScreenerFilters = hasUrlState ? urlFilters : defaultFilters;
+  // A link with no `board` predates SME support and means the main board, as it always did.
+  const filters: ScreenerFilters = hasUrlState ? { ...urlFilters, board: urlFilters.board ?? 'mainboard' } : defaultFilters;
+  const board: ScreenerBoard = filters.board ?? 'mainboard';
+  const stats = board === 'all' ? statsAll : await getScreenerStats(board);
 
   const pageSize =
     limit && (PAGE_SIZES as readonly number[]).includes(limit) ? limit : DEFAULT_PAGE_SIZE;
@@ -66,7 +71,7 @@ export default async function ScreenerPage({
       limit: Math.min(pageSize, MAX_PAGE_SIZE),
       offset: pageIndex * pageSize,
     }),
-    getScreenerFacets(),
+    getScreenerFacets(undefined, 'all'),
   ]);
   const pricesAsOf = formatDate(stats?.quotes_updated_at ?? null);
 
@@ -76,7 +81,7 @@ export default async function ScreenerPage({
       <div className={styles.titleRow}>
         <h1 className={styles.h1}>Stock screener</h1>
         <ScreenerInfo
-          intro="Filter the NSE stock universe by market cap, valuation, profitability, leverage, and growth. Market cap, price, P/E, P/B and dividend yield refresh daily for every listed company; ROE, ROCE, debt/equity and growth are scraped in rotation, stalest first. A dash means that figure isn’t available yet, not that it’s zero."
+          intro="Filter the NSE stock universe, main board and SME, by market cap, valuation, profitability, leverage, and growth. Market cap, price, P/E, P/B and dividend yield refresh daily for every listed company; ROE, ROCE, debt/equity and growth are scraped in rotation, stalest first. A dash means that figure isn’t available yet, not that it’s zero."
           coverage={
             stats
               ? `${pricesAsOf ? `Prices as of ${pricesAsOf}. ` : ''}Fundamentals available for ${stats.with_fundamentals.toLocaleString('en-IN')} of ${stats.universe.toLocaleString('en-IN')} companies. ROE, ROCE, debt and growth filters only match those.`
@@ -95,7 +100,7 @@ export default async function ScreenerPage({
         initialPage={pageIndex}
         initialPageSize={pageSize}
         facets={facets}
-        fundamentalsReady={(stats?.with_fundamentals ?? 0) >= MIN_FUNDAMENTALS_FOR_DEFAULT}
+        fundamentalsReady={(statsAll?.with_fundamentals ?? 0) >= MIN_FUNDAMENTALS_FOR_DEFAULT}
       />
     </div>
   );

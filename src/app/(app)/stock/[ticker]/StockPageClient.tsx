@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Suspense, use, useEffect, useMemo, useState } from 'react';
+import { SmeBadge } from '@/components/common/SmeBadge';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
 import { AlertModal } from '@/components/alerts/AlertModal';
 import Link from 'next/link';
@@ -156,11 +157,19 @@ export function StockPageClient({
             <CompanyLogo symbol={symbol} size={40} />
           </div>
           <div>
-            <h1 className={styles.h1}>{company.name}</h1>
+            <h1 className={styles.h1}>
+              {company.name} {company.is_sme && <SmeBadge />}
+            </h1>
             <p className={styles.meta}>
-              {symbol} · NSE{company.sector ? ` · ${company.sector}` : ''}
+              {symbol} · NSE{company.is_sme ? ' SME' : ''}
+              {company.sector ? ` · ${company.sector}` : ''}
               {company.industry ? ` · ${company.industry}` : ''}
             </p>
+            {company.is_sme && (
+              <p className={styles.smeNote}>
+                Listed on the NSE SME platform: a smaller company with thinner trading than the main board, and it reports results half-yearly, so some figures may be missing.
+              </p>
+            )}
           </div>
         </div>
         <div className={styles.actions}>

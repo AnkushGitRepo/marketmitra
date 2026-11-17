@@ -13,12 +13,12 @@ from __future__ import annotations
 import logging
 import time
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import case, delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import CompanyMasterORM, ScreenerMetricsORM
-from app.ingestion.company_master import fetch_equity_list
+from app.ingestion.company_master import fetch_equity_list, fetch_sme_list
 from app.ingestion.indices import TRACKED_INDICES
 from app.services.search_index import CompanyEntry, rank_companies
 
@@ -27,6 +27,8 @@ logger = logging.getLogger("fundamentals.search")
 _SNAPSHOT_TTL_SECONDS = 3600
 _MIN_LIST_FOR_PRUNE = 2000
 _snapshot: tuple[float, list[CompanyEntry]] | None = None
+# The SME top-up below runs at most once per process (ADR 0066).
+_sme_checked = False
 
 
 async def ensure_company_master_populated(session: AsyncSession) -> None:
@@ -37,8 +39,60 @@ async def ensure_company_master_populated(session: AsyncSession) -> None:
         select(func.count()).select_from(CompanyMasterORM).where(CompanyMasterORM.isin.is_not(None))
     )
     if total and enriched:
+        await _ensure_sme_rows(session)
         return
     await refresh_company_master(session)
+
+
+async def _ensure_sme_rows(session: AsyncSession) -> None:
+    """A master populated before SME support has no SME rows and would never get
+    them (it is only refreshed when empty). Add them once per process from the
+    bundled list, never over the network, so no request waits on NSE."""
+    global _sme_checked
+    if _sme_checked:
+        return
+    _sme_checked = True
+    has_sme = await session.scalar(
+        select(func.count()).select_from(CompanyMasterORM).where(CompanyMasterORM.is_sme.is_(True))
+    )
+    if not has_sme:
+        await refresh_sme_master(session, live=False)
+
+
+def _upsert(companies: list[dict], *, only_sme: bool):
+    """Upsert on symbol. A placeholder name (the symbol itself, used for SME rows
+    until the quote feed supplies the real one) never overwrites a real name, and
+    missing optional fields never blank out known ones. With `only_sme`, a row
+    that is already on the main board is left untouched."""
+    stmt = insert(CompanyMasterORM).values(companies)
+    ex = stmt.excluded
+    update_cols = {
+        "name": case((ex.name == ex.symbol, CompanyMasterORM.name), else_=ex.name),
+        "isin": func.coalesce(ex.isin, CompanyMasterORM.isin),
+        "series": func.coalesce(ex.series, CompanyMasterORM.series),
+        "listing_date": func.coalesce(ex.listing_date, CompanyMasterORM.listing_date),
+        "face_value": func.coalesce(ex.face_value, CompanyMasterORM.face_value),
+        "is_sme": ex.is_sme,
+    }
+    return stmt.on_conflict_do_update(
+        index_elements=["symbol"],
+        set_=update_cols,
+        where=CompanyMasterORM.is_sme.is_(True) if only_sme else None,
+    )
+
+
+async def refresh_sme_master(session: AsyncSession, *, live: bool = True) -> int:
+    """Add or update the SME companies only: never prunes and never touches a
+    main-board row."""
+    companies = await fetch_sme_list(live=live)
+    if not companies:
+        logger.warning("could not populate SME companies — no SME list available")
+        return 0
+    await session.execute(_upsert(companies, only_sme=True))
+    await session.commit()
+    invalidate_snapshot()
+    logger.info("populated company_master with %d SME symbols", len(companies))
+    return len(companies)
 
 
 async def refresh_company_master(session: AsyncSession) -> int:
@@ -47,9 +101,7 @@ async def refresh_company_master(session: AsyncSession) -> int:
         logger.warning("could not populate company_master — equity list fetch failed")
         return 0
 
-    stmt = insert(CompanyMasterORM).values(companies)
-    update_cols = {c: stmt.excluded[c] for c in ("name", "isin", "series", "listing_date", "face_value", "is_sme")}
-    await session.execute(stmt.on_conflict_do_update(index_elements=["symbol"], set_=update_cols))
+    await session.execute(_upsert(companies, only_sme=False))
     if len(companies) >= _MIN_LIST_FOR_PRUNE:
         # Delisted/renamed symbols drop out of search and the screener
         # universe — but only when the list looks complete, so a truncated
@@ -61,6 +113,11 @@ async def refresh_company_master(session: AsyncSession) -> int:
     invalidate_snapshot()
     logger.info("populated company_master with %d symbols", len(companies))
     return len(companies)
+
+
+async def is_sme_symbol(session: AsyncSession, symbol: str) -> bool:
+    """Whether a symbol is on the NSE SME platform (False when it is not in the master)."""
+    return bool(await session.scalar(select(CompanyMasterORM.is_sme).where(CompanyMasterORM.symbol == symbol.upper())))
 
 
 def invalidate_snapshot() -> None:

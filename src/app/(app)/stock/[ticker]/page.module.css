@@ -68,6 +68,13 @@
   font-size: 12px;
   color: var(--app-text-faint);
 }
+.smeNote {
+  margin: 6px 0 0;
+  max-width: 62ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--app-warn-text);
+}
 .price {
   margin: 0;
   font-family: var(--font-sans);

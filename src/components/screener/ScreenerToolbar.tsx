@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ScreenerFacets } from '@/lib/dashboard/screenerSchema';
+import { BOARD_LABELS, SCREENER_BOARDS, type ScreenerFacets } from '@/lib/dashboard/screenerSchema';
 import type { ActiveFilter, Draft } from '@/lib/screener/draft';
 import { SCREENER_PRESETS, type ScreenerPreset } from '@/lib/screener/presets';
 import { FilterFields, type DraftKey } from './FilterFields';
@@ -38,7 +38,7 @@ export function ScreenerToolbar({
   onClear,
 }: ScreenerToolbarProps) {
   const [expanded, setExpanded] = useState(false);
-  const detailCount = chips.filter((c) => c.id !== 'q' && c.id !== 'sector' && c.id !== 'industry').length;
+  const detailCount = chips.filter((c) => c.id !== 'q' && c.id !== 'board' && c.id !== 'sector' && c.id !== 'industry').length;
 
   return (
     <section className={styles.card} aria-label="Screener filters">
@@ -72,6 +72,16 @@ export function ScreenerToolbar({
             value={draft.q}
             onChange={(e) => onChange('q', e.target.value)}
           />
+        </label>
+        <label className={styles.control}>
+          <span className={styles.srOnly}>Board</span>
+          <select className={styles.input} value={draft.board} onChange={(e) => onChange('board', e.target.value)}>
+            {SCREENER_BOARDS.map((b) => (
+              <option key={b} value={b}>
+                {BOARD_LABELS[b]}
+              </option>
+            ))}
+          </select>
         </label>
         <label className={styles.control}>
           <span className={styles.srOnly}>Sector</span>

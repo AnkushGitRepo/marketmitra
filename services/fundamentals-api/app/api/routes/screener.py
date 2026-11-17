@@ -30,6 +30,7 @@ class ScreenerMetricOut(BaseModel):
     debt_to_equity: float | None
     sales_growth_3y_cagr: float | None
     profit_growth_3y_cagr: float | None
+    is_sme: bool = False
     fetch_status: str
     source_tier: str
     fetched_at: datetime
@@ -37,7 +38,7 @@ class ScreenerMetricOut(BaseModel):
     fundamentals_updated_at: datetime | None = None
 
 
-def _to_out(row) -> ScreenerMetricOut:
+def _to_out(row, is_sme: bool = False) -> ScreenerMetricOut:
     def f(v: object) -> float | None:
         return float(v) if v is not None else None
 
@@ -58,6 +59,7 @@ def _to_out(row) -> ScreenerMetricOut:
         debt_to_equity=f(row.debt_to_equity),
         sales_growth_3y_cagr=f(row.sales_growth_3y_cagr),
         profit_growth_3y_cagr=f(row.profit_growth_3y_cagr),
+        is_sme=is_sme,
         fetch_status=row.fetch_status,
         source_tier=row.source_tier,
         fetched_at=row.fetched_at,
@@ -69,24 +71,30 @@ def _to_out(row) -> ScreenerMetricOut:
 @router.get("/facets")
 async def get_screener_facets(
     sector: str | None = Query(default=None, max_length=128),
+    board: str = Query(default="mainboard", pattern="^(mainboard|sme|all)$"),
     session: AsyncSession = Depends(get_db),
 ) -> dict:
     """{ sectors, industries, sector_counts, industry_counts } — populates
     the Screener page's dropdowns from what's actually in the data, never a
     hand-maintained list. Pass `sector` to narrow `industries` to it."""
-    return await svc.get_screener_facets(session, sector)
+    return await svc.get_screener_facets(session, sector, board)
 
 
 @router.get("/stats")
-async def get_screener_stats(session: AsyncSession = Depends(get_db)) -> dict:
-    """{ universe, with_quotes, with_fundamentals, quotes_updated_at,
-    fundamentals_updated_at } — coverage/freshness for the Screener page."""
-    return await svc.get_screener_stats(session)
+async def get_screener_stats(
+    board: str = Query(default="mainboard", pattern="^(mainboard|sme|all)$"),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """{ universe, by_board, with_quotes, with_fundamentals, quotes_updated_at,
+    fundamentals_updated_at } — coverage/freshness for the Screener page, for one
+    board (default main board) or `all`."""
+    return await svc.get_screener_stats(session, board)
 
 
 @router.get("", response_model=list[ScreenerMetricOut])
 async def get_screener_metrics(
     response: Response,
+    board: str = Query(default="mainboard", pattern="^(mainboard|sme|all)$"),
     sector: str | None = Query(default=None),
     industry: str | None = Query(default=None),
     q: str | None = Query(default=None, max_length=64),
@@ -119,6 +127,7 @@ async def get_screener_metrics(
     cap. Rows whose last scrape failed are excluded (a failed scrape isn't
     "confirmed no data")."""
     filters = {
+        "board": board,
         "sector": sector,
         "industry": industry,
         "q": q,
@@ -142,7 +151,7 @@ async def get_screener_metrics(
     # Total matches (ignoring limit/offset) for pagination — a header so the
     # body stays the plain array existing consumers already parse.
     response.headers["X-Total-Count"] = str(await svc.count_screener_metrics(session, filters))
-    return [_to_out(r) for r in rows]
+    return [_to_out(r, is_sme) for r, is_sme in rows]
 
 
 class IngestIn(BaseModel):

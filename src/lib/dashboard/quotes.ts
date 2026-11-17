@@ -63,6 +63,9 @@ export async function getWatchlistQuotes(): Promise<Quote[]> {
   return quotes.filter((q): q is Quote => q !== null);
 }
 
+// Top movers are drawn only from the fixed large-cap WATCHLIST, so an SME stock can never appear in
+// the dashboard's gainers or losers (ADR 0066, locked by movers.test.ts). Keep it that way: do not
+// widen this to the screener universe without excluding the SME board.
 export async function getTopMovers(): Promise<{ gainers: Quote[]; losers: Quote[] }> {
   const quotes = await getWatchlistQuotes();
   const sorted = [...quotes].sort((a, b) => b.changePct - a.changePct);

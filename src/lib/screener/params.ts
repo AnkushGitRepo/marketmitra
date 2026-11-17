@@ -35,6 +35,15 @@ export function parseScreenerParams(params: ParamSource): ParsedFilters {
     if (raw) filters[key] = raw.slice(0, key === 'q' ? 64 : 128);
   }
 
+  const board = params.get('board');
+  if (board) {
+    const parsed = screenerFiltersSchema.shape.board.safeParse(board);
+    if (!parsed.success) {
+      return { ok: false, message: 'board must be "mainboard", "sme" or "all"' };
+    }
+    filters.board = parsed.data;
+  }
+
   const sortBy = params.get('sort_by');
   if (sortBy) {
     const parsed = screenerFiltersSchema.shape.sort_by.safeParse(sortBy);
