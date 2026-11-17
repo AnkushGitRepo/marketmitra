@@ -7,7 +7,7 @@ here — if two files ever disagree, **this file wins**. Keep it short: detail l
 ## Start here (every new session)
 
 1. Read this file fully.
-2. Read [`docs/HANDOFF.md`](./docs/HANDOFF.md) — where the project is right now, what is open,
+2. Skim [`docs/CODEMAP.md`](./docs/CODEMAP.md) to find where things live instead of listing the repo, then read [`docs/HANDOFF.md`](./docs/HANDOFF.md) — where the project is right now, what is open,
    how to run/deploy it, and the gotchas that cost us time before.
 3. Read the last 3 entries of [`docs/session-log.md`](./docs/session-log.md).
 4. Check live state, do not trust memory: `git log --oneline -10`, `gh issue list`,
@@ -143,6 +143,7 @@ More (deploying, production migrations, scheduled jobs, environment) in `docs/HA
 
 ## Docs map
 
+- [`docs/CODEMAP.md`](./docs/CODEMAP.md) — **where things live**: directory map and feature → files table (update it when you add a folder, page or workflow)
 - [`docs/HANDOFF.md`](./docs/HANDOFF.md) — **current state**, open work, environment, deploy, gotchas
 - `docs/architecture.md` — current system architecture (routes, components, data flow)
 - `docs/design-system.md` — colors/type/spacing/component patterns
