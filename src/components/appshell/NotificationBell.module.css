@@ -129,9 +129,24 @@
 }
 
 .itemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 11.5px;
   color: var(--app-text-muted);
   line-height: 1.4;
+}
+
+.itemLine {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.itemMore {
+  font-size: 10.5px;
+  color: var(--app-text-subtle);
 }
 
 .itemTime {

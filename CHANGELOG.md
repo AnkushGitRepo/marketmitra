@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The morning brief and other long notifications in the bell dropdown now show a short list of lines with a "+N more" hint, instead of one clipped paragraph. ([#210](https://github.com/AnkushGitRepo/marketmitra/issues/210))
 - On a local or self-hosted app, analyst sweeps and the morning-brief check keep running on the clock while the app stays open, instead of only when the server starts. ([#196](https://github.com/AnkushGitRepo/marketmitra/issues/196))
 - A failed first database connection on a cold start no longer breaks every request on that instance until it restarts, and the Analyst Desk shows a "Reload roster" state if the roster cannot load. ([#159](https://github.com/AnkushGitRepo/marketmitra/pull/159))
 - Generating the 360 brief no longer ends in Safari's "The string did not match the expected pattern." on a slow generation: the AI insight routes now allow up to 300 seconds, and a timeout or a dropped connection shows a plain message. ([#163](https://github.com/AnkushGitRepo/marketmitra/pull/163))
