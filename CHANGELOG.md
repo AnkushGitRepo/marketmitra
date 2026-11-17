@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-17
+
 ### Added
 
 - SME (NSE SME platform) stocks are now searchable by symbol and company name and in the screener, with an All / Main board / SME switch, an SME badge on every SME row and stock page, and a Board column in the CSV export. The dashboard's top gainers and losers still never show them. ([#216](https://github.com/AnkushGitRepo/marketmitra/issues/216))
@@ -121,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A security hardening pass: CodeQL, secret scanning with push protection, Dependabot, an SSRF-safe downloader, log-injection-safe logging, least-privilege workflow permissions and branch protection, with the CodeQL findings resolved.
 
-[Unreleased]: https://github.com/AnkushGitRepo/marketmitra/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/AnkushGitRepo/marketmitra/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/AnkushGitRepo/marketmitra/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/AnkushGitRepo/marketmitra/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/AnkushGitRepo/marketmitra/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/AnkushGitRepo/marketmitra/compare/v0.2.0...v0.3.0
