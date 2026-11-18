@@ -3165,6 +3165,380 @@
         }
       }
     },
+    "/api/funds": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Mutual fund screener",
+        "security": [],
+        "description": "Filter and rank Indian mutual funds (ADR 0067). Direct-plan Growth schemes by default (`plan`, `option`). Returns and risk ratios are computed from AMFI NAV history: returns of a year or more are annualised (CAGR), shorter ones are absolute; Sharpe/Sortino/std dev use 3 years of daily NAV and a 6.5% risk-free rate. A `null` figure means not enough history (or, for expense ratio and AUM, not disclosed yet), never zero. Past performance does not indicate future returns; this is reference data, not advice. Public, read-only.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive text in the scheme name (max 80 characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "`Equity`, `Debt`, `Hybrid`, `Solution Oriented` or `Other`; see /api/funds/facets.",
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            }
+          },
+          {
+            "name": "sub_category",
+            "in": "query",
+            "required": false,
+            "description": "e.g. `Flexi Cap Fund`; see /api/funds/facets.",
+            "schema": {
+              "type": "string",
+              "maxLength": 96
+            }
+          },
+          {
+            "name": "fund_house",
+            "in": "query",
+            "required": false,
+            "description": "e.g. `Parag Parikh Mutual Fund`.",
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          {
+            "name": "plan",
+            "in": "query",
+            "required": false,
+            "description": "Default `direct`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "direct",
+                "regular"
+              ],
+              "default": "direct"
+            }
+          },
+          {
+            "name": "option",
+            "in": "query",
+            "required": false,
+            "description": "Default `growth`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "growth",
+                "idcw",
+                "other"
+              ],
+              "default": "growth"
+            }
+          },
+          {
+            "name": "min_ret_1y",
+            "in": "query",
+            "required": false,
+            "description": "Minimum 1-year return, percent.",
+            "schema": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "min_ret_3y",
+            "in": "query",
+            "required": false,
+            "description": "Minimum 3-year CAGR, percent.",
+            "schema": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "min_ret_5y",
+            "in": "query",
+            "required": false,
+            "description": "Minimum 5-year CAGR, percent.",
+            "schema": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "max_expense_ratio",
+            "in": "query",
+            "required": false,
+            "description": "Maximum total expense ratio, percent (only funds with a disclosed ratio match).",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            }
+          },
+          {
+            "name": "min_aum_cr",
+            "in": "query",
+            "required": false,
+            "description": "Minimum assets under management, ₹ crore (only funds with disclosed AUM match).",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "max_std_dev_3y",
+            "in": "query",
+            "required": false,
+            "description": "Maximum annualised 3-year standard deviation, percent.",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "min_sharpe_3y",
+            "in": "query",
+            "required": false,
+            "description": "Minimum 3-year Sharpe ratio.",
+            "schema": {
+              "type": "number",
+              "minimum": -20,
+              "maximum": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Default `ret_3y`. Missing values sort last.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ret_1m",
+                "ret_3m",
+                "ret_6m",
+                "ret_1y",
+                "ret_3y",
+                "ret_5y",
+                "ret_10y",
+                "std_dev_3y",
+                "sharpe_3y",
+                "sortino_3y",
+                "max_drawdown_3y",
+                "sip_xirr_3y",
+                "sip_xirr_5y",
+                "expense_ratio",
+                "aum_cr",
+                "name",
+                "nav"
+              ],
+              "default": "ret_3y"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Default `desc`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1-200 (default 50).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Rows to skip (default 0).",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ total, limit, offset, items: FundSummary[] } where FundSummary = { scheme_code, name, base_name, fund_house, category, sub_category, plan, option, nav, nav_date, ret_1m, ret_3m, ret_6m, ret_1y, ret_3y, ret_5y, ret_10y, std_dev_3y, sharpe_3y, sortino_3y, max_drawdown_3y, sip_xirr_3y, sip_xirr_5y, expense_ratio, aum_cr }. Percentages are plain numbers (14.4 = 14.4%)."
+          },
+          "400": {
+            "description": "{ error, message } for an invalid parameter"
+          },
+          "503": {
+            "description": "{ error: \"data_unavailable\", message } when the data service is down"
+          }
+        }
+      }
+    },
+    "/api/funds/facets": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Mutual fund filter options",
+        "security": [],
+        "description": "Categories with their sub-categories, fund houses, and the date the NAVs are current to. Public, read-only.",
+        "responses": {
+          "200": {
+            "description": "{ categories: string[], sub_categories: { [category]: string[] }, fund_houses: string[], nav_as_of: string | null }"
+          }
+        }
+      }
+    },
+    "/api/funds/{code}": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "One mutual fund scheme",
+        "security": [],
+        "description": "Latest NAV, returns, risk ratios and, when disclosed, the factsheet (expense ratio, AUM, exit load, manager, benchmark) with its source and date. Dormant schemes are returned too (`is_active: false`). Public, read-only.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "AMFI scheme code (positive integer). Each plan/option of a fund has its own code.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FundSummary plus { scheme_type, isin_growth, isin_reinvest, is_active, metrics_as_of, factsheet: { expense_ratio, aum_cr, exit_load, fund_manager, benchmark, launch_date, as_of, source } | null }"
+          },
+          "400": {
+            "description": "{ error, message } for an invalid parameter"
+          },
+          "404": {
+            "description": "{ error: \"not_found\" }"
+          },
+          "503": {
+            "description": "{ error: \"data_unavailable\", message } when the data service is down"
+          }
+        }
+      }
+    },
+    "/api/funds/{code}/nav": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Mutual fund NAV history",
+        "security": [],
+        "description": "Daily NAV as published, oldest first. A unit split or consolidation appears as a step (returns and risk figures are adjusted for it; this series is not). Public, read-only.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "AMFI scheme code (positive integer). Each plan/option of a fund has its own code.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "description": "Window ending at the latest stored NAV. Default `1y`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1m",
+                "6m",
+                "1y",
+                "3y",
+                "5y",
+                "10y",
+                "max"
+              ],
+              "default": "1y"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "[{ date: \"YYYY-MM-DD\", nav: number }]; empty if no history is stored yet"
+          },
+          "400": {
+            "description": "{ error, message } for an invalid parameter"
+          },
+          "503": {
+            "description": "{ error: \"data_unavailable\", message } when the data service is down (an empty array only ever means no data stored)"
+          }
+        }
+      }
+    },
+    "/api/funds/{code}/peers": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Mutual fund peers",
+        "security": [],
+        "description": "Up to 8 active schemes in the same sub-category with the same plan and option, best 3-year return first. Empty when the scheme has no sub-category. Public, read-only.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "AMFI scheme code (positive integer). Each plan/option of a fund has its own code.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FundSummary[] (same shape as /api/funds items)"
+          },
+          "400": {
+            "description": "{ error, message } for an invalid parameter"
+          },
+          "503": {
+            "description": "{ error: \"data_unavailable\", message } when the data service is down (an empty array only ever means no data stored)"
+          }
+        }
+      }
+    },
     "/api/advisor/acknowledge": {
       "get": {
         "tags": [

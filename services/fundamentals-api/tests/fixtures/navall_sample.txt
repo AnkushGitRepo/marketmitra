@@ -1,0 +1,22 @@
+Scheme Code;ISIN Div Payout/ ISIN Growth;ISIN Div Reinvestment;Scheme Name;Plan;Option;Net Asset Value;Date
+ 
+Open Ended Schemes(Equity Scheme - Flexi Cap Fund)
+ 
+Parag Parikh Mutual Fund
+ 
+122639;INF879O01027;-;Parag Parikh Flexi Cap Fund - Direct Plan - Growth;Direct Plan;Growth;85.1234;17-Nov-2026
+122640;INF879O01019;-;Parag Parikh Flexi Cap Fund - Regular Plan - Growth;Regular Plan;Growth;76.5;17-Nov-2026
+153964;-;INF879O01XX1;Parag Parikh Flexi Cap Fund - Direct Plan - Monthly IDCW Payout;Direct Plan;Monthly IDCW;12.3;17-Nov-2026
+ 
+Open Ended Schemes(Other Scheme - Index Funds)
+ 
+UTI Mutual Fund
+ 
+100001;INF789F01XX2;-;UTI Nifty 50 Index Fund - Growth Option - Direct;;;N.A.;17-Nov-2026
+ 
+Close Ended Schemes(Growth)
+ 
+Old Mutual Fund
+ 
+100002;-;-;Old Fixed Maturity Plan - Regular Plan - Growth;;;10.5;02-Jul-2018
+bad line without enough fields

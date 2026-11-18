@@ -1,0 +1,85 @@
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+  padding: 18px 20px;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+  font-weight: 500;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 460px;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th {
+  padding: 8px 10px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--app-text-subtle);
+  border-bottom: 1px solid var(--app-border-soft);
+}
+
+.table td {
+  padding: 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--app-border-softer);
+  white-space: nowrap;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.fund {
+  text-align: left !important;
+  white-space: normal !important;
+  min-width: 200px;
+}
+
+.link {
+  display: block;
+  font-weight: 600;
+  color: var(--app-ink);
+  text-decoration: none;
+}
+
+.link:hover,
+.link:focus-visible {
+  text-decoration: underline;
+}
+
+.sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.up {
+  color: var(--app-gain);
+}
+
+.down {
+  color: var(--app-loss);
+}

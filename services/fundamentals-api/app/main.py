@@ -10,6 +10,7 @@ from app.api.routes import (
     documents,
     embed,
     financials,
+    funds,
     indices,
     ipos,
     news,
@@ -52,10 +53,21 @@ app.include_router(indices.router)
 app.include_router(news.router)
 app.include_router(pdf_text.router)
 app.include_router(embed.router)
+app.include_router(funds.router)
 app.include_router(ipos.router)
 app.include_router(quote.router)
 app.include_router(search.router)
 app.include_router(screener.router)
+
+
+@app.middleware("http")
+async def funds_ingest_gate_middleware(request: Request, call_next):
+    """Authenticate and size-check /funds/ingest/* before the body is parsed."""
+    if request.url.path.startswith("/funds/ingest/"):
+        refusal = funds.ingest_gate(request)
+        if refusal is not None:
+            return refusal
+    return await call_next(request)
 
 
 @app.middleware("http")

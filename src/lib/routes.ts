@@ -7,6 +7,7 @@ export const APP_PAGE_SEGMENTS = [
   'portfolio',
   'markets',
   'screener',
+  'funds',
   'ipos',
   'news',
   'research',

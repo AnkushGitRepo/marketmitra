@@ -8,7 +8,7 @@ describe('buildNavSections', () => {
   it('groups the navigation into four ordered sections', () => {
     expect(labels(false)).toEqual([
       { title: 'Overview', items: ['Dashboard', 'Portfolio'] },
-      { title: 'Markets', items: ['Markets', 'Screener', 'IPOs', 'Research', 'News'] },
+      { title: 'Markets', items: ['Markets', 'Screener', 'Funds', 'IPOs', 'Research', 'News'] },
       { title: 'AI & Tools', items: ['Mitra chat', 'Agents', 'Alerts', 'Notes'] },
       { title: 'Settings', items: ['Settings', 'API'] },
     ]);

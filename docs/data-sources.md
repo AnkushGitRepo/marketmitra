@@ -94,6 +94,26 @@ and are not shown.
 - **Cost:** free
 - **ToS notes:** Reviewed 2026-09-06. Chittorgarh's Disclaimer & Privacy Statement (`chittorgarh.com/article/disclaimer-and-privacy-statement/238/`) states *"no user may distribute, modify, transmit, or use the contents in any manner for public or commercial purposes without prior written permission"*, and the site returns `403` to non-browser clients. This is **not a sanctioned integration** — it is an accepted known risk on the same terms as Screener.in (ADR 0011): kept in one isolated, swappable module; GMP shown only with an "unofficial grey-market estimate, not from any exchange" caveat and degrading to "unavailable" on any scrape failure; alerts on GMP skip rather than fire on missing data. If the source becomes unworkable, the module is swapped or GMP is dropped, without touching the rest of the IPO tracker.
 
+### AMFI NAVAll (mutual fund schemes + daily NAV)
+- **Type:** official public file (Phase 11 — [ADR 0067](./decisions/0067-mutual-funds-data-sourcing.md))
+- **Used for:** the scheme master (code, ISINs, fund house, category, plan, option) and every scheme's latest NAV
+- **Endpoint(s):** `https://portal.amfiindia.com/spages/NAVAll.txt` (the old `www.amfiindia.com/spages/NAVAll.txt` redirects here), semicolon-separated text; parsed by `services/fundamentals-api/app/ingestion/mf_amfi.py`
+- **Auth:** none. **Rate limits:** none published; fetched once a day by `refresh-funds`. **Cost:** free
+- **ToS notes:** AMFI publishes this file for public use; we send a descriptive User-Agent and do not spoof a browser.
+
+### mfapi.in (mutual fund NAV history)
+- **Type:** free community API over AMFI data (ADR 0067), used for **backfill only**
+- **Used for:** full NAV history per scheme (`GET https://api.mfapi.in/mf/{scheme_code}`), parsed by `app/ingestion/mf_mfapi.py`
+- **Auth:** none. **Rate limits:** none published; the job paces itself (~0.4 s between schemes). **Cost:** free
+- **ToS notes:** a third-party service with no SLA. All history is copied into `mf_nav`, so downtime only delays a backfill.
+
+### India mutual fund TER tracker (expense ratios, community dataset)
+- **Type:** community-maintained CSV on GitHub, MIT licence ([ADR 0067](./decisions/0067-mutual-funds-data-sourcing.md)); republishes AMFI's TER disclosure
+- **Used for:** each fund's total expense ratio, Regular and Direct plan
+- **Endpoint(s):** `https://raw.githubusercontent.com/captn3m0/india-mutual-fund-ter-tracker/main/data.csv` (and the GitHub commits API for the file's update date), parsed by `app/ingestion/mf_ter.py`; matched to schemes by normalised name
+- **Auth:** none. **Rate limits:** one raw download plus one GitHub API call a day from `refresh-funds` (GitHub's unauthenticated API allows 60 an hour). **Cost:** free
+- **ToS notes:** MIT, so reuse is allowed with the licence notice (credited here and in the ADR). Not an official AMFI feed and has no SLA; the stored `as_of` is the tracker's last commit, so staleness is visible. AMFI's own JSON endpoint is not used (it needs browser-style headers).
+
 ### GitHub REST API (this repository)
 
 - **Type:** public API

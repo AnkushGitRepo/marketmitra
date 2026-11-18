@@ -13,11 +13,11 @@ SERVICE="${CLOUD_RUN_SERVICE:-marketmitra-fundamentals}"
 
 cd "$(dirname "$0")"
 
-# Least privilege (ADR 0060): the service runs as its OWN service account that can read only the five secrets it needs. The project's default
+# Least privilege (ADR 0060): the service runs as its OWN service account that can read only the six secrets it needs. The project's default
 # compute service account holds the broad Editor role and must never be the runtime identity of a public service. Idempotent.
 RUNTIME_SA_NAME="${CLOUD_RUN_SA:-fundamentals-runtime}"
 RUNTIME_SA="${RUNTIME_SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
-SECRETS="fundamentals-database-url fundamentals-ipo-ingest-token fundamentals-screener-ingest-token fundamentals-kv-rest-api-url fundamentals-kv-rest-api-token"
+SECRETS="fundamentals-database-url fundamentals-ipo-ingest-token fundamentals-screener-ingest-token fundamentals-mf-ingest-token fundamentals-kv-rest-api-url fundamentals-kv-rest-api-token"
 gcloud iam service-accounts describe "$RUNTIME_SA" --project "$PROJECT" >/dev/null 2>&1 \
   || gcloud iam service-accounts create "$RUNTIME_SA_NAME" --project "$PROJECT" --display-name "Fundamentals data service (runtime, least privilege)"
 # The build runs as the project's default compute service account. It must NOT hold the broad Editor role; these two narrow roles are what a
@@ -59,6 +59,6 @@ gcloud run deploy "$SERVICE" \
   --timeout 120 \
   --cpu-boost \
   --set-env-vars "NSE_REQUESTS_PER_SECOND=3.0,TIER3_ENABLED=true,FINANCIALS_TIER1_ENABLED=true,LOG_LEVEL=INFO,RATE_LIMIT_PER_MINUTE=120" \
-  --set-secrets "DATABASE_URL=fundamentals-database-url:latest,IPO_INGEST_TOKEN=fundamentals-ipo-ingest-token:latest,SCREENER_INGEST_TOKEN=fundamentals-screener-ingest-token:latest,KV_REST_API_URL=fundamentals-kv-rest-api-url:latest,KV_REST_API_TOKEN=fundamentals-kv-rest-api-token:latest"
+  --set-secrets "DATABASE_URL=fundamentals-database-url:latest,IPO_INGEST_TOKEN=fundamentals-ipo-ingest-token:latest,SCREENER_INGEST_TOKEN=fundamentals-screener-ingest-token:latest,MF_INGEST_TOKEN=fundamentals-mf-ingest-token:latest,KV_REST_API_URL=fundamentals-kv-rest-api-url:latest,KV_REST_API_TOKEN=fundamentals-kv-rest-api-token:latest"
 
 gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format 'value(status.url)'

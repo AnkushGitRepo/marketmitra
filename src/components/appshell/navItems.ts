@@ -30,6 +30,7 @@ const MARKETS: NavSection = {
   items: [
     { href: '/markets', label: 'Markets' },
     { href: '/screener', label: 'Screener' },
+    { href: '/funds', label: 'Funds' },
     { href: '/ipos', label: 'IPOs' },
     { href: '/research', label: 'Research' },
     { href: '/news', label: 'News' },

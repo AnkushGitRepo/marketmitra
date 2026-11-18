@@ -15,6 +15,7 @@ export function buildMoreSections(advisorEnabled: boolean): readonly MoreSection
       title: 'Discovery',
       items: [
         { href: '/screener', label: 'Screener' },
+        { href: '/funds', label: 'Funds' },
         { href: '/ipos', label: 'IPOs' },
         { href: '/research', label: 'Research' },
         { href: '/news', label: 'News' },

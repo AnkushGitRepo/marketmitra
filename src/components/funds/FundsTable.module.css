@@ -1,0 +1,302 @@
+.scroll {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+  /* A bounded box lets the header and the fund-name column stay put while the rest scrolls. */
+  overflow: auto;
+  max-height: 72vh;
+}
+
+.loading {
+  opacity: 0.55;
+  transition: opacity var(--duration-fast) ease;
+}
+
+.table {
+  width: 100%;
+  min-width: 880px;
+  font-size: 13px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+  font-weight: 500;
+  border-bottom: 1px solid var(--app-border-soft);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.fundCol {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  background: var(--color-surface);
+  min-width: 260px;
+  max-width: 340px;
+}
+
+/* Same specificity as .th/.td (which right-align figures), so this must come after them to win. */
+thead .fundCol {
+  z-index: 20;
+}
+
+tbody .fundCol {
+  z-index: 5;
+  box-shadow: 1px 0 0 var(--app-border-softer);
+}
+
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sortBtn:hover,
+.sortBtn:focus-visible {
+  color: var(--app-ink);
+}
+
+.sorted {
+  color: var(--app-ink);
+}
+
+.arrow {
+  font-size: 9px;
+}
+
+.td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--app-border-softer);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+tbody tr:hover .td {
+  background: var(--app-teal-tint);
+}
+
+.name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--app-ink);
+  text-decoration: none;
+}
+
+.name:hover,
+.name:focus-visible {
+  text-decoration: underline;
+}
+
+.sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.up {
+  color: var(--app-gain);
+}
+
+.down {
+  color: var(--app-loss);
+}
+
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--app-text-muted);
+}
+
+.emptyTitle {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.emptyText {
+  margin: 0 auto 16px;
+  max-width: 46ch;
+  font-size: 13px;
+}
+
+.clearBtn {
+  border: 1px solid var(--app-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 10px 20px;
+  min-height: 44px;
+  font-size: 13.5px;
+  font-family: var(--font-sans);
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.th.fundCol,
+.td.fundCol {
+  text-align: left;
+}
+
+/* Phone cards (below 760px); the wide table is for larger screens. */
+.cards {
+  display: none;
+}
+
+.sortBar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sortLabel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.sortSelect {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  padding: 0 16px;
+  font-size: 13.5px;
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--app-ink);
+  background: var(--color-surface);
+}
+
+.dirBtn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  font-size: 12px;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.cardList {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 4px 14px rgba(22, 25, 28, 0.04);
+}
+
+.cardName {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--app-ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.cardName:hover,
+.cardName:focus-visible {
+  text-decoration: underline;
+}
+
+.cards .sub {
+  white-space: normal;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 8px;
+  margin: 12px 0 0;
+}
+
+.metric {
+  min-width: 0;
+}
+
+.metric dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.metric dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+  .cards {
+    display: block;
+  }
+
+  .scroll {
+    display: none;
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

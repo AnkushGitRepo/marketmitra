@@ -7,7 +7,7 @@ const labels = (adv: boolean) => buildMoreSections(adv).map((s) => ({ title: s.t
 describe('buildMoreSections', () => {
   it('groups the remaining routes into three clusters', () => {
     expect(labels(false)).toEqual([
-      { title: 'Discovery', items: ['Screener', 'IPOs', 'Research', 'News'] },
+      { title: 'Discovery', items: ['Screener', 'Funds', 'IPOs', 'Research', 'News'] },
       { title: 'Tools & intelligence', items: ['Agents', 'Alerts', 'Notes'] },
       { title: 'System & preferences', items: ['Settings & API keys', 'System status'] },
     ]);
@@ -33,7 +33,7 @@ describe('buildMoreSections', () => {
 
 describe('isMoreActive', () => {
   it('is active on pages that live in the sheet', () => {
-    for (const p of ['/screener', '/ipos/abc', '/alerts', '/settings', '/status']) expect(isMoreActive(p, true), p).toBe(true);
+    for (const p of ['/screener', '/funds/122639', '/ipos/abc', '/alerts', '/settings', '/status']) expect(isMoreActive(p, true), p).toBe(true);
     expect(isMoreActive('/mitra-activity', false)).toBe(true); // reads as part of Agents
   });
 

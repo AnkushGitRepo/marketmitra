@@ -10,7 +10,7 @@ import pytest
 
 from app.config import get_settings
 
-_SECRETS = ("ipo_ingest_token", "screener_ingest_token")
+_SECRETS = ("ipo_ingest_token", "screener_ingest_token", "mf_ingest_token")
 
 
 @pytest.fixture(autouse=True)

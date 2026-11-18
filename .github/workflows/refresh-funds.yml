@@ -1,0 +1,73 @@
+# Out-of-band mutual fund refresh for MarketMitra (ADR 0067).
+#
+# Daily: downloads AMFI's NAVAll.txt, upserts the scheme master + latest NAV,
+# recomputes returns/risk and loads expense ratios from the community TER tracker. On demand ("Run workflow"): `backfill` pulls full NAV
+# history from mfapi.in in resumable slices — run it repeatedly until the queue
+# is empty. It is not serverless-friendly work (thousands of requests), so it
+# runs here and POSTs to /funds/ingest/*.
+#
+# ACTIVATION (one-time):
+#   1. Repo secret:  gh secret set MF_INGEST_TOKEN
+#      (same value as MF_INGEST_TOKEN on the fundamentals-api Vercel project)
+#   2. Repo variable FUNDAMENTALS_API_URL (shared with refresh-ipos), or the
+#      default below is used.
+#   3. Run the `backfill` stage a few times after the first `schemes` run.
+
+name: refresh-funds
+
+on:
+  schedule:
+    # 19:00 UTC (~00:30 IST): AMFI has published the day's NAVs by then.
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+    inputs:
+      stages:
+        description: "Stages to run (space separated): schemes backfill metrics ter factsheet"
+        default: "schemes metrics ter"
+      limit:
+        description: "backfill: schemes per run"
+        default: "200"
+
+concurrency:
+  group: refresh-funds
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: services/fundamentals-api
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps
+        run: pip install --quiet httpx
+
+      - name: Refresh
+        env:
+          FUNDAMENTALS_API_URL: ${{ vars.FUNDAMENTALS_API_URL || 'https://marketmitra-fundamentals-api.vercel.app' }}
+          MF_INGEST_TOKEN: ${{ secrets.MF_INGEST_TOKEN }}
+          STAGES: ${{ inputs.stages || 'schemes metrics ter' }}
+          LIMIT: ${{ inputs.limit || '200' }}
+        run: |
+          if [ -z "$MF_INGEST_TOKEN" ]; then
+            echo "::error::MF_INGEST_TOKEN secret is not set — see this workflow's ACTIVATION notes."
+            exit 1
+          fi
+          # Inputs are treated as data: validate, then split without glob expansion.
+          stage_re='^(schemes|backfill|metrics|ter|factsheet)( (schemes|backfill|metrics|ter|factsheet))*$'
+          [[ "$STAGES" =~ $stage_re ]] || { echo "::error::invalid stages: $STAGES"; exit 1; }
+          [[ "$LIMIT" =~ ^[0-9]{1,4}$ ]] || { echo "::error::invalid limit: $LIMIT"; exit 1; }
+          set -f
+          read -ra stage_list <<<"$STAGES"
+          python scripts/refresh_funds.py "${stage_list[@]}" --limit "$LIMIT"
