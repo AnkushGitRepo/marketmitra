@@ -61,3 +61,10 @@ disclosure (same fields, "Total TER" per Regular and Direct plan), refreshed sev
   (Secret Manager `fundamentals-mf-ingest-token` for the Cloud Run service + the GitHub Actions secret; both deploy scripts know it).
 - Storage: ~1.8k Direct-Growth schemes x up to ~10 years of NAVs is a few million rows; check the Neon plan before a full backfill.
 - Metrics are recomputed from stored NAV, so a methodology change is a recompute, not a re-download.
+
+## Local data (issue #222)
+
+Like the stock screener (ADR 0025), a local or self-hosted install fills its own funds data and never reads the hosted service's: run your own Postgres and data service with a throwaway
+`MF_INGEST_TOKEN` and run the same job. `refresh_funds.py seed` is the one-command, resumable way: `schemes`, `ter`, NAV backfill in slices of 100 until none are left (`--category`
+to do Equity first, `--max-minutes` to stop cleanly), then `metrics`. The backfill queue takes a `category` and an `after` cursor, so a scheme whose fetch fails is skipped for that run and
+retried the next, rather than blocking the head of the queue. Measured while building it: ~72 bytes and ~2,900 rows per fund in `mf_nav`, so about 365 MB for ~1,800 funds.

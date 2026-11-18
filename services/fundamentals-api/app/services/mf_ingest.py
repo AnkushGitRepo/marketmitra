@@ -218,20 +218,24 @@ async def ingest_factsheet(session: AsyncSession, rows: list[dict]) -> dict:
     return {"written": written, "skipped": len(rows) - written}
 
 
-async def backfill_queue(session: AsyncSession, limit: int) -> list[int]:
-    """Active Direct-Growth schemes whose NAV history has not been fetched yet."""
-    stmt = (
-        select(MfSchemeORM.scheme_code)
-        .where(
-            MfSchemeORM.is_active.is_(True),
-            MfSchemeORM.plan == "direct",
-            MfSchemeORM.option == "growth",
-            MfSchemeORM.history_checked_at.is_(None),
-        )
-        .order_by(MfSchemeORM.scheme_code)
-        .limit(limit)
+async def backfill_queue(
+    session: AsyncSession, limit: int, *, category: str | None = None, after: int = 0
+) -> list[int]:
+    """Active Direct-Growth schemes whose NAV history has not been fetched yet.
+
+    `category` narrows it (a local seed can do Equity first); `after` is a keyset cursor, so a
+    caller can move past a scheme it could not fetch instead of meeting it at the head again.
+    """
+    stmt = select(MfSchemeORM.scheme_code).where(
+        MfSchemeORM.is_active.is_(True),
+        MfSchemeORM.plan == "direct",
+        MfSchemeORM.option == "growth",
+        MfSchemeORM.history_checked_at.is_(None),
+        MfSchemeORM.scheme_code > after,
     )
-    return list(await session.scalars(stmt))
+    if category:
+        stmt = stmt.where(MfSchemeORM.category == category)
+    return list(await session.scalars(stmt.order_by(MfSchemeORM.scheme_code).limit(limit)))
 
 
 async def metrics_queue(session: AsyncSession, after: int, limit: int) -> list[int]:

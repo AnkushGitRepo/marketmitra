@@ -230,3 +230,37 @@ class TestTerIngestRoute:
         monkeypatch.setattr(routes._settings, "mf_ingest_token", "secret")
         r = client.post("/funds/ingest/ter", json={"rows": [row], "as_of": "2026-11-18"}, headers=self.AUTH)
         assert r.status_code == 422
+
+
+class TestBackfillQueueParams:
+    AUTH: ClassVar = {"Authorization": "Bearer secret"}
+
+    def test_category_and_cursor_reach_the_service(self, client, monkeypatch):
+        monkeypatch.setattr(routes._settings, "mf_ingest_token", "secret")
+        seen = {}
+
+        async def fake(session, limit, *, category=None, after=0):
+            seen.update(limit=limit, category=category, after=after)
+            return [11, 12]
+
+        monkeypatch.setattr(mf_ingest, "backfill_queue", fake)
+        r = client.get("/funds/ingest/backfill-queue?limit=50&category=Equity&after=10", headers=self.AUTH)
+        assert r.status_code == 200 and r.json() == {"scheme_codes": [11, 12]}
+        assert seen == {"limit": 50, "category": "Equity", "after": 10}
+
+    def test_defaults_are_no_category_and_cursor_zero(self, client, monkeypatch):
+        monkeypatch.setattr(routes._settings, "mf_ingest_token", "secret")
+        seen = {}
+
+        async def fake(session, limit, *, category=None, after=0):
+            seen.update(category=category, after=after)
+            return []
+
+        monkeypatch.setattr(mf_ingest, "backfill_queue", fake)
+        client.get("/funds/ingest/backfill-queue", headers=self.AUTH)
+        assert seen == {"category": None, "after": 0}
+
+    @pytest.mark.parametrize("qs", ["after=-1", "after=99999999999", "category=" + "x" * 40])
+    def test_bad_values_are_422(self, client, monkeypatch, qs):
+        monkeypatch.setattr(routes._settings, "mf_ingest_token", "secret")
+        assert client.get(f"/funds/ingest/backfill-queue?{qs}", headers=self.AUTH).status_code == 422
