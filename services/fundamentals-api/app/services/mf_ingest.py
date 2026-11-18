@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import MfFactsheetORM, MfMetricsORM, MfNavORM, MfSchemeORM
 from app.ingestion.mf_ter import SOURCE_LABEL, SchemeRef, TerRow, match_ter
+from app.security import log_safe
 from app.services.mf_metrics import compute_metrics
 
 logger = logging.getLogger("fundamentals.mf_ingest")
@@ -183,7 +184,7 @@ async def recompute_metrics(session: AsyncSession, scheme_codes: list[int]) -> d
                 )
             done += 1
         except Exception:
-            logger.exception("metrics upsert failed for scheme %s", code)
+            logger.exception("metrics upsert failed for scheme %s", log_safe(code))
     await session.commit()
     return {"computed": done, "requested": len(scheme_codes)}
 
