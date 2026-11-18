@@ -1,0 +1,133 @@
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+  padding: 18px 20px 16px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 10px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+  font-weight: 500;
+}
+
+.ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.range {
+  min-width: 44px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.rangeActive {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.plot {
+  position: relative;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.loading {
+  opacity: 0.45;
+  transition: opacity var(--duration-fast) ease;
+}
+
+.line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.up {
+  stroke: var(--app-gain);
+}
+
+.down {
+  stroke: var(--app-loss);
+}
+
+.axis {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--app-text-subtle);
+}
+
+.guide {
+  stroke: var(--app-text-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.dot {
+  fill: var(--color-surface);
+  stroke: var(--app-ink);
+  stroke-width: 2;
+}
+
+.readout {
+  margin: 8px 0 0;
+  min-height: 20px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-muted);
+}
+
+.empty {
+  padding: 56px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--app-text-faint);
+}
+
+.error {
+  margin: 0 0 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--app-loss-border);
+  border-radius: var(--radius-sm);
+  background: var(--app-loss-bg);
+  color: var(--app-loss-text);
+  font-size: 13px;
+}

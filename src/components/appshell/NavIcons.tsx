@@ -75,6 +75,15 @@ export function NewsIcon() {
   );
 }
 
+export function FundsIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M4 18.5V9.5M9 18.5V5.5M14 18.5v-6M19 18.5V8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M3 18.5h17" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" opacity="0.45" />
+    </svg>
+  );
+}
+
 export function IposIcon() {
   return (
     <svg {...ICON_PROPS}>
@@ -201,6 +210,7 @@ export const NAV_ICONS = {
   '/portfolio': PortfolioIcon,
   '/markets': MarketsIcon,
   '/screener': ScreenerIcon,
+  '/funds': FundsIcon,
   '/alerts': AlertsIcon,
   '/news': NewsIcon,
   '/ipos': IposIcon,
