@@ -132,6 +132,24 @@ gmp_low, gmp_high, gmp_updated_at, open_date, close_date, allotment_date,
 listing_date, source_tier, fetched_at }`, ordered open → upcoming →
 closed → listed.
 
+## Mutual funds (`/funds`)
+
+`app/api/routes/funds.py` (ADR 0067). Scheme master + daily NAV from AMFI's
+`NAVAll.txt`, NAV history from mfapi.in, returns and risk ratios computed here
+from the stored NAV (`app/services/mf_metrics.py`; null = not enough history).
+Everything is served from Postgres; nothing is fetched on a read.
+
+- `GET /funds` — screener list. Filters: `q`, `category`, `sub_category`, `fund_house`, `plan` (default `direct`), `option` (default `growth`),
+  `min_ret_1y|3y|5y`, `max_expense_ratio`, `min_aum_cr`, `max_std_dev_3y`, `min_sharpe_3y`; `sort` (a metric name, `expense_ratio`, `aum_cr`, `name`, `nav`),
+  `order`, `limit` (max 200), `offset`.
+- `GET /funds/facets` — categories, sub-categories, fund houses, NAV date. `GET /funds/{scheme_code}` — detail (+ factsheet if disclosed).
+- `GET /funds/{scheme_code}/nav?range=1m|6m|1y|3y|5y|10y|max` — raw stored NAV. `GET /funds/{scheme_code}/peers` — same sub-category, plan and option.
+- Ingest (bearer `MF_INGEST_TOKEN`, 503 if unset): `POST /funds/ingest/{schemes,nav,metrics,factsheet}`, `GET /funds/ingest/{backfill-queue,metrics-queue}`.
+  Driven by `scripts/refresh_funds.py` (`schemes`, `backfill`, `metrics`, `factsheet` stages) and the `refresh-funds` workflow.
+
+Tests: `tests/test_mf_*.py`, `tests/test_funds.py` run offline. `tests/test_mf_db.py` runs the real SQL and is skipped unless
+`MF_TEST_DATABASE_URL` points at a throwaway, migrated Postgres (it truncates the `mf_*` tables; never a shared database).
+
 ## Live quote (`GET /quote?symbols=A,B,C`)
 
 `app/ingestion/quotes.py` + `app/api/routes/quote.py`. Called both directly
@@ -204,7 +222,7 @@ The service also runs as a container on Google Cloud Run (the same code and `req
 - `Dockerfile` builds it (Python 3.12, the `fastembed` model baked in so there is no cold download); `.dockerignore` keeps tests, migrations and `.env*` out.
 - `./deploy-cloud-run.sh` deploys from source with Cloud Build (no local Docker): `GCP_PROJECT=<id> ./deploy-cloud-run.sh`. Region defaults to
   `us-east4`, next to the Neon database (Washington, D.C.) and the Vercel app (`iad1`). 1 CPU, 2 GiB, scale to zero, at most 3 instances, public with the
-  app-level rate limit. It runs as its own least-privilege service account (`fundamentals-runtime`, created by the script, readable access to only its five secrets) and passes secrets by **name** from Secret Manager, never values. API docs are hidden on Cloud Run.
+  app-level rate limit. It runs as its own least-privilege service account (`fundamentals-runtime`, created by the script, readable access to only its six secrets) and passes secrets by **name** from Secret Manager, never values. API docs are hidden on Cloud Run.
 - `./upload-cloud-run-secrets.sh <dotenv-file>` copies the credentials into Secret Manager. **Run it yourself**: it reads credential values and never prints
   them. Get the file with `vercel env pull .env.cloudrun --environment production` (gitignored; delete it afterwards). Variables of Vercel's "Secret" type
   are not pulled; for those the script generates a new token and stores it in Secret Manager only. At cutover run it again with `SET_GITHUB_SECRETS=yes`

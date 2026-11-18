@@ -23,12 +23,13 @@ secret_name() {
     DATABASE_URL) echo fundamentals-database-url ;;
     IPO_INGEST_TOKEN) echo fundamentals-ipo-ingest-token ;;
     SCREENER_INGEST_TOKEN) echo fundamentals-screener-ingest-token ;;
+    MF_INGEST_TOKEN) echo fundamentals-mf-ingest-token ;;
     KV_REST_API_URL) echo fundamentals-kv-rest-api-url ;;
     KV_REST_API_TOKEN) echo fundamentals-kv-rest-api-token ;;
   esac
 }
-VARS="DATABASE_URL IPO_INGEST_TOKEN SCREENER_INGEST_TOKEN KV_REST_API_URL KV_REST_API_TOKEN"
-GENERATED=" IPO_INGEST_TOKEN SCREENER_INGEST_TOKEN "
+VARS="DATABASE_URL IPO_INGEST_TOKEN SCREENER_INGEST_TOKEN MF_INGEST_TOKEN KV_REST_API_URL KV_REST_API_TOKEN"
+GENERATED=" IPO_INGEST_TOKEN SCREENER_INGEST_TOKEN MF_INGEST_TOKEN "
 
 value_of() { # first match of NAME=value in the dotenv file, quotes stripped; empty if absent
   local line

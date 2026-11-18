@@ -94,6 +94,19 @@ and are not shown.
 - **Cost:** free
 - **ToS notes:** Reviewed 2026-09-06. Chittorgarh's Disclaimer & Privacy Statement (`chittorgarh.com/article/disclaimer-and-privacy-statement/238/`) states *"no user may distribute, modify, transmit, or use the contents in any manner for public or commercial purposes without prior written permission"*, and the site returns `403` to non-browser clients. This is **not a sanctioned integration** — it is an accepted known risk on the same terms as Screener.in (ADR 0011): kept in one isolated, swappable module; GMP shown only with an "unofficial grey-market estimate, not from any exchange" caveat and degrading to "unavailable" on any scrape failure; alerts on GMP skip rather than fire on missing data. If the source becomes unworkable, the module is swapped or GMP is dropped, without touching the rest of the IPO tracker.
 
+### AMFI NAVAll (mutual fund schemes + daily NAV)
+- **Type:** official public file (Phase 11 — [ADR 0067](./decisions/0067-mutual-funds-data-sourcing.md))
+- **Used for:** the scheme master (code, ISINs, fund house, category, plan, option) and every scheme's latest NAV
+- **Endpoint(s):** `https://portal.amfiindia.com/spages/NAVAll.txt` (the old `www.amfiindia.com/spages/NAVAll.txt` redirects here), semicolon-separated text; parsed by `services/fundamentals-api/app/ingestion/mf_amfi.py`
+- **Auth:** none. **Rate limits:** none published; fetched once a day by `refresh-funds`. **Cost:** free
+- **ToS notes:** AMFI publishes this file for public use; we send a descriptive User-Agent and do not spoof a browser.
+
+### mfapi.in (mutual fund NAV history)
+- **Type:** free community API over AMFI data (ADR 0067), used for **backfill only**
+- **Used for:** full NAV history per scheme (`GET https://api.mfapi.in/mf/{scheme_code}`), parsed by `app/ingestion/mf_mfapi.py`
+- **Auth:** none. **Rate limits:** none published; the job paces itself (~0.4 s between schemes). **Cost:** free
+- **ToS notes:** a third-party service with no SLA. All history is copied into `mf_nav`, so downtime only delays a backfill.
+
 ### GitHub REST API (this repository)
 
 - **Type:** public API

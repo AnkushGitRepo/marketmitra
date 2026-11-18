@@ -124,12 +124,12 @@ One folder per feature, each with `*.module.css`; shared pieces in `common/`.
 | Path | What it is |
 | --- | --- |
 | `app/main.py` | App entry. |
-| `app/api/routes/` | HTTP routes: companies, documents, embed, financials, indices, ipos, news, pdf_text, prices, quote, screener, search. `app/api/deps.py` = shared deps. |
-| `app/services/` | Query/serving logic: fundamentals, ipo, news, screener, search (+ index). |
-| `app/ingestion/` | Data sourcing in three tiers (ADR 0011): `tier1_nse_bse`, `tier2_yfinance`, `tier3_*` scrapers, plus `orchestrator`, `quotes`, `news`, `indices`, `embeddings`, `pdf_*`, `xbrl_parser`, `filing_discovery`, `company_master`, `rate_limit`. |
+| `app/api/routes/` | HTTP routes: companies, documents, embed, financials, funds, indices, ipos, news, pdf_text, prices, quote, screener, search. `app/api/deps.py` = shared deps. |
+| `app/services/` | Query/serving logic: fundamentals, ipo, news, screener, search (+ index); mutual funds: `mf_query` (reads), `mf_ingest` (writes), `mf_metrics` (pure returns/risk maths). |
+| `app/ingestion/` | Data sourcing in three tiers (ADR 0011): `tier1_nse_bse`, `tier2_yfinance`, `tier3_*` scrapers, plus `orchestrator`, `quotes`, `news`, `indices`, `mf_amfi` + `mf_mfapi` (mutual fund master/NAV, ADR 0067), `embeddings`, `pdf_*`, `xbrl_parser`, `filing_discovery`, `company_master`, `rate_limit`. |
 | `app/db/`, `migrations/versions/` | SQLAlchemy models/session; Alembic migrations. |
 | `app/schemas.py`, `config.py`, `security.py`, `rate_limit.py` | Pydantic schemas, settings, auth tokens, per-IP limiting. |
-| `scripts/` | `refresh_ipos.py`, `refresh_screener_universe.py`. |
+| `scripts/` | `refresh_ipos.py`, `refresh_screener_universe.py`, `refresh_funds.py` (mutual funds). |
 | `deploy-cloud-run.sh`, `Dockerfile` | Deploy (see HANDOFF for the `CLOUDSDK_PYTHON` note). |
 | `tests/` | pytest. |
 
@@ -138,7 +138,7 @@ One folder per feature, each with `*.module.css`; shared pieces in `common/`.
 `ci.yml` (lint, typecheck, test, build, python) · `codeql.yml` · `dependency-review.yml` · `release.yml` ·
 `post-deploy-smoke.yml` · `wiki-sync.yml` · scheduled jobs that call the app/data service:
 `evaluate-alerts`, `agents-tick`, `agents-reflect`, `analyst-dispatch`, `stock-analysts`, `index-corpus`,
-`refresh-ipos`, `refresh-screener`, `refresh-screener-quotes`.
+`refresh-ipos`, `refresh-funds`, `refresh-screener`, `refresh-screener-quotes`.
 
 ## Docs
 

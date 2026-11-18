@@ -143,8 +143,8 @@ A deploy does **not** imply a new version ([ADR 0059](./decisions/0059-deploys-d
   Locally, `alembic upgrade head` uses `.env`; check `alembic current` first.
 - Prefer verifying data-affecting changes against production afterwards (e.g. `GET /ipos`, `GET /screener/stats`).
 
-**Scheduled jobs** (GitHub Actions, run from `main`; secrets `CRON_SECRET`, `IPO_INGEST_TOKEN`, `SCREENER_INGEST_TOKEN`):
-`evaluate-alerts` (every 10 min, market hours), `refresh-ipos` (every 2 h, 03–15 UTC), `refresh-screener-quotes`
+**Scheduled jobs** (GitHub Actions, run from `main`; secrets `CRON_SECRET`, `IPO_INGEST_TOKEN`, `SCREENER_INGEST_TOKEN`, `MF_INGEST_TOKEN`):
+`evaluate-alerts` (every 10 min, market hours), `refresh-ipos` (every 2 h, 03–15 UTC), `refresh-funds` (daily 19:00 UTC; `backfill` stage by hand, ADR 0067), `refresh-screener-quotes`
 (weekdays 11:00 UTC), `refresh-screener` (daily 20:30 UTC), `index-corpus` (every 2 h), `agents-tick` (every 5 min),
 `agents-reflect` (daily), `stock-analysts` (every 20 min: gives holdings analysts, builds dossiers, runs the evening check and thesis criteria), `analyst-dispatch` (daily 03:00 UTC = 08:30 IST morning brief), `codeql` (weekly), plus `ci`, `dependency-review`, `post-deploy-smoke`, `wiki-sync`.
 Each has `workflow_dispatch`, so "Run workflow" (or `gh workflow run <file>`) triggers it by hand. On a local or self-hosted app, `stock-analysts` and `analyst-dispatch` also run inside the process for the user `local` (catch-up on start, then on the wall clock every 20 minutes and hourly for as long as the process stays up). See ADR 0062.

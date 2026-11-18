@@ -20,6 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
     false,
     func,
+    true,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -356,3 +357,93 @@ class ScreenerMetricsORM(Base):
     # Screener.in job owns the rest (fundamentals_updated_at). NULL = never.
     quote_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     fundamentals_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class MfSchemeORM(Base):
+    """A mutual fund scheme (one row per AMFI scheme code — each plan/option
+    is its own scheme). Master data from AMFI NAVAll (ADR 0067)."""
+
+    __tablename__ = "mf_schemes"
+
+    scheme_code: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
+    name: Mapped[str] = mapped_column(String(300))
+    base_name: Mapped[str] = mapped_column(String(300), index=True)
+    fund_house: Mapped[str] = mapped_column(String(160), index=True)
+    scheme_type: Mapped[str] = mapped_column(String(16))  # open_ended | close_ended | interval
+    category: Mapped[str] = mapped_column(String(32), index=True)
+    sub_category: Mapped[str | None] = mapped_column(String(96), index=True)
+    plan: Mapped[str] = mapped_column(String(8))  # direct | regular
+    option: Mapped[str] = mapped_column(String(8))  # growth | idcw | other
+    isin_growth: Mapped[str | None] = mapped_column(String(12), index=True)
+    isin_reinvest: Mapped[str | None] = mapped_column(String(12))
+    latest_nav: Mapped[float | None] = mapped_column(Numeric(18, 6))
+    latest_nav_date: Mapped[date | None] = mapped_column(Date)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
+    # Set once NAV history has been fetched (even if the source had none), so the
+    # backfill queue never depends on how many rows daily ingest has added.
+    history_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class MfNavORM(Base):
+    """One NAV per scheme per day."""
+
+    __tablename__ = "mf_nav"
+
+    scheme_code: Mapped[int] = mapped_column(
+        ForeignKey("mf_schemes.scheme_code", ondelete="CASCADE"), primary_key=True
+    )
+    nav_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    nav: Mapped[float] = mapped_column(Numeric(18, 6))
+
+
+class MfMetricsORM(Base):
+    """Returns and risk ratios computed from mf_nav (app/services/mf_metrics.py).
+    Null means "not enough history", never a guess."""
+
+    __tablename__ = "mf_metrics"
+
+    scheme_code: Mapped[int] = mapped_column(
+        ForeignKey("mf_schemes.scheme_code", ondelete="CASCADE"), primary_key=True
+    )
+    as_of: Mapped[date] = mapped_column(Date)
+    ret_1m: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    ret_3m: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    ret_6m: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    ret_1y: Mapped[float | None] = mapped_column(Numeric(10, 4), index=True)
+    ret_3y: Mapped[float | None] = mapped_column(Numeric(10, 4), index=True)
+    ret_5y: Mapped[float | None] = mapped_column(Numeric(10, 4), index=True)
+    ret_10y: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    std_dev_3y: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    sharpe_3y: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    sortino_3y: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    max_drawdown_3y: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    sip_xirr_3y: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    sip_xirr_5y: Mapped[float | None] = mapped_column(Numeric(10, 4))
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class MfFactsheetORM(Base):
+    """Disclosed (not computed) fund facts: expense ratio, AUM, exit load,
+    manager, benchmark. Every row carries its `source` and `as_of`."""
+
+    __tablename__ = "mf_factsheet"
+
+    scheme_code: Mapped[int] = mapped_column(
+        ForeignKey("mf_schemes.scheme_code", ondelete="CASCADE"), primary_key=True
+    )
+    expense_ratio: Mapped[float | None] = mapped_column(Numeric(6, 3))  # total TER, percent
+    aum_cr: Mapped[float | None] = mapped_column(Numeric(16, 2))
+    exit_load: Mapped[str | None] = mapped_column(String(300))
+    fund_manager: Mapped[str | None] = mapped_column(String(300))
+    benchmark: Mapped[str | None] = mapped_column(String(200))
+    launch_date: Mapped[date | None] = mapped_column(Date)
+    as_of: Mapped[date | None] = mapped_column(Date)
+    source: Mapped[str] = mapped_column(String(64))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

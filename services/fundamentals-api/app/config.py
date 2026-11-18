@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     # ADR 0025) — same trust boundary as ipo_ingest_token above.
     screener_ingest_token: str = ""
 
+    # Shared secret for POST /funds/ingest/* (scripts/refresh_funds.py, ADR 0067).
+    mf_ingest_token: str = ""
+
     # Retrieval embeddings for the main app's Phase 10 RAG (ADR 0020), served
     # from POST /embed via fastembed. Dimension MUST stay 384 (matches
     # EMBED_DIM on the Next side and the Atlas Vector Search index).
