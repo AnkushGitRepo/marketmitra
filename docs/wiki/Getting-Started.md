@@ -81,6 +81,7 @@ Everything below **degrades gracefully** — if it isn't configured the feature 
 | Alert evaluation | A scheduler hitting `/api/cron/evaluate-alerts` with `CRON_SECRET` |
 | Email alerts | `RESEND_API_KEY`, `ALERT_EMAIL_TO` |
 | A populated screener | [Fill the screener](#6-fill-the-screener) below |
+| A populated mutual fund screener | [Fill the funds screener](#7-fill-the-funds-screener) below |
 
 ## 6. Fill the screener
 
@@ -124,6 +125,42 @@ SCREENER_INGEST_TOKEN=<the same throwaway value> \
 ```
 
 Repeat the quote command on weekdays, and the incremental command about once a day, if you want the table to stay current. What each field means is in the [Screener Guide](Screener-Guide).
+
+## 7. Fill the funds screener
+
+The mutual fund pages (`/funds`) work the same way as the stock screener: nothing is bundled and nothing is read from the hosted site. You fill your own Postgres with one command. Do not point the app at the hosted data service, and do not import a copy of its database.
+
+**One-time setup** (from `services/fundamentals-api`, with your virtual environment active):
+
+```bash
+alembic upgrade head          # creates the mf_* tables; run it again after every update
+```
+
+Invent a throwaway string (it is not the production secret) and set it as `MF_INGEST_TOKEN` in `services/fundamentals-api/.env`, then restart the data service. The app needs no token. Leave `FUNDAMENTALS_API_URL` unset in `.env.local` (it defaults to `http://localhost:8420`), or set it to your own service. If it points at a hosted address, `/funds` shows whatever that service has, which may be nothing.
+
+**Fill it, one command.** This downloads the scheme list from AMFI, the expense ratios from the community TER tracker, and each fund's NAV history from mfapi.in, then calculates returns and risk. Equity first is the quickest way to something useful:
+
+```bash
+FUNDAMENTALS_API_URL=http://localhost:8420 \
+MF_INGEST_TOKEN=<the same throwaway value> \
+.venv/bin/python scripts/refresh_funds.py seed --category Equity
+```
+
+Measured at about 0.6 seconds per fund, so roughly 6 to 10 minutes for the 575 or so Equity funds. The history fetch is deliberately paced because mfapi.in is a free community service. Run it without `--category` for all about 1,800 active Direct-Growth funds (roughly 20 to 30 minutes, and about 365 MB of Postgres).
+
+It is safe to stop and repeat. Add `--max-minutes 30` to have it stop cleanly between slices and run it again later to continue where it left off. A fund whose history could not be fetched is skipped for that run and tried again the next time. The first line it prints is the address it is filling, so you can see it is your own service.
+
+**Keep it current.** The history is fetched once. After that, a daily run updates every fund's latest NAV, recalculates the numbers and refreshes expense ratios, in about a minute:
+
+```bash
+FUNDAMENTALS_API_URL=http://localhost:8420 \
+MF_INGEST_TOKEN=<the same throwaway value> \
+.venv/bin/python scripts/refresh_funds.py
+```
+
+New funds that appear in AMFI's list are picked up by `seed` (it only fetches funds it has not fetched before). Check progress any time with `curl localhost:8420/funds/facets`. An empty answer means nothing has been loaded yet.
+
+What the columns mean, and what a dash means, is on the funds page itself. A dash is "not available", never zero. AUM, exit load and fund manager have no free source yet, so the AUM column stays hidden.
 
 ## Everyday commands
 

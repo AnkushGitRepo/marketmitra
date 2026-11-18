@@ -193,3 +193,15 @@ async def test_ter_ingest_matches_by_name_keeps_other_fields_and_clears_stale(se
     out = await mf_ingest.ingest_ter(session, _filler(600), END)
     assert out["cleared"] == 3 and await ter(122640) is None
     assert float(await session.scalar(text("SELECT aum_cr FROM mf_factsheet WHERE scheme_code=122639"))) == 90000
+
+
+async def test_backfill_queue_filters_by_category_and_resumes_after_a_cursor(session: AsyncSession):
+    await mf_ingest.ingest_schemes(session, _rows(), as_of=END)
+    await session.execute(text("UPDATE mf_schemes SET history_checked_at=NULL"))
+    await session.commit()
+    # fixture: 122639 (Equity, Direct Growth, active) and 100001 ("N.A." NAV, so inactive): only 122639 qualifies
+    assert await mf_ingest.backfill_queue(session, 10) == [122639]
+    assert await mf_ingest.backfill_queue(session, 10, category="Equity") == [122639]
+    assert await mf_ingest.backfill_queue(session, 10, category="Debt") == []
+    assert await mf_ingest.backfill_queue(session, 10, after=122639) == []
+    assert await mf_ingest.backfill_queue(session, 10, after=122638) == [122639]

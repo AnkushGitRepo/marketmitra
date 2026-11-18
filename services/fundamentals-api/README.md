@@ -144,8 +144,12 @@ Everything is served from Postgres; nothing is fetched on a read.
   `order`, `limit` (max 200), `offset`.
 - `GET /funds/facets` — categories, sub-categories, fund houses, NAV date. `GET /funds/{scheme_code}` — detail (+ factsheet if disclosed).
 - `GET /funds/{scheme_code}/nav?range=1m|6m|1y|3y|5y|10y|max` — raw stored NAV. `GET /funds/{scheme_code}/peers` — same sub-category, plan and option.
-- Ingest (bearer `MF_INGEST_TOKEN`, 503 if unset): `POST /funds/ingest/{schemes,nav,metrics,factsheet}`, `GET /funds/ingest/{backfill-queue,metrics-queue}`.
-  Driven by `scripts/refresh_funds.py` (`schemes`, `backfill`, `metrics`, `factsheet` stages) and the `refresh-funds` workflow.
+- Ingest (bearer `MF_INGEST_TOKEN`, 503 if unset): `POST /funds/ingest/{schemes,nav,metrics,ter,factsheet}`, `GET /funds/ingest/{backfill-queue,metrics-queue}` (`backfill-queue` takes `category` and an `after` cursor).
+  Driven by `scripts/refresh_funds.py` (`schemes`, `backfill`, `seed`, `metrics`, `ter`, `factsheet` stages) and the `refresh-funds` workflow.
+
+**Fill it locally** (same idea as the screener; nothing comes from the hosted service): `alembic upgrade head`, set a throwaway `MF_INGEST_TOKEN` in `.env`, restart, then
+`FUNDAMENTALS_API_URL=http://localhost:8420 MF_INGEST_TOKEN=<same> .venv/bin/python scripts/refresh_funds.py seed --category Equity` (add `--max-minutes N` to stop cleanly and
+re-run to continue). A plain `refresh_funds.py` afterwards is the daily update. Step by step, with timings and sizes: wiki [Getting Started](../../docs/wiki/Getting-Started.md#7-fill-the-funds-screener).
 
 Tests: `tests/test_mf_*.py`, `tests/test_funds.py` run offline. `tests/test_mf_db.py` runs the real SQL and is skipped unless
 `MF_TEST_DATABASE_URL` points at a throwaway, migrated Postgres (it truncates the `mf_*` tables; never a shared database).

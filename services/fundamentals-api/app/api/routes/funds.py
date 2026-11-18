@@ -234,11 +234,13 @@ class FactsheetIngestIn(BaseModel):
 @router.get("/ingest/backfill-queue")
 async def backfill_queue(
     limit: int = Query(default=50, ge=1, le=500),
+    category: str | None = Query(default=None, max_length=32),
+    after: int = Query(default=0, ge=0, le=INT32_MAX),
     authorization: str | None = Header(default=None),
     session: AsyncSession = Depends(get_db),
 ) -> dict:
     _guard(authorization)
-    return {"scheme_codes": await mf_ingest.backfill_queue(session, limit)}
+    return {"scheme_codes": await mf_ingest.backfill_queue(session, limit, category=category, after=after)}
 
 
 @router.get("/ingest/metrics-queue")
