@@ -67,4 +67,5 @@ disclosure (same fields, "Total TER" per Regular and Direct plan), refreshed sev
 Like the stock screener (ADR 0025), a local or self-hosted install fills its own funds data and never reads the hosted service's: run your own Postgres and data service with a throwaway
 `MF_INGEST_TOKEN` and run the same job. `refresh_funds.py seed` is the one-command, resumable way: `schemes`, `ter`, NAV backfill in slices of 100 until none are left (`--category`
 to do Equity first, `--max-minutes` to stop cleanly), then `metrics`. The backfill queue takes a `category` and an `after` cursor, so a scheme whose fetch fails is skipped for that run and
-retried the next, rather than blocking the head of the queue. Measured while building it: ~72 bytes and ~2,900 rows per fund in `mf_nav`, so about 365 MB for ~1,800 funds.
+retried the next, rather than blocking the head of the queue. `FUNDS_API_URL` (issue #224) is an optional override of `FUNDAMENTALS_API_URL` for the funds pages and `/api/funds/*` only, so a
+maintainer on the hosted service for everything else can still see funds from a local one before the hosted one has the data; unset or blank it falls back to `FUNDAMENTALS_API_URL`. Measured while building it: ~72 bytes and ~2,900 rows per fund in `mf_nav`, so about 365 MB for ~1,800 funds.

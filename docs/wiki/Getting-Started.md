@@ -136,7 +136,7 @@ The mutual fund pages (`/funds`) work the same way as the stock screener: nothin
 alembic upgrade head          # creates the mf_* tables; run it again after every update
 ```
 
-Invent a throwaway string (it is not the production secret) and set it as `MF_INGEST_TOKEN` in `services/fundamentals-api/.env`, then restart the data service. The app needs no token. Leave `FUNDAMENTALS_API_URL` unset in `.env.local` (it defaults to `http://localhost:8420`), or set it to your own service. If it points at a hosted address, `/funds` shows whatever that service has, which may be nothing.
+Invent a throwaway string (it is not the production secret) and set it as `MF_INGEST_TOKEN` in `services/fundamentals-api/.env`, then restart the data service. The app needs no token. Leave `FUNDAMENTALS_API_URL` unset in `.env.local` (it defaults to `http://localhost:8420`), or set it to your own service. If it points at a hosted address, `/funds` shows whatever that service has, which may be nothing. If you do use a hosted service for everything else and only want funds from your own, set `FUNDS_API_URL=http://localhost:8420` as well; it moves the funds pages only.
 
 **Fill it, one command.** This downloads the scheme list from AMFI, the expense ratios from the community TER tracker, and each fund's NAV history from mfapi.in, then calculates returns and risk. Equity first is the quickest way to something useful:
 

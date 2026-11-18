@@ -12,6 +12,7 @@ All configuration is environment variables. The app reads `.env.local` (copy it 
 | `MONGODB_URI` | **yes** | MongoDB connection string. |
 | `MONGODB_DB` | no (default `marketmitra`) | Database name. |
 | `FUNDAMENTALS_API_URL` | **yes** | Base URL of the data service. Local default `http://localhost:8420`. |
+| `FUNDS_API_URL` | no | A different data service for the mutual fund pages only. Unset (or blank), funds use `FUNDAMENTALS_API_URL`. |
 
 ## Shared secrets
 
