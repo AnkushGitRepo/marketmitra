@@ -64,6 +64,7 @@ A new page must be added to `src/lib/routes.ts` **and** `src/proxy.ts`.
 | `analysts/*` | analyst desk: list, [symbol], chat, dispatch, retry |
 | `ai/chat` | streaming AI chat |
 | `alerts`, `alerts/[id]` | alert CRUD |
+| `funds`, `funds/facets`, `funds/[code]` (+ `nav`, `peers`) | mutual funds (ADR 0067) |
 | `holdings`, `holdings/[id]` | portfolio holdings |
 | `insights/*` | one-shot AI briefs: ipo, market, news, portfolio, stock, stock-brief |
 | `markets/overview`, `news`, `search`, `stock/[ticker]` (+ `prices`) | market data |
@@ -159,6 +160,7 @@ One folder per feature, each with `*.module.css`; shared pieces in `common/`.
 | Portfolio + import | `(app)/portfolio` | `holdings`, `portfolio-import/*` | `lib/holdings.ts`, `lib/portfolio*` | `components/portfolio` |
 | Stock page / brief | `(app)/stock/[ticker]` | `stock/[ticker]`, `insights/stock-brief` | `lib/stock`, `lib/ai/stockBrief.ts` | `components/stock`, `pro-chart` |
 | Screener | `(app)/screener` | `screener/*`, cron `refresh-screener-quotes` | `lib/screener` | `components/screener` |
+| Mutual funds | `(app)/funds`, `(app)/funds/[code]` | `funds/*`; data service `funds`; job `refresh-funds` | `lib/funds` | `components/funds` |
 | IPO tracker | `(app)/ipos` | data service `ipos` | `lib/dashboard/ipo*` | `components/ipos` |
 | News + sentiment | `(app)/news` | `news`, `insights/news` | `lib/news` | `components/news` |
 | Alerts + notifications | `(app)/alerts` | `alerts`, `notifications`, cron `evaluate-alerts` | `lib/alerts`, `lib/notifications`, `lib/email` | `components/alerts`, `emails/` |

@@ -98,6 +98,7 @@ class TestIngestAuth:
         ("/funds/ingest/nav", {"scheme_code": 1, "points": []}),
         ("/funds/ingest/metrics", {"scheme_codes": [1]}),
         ("/funds/ingest/factsheet", {"rows": []}),
+        ("/funds/ingest/ter", {"rows": [], "as_of": "2026-11-18"}),
     ]
 
     @pytest.mark.parametrize(("path", "body"), ROUTES)
@@ -192,3 +193,40 @@ class TestIngestGate:
 
     def test_unconfigured_token_is_503_before_parsing(self, client):
         assert client.post("/funds/ingest/schemes", json={"rows": "nope"}).status_code == 503
+
+
+class TestTerIngestRoute:
+    AUTH: ClassVar = {"Authorization": "Bearer secret"}
+
+    def test_too_few_rows_is_422_not_a_wipe(self, client, monkeypatch):
+        monkeypatch.setattr(routes._settings, "mf_ingest_token", "secret")
+
+        async def fake(session, rows, as_of):
+            return {"error": "refusing 1 TER rows (expected at least 500)"}
+
+        monkeypatch.setattr(mf_ingest, "ingest_ter", fake)
+        r = client.post("/funds/ingest/ter", json={"rows": [{"name": "X", "regular": 1.0}], "as_of": "2026-11-18"},
+                        headers=self.AUTH)
+        assert r.status_code == 422 and "refusing" in r.json()["detail"]
+
+    def test_valid_request_reaches_service_with_typed_rows(self, client, monkeypatch):
+        monkeypatch.setattr(routes._settings, "mf_ingest_token", "secret")
+        seen = {}
+
+        async def fake(session, rows, as_of):
+            seen["rows"], seen["as_of"] = rows, as_of
+            return {"matched_rows": 1}
+
+        monkeypatch.setattr(mf_ingest, "ingest_ter", fake)
+        r = client.post("/funds/ingest/ter",
+                        json={"rows": [{"name": "Alpha Fund", "regular": 1.5, "direct": 0.5}], "as_of": "2026-11-18"},
+                        headers=self.AUTH)
+        assert r.status_code == 200
+        assert seen["rows"][0].name == "Alpha Fund" and seen["rows"][0].direct == 0.5
+        assert seen["as_of"] == date(2026, 11, 18)
+
+    @pytest.mark.parametrize("row", [{"name": "A", "regular": 0}, {"name": "A", "direct": 11}, {"name": "", "regular": 1}])
+    def test_out_of_range_rows_rejected(self, client, monkeypatch, row):
+        monkeypatch.setattr(routes._settings, "mf_ingest_token", "secret")
+        r = client.post("/funds/ingest/ter", json={"rows": [row], "as_of": "2026-11-18"}, headers=self.AUTH)
+        assert r.status_code == 422

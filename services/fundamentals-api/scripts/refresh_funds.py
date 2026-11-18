@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Out-of-band mutual fund refresh (ADR 0067).
 
-Stages (run any subset; default is `schemes metrics`):
+Stages (run any subset; default is `schemes metrics ter`):
   schemes    download AMFI NAVAll.txt, parse it, POST the scheme master + latest NAV
   backfill   fetch full NAV history from mfapi.in for Direct-Growth schemes that
              have little history yet, POST it (resumable: re-run to continue)
   metrics    ask the service to recompute returns/risk for every Direct-Growth scheme
+  ter        download the community TER tracker CSV (AMFI expense ratios, MIT), POST it;
+             the service matches rows to schemes by name and stores the expense ratio
   factsheet  POST disclosed facts (expense ratio, AUM, ...) from --factsheet-file
 
 Env:
@@ -13,7 +15,7 @@ Env:
   MF_INGEST_TOKEN        shared secret for /funds/ingest/* (required unless --dry-run)
 
 Usage:
-  python scripts/refresh_funds.py                       # schemes + metrics (daily)
+  python scripts/refresh_funds.py                       # schemes + metrics + ter (daily)
   python scripts/refresh_funds.py backfill --limit 200  # one backfill slice
   python scripts/refresh_funds.py schemes --dry-run     # download + parse only
   python scripts/refresh_funds.py factsheet --factsheet-file ter.json
@@ -33,13 +35,13 @@ import httpx
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.ingestion import mf_amfi, mf_mfapi
+from app.ingestion import mf_amfi, mf_mfapi, mf_ter
 
 BATCH_SCHEMES = 1000
 _FIELD_LIMITS = {"name": 300, "base_name": 300, "fund_house": 160, "sub_category": 96}
 BATCH_METRICS = 100
 MFAPI_PAUSE_S = 0.4  # be polite to a free community service
-STAGES = ("schemes", "backfill", "metrics", "factsheet")
+STAGES = ("schemes", "backfill", "metrics", "ter", "factsheet")
 
 
 def _client() -> tuple[httpx.AsyncClient, str]:
@@ -111,6 +113,24 @@ async def stage_metrics(api: httpx.AsyncClient) -> None:
         print(f"  metrics through {after}: {total} computed", flush=True)
 
 
+async def stage_ter(api: httpx.AsyncClient | None) -> None:
+    async with mf_ter.make_client() as src:
+        rows, parse_stats = mf_ter.parse_ter_csv(await mf_ter.fetch_ter_csv(src))
+        as_of = await mf_ter.fetch_ter_as_of(src)
+    print(f"parsed {parse_stats} (file updated {as_of})", flush=True)
+    if not rows:
+        raise SystemExit("no TER rows parsed — aborting")
+    if api is None:
+        return
+    body = {
+        "rows": [{"name": r.name, "regular": r.regular, "direct": r.direct} for r in rows],
+        "as_of": as_of.isoformat(),
+    }
+    resp = await api.post("/funds/ingest/ter", json=body)
+    resp.raise_for_status()
+    print(f"  ter: {resp.json()}", flush=True)
+
+
 async def stage_factsheet(api: httpx.AsyncClient, path: Path) -> None:
     rows = json.loads(path.read_text(encoding="utf-8"))
     for i in range(0, len(rows), BATCH_SCHEMES):
@@ -120,9 +140,10 @@ async def stage_factsheet(api: httpx.AsyncClient, path: Path) -> None:
 
 
 async def run(args: argparse.Namespace) -> int:
-    stages = args.stages or ["schemes", "metrics"]
+    stages = args.stages or ["schemes", "metrics", "ter"]
     if args.dry_run:
         await stage_schemes(None)
+        await stage_ter(None)
         return 0
     api, _ = _client()
     async with api:
@@ -134,6 +155,8 @@ async def run(args: argparse.Namespace) -> int:
                 await stage_backfill(api, args.limit)
             elif stage == "metrics":
                 await stage_metrics(api)
+            elif stage == "ter":
+                await stage_ter(api)
             elif stage == "factsheet":
                 if not args.factsheet_file:
                     raise SystemExit("factsheet stage needs --factsheet-file")

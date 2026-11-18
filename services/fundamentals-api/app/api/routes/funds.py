@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.config import get_settings
+from app.ingestion.mf_ter import TerRow
 from app.security import require_bearer
 from app.services import mf_ingest, mf_query
 from app.services.mf_query import MAX_LIMIT, NAV_RANGES_DAYS, SORT_COLUMNS, FundFilters
@@ -25,6 +26,7 @@ SchemeCode = Annotated[int, Field(ge=1, le=INT32_MAX)]
 Plan = Literal["direct", "regular"]
 Option = Literal["growth", "idcw", "other"]
 MAX_INGEST_ROWS = 2000
+MAX_TER_ROWS = 5000  # the community file has ~2,200 rows; matching needs them all in one request
 
 
 class FundSummary(BaseModel):
@@ -248,6 +250,33 @@ async def metrics_queue(
 ) -> dict:
     _guard(authorization)
     return {"scheme_codes": await mf_ingest.metrics_queue(session, after, limit)}
+
+
+class TerRowIn(BaseModel):
+    name: str = Field(min_length=1, max_length=300)
+    regular: float | None = Field(default=None, gt=0, le=10)
+    direct: float | None = Field(default=None, gt=0, le=10)
+
+
+class TerIngestIn(BaseModel):
+    rows: list[TerRowIn] = Field(max_length=MAX_TER_ROWS)
+    # When the community tracker last updated its file; shown beside the figure.
+    as_of: date
+
+
+@router.post("/ingest/ter")
+async def ingest_ter(
+    body: TerIngestIn,
+    authorization: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    _guard(authorization)
+    result = await mf_ingest.ingest_ter(
+        session, [TerRow(r.name, r.regular, r.direct) for r in body.rows], body.as_of
+    )
+    if "error" in result:
+        raise HTTPException(status_code=422, detail=result["error"])
+    return result
 
 
 @router.post("/ingest/schemes")

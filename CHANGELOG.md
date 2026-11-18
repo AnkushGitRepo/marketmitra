@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- The data service now holds every Indian mutual fund scheme with its category, daily NAV and full NAV history, and computes 1M–10Y returns, SIP returns and risk ratios from it, served at `/funds`. The Funds screener and fund pages follow. ([#220](https://github.com/AnkushGitRepo/marketmitra/issues/220))
+- The data service now holds every Indian mutual fund scheme with its category, daily NAV and full NAV history, and computes 1M–10Y returns, SIP returns and risk ratios from it, served at `/funds`. Expense ratios come from AMFI's disclosure via a community-maintained dataset, shown with where and when they were updated. The Funds screener and fund pages follow. ([#220](https://github.com/AnkushGitRepo/marketmitra/issues/220))
 
 ## [0.6.0] - 2026-11-17
 

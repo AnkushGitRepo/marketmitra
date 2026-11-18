@@ -17,7 +17,7 @@ and where the work runs. The no-paid-tier rule ([0011](./0011-three-tier-fundame
 | Scheme master (code, ISINs, fund house, category, plan, option) and latest NAV | AMFI `NAVAll.txt` (`portal.amfiindia.com/spages/NAVAll.txt`) | Official, daily, no key. ~14.5k rows incl. dormant schemes. |
 | NAV history | mfapi.in `/mf/{code}` (backfill only) | Free community mirror of AMFI data, no SLA. Everything is copied into our own table, so an outage only delays a backfill. |
 | Returns (1M–10Y, CAGR from 1Y), SIP XIRR, std dev, Sharpe, Sortino, max drawdown | **Computed by us** from NAV history | Pure functions (`app/services/mf_metrics.py`); `null` when history is too short, never estimated. Fixed risk-free rate (6.5%) so every fund is judged alike. |
-| Expense ratio, AUM, exit load, manager, benchmark | Disclosed data, stored in `mf_factsheet` with `source` and `as_of` per row | See "Open" below. |
+| Expense ratio, AUM, exit load, manager, benchmark | Disclosed data, stored in `mf_factsheet` with `source` and `as_of` per row | Expense ratio: see "Expense ratio" below (community tracker). AUM, exit load, manager, benchmark: no source yet. |
 
 **Where it runs.** Postgres (Neon) via the fundamentals service, like IPOs. Thousands of upstream requests do not belong in a serverless
 request, so a GitHub Actions job (`.github/workflows/refresh-funds.yml`, `scripts/refresh_funds.py`) downloads and parses, then POSTs to
@@ -35,12 +35,25 @@ cleaned daily returns. The NAV chart still shows the raw stored NAVs, so a split
 
 **Guardrails.** Returns are shown with a past-performance notice; no "best fund" or "buy" wording; Mitra's no-advice default is unchanged.
 
-## Open
+## Expense ratio: the community TER tracker (decided by the maintainer, 2026-11-18)
 
-AMFI's TER page is fed by `www.amfiindia.com/api/populate-te-rdata-revised`, but a plain request without browser-style headers is not served
-the JSON. The project rule is not to bypass bot checks, so **expense ratio / AUM ingestion is not wired to a source yet**: the
-`/funds/ingest/factsheet` route, table and UI are ready, and the detail page shows "not available" until data exists. The maintainer
-decides the source (an AMC-published file, or a community TER dataset reviewed for licence and freshness).
+AMFI's own TER page is fed by `www.amfiindia.com/api/populate-te-rdata-revised`, but a plain request without browser-style headers is not served the
+JSON, and the project rule is not to bypass bot checks. So the expense ratio comes from
+[captn3m0/india-mutual-fund-ter-tracker](https://github.com/captn3m0/india-mutual-fund-ter-tracker): a **MIT-licensed** CSV that republishes AMFI's TER
+disclosure (same fields, "Total TER" per Regular and Direct plan), refreshed several times a day (last commit 2026-11-18 when adopted; ~2,190 rows).
+
+- **Keyed by name, not AMFI code.** The file uses NSDL scheme codes, so rows are matched to our schemes by **normalised name** (case, punctuation and `&` ignored)
+  against the scheme's base name. Measured on adoption day: **1,777 of 1,793 active Direct-Growth schemes (99.1%)** got a figure; the rest are mostly fixed-maturity plans and ETFs the file names differently.
+- **Conservative on purpose.** A figure is only stored when the match is unambiguous: a name that appears twice in the file is dropped; the same name under two different
+  fund houses is skipped; a value that is not above 0 and at most **4%** is "no figure" (real figures reach ~3.96% for small fund houses' Regular plans; about 20 rows above 4%
+  are source errors, for example index funds at 8-11%). An unmatched fund keeps "not available", never zero. A fund's TER applies to every scheme of that plan (Growth and each IDCW variant;
+  liquid funds list daily, weekly and monthly IDCW options of one fund). ETFs have one plan, which the file lists under Regular (Direct is `0.0`), so an ETF with
+  no figure for its own plan uses the Regular one.
+- **Attribution and freshness.** Stored with `source = "AMFI TER via community tracker"` and `as_of` = the date of the tracker's latest commit to `data.csv`, and shown beside the figure.
+- **Safety.** The CSV is parsed as data and never executed; the download is size-capped (5 MB); the service refuses a file with fewer than 500 rows (a bad download must not wipe
+  the table), and a figure this source wrote earlier for a scheme that no longer matches is cleared.
+- **Not covered:** AUM, exit load, manager and benchmark still have no source (the same file has none of them); the screener's AUM column stays "not available".
+- **Risk:** a community project with no SLA. If it stops updating, `as_of` goes stale and is visible; swapping the source touches only `app/ingestion/mf_ter.py`.
 
 ## Consequences
 

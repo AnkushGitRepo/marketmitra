@@ -15,11 +15,13 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import MfFactsheetORM, MfMetricsORM, MfNavORM, MfSchemeORM
+from app.ingestion.mf_ter import SOURCE_LABEL, SchemeRef, TerRow, match_ter
 from app.services.mf_metrics import compute_metrics
 
 logger = logging.getLogger("fundamentals.mf_ingest")
 
 CHUNK = 1000
+MIN_TER_ROWS = 500  # the real file has ~2,200; a far smaller one is a bad download, not a TER change
 MAX_NAV = 1e10  # Numeric(18,6) headroom; larger is a data error
 ACTIVE_WINDOW_DAYS = 10  # a scheme whose last NAV is older than this vs the newest NAV is dormant
 
@@ -245,3 +247,56 @@ async def metrics_queue(session: AsyncSession, after: int, limit: int) -> list[i
         .limit(limit)
     )
     return list(await session.scalars(stmt))
+
+
+async def ingest_ter(session: AsyncSession, rows: list[TerRow], as_of: date) -> dict:
+    """Match community-tracker TER rows to active schemes and store the expense ratio.
+
+    Only `expense_ratio`, `as_of` and `source` are written, so AUM, exit load and the
+    like are never clobbered. A figure this source wrote earlier for a scheme that no
+    longer matches is cleared: "not available" beats a stale number.
+    """
+    if len(rows) < MIN_TER_ROWS:
+        return {"error": f"refusing {len(rows)} TER rows (expected at least {MIN_TER_ROWS})"}
+    schemes = [
+        SchemeRef(code, base_name, house, plan, option, sub)
+        for code, base_name, house, plan, option, sub in (
+            await session.execute(
+                select(
+                    MfSchemeORM.scheme_code, MfSchemeORM.base_name, MfSchemeORM.fund_house,
+                    MfSchemeORM.plan, MfSchemeORM.option, MfSchemeORM.sub_category,
+                ).where(MfSchemeORM.is_active.is_(True))
+            )
+        ).all()
+    ]
+    assigned, stats = match_ter(rows, schemes)
+
+    items = list(assigned.items())
+    for chunk in _chunks(items):
+        values = [
+            {"scheme_code": code, "expense_ratio": ter, "as_of": as_of, "source": SOURCE_LABEL}
+            for code, ter in chunk
+        ]
+        stmt = insert(MfFactsheetORM).values(values)
+        await session.execute(
+            stmt.on_conflict_do_update(
+                index_elements=["scheme_code"],
+                set_={
+                    "expense_ratio": stmt.excluded.expense_ratio,
+                    "as_of": stmt.excluded.as_of,
+                    "source": stmt.excluded.source,
+                    "updated_at": func.now(),
+                },
+            )
+        )
+    stale = await session.execute(
+        update(MfFactsheetORM)
+        .where(
+            MfFactsheetORM.source == SOURCE_LABEL,
+            MfFactsheetORM.expense_ratio.is_not(None),
+            MfFactsheetORM.scheme_code.not_in(list(assigned)) if assigned else True,
+        )
+        .values(expense_ratio=None, updated_at=func.now())
+    )
+    await session.commit()
+    return {**stats, "cleared": stale.rowcount or 0, "as_of": as_of.isoformat()}

@@ -107,6 +107,13 @@ and are not shown.
 - **Auth:** none. **Rate limits:** none published; the job paces itself (~0.4 s between schemes). **Cost:** free
 - **ToS notes:** a third-party service with no SLA. All history is copied into `mf_nav`, so downtime only delays a backfill.
 
+### India mutual fund TER tracker (expense ratios, community dataset)
+- **Type:** community-maintained CSV on GitHub, MIT licence ([ADR 0067](./decisions/0067-mutual-funds-data-sourcing.md)); republishes AMFI's TER disclosure
+- **Used for:** each fund's total expense ratio, Regular and Direct plan
+- **Endpoint(s):** `https://raw.githubusercontent.com/captn3m0/india-mutual-fund-ter-tracker/main/data.csv` (and the GitHub commits API for the file's update date), parsed by `app/ingestion/mf_ter.py`; matched to schemes by normalised name
+- **Auth:** none. **Rate limits:** one raw download plus one GitHub API call a day from `refresh-funds` (GitHub's unauthenticated API allows 60 an hour). **Cost:** free
+- **ToS notes:** MIT, so reuse is allowed with the licence notice (credited here and in the ADR). Not an official AMFI feed and has no SLA; the stored `as_of` is the tracker's last commit, so staleness is visible. AMFI's own JSON endpoint is not used (it needs browser-style headers).
+
 ### GitHub REST API (this repository)
 
 - **Type:** public API

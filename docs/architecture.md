@@ -25,6 +25,7 @@ still needs to happen and be reviewed first).
 - **Phase 5:** alerts engine (`/alerts`) + generic notification subsystem. ([archive](./archive/alerts-engine.md))
 - **Phase 6:** news feed (`/news`). ([archive](./archive/news-feed.md))
 - **Phase 7:** IPO tracker + GMP (`/ipos`). ([archive](./archive/ipo-tracker.md))
+- **Mutual funds (#220, [ADR 0067](./decisions/0067-mutual-funds-data-sourcing.md)):** every Indian fund scheme with AMFI NAV history, returns and risk ratios we compute, a screener and fund pages. Data service `/funds` (Postgres `mf_*`), ingested out of band by the `refresh-funds` job; Next side `/funds`, `/funds/[code]`, `/api/funds/*`, `src/lib/funds`, `src/components/funds`.
 - **Phase 8:** AI insights + Mitra chat (`/settings` + insight cards + chat). ([archive](./archive/ai-insights.md))
 - **Phase 9:** API surface — MCP server (`/api/mcp`), fair-use rate limiting, interactive explorer (`/api-docs`). ([archive](./archive/api-surface.md))
 - **Phase 10a:** retrieval (RAG) under chat + insights — `chunks` collection + Atlas Vector Search, embeddings on the fundamentals-api (`/embed`), `/api/cron/index-corpus`, agentic chat, grounded insights, per-user notes/holdings/chat layer. ([archive](./archive/rag-chat.md))
@@ -69,6 +70,7 @@ un-blocked PDF host.
 | `/index/[name]`    | Index detail (NIFTY 50/SENSEX/NIFTY BANK/INDIA VIX) — live quote, 52w hi/lo, price chart, general market news. Reached by clicking an index card or searching one — deliberately **not** in the nav (only 4 indices exist; discovery is via search/cards) | protected | open directly |
 | `/alerts`          | Price / %-move / 52w / portfolio-P&L alerts + IPO alerts     | protected                              | open directly                              |
 | `/news`            | News feed — global stream + "My holdings" toggle             | protected                              | open directly                              |
+| `/funds`           | Mutual fund screener (`/funds/[code]`: NAV chart, returns, risk, peers; ADR 0067) | protected                              | open directly                              |
 | `/ipos`            | IPO tracker — calendar, subscription, GMP, per-IPO alerts    | protected                              | open directly                              |
 | `/settings`        | BYO AI provider key (encrypted at rest)                      | protected                              | open directly                              |
 

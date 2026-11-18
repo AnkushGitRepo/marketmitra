@@ -159,3 +159,37 @@ async def test_non_finite_nav_points_are_dropped(session: AsyncSession):
     out = await mf_ingest.ingest_nav(session, 122639, [["2020-01-01", float("inf")], ["2020-01-02", 1e12],
                                                        ["2020-01-03", 12.5]])
     assert out["inserted"] == 1
+
+
+def _filler(n: int):
+    from app.ingestion.mf_ter import TerRow
+
+    return [TerRow(f"Filler Scheme Number {i}", 1.0, 0.5) for i in range(n)]
+
+
+async def test_ter_ingest_matches_by_name_keeps_other_fields_and_clears_stale(session: AsyncSession):
+    from app.ingestion.mf_ter import TerRow
+
+    await mf_ingest.ingest_schemes(session, _rows(), as_of=END)
+    await mf_ingest.ingest_factsheet(session, [{"scheme_code": 122639, "aum_cr": 90000, "source": "manual"}])
+
+    too_few = await mf_ingest.ingest_ter(session, [TerRow("Parag Parikh Flexi Cap Fund", 1.5, 0.63)], END)
+    assert "refusing" in too_few["error"]
+
+    rows = [TerRow("Parag Parikh Flexi Cap Fund", 1.5, 0.63), *_filler(600)]
+    out = await mf_ingest.ingest_ter(session, rows, END)
+    assert out["matched_rows"] == 1 and out["schemes_filled"] == 3
+
+    async def ter(code: int):
+        return await session.scalar(text("SELECT expense_ratio FROM mf_factsheet WHERE scheme_code=:c"), {"c": code})
+
+    assert float(await ter(122639)) == 0.63      # Direct Growth
+    assert float(await ter(153964)) == 0.63      # Direct IDCW shares the plan's TER
+    assert float(await ter(122640)) == 1.5       # Regular Growth
+    assert float(await session.scalar(text("SELECT aum_cr FROM mf_factsheet WHERE scheme_code=122639"))) == 90000
+    assert await session.scalar(text("SELECT source FROM mf_factsheet WHERE scheme_code=122640")) == "AMFI TER via community tracker"
+
+    # the fund drops out of a later file: its stale figure is cleared, the AUM is untouched
+    out = await mf_ingest.ingest_ter(session, _filler(600), END)
+    assert out["cleared"] == 3 and await ter(122640) is None
+    assert float(await session.scalar(text("SELECT aum_cr FROM mf_factsheet WHERE scheme_code=122639"))) == 90000
