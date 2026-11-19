@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { BOX_LENGTHS, describeRun, type BoxBars, type OverlayRun } from '@/lib/chart/overlayRuns';
+import { useMenuPlacement } from './useMenuPlacement';
 import styles from './ProChart.module.css';
 
 interface AiRunsMenuProps {
@@ -32,6 +33,7 @@ export function AiRunsMenu({
 }: AiRunsMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  useMenuPlacement(open, rootRef);
 
   useEffect(() => {
     if (!open) return;
@@ -55,9 +57,13 @@ export function AiRunsMenu({
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
+        title="Saved Auto-Charts: show, compare or delete earlier ones"
         onClick={() => setOpen((o) => !o)}
       >
-        Saved
+        <span className={styles.btnIcon} aria-hidden="true">
+          ★
+        </span>
+        <span className={styles.btnText}>Saved</span>
         {runs.length > 0 && <span className={styles.badge}>{runs.length}</span>}
         <span aria-hidden="true">▾</span>
       </button>

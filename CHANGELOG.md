@@ -28,9 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The stock chart no longer shows the "Unrestricted mode. AI opinion from public data, not licensed investment advice. You make the decision." line under the toolbar when an Auto-Chart trade setup is shown. ([#264](https://github.com/AnkushGitRepo/marketmitra/issues/264))
+
+- The stock chart's toolbar now stays on one row: the symbol is no longer repeated (it shows in full screen only), the timeframes become one dropdown and Candles/Line one picker when the chart is narrow, Alert and full screen are icon-only with tooltips, and on narrower charts Setups, Drawings, Saved and AI Auto-Chart show as icons. Every control in the top and bottom bars now has a tooltip. The "Auto-Chart from X ago (price then X)" line above the chart is gone (the Saved menu already shows it). ([#264](https://github.com/AnkushGitRepo/marketmitra/issues/264))
+
 - The TradingView logo at the bottom left of the stock chart is gone; the chart footer now credits "Charts by TradingView" with a link instead, as the chart library's licence asks. ([#251](https://github.com/AnkushGitRepo/marketmitra/issues/251))
 
 ### Fixed
+
+- The chart's toolbar dropdowns (Saved, Setups, Drawings, Indicators) now move to stay fully inside the chart instead of being cut off at its right edge. ([#262](https://github.com/AnkushGitRepo/marketmitra/issues/262))
 
 - A saved AI Auto-Chart's Long/Short box now starts at the candle it was generated on and runs through the candles since, instead of starting after the latest candle as if it were new. ([#255](https://github.com/AnkushGitRepo/marketmitra/issues/255))
 

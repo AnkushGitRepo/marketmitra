@@ -27,13 +27,7 @@ import {
   removeOverlayItem,
   visibleOverlay,
 } from '@/lib/chart/overlayItems';
-import {
-  DEFAULT_BOX_BARS,
-  anchorBarTime,
-  compareSetups,
-  describeRun,
-  isBoxBars,
-} from '@/lib/chart/overlayRuns';
+import { DEFAULT_BOX_BARS, anchorBarTime, compareSetups, isBoxBars } from '@/lib/chart/overlayRuns';
 import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import { AiOverlay } from './AiOverlay';
 import { AiRunsMenu } from './AiRunsMenu';
@@ -72,6 +66,33 @@ interface ProChartProps {
   onAlert?: () => void;
   onRangeChange?: (range: RangeKey) => void;
 }
+
+/** Tooltips for the toolbar and the bottom bar. */
+const TIMEFRAME_TITLES: Record<Timeframe, string> = {
+  '1m': '1 minute candles',
+  '5m': '5 minute candles',
+  '15m': '15 minute candles',
+  '30m': '30 minute candles',
+  '1h': '1 hour candles',
+  '1d': 'Daily candles',
+  '1w': 'Weekly candles',
+  '1mo': 'Monthly candles',
+};
+const RANGE_TITLES: Record<RangeKey, string> = {
+  '1M': 'Show the last month',
+  '3M': 'Show the last 3 months',
+  '6M': 'Show the last 6 months',
+  YTD: 'Show since 1 January',
+  '1Y': 'Show the last year',
+  '5Y': 'Show the last 5 years',
+  ALL: 'Show all available history',
+};
+const INTRADAY_RANGE_TITLES: Record<IntradayRange, string> = {
+  '1D': 'Show the last trading day',
+  '5D': 'Show the last 5 trading days',
+  '1M': 'Show the last 21 trading days (about a month)',
+  ALL: 'Show all loaded candles',
+};
 
 const WIDE_DEFAULT_RANGE: Partial<Record<Timeframe, RangeKey>> = { '1w': '5Y', '1mo': 'ALL' };
 
@@ -423,15 +444,19 @@ export function ProChart({
   const stateClass = up ? styles.up : styles.down;
 
   const workspace = (
-    <div className={`${styles.workspace} ${expanded ? styles.workspaceExpanded : ''}`}>
+    <div
+      className={`${styles.workspace} ${expanded ? styles.workspaceExpanded : ''}`}
+      data-menu-bounds=""
+    >
       <div className={styles.topbar}>
-        <span className={styles.symbolChip}>{symbol}</span>
-        <div className={styles.segment} role="group" aria-label="Timeframe">
+        {expanded && <span className={styles.symbolChip}>{symbol}</span>}
+        <div className={`${styles.segment} ${styles.tfInline}`} role="group" aria-label="Timeframe">
           {TIMEFRAMES.map((t) => (
             <button
               key={t.id}
               type="button"
               aria-pressed={timeframe === t.id}
+              title={TIMEFRAME_TITLES[t.id]}
               className={`${styles.segBtn} ${timeframe === t.id ? styles.segBtnActive : ''}`}
               onClick={() => pickTimeframe(t.id)}
             >
@@ -439,25 +464,35 @@ export function ProChart({
             </button>
           ))}
         </div>
+        <select
+          className={`${styles.pickSelect} ${styles.tfSelect}`}
+          aria-label="Timeframe"
+          title="Candle size"
+          value={timeframe}
+          onChange={(e) => pickTimeframe(e.target.value as Timeframe)}
+        >
+          {TIMEFRAMES.map((t) => (
+            <option key={t.id} value={t.id} title={TIMEFRAME_TITLES[t.id]}>
+              {t.label}
+            </option>
+          ))}
+        </select>
         {candles.live && (
           <span className={styles.liveDot} title="Live: updating while the market is open">
             Live
           </span>
         )}
         <span className={styles.divider} />
-        <div className={styles.segment} role="group" aria-label="Chart type">
-          {(['candles', 'line'] as const).map((k) => (
-            <button
-              key={k}
-              type="button"
-              aria-pressed={kind === k}
-              className={`${styles.segBtn} ${kind === k ? styles.segBtnActive : ''}`}
-              onClick={() => setKind(k)}
-            >
-              {k === 'candles' ? 'Candles' : 'Line'}
-            </button>
-          ))}
-        </div>
+        <select
+          className={styles.pickSelect}
+          aria-label="Chart type"
+          title="Chart type: candles or a line"
+          value={kind}
+          onChange={(e) => setKind(e.target.value as ChartKind)}
+        >
+          <option value="candles">Candles</option>
+          <option value="line">Line</option>
+        </select>
         <span className={styles.divider} />
         <IndicatorMenu
           active={indicators}
@@ -488,11 +523,15 @@ export function ProChart({
           type="button"
           className={`${styles.topBtn} ${ai.status === 'ready' ? styles.aiBtnOn : ''}`}
           aria-pressed={ai.status === 'ready'}
+          aria-label="AI Auto-Chart"
+          title="AI Auto-Chart: levels, trendlines and a trade setup"
           disabled={ai.status === 'loading'}
           onClick={toggleAi}
         >
           {ai.status === 'ready' && <span className={styles.aiOnDot} aria-hidden="true" />}✨{' '}
-          {ai.status === 'loading' ? 'Drawing…' : 'AI Auto-Chart'}
+          <span className={styles.btnText}>
+            {ai.status === 'loading' ? 'Drawing…' : 'AI Auto-Chart'}
+          </span>
         </button>
         <AiRunsMenu
           runs={ai.runs}
@@ -512,27 +551,38 @@ export function ProChart({
             writeJson('mm-chart-compare-all', v);
           }}
         />
-        {onAlert ? (
-          <button type="button" className={styles.topBtn} onClick={onAlert}>
-            <BellIcon />
-            Alert
+        <div className={styles.topbarEnd}>
+          {onAlert ? (
+            <button
+              type="button"
+              className={`${styles.topBtn} ${styles.iconBtn}`}
+              aria-label="Set price alert"
+              title="Set price alert"
+              onClick={onAlert}
+            >
+              <BellIcon />
+            </button>
+          ) : (
+            <Link
+              href={alertHref}
+              className={`${styles.topBtn} ${styles.iconBtn}`}
+              aria-label="Set price alert"
+              title="Set price alert"
+            >
+              <BellIcon />
+            </Link>
+          )}
+          <button
+            type="button"
+            className={`${styles.topBtn} ${styles.iconBtn}`}
+            aria-pressed={expanded}
+            aria-label={expanded ? 'Exit full screen' : 'Full screen'}
+            title={expanded ? 'Exit full screen (Esc)' : 'Full screen'}
+            onClick={() => setExpanded((v) => !v)}
+          >
+            <ExpandIcon expanded={expanded} />
           </button>
-        ) : (
-          <Link href={alertHref} className={styles.topBtn}>
-            <BellIcon />
-            Alert
-          </Link>
-        )}
-        <button
-          type="button"
-          className={`${styles.topBtn} ${styles.fullscreenBtn}`}
-          aria-pressed={expanded}
-          aria-label={expanded ? 'Exit full screen' : 'Full screen'}
-          title={expanded ? 'Exit full screen (Esc)' : 'Full screen'}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          <ExpandIcon expanded={expanded} />
-        </button>
+        </div>
       </div>
 
       {(ai.status === 'error' || ai.status === 'ready' || ai.notice) && (
@@ -541,12 +591,6 @@ export function ProChart({
           {ai.notice && <span className={styles.aiBarError}>{ai.notice}</span>}
           {ai.status === 'ready' && ai.overlay && (
             <>
-              {activeRun && (
-                <span>
-                  Auto-Chart from {describeRun(activeRun).when} (price then{' '}
-                  {describeRun(activeRun).price})
-                </span>
-              )}
               {ai.overlay.setup ? (
                 <>
                   <span className={styles.aiBarStrong}>
@@ -558,10 +602,6 @@ export function ProChart({
                         : ' at the current zone'}
                     : Entry ₹{fmt(ai.overlay.setup.entry)} | Stop ₹{fmt(ai.overlay.setup.stop)} |
                     Target ₹{fmt(ai.overlay.setup.target)} (1 : {ai.overlay.setup.riskReward})
-                  </span>
-                  <span>
-                    Unrestricted mode. AI opinion from public data, not licensed investment advice.
-                    You make the decision.
                   </span>
                 </>
               ) : (
@@ -686,7 +726,11 @@ export function ProChart({
                   type="button"
                   aria-pressed={shownIntradayRange === r}
                   disabled={!available}
-                  title={available ? undefined : 'Not enough history at this timeframe'}
+                  title={
+                    available
+                      ? INTRADAY_RANGE_TITLES[r]
+                      : `${INTRADAY_RANGE_TITLES[r]} (not enough history at this timeframe)`
+                  }
                   className={`${styles.rangeBtn} ${shownIntradayRange === r ? styles.rangeBtnActive : ''}`}
                   onClick={() => setIntradayRange(r)}
                 >
@@ -699,19 +743,24 @@ export function ProChart({
                 key={r}
                 type="button"
                 aria-pressed={shownRange === r}
+                title={RANGE_TITLES[r]}
                 className={`${styles.rangeBtn} ${shownRange === r ? styles.rangeBtnActive : ''}`}
                 onClick={() => pickRange(r)}
               >
                 {RANGE_LABELS[r]}
               </button>
             ))}
-        <span className={styles.footerNote}>
+        <span
+          className={styles.footerNote}
+          title="Candle size and the zone the times are in; prices are in rupees"
+        >
           {isIntraday(timeframe)
             ? `${timeframe} candles · IST · prices in ₹`
             : `${{ '1d': 'Daily', '1w': 'Weekly', '1mo': 'Monthly' }[timeframe as '1d' | '1w' | '1mo']} bars · prices in ₹`}
           {' · '}
           <a
             className={styles.creditLink}
+            title="Charts by TradingView Lightweight Charts"
             href="https://www.tradingview.com/"
             target="_blank"
             rel="noopener noreferrer"

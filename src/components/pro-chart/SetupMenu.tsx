@@ -9,6 +9,7 @@ import {
 } from '@/lib/chart/indicatorSetups';
 import type { StoredParams } from '@/lib/chart/indicatorParams';
 import type { IndicatorId } from './constants';
+import { useMenuPlacement } from './useMenuPlacement';
 import styles from './ProChart.module.css';
 
 interface SetupMenuProps {
@@ -25,6 +26,7 @@ export function SetupMenu({ active, params, custom, onApply, onSave, onDelete }:
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
+  useMenuPlacement(open, rootRef);
 
   useEffect(() => {
     if (!open) return;
@@ -91,9 +93,13 @@ export function SetupMenu({ active, params, custom, onApply, onSave, onDelete }:
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
+        title="Setups: one-click indicator sets, or save your own"
         onClick={() => setOpen((o) => !o)}
       >
-        Setups
+        <span className={styles.btnIcon} aria-hidden="true">
+          ▤
+        </span>
+        <span className={styles.btnText}>Setups</span>
         {custom.length > 0 && <span className={styles.badge}>{custom.length}</span>}
         <span aria-hidden="true">▾</span>
       </button>

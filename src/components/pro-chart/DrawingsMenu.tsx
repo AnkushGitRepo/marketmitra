@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { describeDrawing, type Drawing } from '@/lib/chart/drawings';
 import type { OverlayItem } from '@/lib/chart/overlayItems';
+import { useMenuPlacement } from './useMenuPlacement';
 import styles from './ProChart.module.css';
 
 function EyeIcon({ off }: { off: boolean }) {
@@ -50,6 +51,7 @@ export function DrawingsMenu({
 }: DrawingsMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  useMenuPlacement(open, rootRef);
 
   useEffect(() => {
     if (!open) return;
@@ -72,9 +74,13 @@ export function DrawingsMenu({
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
+        title="Drawings: hide or remove what is on this chart"
         onClick={() => setOpen((o) => !o)}
       >
-        Drawings
+        <span className={styles.btnIcon} aria-hidden="true">
+          ✎
+        </span>
+        <span className={styles.btnText}>Drawings</span>
         {drawings.length + aiItems.length > 0 && (
           <span className={styles.badge}>{drawings.length + aiItems.length}</span>
         )}

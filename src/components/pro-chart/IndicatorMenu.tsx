@@ -9,6 +9,7 @@ import {
   type StoredParams,
 } from '@/lib/chart/indicatorParams';
 import { INDICATORS, type IndicatorId } from './constants';
+import { useMenuPlacement } from './useMenuPlacement';
 import styles from './ProChart.module.css';
 
 interface IndicatorMenuProps {
@@ -53,6 +54,7 @@ export function IndicatorMenu({ active, params, onToggle, onParams }: IndicatorM
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<IndicatorId | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  useMenuPlacement(open, rootRef);
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +79,7 @@ export function IndicatorMenu({ active, params, onToggle, onParams }: IndicatorM
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
+        title="Indicators: add them and change their settings"
         onClick={() => setOpen((o) => !o)}
       >
         <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">

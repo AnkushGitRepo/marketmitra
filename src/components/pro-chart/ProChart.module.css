@@ -17,7 +17,10 @@
   gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border-hairline);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  /* The toolbar adapts to the chart's own width (not the screen's): see the @container rules below (#264). */
+  container-type: inline-size;
+  container-name: topbar;
 }
 .symbolChip {
   font-weight: 700;
@@ -812,9 +815,6 @@
 .workspaceExpanded .stage {
   height: auto;
 }
-.fullscreenBtn {
-  margin-left: auto;
-}
 
 /* Timeframes and live updates (#236) */
 .liveDot {
@@ -1021,4 +1021,55 @@
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
+}
+
+/* Single-row toolbar (#264): the end group is pinned right; the pickers are compact; labels shrink as the chart narrows */
+.topbarEnd {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+.iconBtn {
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+}
+.pickSelect {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--app-cream, #f4f1ea);
+  color: var(--app-ink);
+  cursor: pointer;
+}
+.tfSelect {
+  display: none;
+}
+.btnIcon {
+  display: none;
+}
+.topbar > *,
+.topbarEnd > * {
+  flex-shrink: 0;
+}
+@container topbar (max-width: 1120px) {
+  .tfInline {
+    display: none;
+  }
+  .tfSelect {
+    display: inline-block;
+  }
+}
+@container topbar (max-width: 880px) {
+  .btnText {
+    display: none;
+  }
+  .btnIcon {
+    display: inline;
+  }
 }
