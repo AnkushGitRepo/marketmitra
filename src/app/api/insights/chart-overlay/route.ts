@@ -65,6 +65,15 @@ async function handlePOST(request: Request) {
         });
         return { error: UNREADABLE_MESSAGE };
       }
+      if (mode === 'unrestricted' && !overlay.setup) {
+        // Tells "the model sent none" from "validation dropped it" when a local user asks why no entry/stop/target appeared.
+        await logEvent({
+          level: 'info',
+          source: 'insights:chart-overlay',
+          message: 'Unrestricted overlay has no trade setup',
+          meta: { symbol, model: gen.model, finishReason: gen.finishReason, snippet: gen.text.slice(0, LOG_SNIPPET_CHARS) },
+        });
+      }
       return { content: JSON.stringify({ overlay, mode }), model: gen.model };
     },
   });

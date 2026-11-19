@@ -29,7 +29,15 @@ interface ProChartProps {
   onRangeChange?: (range: RangeKey) => void;
 }
 
-const RANGE_LABELS: Record<RangeKey, string> = { '1M': '1M', '3M': '3M', '6M': '6M', YTD: 'YTD', '1Y': '1Y', '5Y': '5Y', ALL: 'All' };
+const RANGE_LABELS: Record<RangeKey, string> = {
+  '1M': '1M',
+  '3M': '3M',
+  '6M': '6M',
+  YTD: 'YTD',
+  '1Y': '1Y',
+  '5Y': '5Y',
+  ALL: 'All',
+};
 // Short form of UNRESTRICTED_DISCLAIMER; the real constant lives in a server module that must stay out of the chart bundle.
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
@@ -54,7 +62,13 @@ function writeJson(key: string, value: unknown): void {
 function BellIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path d="M6 16V10a5 5 0 0 1 10 0v6l1.5 2h-13L6 16ZM9.5 19.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M6 16V10a5 5 0 0 1 10 0v6l1.5 2h-13L6 16ZM9.5 19.5a1.5 1.5 0 0 0 3 0"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -65,10 +79,12 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
   // Client-only component (loaded with ssr: false), so reading localStorage in
   // the initializers can't cause a hydration mismatch.
   const [indicators, setIndicators] = useState<IndicatorId[]>(() =>
-    readJson<IndicatorId[]>(INDICATOR_STORAGE_KEY, DEFAULT_INDICATORS)
+    readJson<IndicatorId[]>(INDICATOR_STORAGE_KEY, DEFAULT_INDICATORS),
   );
   const [tool, setTool] = useState<DrawingTool>('cursor');
-  const [drawings, setDrawings] = useState<Drawing[]>(() => readJson<Drawing[]>(drawingsStorageKey(symbol), []));
+  const [drawings, setDrawings] = useState<Drawing[]>(() =>
+    readJson<Drawing[]>(drawingsStorageKey(symbol), []),
+  );
   const [handle, setHandle] = useState<ChartHandle | null>(null);
   const [hover, setHover] = useState<Bar | null>(null);
   // Fail-safe: set when the interactive chart can't start / errors / collapses; the stage then shows a simple SVG chart.
@@ -130,7 +146,9 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
     <div className={styles.workspace}>
       <div className={styles.topbar}>
         <span className={styles.symbolChip}>{symbol}</span>
-        <span className={styles.interval} title="Daily bars">D</span>
+        <span className={styles.interval} title="Daily bars">
+          D
+        </span>
         <span className={styles.divider} />
         <div className={styles.segment} role="group" aria-label="Chart type">
           {(['candles', 'line'] as const).map((k) => (
@@ -169,27 +187,42 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
         )}
       </div>
 
-      {(ai.status === 'error' || (ai.status === 'ready' && ai.overlay?.setup)) && (
+      {(ai.status === 'error' || (ai.status === 'ready' && ai.mode === 'unrestricted')) && (
         <div className={styles.aiBar} role="status">
           {ai.status === 'error' ? (
             <span className={styles.aiBarError}>{ai.error}</span>
           ) : (
-            ai.overlay?.setup && (
+            ai.overlay &&
+            (ai.overlay.setup ? (
               <>
                 <span>Unrestricted · local only</span>
                 <span className={styles.aiBarStrong}>
-                  {ai.overlay.setup.direction === 'long' ? 'Long' : 'Short'} setup: Entry ₹{fmt(ai.overlay.setup.entry)} | Stop ₹{fmt(ai.overlay.setup.stop)} | Target ₹
+                  {ai.overlay.setup.direction === 'long' ? 'Long' : 'Short'} setup: Entry ₹
+                  {fmt(ai.overlay.setup.entry)} | Stop ₹{fmt(ai.overlay.setup.stop)} | Target ₹
                   {fmt(ai.overlay.setup.target)} (1 : {ai.overlay.setup.riskReward})
                 </span>
-                <span>AI opinion from public data, not licensed investment advice. You make the decision.</span>
+                <span>
+                  AI opinion from public data, not licensed investment advice. You make the
+                  decision.
+                </span>
               </>
-            )
+            ) : (
+              <span>
+                Unrestricted · local only: no clear entry, stop and target for this chart right now.
+                Levels are still shown. Turn Auto-Chart off and on to try again.
+              </span>
+            ))
           )}
         </div>
       )}
 
       <div className={styles.body}>
-        <DrawingToolbar tool={tool} onTool={setTool} hasDrawings={drawings.length > 0} onClear={clearDrawings} />
+        <DrawingToolbar
+          tool={tool}
+          onTool={setTool}
+          hasDrawings={drawings.length > 0}
+          onClear={clearDrawings}
+        />
 
         <div className={`${styles.stage} ${failure ? styles.stageFailed : ''}`}>
           {shown && !failure && (
@@ -214,7 +247,12 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
           )}
 
           {bars.length > 0 && failure ? (
-            <ChartFallback symbol={symbol} bars={bars} reason={failure} onRetry={retryInteractive} />
+            <ChartFallback
+              symbol={symbol}
+              bars={bars}
+              reason={failure}
+              onRetry={retryInteractive}
+            />
           ) : bars.length > 0 ? (
             <>
               <ChartCanvas
@@ -227,7 +265,9 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
                 onHover={setHover}
                 onFailure={setFailure}
               />
-              {ai.status === 'ready' && ai.overlay && <AiOverlay handle={handle} bars={bars} overlay={ai.overlay} />}
+              {ai.status === 'ready' && ai.overlay && (
+                <AiOverlay handle={handle} bars={bars} overlay={ai.overlay} />
+              )}
               <DrawingsOverlay
                 key={tool}
                 handle={handle}

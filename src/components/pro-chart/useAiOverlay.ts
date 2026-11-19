@@ -23,9 +23,13 @@ const IDLE: AiOverlayState = { status: 'idle', overlay: null, mode: 'guarded', e
 const NO_KEY_MESSAGE = 'Add your AI provider key in Settings to use Auto-Chart.';
 
 /** Auto-Chart request state (#228). Turning it off clears everything; a late reply after that is ignored. */
-export function useAiOverlay(symbol: string): AiOverlayState & { enable: () => Promise<ChartOverlay | null>; disable: () => void } {
+export function useAiOverlay(
+  symbol: string,
+): AiOverlayState & { enable: () => Promise<ChartOverlay | null>; disable: () => void } {
   const [state, setState] = useState<AiOverlayState>(IDLE);
   const run = useRef(0);
+  // After an unrestricted answer without a setup, the next attempt skips the 12-hour cache so it can actually differ.
+  const retryFresh = useRef(false);
 
   const enable = useCallback(async (): Promise<ChartOverlay | null> => {
     const id = ++run.current;
@@ -34,19 +38,28 @@ export function useAiOverlay(symbol: string): AiOverlayState & { enable: () => P
       const res = await fetch('/api/insights/chart-overlay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol }),
+        body: JSON.stringify({ symbol, force: retryFresh.current }),
       });
       const body = (await res.json().catch(() => null)) as OverlayResponse | null;
       if (id !== run.current) return null;
       if (!res.ok || !body?.success || !body.data) {
-        const error = body?.error === 'no_ai_key' ? NO_KEY_MESSAGE : (body?.error ?? 'Auto-Chart could not be drawn. Try again.');
+        const error =
+          body?.error === 'no_ai_key'
+            ? NO_KEY_MESSAGE
+            : (body?.error ?? 'Auto-Chart could not be drawn. Try again.');
         setState({ ...IDLE, status: 'error', error });
         return null;
       }
+      retryFresh.current = body.data.mode === 'unrestricted' && !body.data.overlay.setup;
       setState({ status: 'ready', overlay: body.data.overlay, mode: body.data.mode, error: null });
       return body.data.overlay;
     } catch {
-      if (id === run.current) setState({ ...IDLE, status: 'error', error: 'Auto-Chart could not be reached. Check your connection and try again.' });
+      if (id === run.current)
+        setState({
+          ...IDLE,
+          status: 'error',
+          error: 'Auto-Chart could not be reached. Check your connection and try again.',
+        });
       return null;
     }
   }, [symbol]);
