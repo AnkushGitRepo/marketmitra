@@ -24,10 +24,17 @@ import {
   removeOverlayItem,
   visibleOverlay,
 } from '@/lib/chart/overlayItems';
-import { anchorBarTime, describeRun } from '@/lib/chart/overlayRuns';
+import {
+  DEFAULT_BOX_BARS,
+  anchorBarTime,
+  compareSetups,
+  describeRun,
+  isBoxBars,
+} from '@/lib/chart/overlayRuns';
 import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import { AiOverlay } from './AiOverlay';
 import { AiRunsMenu } from './AiRunsMenu';
+import type { BoxBars } from '@/lib/chart/overlayRuns';
 import { useAiOverlay } from './useAiOverlay';
 import { useCandles } from './useCandles';
 import { ChartCanvas, type ChartHandle, type ChartKind } from './ChartCanvas';
@@ -200,6 +207,14 @@ export function ProChart({
   }, [timeframe]);
 
   const ai = useAiOverlay(symbol, timeframe);
+  // How long a trade box may run, and whether every saved setup is drawn at once: per-viewer conveniences, remembered in the browser.
+  const [boxBars, setBoxBars] = useState<BoxBars>(() => {
+    const stored = readJson<unknown>('mm-chart-box-bars', DEFAULT_BOX_BARS);
+    return isBoxBars(stored) ? stored : DEFAULT_BOX_BARS;
+  });
+  const [compareAll, setCompareAll] = useState<boolean>(
+    () => readJson<unknown>('mm-chart-compare-all', false) === true,
+  );
   // Auto-Chart changes the indicator set while it is on (adds what it recommends, hides noisy bands so the candles and its levels
   // stay readable); turning it off puts back exactly what the user had.
   const [aiIndicators, setAiIndicators] = useState<IndicatorId[]>([]);
@@ -426,6 +441,16 @@ export function ProChart({
           onShow={showRun}
           onDelete={deleteRun}
           onGenerate={generateRun}
+          boxBars={boxBars}
+          onBoxBars={(v) => {
+            setBoxBars(v);
+            writeJson('mm-chart-box-bars', v);
+          }}
+          compareAll={compareAll}
+          onCompareAll={(v) => {
+            setCompareAll(v);
+            writeJson('mm-chart-compare-all', v);
+          }}
         />
         {onAlert ? (
           <button type="button" className={styles.topBtn} onClick={onAlert}>
@@ -560,6 +585,8 @@ export function ProChart({
                   bars={bars}
                   overlay={shownOverlay}
                   anchorTime={activeRun ? anchorBarTime(bars, activeRun.createdAt) : null}
+                  maxBars={boxBars}
+                  compare={compareAll ? compareSetups(ai.runs, ai.activeId, bars, new Date()) : []}
                 />
               )}
               <DrawingsOverlay

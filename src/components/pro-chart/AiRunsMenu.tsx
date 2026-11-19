@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { describeRun, type OverlayRun } from '@/lib/chart/overlayRuns';
+import { BOX_LENGTHS, describeRun, type BoxBars, type OverlayRun } from '@/lib/chart/overlayRuns';
 import styles from './ProChart.module.css';
 
 interface AiRunsMenuProps {
@@ -11,6 +11,10 @@ interface AiRunsMenuProps {
   onShow: (id: string) => void;
   onDelete: (id: string) => void;
   onGenerate: () => void;
+  boxBars: BoxBars;
+  onBoxBars: (value: BoxBars) => void;
+  compareAll: boolean;
+  onCompareAll: (value: boolean) => void;
 }
 
 /** The Auto-Charts saved for this stock and timeframe: show one, delete one, or generate a new one next to them (#253). */
@@ -21,6 +25,10 @@ export function AiRunsMenu({
   onShow,
   onDelete,
   onGenerate,
+  boxBars,
+  onBoxBars,
+  compareAll,
+  onCompareAll,
 }: AiRunsMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -94,6 +102,32 @@ export function AiRunsMenu({
               </div>
             );
           })}
+          <div className={styles.runOptions}>
+            <label className={styles.runOption}>
+              <span>Show every saved trade setup</span>
+              <input
+                type="checkbox"
+                checked={compareAll}
+                onChange={(e) => onCompareAll(e.target.checked)}
+              />
+            </label>
+            <label className={styles.runOption}>
+              <span>Longest trade box</span>
+              <select
+                className={styles.runSelect}
+                value={boxBars === null ? 'all' : String(boxBars)}
+                onChange={(e) =>
+                  onBoxBars(e.target.value === 'all' ? null : Number(e.target.value))
+                }
+              >
+                {BOX_LENGTHS.map((n) => (
+                  <option key={n ?? 'all'} value={n === null ? 'all' : String(n)}>
+                    {n === null ? 'To now' : `${n} candles`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <button
             type="button"
             className={styles.runGenerate}

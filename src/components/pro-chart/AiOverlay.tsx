@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ChartOverlay } from '@/lib/chart/aiOverlay';
+import type { ChartOverlay, TradeSetup } from '@/lib/chart/aiOverlay';
+import type { BoxBars, CompareSetup } from '@/lib/chart/overlayRuns';
 import type { Bar } from '@/lib/chart/bars';
 import type { ChartPoint } from '@/lib/chart/drawings';
 import { spreadTags } from '@/lib/chart/tagLayout';
@@ -21,6 +22,10 @@ interface AiOverlayProps {
   overlay: ChartOverlay;
   /** Bar the setup box starts on (the bar the run was generated on). Defaults to the latest bar. */
   anchorTime?: string | null;
+  /** Longest a setup box may run, in candles; null runs it to the right edge. */
+  maxBars?: BoxBars;
+  /** Other saved runs' setups, drawn as plain boxes beside the full overlay. */
+  compare?: CompareSetup[];
 }
 
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -35,7 +40,14 @@ const MERGE_PCT = 0.15;
 const FLAT_TREND_PCT = 0.3;
 
 /** Read-only SVG layer for Auto-Chart (#228). Anchors are data (bar time + price) so it follows zoom and pan like drawings do. */
-export function AiOverlay({ handle, bars, overlay, anchorTime }: AiOverlayProps) {
+export function AiOverlay({
+  handle,
+  bars,
+  overlay,
+  anchorTime,
+  maxBars = null,
+  compare = [],
+}: AiOverlayProps) {
   const [, setTick] = useState(0);
   const indexByTime = useMemo(() => new Map(bars.map((b, i) => [b.time, i])), [bars]);
 
@@ -148,6 +160,51 @@ export function AiOverlay({ handle, bars, overlay, anchorTime }: AiOverlayProps)
     Math.max(TAG_HEIGHT / 2, height - TAG_HEIGHT / 2),
   );
 
+  // A setup box starts at the candle its run was made on and runs right for at most `maxBars` candles, so later candles sit inside it.
+  const box = (t: TradeSetup, anchor: string | undefined, label: string | null) => {
+    const idx = anchor === undefined ? undefined : indexByTime.get(anchor);
+    const ax = anchor === undefined ? null : xOf({ time: anchor, price: 0 });
+    const entry = yOf(t.entry);
+    const stop = yOf(t.stop);
+    const target = yOf(t.target);
+    if (idx === undefined || ax === null || entry === null || stop === null || target === null)
+      return null;
+    const x0 = Math.min(width, Math.max(0, ax + BOX_GAP_PX));
+    const endX =
+      maxBars === null
+        ? width
+        : (handle.chart.timeScale().logicalToCoordinate((idx + maxBars) as never) ?? width);
+    const x1 = Math.min(width, Math.max(x0, endX));
+    const w = x1 - x0;
+    if (w <= 0) return null;
+    return (
+      <>
+        <rect
+          x={x0}
+          y={Math.min(entry, target)}
+          width={w}
+          height={Math.abs(entry - target)}
+          className={styles.aiZoneTarget}
+        />
+        <rect
+          x={x0}
+          y={Math.min(entry, stop)}
+          width={w}
+          height={Math.abs(entry - stop)}
+          className={styles.aiZoneStop}
+        />
+        <line x1={x0} x2={x1} y1={target} y2={target} className={styles.aiEdgeTarget} />
+        <line x1={x0} x2={x1} y1={stop} y2={stop} className={styles.aiEdgeStop} />
+        <line x1={x0} x2={x1} y1={entry} y2={entry} className={styles.aiEntry} />
+        {label && (
+          <text x={x0 + 4} y={Math.min(entry, target, stop) - 4} className={styles.aiBoxLabel}>
+            {label}
+          </text>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className={styles.overlay} style={{ width, height }} aria-hidden="true">
       <svg width={width} height={height} className={styles.overlaySvg}>
@@ -200,45 +257,10 @@ export function AiOverlay({ handle, bars, overlay, anchorTime }: AiOverlayProps)
             </g>
           );
         })}
-        {hasSetup && (
-          <g>
-            {(() => {
-              // The box starts at the candle the setup was made on and runs right, so later candles sit inside it.
-              const x0 = Math.min(width, Math.max(0, (lastX as number) + BOX_GAP_PX));
-              const w = Math.max(0, width - x0);
-              const entry = setupY.entry as number;
-              const stop = setupY.stop as number;
-              const target = setupY.target as number;
-              return (
-                <>
-                  <rect
-                    x={x0}
-                    y={Math.min(entry, target)}
-                    width={w}
-                    height={Math.abs(entry - target)}
-                    className={styles.aiZoneTarget}
-                  />
-                  <rect
-                    x={x0}
-                    y={Math.min(entry, stop)}
-                    width={w}
-                    height={Math.abs(entry - stop)}
-                    className={styles.aiZoneStop}
-                  />
-                  <line
-                    x1={x0}
-                    x2={width}
-                    y1={target}
-                    y2={target}
-                    className={styles.aiEdgeTarget}
-                  />
-                  <line x1={x0} x2={width} y1={stop} y2={stop} className={styles.aiEdgeStop} />
-                  <line x1={x0} x2={width} y1={entry} y2={entry} className={styles.aiEntry} />
-                </>
-              );
-            })()}
-          </g>
-        )}
+        {compare.map((c) => (
+          <g key={c.id}>{box(c.setup, c.anchorTime, c.label)}</g>
+        ))}
+        {hasSetup && <g>{box(setup, startBar, null)}</g>}
         {wants.map((t, i) => {
           const w = t.text.length * CHAR_PX + 10;
           return (
