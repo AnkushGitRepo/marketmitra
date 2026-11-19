@@ -13,6 +13,7 @@ import {
   isTimeframe,
   type Timeframe,
 } from '@/lib/chart/timeframes';
+import { isOverlayEmpty, overlayItems, removeOverlayItem } from '@/lib/chart/overlayItems';
 import { AiOverlay } from './AiOverlay';
 import { useAiOverlay } from './useAiOverlay';
 import { useCandles } from './useCandles';
@@ -219,6 +220,29 @@ export function ProChart({
     ]);
   }, [ai, indicators, restoreIndicators]);
 
+  // Auto-Chart's drawings are items in the Drawings menu: remove one, or all (which is turning it off). Removing the last turns it off.
+  const aiItems = useMemo(
+    () => (ai.status === 'ready' && ai.overlay ? overlayItems(ai.overlay) : []),
+    [ai.status, ai.overlay],
+  );
+  const removeAiItem = useCallback(
+    (id: string) => {
+      if (!ai.overlay) return;
+      const next = removeOverlayItem(ai.overlay, id);
+      if (isOverlayEmpty(next)) {
+        ai.disable();
+        restoreIndicators();
+      } else {
+        ai.update(next);
+      }
+    },
+    [ai, restoreIndicators],
+  );
+  const clearAi = useCallback(() => {
+    ai.disable();
+    restoreIndicators();
+  }, [ai, restoreIndicators]);
+
   const toggleIndicator = useCallback((id: IndicatorId) => {
     setIndicators((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   }, []);
@@ -311,7 +335,14 @@ export function ProChart({
           onToggle={toggleIndicator}
           onParams={changeParams}
         />
-        <DrawingsMenu drawings={drawings} onRemove={removeDrawing} onClear={clearDrawings} />
+        <DrawingsMenu
+          drawings={drawings}
+          onRemove={removeDrawing}
+          onClear={clearDrawings}
+          aiItems={aiItems}
+          onRemoveAi={removeAiItem}
+          onClearAi={clearAi}
+        />
         <button
           type="button"
           className={`${styles.topBtn} ${ai.status === 'ready' ? styles.aiBtnOn : ''}`}

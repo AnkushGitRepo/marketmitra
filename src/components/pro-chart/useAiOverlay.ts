@@ -27,7 +27,12 @@ const NO_KEY_MESSAGE = 'Add your AI provider key in Settings to use Auto-Chart.'
 export function useAiOverlay(
   symbol: string,
   timeframe: Timeframe,
-): AiOverlayState & { enable: () => Promise<ChartOverlay | null>; disable: () => void } {
+): AiOverlayState & {
+  enable: () => Promise<ChartOverlay | null>;
+  disable: () => void;
+  /** Replace the drawn overlay with an edited copy (removing one of its items). */
+  update: (next: ChartOverlay) => void;
+} {
   const [state, setState] = useState<AiOverlayState>(IDLE);
   const run = useRef(0);
   // After an unrestricted answer without a setup, the next attempt skips the 12-hour cache so it can actually differ.
@@ -71,5 +76,9 @@ export function useAiOverlay(
     setState(IDLE);
   }, []);
 
-  return { ...state, enable, disable };
+  const update = useCallback((next: ChartOverlay) => {
+    setState((cur) => (cur.status === 'ready' ? { ...cur, overlay: next } : cur));
+  }, []);
+
+  return { ...state, enable, disable, update };
 }
