@@ -27,13 +27,7 @@ import {
   removeOverlayItem,
   visibleOverlay,
 } from '@/lib/chart/overlayItems';
-import {
-  DEFAULT_BOX_BARS,
-  anchorBarTime,
-  compareSetups,
-  describeRun,
-  isBoxBars,
-} from '@/lib/chart/overlayRuns';
+import { DEFAULT_BOX_BARS, anchorBarTime, compareSetups, isBoxBars } from '@/lib/chart/overlayRuns';
 import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import { AiOverlay } from './AiOverlay';
 import { AiRunsMenu } from './AiRunsMenu';
@@ -597,12 +591,6 @@ export function ProChart({
           {ai.notice && <span className={styles.aiBarError}>{ai.notice}</span>}
           {ai.status === 'ready' && ai.overlay && (
             <>
-              {activeRun && (
-                <span>
-                  Auto-Chart from {describeRun(activeRun).when} (price then{' '}
-                  {describeRun(activeRun).price})
-                </span>
-              )}
               {ai.overlay.setup ? (
                 <>
                   <span className={styles.aiBarStrong}>

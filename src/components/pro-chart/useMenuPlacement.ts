@@ -14,17 +14,24 @@ const EDGE_PX = 8;
 export function useMenuPlacement(open: boolean, rootRef: RefObject<HTMLElement | null>): void {
   useLayoutEffect(() => {
     const root = rootRef.current;
-    const menu = root?.querySelector<HTMLElement>('[role="menu"]');
-    if (!open || !root || !menu) return;
-    menu.style.left = '';
-    const wrap = root.getBoundingClientRect();
-    const own = menu.getBoundingClientRect();
-    const box = root.closest('[data-menu-bounds]')?.getBoundingClientRect();
-    const minX = (box?.left ?? 0) + EDGE_PX;
-    const maxX = (box?.right ?? window.innerWidth) - EDGE_PX;
-    let left = 0;
-    if (wrap.left + own.width > maxX) left = maxX - own.width - wrap.left;
-    if (wrap.left + left < minX) left = minX - wrap.left;
-    if (left !== 0) menu.style.left = `${left}px`;
+    if (!open || !root) return;
+    const place = () => {
+      const menu = root.querySelector<HTMLElement>('[role="menu"]');
+      if (!menu) return;
+      menu.style.left = '';
+      const wrap = root.getBoundingClientRect();
+      const own = menu.getBoundingClientRect();
+      const box = root.closest('[data-menu-bounds]')?.getBoundingClientRect();
+      const minX = (box?.left ?? 0) + EDGE_PX;
+      const maxX = (box?.right ?? window.innerWidth) - EDGE_PX;
+      let left = 0;
+      if (wrap.left + own.width > maxX) left = maxX - own.width - wrap.left;
+      if (wrap.left + left < minX) left = minX - wrap.left;
+      if (left !== 0) menu.style.left = `${left}px`;
+    };
+    place();
+    // The chart can be resized while a menu is open (window, sidebar, full screen).
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
   }, [open, rootRef]);
 }
