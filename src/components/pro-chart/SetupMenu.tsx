@@ -9,6 +9,7 @@ import {
 } from '@/lib/chart/indicatorSetups';
 import type { StoredParams } from '@/lib/chart/indicatorParams';
 import type { IndicatorId } from './constants';
+import { ChartTip } from './ChartTip';
 import { useMenuPlacement } from './useMenuPlacement';
 import styles from './ProChart.module.css';
 
@@ -93,7 +94,7 @@ export function SetupMenu({ active, params, custom, onApply, onSave, onDelete }:
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
-        title="Setups: one-click indicator sets, or save your own"
+        aria-label="Setups"
         onClick={() => setOpen((o) => !o)}
       >
         <span className={styles.btnIcon} aria-hidden="true">
@@ -102,6 +103,7 @@ export function SetupMenu({ active, params, custom, onApply, onSave, onDelete }:
         <span className={styles.btnText}>Setups</span>
         {custom.length > 0 && <span className={styles.badge}>{custom.length}</span>}
         <span aria-hidden="true">▾</span>
+        <ChartTip label="Setups" hint="One-click indicator sets, or save your own" />
       </button>
       {open && (
         <div className={styles.menu} role="menu">

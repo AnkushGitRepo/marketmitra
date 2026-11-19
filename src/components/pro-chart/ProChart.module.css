@@ -40,13 +40,6 @@
   height: 20px;
   background: var(--border-hairline);
 }
-.segment {
-  display: inline-flex;
-  background: var(--app-cream, #f4f1ea);
-  border-radius: 999px;
-  padding: 2px;
-}
-.segBtn,
 .topBtn,
 .rangeBtn,
 .toolBtn {
@@ -55,18 +48,6 @@
   background: none;
   border: 0;
   cursor: pointer;
-}
-.segBtn {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 999px;
-  color: var(--app-text-subtle);
-}
-.segBtnActive {
-  background: var(--color-surface, #fff);
-  color: var(--app-ink);
-  box-shadow: 0 1px 4px rgba(22, 25, 28, 0.12);
 }
 .topBtn {
   display: inline-flex;
@@ -870,6 +851,7 @@
 
 /* Credit to TradingView Lightweight Charts, in place of the logo (#251) */
 .creditLink {
+  position: relative;
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -1036,34 +1018,12 @@
   justify-content: center;
   padding: 0;
 }
-.pickSelect {
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 8px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--app-cream, #f4f1ea);
-  color: var(--app-ink);
-  cursor: pointer;
-}
-.tfSelect {
-  display: none;
-}
 .btnIcon {
   display: none;
 }
 .topbar > *,
 .topbarEnd > * {
   flex-shrink: 0;
-}
-@container topbar (max-width: 1120px) {
-  .tfInline {
-    display: none;
-  }
-  .tfSelect {
-    display: inline-block;
-  }
 }
 @container topbar (max-width: 880px) {
   .btnText {
@@ -1072,4 +1032,116 @@
   .btnIcon {
     display: inline;
   }
+}
+
+/* Tips on the top and bottom bars, in the style of the left toolbar's (#266) */
+.topBtn,
+.rangeBtn,
+.tipHost {
+  position: relative;
+}
+.tipHost {
+  display: inline-flex;
+}
+.barTip {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: 230px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+  font-weight: 400;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(22, 25, 28, 0.25);
+}
+.barTipAbove {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+.barTipEnd {
+  left: auto;
+  right: 0;
+}
+/* Hover needs a real pointer: on touch it would stick after a tap. Not while the control's own menu is open. */
+@media (hover: hover) {
+  :hover > .barTip {
+    display: flex;
+  }
+}
+:focus-visible > .barTip {
+  display: flex;
+}
+[aria-expanded='true'] > .barTip {
+  display: none;
+}
+
+/* Pick menu (timeframe, chart type) (#268) */
+.pickBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 10px 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--app-cream, #f4f1ea);
+  color: var(--app-ink);
+  cursor: pointer;
+}
+.pickBtn:hover {
+  background: var(--border-hairline);
+}
+.pickMenu {
+  width: 210px;
+  padding: 6px;
+}
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px 8px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  color: var(--app-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.pickRow:hover,
+.pickRow:focus-visible {
+  background: var(--app-cream, #f4f1ea);
+  outline: none;
+}
+.pickCheck {
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-teal, #0c8a6c);
+}
+.pickText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pickLabel {
+  font-size: 13px;
+  font-weight: 600;
+}
+.pickRowOn .pickLabel {
+  color: var(--app-teal, #0c8a6c);
 }

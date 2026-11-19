@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { describeDrawing, type Drawing } from '@/lib/chart/drawings';
 import type { OverlayItem } from '@/lib/chart/overlayItems';
+import { ChartTip } from './ChartTip';
 import { useMenuPlacement } from './useMenuPlacement';
 import styles from './ProChart.module.css';
 
@@ -74,7 +75,7 @@ export function DrawingsMenu({
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
-        title="Drawings: hide or remove what is on this chart"
+        aria-label="Drawings"
         onClick={() => setOpen((o) => !o)}
       >
         <span className={styles.btnIcon} aria-hidden="true">
@@ -85,6 +86,7 @@ export function DrawingsMenu({
           <span className={styles.badge}>{drawings.length + aiItems.length}</span>
         )}
         <span aria-hidden="true">▾</span>
+        <ChartTip label="Drawings" hint="Hide or remove what is on this chart" />
       </button>
       {open && (
         <div className={styles.menu} role="menu">
