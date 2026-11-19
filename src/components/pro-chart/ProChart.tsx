@@ -425,8 +425,8 @@ export function ProChart({
   const workspace = (
     <div className={`${styles.workspace} ${expanded ? styles.workspaceExpanded : ''}`}>
       <div className={styles.topbar}>
-        <span className={styles.symbolChip}>{symbol}</span>
-        <div className={styles.segment} role="group" aria-label="Timeframe">
+        {expanded && <span className={styles.symbolChip}>{symbol}</span>}
+        <div className={`${styles.segment} ${styles.tfInline}`} role="group" aria-label="Timeframe">
           {TIMEFRAMES.map((t) => (
             <button
               key={t.id}
@@ -439,25 +439,33 @@ export function ProChart({
             </button>
           ))}
         </div>
+        <select
+          className={`${styles.pickSelect} ${styles.tfSelect}`}
+          aria-label="Timeframe"
+          value={timeframe}
+          onChange={(e) => pickTimeframe(e.target.value as Timeframe)}
+        >
+          {TIMEFRAMES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
         {candles.live && (
           <span className={styles.liveDot} title="Live: updating while the market is open">
             Live
           </span>
         )}
         <span className={styles.divider} />
-        <div className={styles.segment} role="group" aria-label="Chart type">
-          {(['candles', 'line'] as const).map((k) => (
-            <button
-              key={k}
-              type="button"
-              aria-pressed={kind === k}
-              className={`${styles.segBtn} ${kind === k ? styles.segBtnActive : ''}`}
-              onClick={() => setKind(k)}
-            >
-              {k === 'candles' ? 'Candles' : 'Line'}
-            </button>
-          ))}
-        </div>
+        <select
+          className={styles.pickSelect}
+          aria-label="Chart type"
+          value={kind}
+          onChange={(e) => setKind(e.target.value as ChartKind)}
+        >
+          <option value="candles">Candles</option>
+          <option value="line">Line</option>
+        </select>
         <span className={styles.divider} />
         <IndicatorMenu
           active={indicators}
@@ -488,11 +496,15 @@ export function ProChart({
           type="button"
           className={`${styles.topBtn} ${ai.status === 'ready' ? styles.aiBtnOn : ''}`}
           aria-pressed={ai.status === 'ready'}
+          aria-label="AI Auto-Chart"
+          title="AI Auto-Chart: levels, trendlines and a trade setup"
           disabled={ai.status === 'loading'}
           onClick={toggleAi}
         >
           {ai.status === 'ready' && <span className={styles.aiOnDot} aria-hidden="true" />}✨{' '}
-          {ai.status === 'loading' ? 'Drawing…' : 'AI Auto-Chart'}
+          <span className={styles.btnText}>
+            {ai.status === 'loading' ? 'Drawing…' : 'AI Auto-Chart'}
+          </span>
         </button>
         <AiRunsMenu
           runs={ai.runs}
@@ -512,27 +524,38 @@ export function ProChart({
             writeJson('mm-chart-compare-all', v);
           }}
         />
-        {onAlert ? (
-          <button type="button" className={styles.topBtn} onClick={onAlert}>
-            <BellIcon />
-            Alert
+        <div className={styles.topbarEnd}>
+          {onAlert ? (
+            <button
+              type="button"
+              className={`${styles.topBtn} ${styles.iconBtn}`}
+              aria-label="Set price alert"
+              title="Set price alert"
+              onClick={onAlert}
+            >
+              <BellIcon />
+            </button>
+          ) : (
+            <Link
+              href={alertHref}
+              className={`${styles.topBtn} ${styles.iconBtn}`}
+              aria-label="Set price alert"
+              title="Set price alert"
+            >
+              <BellIcon />
+            </Link>
+          )}
+          <button
+            type="button"
+            className={`${styles.topBtn} ${styles.iconBtn}`}
+            aria-pressed={expanded}
+            aria-label={expanded ? 'Exit full screen' : 'Full screen'}
+            title={expanded ? 'Exit full screen (Esc)' : 'Full screen'}
+            onClick={() => setExpanded((v) => !v)}
+          >
+            <ExpandIcon expanded={expanded} />
           </button>
-        ) : (
-          <Link href={alertHref} className={styles.topBtn}>
-            <BellIcon />
-            Alert
-          </Link>
-        )}
-        <button
-          type="button"
-          className={`${styles.topBtn} ${styles.fullscreenBtn}`}
-          aria-pressed={expanded}
-          aria-label={expanded ? 'Exit full screen' : 'Full screen'}
-          title={expanded ? 'Exit full screen (Esc)' : 'Full screen'}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          <ExpandIcon expanded={expanded} />
-        </button>
+        </div>
       </div>
 
       {(ai.status === 'error' || ai.status === 'ready' || ai.notice) && (
@@ -558,10 +581,6 @@ export function ProChart({
                         : ' at the current zone'}
                     : Entry ₹{fmt(ai.overlay.setup.entry)} | Stop ₹{fmt(ai.overlay.setup.stop)} |
                     Target ₹{fmt(ai.overlay.setup.target)} (1 : {ai.overlay.setup.riskReward})
-                  </span>
-                  <span>
-                    Unrestricted mode. AI opinion from public data, not licensed investment advice.
-                    You make the decision.
                   </span>
                 </>
               ) : (

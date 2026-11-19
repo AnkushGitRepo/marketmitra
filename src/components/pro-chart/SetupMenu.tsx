@@ -91,9 +91,13 @@ export function SetupMenu({ active, params, custom, onApply, onSave, onDelete }:
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
+        title="Indicator setups"
         onClick={() => setOpen((o) => !o)}
       >
-        Setups
+        <span className={styles.btnIcon} aria-hidden="true">
+          ▤
+        </span>
+        <span className={styles.btnText}>Setups</span>
         {custom.length > 0 && <span className={styles.badge}>{custom.length}</span>}
         <span aria-hidden="true">▾</span>
       </button>
