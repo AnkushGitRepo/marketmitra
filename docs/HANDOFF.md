@@ -14,7 +14,7 @@
 3. Next.js is **v16 with breaking changes** — read `node_modules/next/dist/docs/` first. The middleware file is `src/proxy.ts`. App pages are top-level (`/portfolio`, not `/dashboard/portfolio`; only `/dashboard` is the home) — see [ADR 0037](./decisions/0037-top-level-app-routes.md); a new page must be registered in `src/lib/routes.ts` and `src/proxy.ts` (a test enforces it).
 4. CSS Modules + tokens only. No Tailwind. Every feature = UI **and** a documented API route (`public/openapi.json`).
 5. No paid tier, ever. Hosted vs self-host is gated by `isHosted()`.
-6. The **Mitra Advisor** is local-only, off by default, recommend-only (ADR 0035).
+6. The **Mitra Advisor** is off by default and recommend-only (ADR 0035). Local install, or a hosted admin in `ADMIN_USER_IDS` with `ADVISOR_MODE=enabled` set on the host (ADR 0070).
 7. Verify before claiming: check production state yourself, report what was and wasn't tested.
 8. Keep this file and `docs/session-log.md` current.
 
@@ -60,7 +60,7 @@
   the source says "BSE SME"/"NSE SME"); status filters (Open/Upcoming/Closed/Allotted/Listed), type filters and
   pagination on `/ipos` (#21/#19; "Allotted" is derived from the allotment date). Production verified
   after a manual `refresh-ipos` run: 7 mainboard / 9 SME.
-- **Mitra Advisor** (#22/#13, [ADR 0035](./decisions/0035-mitra-advisor.md)) — local-only, rules-first decision
+- **Mitra Advisor** (#22/#13, [ADR 0035](./decisions/0035-mitra-advisor.md)) — rules-first decision (local install or hosted admin, ADR 0070)
   support: policy + deterministic monthly plan, quantitative quality screen, citation-enforced LLM research memos,
   decision journal + kill-criteria alerts, paper-trading vs a Nifty 50 fund, behaviour guard (policy-based replies in
   market stress, "buy the dip" cooldown), read-only advisor tools in Mitra chat. Off unless `ADVISOR_MODE=enabled`,

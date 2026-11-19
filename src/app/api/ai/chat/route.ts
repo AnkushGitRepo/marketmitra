@@ -100,12 +100,12 @@ async function handlePOST(request: Request) {
   const pageContextLine = formatPageContext(parsed.data.pageContext ?? null);
   const lastUserMessage = lastUserText(uiMessages);
 
-  // Mitra Advisor (local-only, ADR 0035): null unless the flag is on and a
+  // Mitra Advisor (ADR 0035, 0070): null unless the flag is on and a
   // policy exists, in which case chat is exactly what it was before.
   const advisor = await prepareAdvisorChat(userId, lastUserMessage, new Date(), aiConfig).catch(() => null);
   if (advisor?.blockedReply) return textReply(advisor.blockedReply);
 
-  // Guarded unless a local user opted in (ADR 0054); the hosted site is always guarded.
+  // Guarded unless a local user or a hosted admin opted in (ADR 0054, 0070).
   const promptMode = await resolvePromptMode(userId);
   const system = `${promptForMode(CHAT_SYSTEM_AGENTIC, promptMode)}\n\n--- PORTFOLIO CONTEXT ---\n${context}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
   const tools = advisor

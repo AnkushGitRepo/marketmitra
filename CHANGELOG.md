@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- On the hosted site, an admin (a user listed in `ADMIN_USER_IDS`) can now use Unrestricted Mitra and Mitra Advisor like a local install does; every other hosted user still cannot, whatever they send. ([#243](https://github.com/AnkushGitRepo/marketmitra/issues/243))
 - The stock chart has 1m, 5m, 15m and 1h candles next to the daily chart, and the latest candle and the header price now update by themselves while the market is open (every 10 seconds on 1m, 30 on 5m, 60 on 15m, 120 on 1h on the hosted site; faster on a local install). Indicators, drawings and AI Auto-Chart work on every timeframe. ([#236](https://github.com/AnkushGitRepo/marketmitra/issues/236))
 - Chart indicators can be tuned: a ⚙ beside each indicator in the Indicators menu opens its settings (periods, multipliers, MACD fast/slow/signal, Stochastic smoothing) with a Reset, saved in your browser and shown in the chart legend and pane names. ([#234](https://github.com/AnkushGitRepo/marketmitra/issues/234))
 - The stock chart shows which colour is which: every indicator has a colour swatch in the Indicators menu, a legend at the top-left of the chart lists the active ones with their periods and the value under the cursor, and each pane (RSI, MACD, ...) is named. New indicators: SMA 100, EMA 100, EMA 200, Supertrend, Donchian Channel, Stochastic, ATR and On-Balance Volume. ([#232](https://github.com/AnkushGitRepo/marketmitra/issues/232))

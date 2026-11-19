@@ -33,7 +33,7 @@ open-source; maintainer: `AnkushGitRepo`.
 - **Every feature ships UI + a documented API endpoint together** (`public/openapi.json` must list every route — a test enforces it)
 - **Deployment-mode gate** ([0010](./docs/decisions/0010-deployment-mode-gate.md)): respect `isHosted()` (`NEXT_PUBLIC_DEPLOYMENT_MODE=hosted` in prod); feature backends gate on their own config env vars, never on `isHosted()`. Self-host = single local user (`getCurrentUserId()` returns `'local'`).
 - Never invent metrics, user counts or "battle-tested" language in README or copy. This is a fresh v2 — say so plainly.
-- AI: Vercel AI SDK v7, bring-your-own key (Gemini / Anthropic / OpenRouter). Mitra/insights never give investment advice by default (see `GUARDRAIL` in `src/lib/ai/prompts.ts`); the only exception is the **local-only, opt-in, off-by-default** unrestricted mode ([0054](./docs/decisions/0054-unrestricted-mitra-local-only.md)), enforced server-side and impossible on the hosted site.
+- AI: Vercel AI SDK v7, bring-your-own key (Gemini / Anthropic / OpenRouter). Mitra/insights never give investment advice by default (see `GUARDRAIL` in `src/lib/ai/prompts.ts`); the only exception is the **opt-in, off-by-default** unrestricted mode ([0054](./docs/decisions/0054-unrestricted-mitra-local-only.md), [0070](./docs/decisions/0070-admin-users-get-unrestricted-and-advisor-on-hosted.md)): available on a local install, and on the hosted site only to an admin listed in `ADMIN_USER_IDS`; enforced server-side, so an ordinary hosted user can never get it.
 
 ## Working agreement (how work is done here)
 
@@ -104,8 +104,10 @@ security fixes; leave out docs, tests, chores, CI and invisible refactors. A pul
   changes without asking. Deleting branches already merged is fine.
 - Don't download or run files from untrusted sources; don't bypass bot checks (e.g. BSE blocks
   automated downloads — supply a filing URL/text instead of spoofing a browser).
-- The local-only **Mitra Advisor** (`ADVISOR_MODE=enabled`, ADR 0035) must never run on the hosted
-  deployment, never place orders, and never give return promises or "buy this" language.
+- **Mitra Advisor** (`ADVISOR_MODE=enabled`, ADR 0035, 0070) must never be offered to an ordinary hosted
+  user: on the hosted deployment only a user in `ADMIN_USER_IDS` can reach it (and only with the flag on),
+  and its thesis-review cron stays local-only. It never places orders and never gives return promises or
+  "buy this" language. Unrestricted Mitra follows the same admin-only rule on hosted.
 
 ## Coding standards (the maintainer's preferences)
 
@@ -124,7 +126,7 @@ security fixes; leave out docs, tests, chores, CI and invisible refactors. A pul
   make it pass. Use Playwright for end-to-end flows.
 - **No `console.log`** in committed code. No hardcoded secrets or magic values.
 - Docs move with code: update `docs/` (architecture, api-surface, data-sources, ADR) and add an
-  ADR (next number: 0070) for a real decision. ADRs are never pruned.
+  ADR (next number: 0071) for a real decision. ADRs are never pruned.
 
 ## Commands
 

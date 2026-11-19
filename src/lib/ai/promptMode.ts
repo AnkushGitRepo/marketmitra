@@ -1,5 +1,5 @@
 // Prompt mode (ADR 0054). Mitra is guarded by default: no verdicts, no buy/sell calls (GUARDRAIL).
-// A local-only, opt-in setting lets a self-hosted user switch the guardrail for opinion rules.
+// An opt-in setting lets a self-hosted user, or a hosted admin (ADR 0070), switch the guardrail for opinion rules.
 // The hosted deployment can never leave guarded mode, whatever is stored.
 
 import { GUARDRAIL } from './prompts';

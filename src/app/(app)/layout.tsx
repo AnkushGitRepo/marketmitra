@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <HostedClerkProvider>
       <AppShell
-        advisorEnabled={isAdvisorEnabled()}
+        advisorEnabled={isAdvisorEnabled(userId)}
         shortcutsEnabled={prefs.shortcuts.enabled}
         hideValuesByDefault={prefs.display.hideValuesByDefault}
       >

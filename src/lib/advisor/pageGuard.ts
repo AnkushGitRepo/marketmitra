@@ -8,8 +8,7 @@ import { hasAcknowledged } from './policy/store';
  * access from running. Returns null (render nothing) until the disclaimer is
  * accepted — the layout shows the acceptance gate in that case. */
 export async function advisorPageUser(): Promise<string | null> {
-  if (!isAdvisorEnabled()) notFound();
   const userId = await getCurrentUserId();
-  if (!userId) notFound();
+  if (!userId || !isAdvisorEnabled(userId)) notFound();
   return (await hasAcknowledged(userId).catch(() => false)) ? userId : null;
 }

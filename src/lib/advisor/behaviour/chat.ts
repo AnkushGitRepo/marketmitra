@@ -23,7 +23,7 @@ export interface AdvisorChatPlan {
 /** Everything the chat route needs to put Mitra on the user's policy. Null when
  * the Advisor is off, un-acknowledged, or has no policy — chat is then untouched. */
 export async function prepareAdvisorChat(userId: string, userText: string, now: Date, aiConfig: AiConfig | null = null): Promise<AdvisorChatPlan | null> {
-  if (!isAdvisorEnabled()) return null;
+  if (!isAdvisorEnabled(userId)) return null;
   if (!(await hasAcknowledged(userId))) return null;
   const policy = await getPolicy(userId);
   if (!policy) return null;
