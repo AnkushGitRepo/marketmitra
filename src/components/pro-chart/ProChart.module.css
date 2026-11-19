@@ -40,13 +40,6 @@
   height: 20px;
   background: var(--border-hairline);
 }
-.segment {
-  display: inline-flex;
-  background: var(--app-cream, #f4f1ea);
-  border-radius: 999px;
-  padding: 2px;
-}
-.segBtn,
 .topBtn,
 .rangeBtn,
 .toolBtn {
@@ -55,18 +48,6 @@
   background: none;
   border: 0;
   cursor: pointer;
-}
-.segBtn {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 999px;
-  color: var(--app-text-subtle);
-}
-.segBtnActive {
-  background: var(--color-surface, #fff);
-  color: var(--app-ink);
-  box-shadow: 0 1px 4px rgba(22, 25, 28, 0.12);
 }
 .topBtn {
   display: inline-flex;
@@ -1048,23 +1029,12 @@
   color: var(--app-ink);
   cursor: pointer;
 }
-.tfSelect {
-  display: none;
-}
 .btnIcon {
   display: none;
 }
 .topbar > *,
 .topbarEnd > * {
   flex-shrink: 0;
-}
-@container topbar (max-width: 1120px) {
-  .tfInline {
-    display: none;
-  }
-  .tfSelect {
-    display: inline-flex;
-  }
 }
 @container topbar (max-width: 880px) {
   .btnText {
@@ -1077,7 +1047,6 @@
 
 /* Tips on the top and bottom bars, in the style of the left toolbar's (#266) */
 .topBtn,
-.segBtn,
 .rangeBtn,
 .tipHost {
   position: relative;

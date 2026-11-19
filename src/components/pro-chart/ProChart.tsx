@@ -69,16 +69,6 @@ interface ProChartProps {
 }
 
 /** Tooltips for the toolbar and the bottom bar. */
-const TIMEFRAME_TITLES: Record<Timeframe, string> = {
-  '1m': '1 minute candles',
-  '5m': '5 minute candles',
-  '15m': '15 minute candles',
-  '30m': '30 minute candles',
-  '1h': '1 hour candles',
-  '1d': 'Daily candles',
-  '1w': 'Weekly candles',
-  '1mo': 'Monthly candles',
-};
 const RANGE_TITLES: Record<RangeKey, string> = {
   '1M': 'Show the last month',
   '3M': 'Show the last 3 months',
@@ -451,21 +441,7 @@ export function ProChart({
     >
       <div className={styles.topbar}>
         {expanded && <span className={styles.symbolChip}>{symbol}</span>}
-        <div className={`${styles.segment} ${styles.tfInline}`} role="group" aria-label="Timeframe">
-          {TIMEFRAMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              aria-pressed={timeframe === t.id}
-              className={`${styles.segBtn} ${timeframe === t.id ? styles.segBtnActive : ''}`}
-              onClick={() => pickTimeframe(t.id)}
-            >
-              {t.label}
-              <ChartTip label={TIMEFRAME_TITLES[t.id]} />
-            </button>
-          ))}
-        </div>
-        <span className={`${styles.tipHost} ${styles.tfSelect}`}>
+        <span className={styles.tipHost}>
           <select
             className={styles.pickSelect}
             aria-label="Timeframe"

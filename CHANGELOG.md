@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The chart's timeframe is now always picked from one dropdown; the row of timeframe buttons next to it is gone. ([#266](https://github.com/AnkushGitRepo/marketmitra/issues/266))
+
 - The tooltips on the chart's top and bottom bars now look and behave like the ones on the left toolbar (a dark label with a one-line hint, shown at once) instead of the browser's slow default. ([#266](https://github.com/AnkushGitRepo/marketmitra/issues/266))
 
 - The stock chart no longer shows the "Unrestricted mode. AI opinion from public data, not licensed investment advice. You make the decision." line under the toolbar when an Auto-Chart trade setup is shown. ([#264](https://github.com/AnkushGitRepo/marketmitra/issues/264))
