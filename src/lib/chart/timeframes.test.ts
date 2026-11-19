@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Bar } from './bars';
 import {
+  INTRADAY_RANGES,
   TIMEFRAMES,
   barTimeLabel,
   barTimeMs,
+  intradayRangeAvailable,
+  intradayRangeStart,
   isMarketOpen,
   isTailUpdate,
   parseBarTimeLabel,
@@ -21,8 +24,17 @@ const bar = (time: string, close = 1): Bar => ({
 });
 
 describe('timeframes', () => {
-  it('lists the first release set with Day as the default', () => {
-    expect(TIMEFRAMES.map((t) => t.id)).toEqual(['1m', '5m', '15m', '1h', '1d']);
+  it('lists the timeframes with Day as the default', () => {
+    expect(TIMEFRAMES.map((t) => t.id)).toEqual([
+      '1m',
+      '5m',
+      '15m',
+      '30m',
+      '1h',
+      '1d',
+      '1w',
+      '1mo',
+    ]);
   });
 });
 
@@ -89,5 +101,33 @@ describe('isTailUpdate', () => {
     expect(isTailUpdate(base, [...base, bar('4'), bar('5'), bar('6'), bar('7')])).toBe(false);
     expect(isTailUpdate(base, [bar('1'), bar('2')])).toBe(false);
     expect(isTailUpdate([], base)).toBe(false);
+  });
+});
+
+describe('intraday ranges', () => {
+  // Three IST sessions of two bars each: 18, 19 and 20 Nov 2026 (09:15 and 09:16).
+  const at = (date: string, hhmm: string) =>
+    toBarTime(Date.parse(`${date}T${hhmm}:00Z`) / 1000 - 19_800);
+  const bars = ['2026-11-18', '2026-11-19', '2026-11-20'].flatMap((d) => [
+    bar(at(d, '09:15')),
+    bar(at(d, '09:16')),
+  ]);
+
+  it('lists the ranges, All last', () => {
+    expect(INTRADAY_RANGES).toEqual(['1D', '5D', '1M', 'ALL']);
+  });
+
+  it('starts at the first bar of the last day, or of the last N days', () => {
+    expect(intradayRangeStart(bars, '1D')).toBe(4);
+    expect(intradayRangeStart(bars, '5D')).toBe(0);
+    expect(intradayRangeStart(bars, 'ALL')).toBe(0);
+  });
+
+  it('is available only when the data holds that many trading days', () => {
+    expect(intradayRangeAvailable(bars, '1D')).toBe(true);
+    expect(intradayRangeAvailable(bars, '5D')).toBe(false);
+    expect(intradayRangeAvailable(bars, '1M')).toBe(false);
+    expect(intradayRangeAvailable(bars, 'ALL')).toBe(true);
+    expect(intradayRangeAvailable([], '1D')).toBe(false);
   });
 });

@@ -14,8 +14,11 @@ import {
 import {
   DEFAULT_TIMEFRAME,
   TIMEFRAMES,
+  INTRADAY_RANGES,
+  intradayRangeAvailable,
   isIntraday,
   isTimeframe,
+  type IntradayRange,
   type Timeframe,
 } from '@/lib/chart/timeframes';
 import {
@@ -34,6 +37,12 @@ import {
 import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import { AiOverlay } from './AiOverlay';
 import { AiRunsMenu } from './AiRunsMenu';
+import { SetupMenu } from './SetupMenu';
+import {
+  addCustomSetup,
+  parseCustomSetups,
+  type IndicatorSetup,
+} from '@/lib/chart/indicatorSetups';
 import type { BoxBars } from '@/lib/chart/overlayRuns';
 import { useAiOverlay } from './useAiOverlay';
 import { useCandles } from './useCandles';
@@ -63,6 +72,8 @@ interface ProChartProps {
   onAlert?: () => void;
   onRangeChange?: (range: RangeKey) => void;
 }
+
+const WIDE_DEFAULT_RANGE: Partial<Record<Timeframe, RangeKey>> = { '1w': '5Y', '1mo': 'ALL' };
 
 const RANGE_LABELS: Record<RangeKey, string> = {
   '1M': '1M',
@@ -142,6 +153,12 @@ export function ProChart({
   const candles = useCandles(symbol, timeframe, dailyBars);
   const bars = candles.bars;
   const [range, setRange] = useState<RangeKey>('1Y');
+  // Week and Month charts have their own range (the Day one would show a handful of bars), starting wide.
+  const [tfRanges, setTfRanges] = useState<Partial<Record<Timeframe, RangeKey>>>({});
+  const shownRange: RangeKey =
+    timeframe === '1d' ? range : (tfRanges[timeframe] ?? WIDE_DEFAULT_RANGE[timeframe] ?? range);
+  // The bottom-bar choice on an intraday chart; null until picked (the chart then shows a session or two).
+  const [intradayRange, setIntradayRange] = useState<IntradayRange | null>(null);
   const [kind, setKind] = useState<ChartKind>('candles');
   // Client-only component (loaded with ssr: false), so reading localStorage in
   // the initializers can't cause a hydration mismatch.
@@ -150,6 +167,10 @@ export function ProChart({
   );
   const [params, setParams] = useState<StoredParams>(() =>
     readJson<StoredParams>(INDICATOR_PARAMS_STORAGE_KEY, {}),
+  );
+  // The user's own indicator setups (#259): per-viewer, kept in the browser like the indicator choices themselves.
+  const [customSetups, setCustomSetups] = useState<IndicatorSetup[]>(() =>
+    parseCustomSetups(readJson<unknown>('mm-chart-setups', [])),
   );
   const [tool, setTool] = useState<DrawingTool>('cursor');
   // Drawings belong to a timeframe: a line drawn on the 5m chart means nothing at a different zoom. The stored list swaps in the
@@ -250,6 +271,29 @@ export function ProChart({
       ]);
     },
     [indicators],
+  );
+  // A setup replaces the indicators and their settings; what Auto-Chart had added or hidden is forgotten so turning it off cannot undo this.
+  const applySetup = useCallback((setup: IndicatorSetup) => {
+    setIndicators(setup.indicators);
+    setParams(setup.params);
+    setAiIndicators([]);
+    setAiHidden([]);
+  }, []);
+  const saveSetup = useCallback(
+    (name: string) => {
+      const next = addCustomSetup(customSetups, name, indicators, params, crypto.randomUUID());
+      setCustomSetups(next);
+      writeJson('mm-chart-setups', next);
+    },
+    [customSetups, indicators, params],
+  );
+  const deleteSetup = useCallback(
+    (id: string) => {
+      const next = customSetups.filter((s) => s.id !== id);
+      setCustomSetups(next);
+      writeJson('mm-chart-setups', next);
+    },
+    [customSetups],
   );
   const toggleAi = useCallback(async () => {
     if (ai.status === 'loading') return;
@@ -355,7 +399,15 @@ export function ProChart({
     setTimeframe(next);
   };
 
+  // Only a range the loaded data can fill is applied; on a timeframe with less history it falls back to the default window.
+  const shownIntradayRange =
+    intradayRange && intradayRangeAvailable(bars, intradayRange) ? intradayRange : null;
+
   const pickRange = (r: RangeKey) => {
+    if (timeframe !== '1d') {
+      setTfRanges((cur) => ({ ...cur, [timeframe]: r }));
+      return;
+    }
     setRange(r);
     onRangeChange?.(r);
   };
@@ -412,6 +464,14 @@ export function ProChart({
           params={params}
           onToggle={toggleIndicator}
           onParams={changeParams}
+        />
+        <SetupMenu
+          active={indicators}
+          params={params}
+          custom={customSetups}
+          onApply={applySetup}
+          onSave={saveSetup}
+          onDelete={deleteSetup}
         />
         <DrawingsMenu
           drawings={drawings}
@@ -574,7 +634,8 @@ export function ProChart({
                 roomOnRight={ai.status === 'ready'}
                 indicators={indicators}
                 params={params}
-                range={range}
+                range={shownRange}
+                intradayRange={shownIntradayRange}
                 onReady={setHandle}
                 onHover={setHover}
                 onFailure={setFailure}
@@ -600,9 +661,9 @@ export function ProChart({
                 onRemove={removeDrawing}
               />
             </>
-          ) : isIntraday(timeframe) && candles.status === 'loading' ? (
+          ) : timeframe !== '1d' && candles.status === 'loading' ? (
             <p className={styles.empty}>Loading {timeframe} candles…</p>
-          ) : isIntraday(timeframe) && candles.status === 'error' ? (
+          ) : timeframe !== '1d' && candles.status === 'error' ? (
             <p className={styles.empty}>
               Could not load {timeframe} candles.{' '}
               <button type="button" className={styles.retryBtn} onClick={candles.retry}>
@@ -616,22 +677,38 @@ export function ProChart({
       </div>
 
       <div className={styles.footer} role="group" aria-label="Date range">
-        {!isIntraday(timeframe) &&
-          RANGE_KEYS.map((r) => (
-            <button
-              key={r}
-              type="button"
-              aria-pressed={range === r}
-              className={`${styles.rangeBtn} ${range === r ? styles.rangeBtnActive : ''}`}
-              onClick={() => pickRange(r)}
-            >
-              {RANGE_LABELS[r]}
-            </button>
-          ))}
+        {isIntraday(timeframe)
+          ? INTRADAY_RANGES.map((r) => {
+              const available = intradayRangeAvailable(bars, r);
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  aria-pressed={shownIntradayRange === r}
+                  disabled={!available}
+                  title={available ? undefined : 'Not enough history at this timeframe'}
+                  className={`${styles.rangeBtn} ${shownIntradayRange === r ? styles.rangeBtnActive : ''}`}
+                  onClick={() => setIntradayRange(r)}
+                >
+                  {r === 'ALL' ? 'All' : r}
+                </button>
+              );
+            })
+          : RANGE_KEYS.map((r) => (
+              <button
+                key={r}
+                type="button"
+                aria-pressed={shownRange === r}
+                className={`${styles.rangeBtn} ${shownRange === r ? styles.rangeBtnActive : ''}`}
+                onClick={() => pickRange(r)}
+              >
+                {RANGE_LABELS[r]}
+              </button>
+            ))}
         <span className={styles.footerNote}>
           {isIntraday(timeframe)
             ? `${timeframe} candles · IST · prices in ₹`
-            : 'Daily bars · prices in ₹'}
+            : `${{ '1d': 'Daily', '1w': 'Weekly', '1mo': 'Monthly' }[timeframe as '1d' | '1w' | '1mo']} bars · prices in ₹`}
           {' · '}
           <a
             className={styles.creditLink}
@@ -639,7 +716,7 @@ export function ProChart({
             target="_blank"
             rel="noopener noreferrer"
           >
-            Charts by TradingView
+            TradingView
           </a>
         </span>
       </div>

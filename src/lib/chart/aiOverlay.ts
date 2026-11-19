@@ -13,6 +13,7 @@ import { planSetup, swingLevels, type TradeSetup } from './setupPlanner';
 import {
   barTimeLabel,
   barTimeMs,
+  isIntraday,
   parseBarTimeLabel,
   timeframeDef,
   type Timeframe,
@@ -205,8 +206,9 @@ export function parseOverlay(
   timeframe: Timeframe = '1d',
 ): ChartOverlay | null {
   const def = timeframeDef(timeframe);
-  // Times may be a little outside the data: a week on Day, a day on intraday.
-  const slackMs = (timeframe === '1d' ? 7 : 1) * 24 * 60 * 60 * 1000;
+  // Times may be a little outside the data: a week on Day (a bar on Week and Month), a day on intraday.
+  const slackMs =
+    (isIntraday(timeframe) ? 1 : Math.max(7, def.seconds / 86_400)) * 24 * 60 * 60 * 1000;
   if (bars.length === 0) return null;
   const whole = rawSchema.safeParse(extractJson(text));
   if (!whole.success) return null;
@@ -264,8 +266,11 @@ export function buildOverlayPrompt(
   const recent = bars.slice(-count);
   const lastClose = bars[bars.length - 1]?.close ?? 0;
   const rows = recent.map((b) => `${barTimeLabel(b.time)},${b.high},${b.low},${b.close}`);
-  const unit =
-    timeframe === '1d' ? 'daily bars' : `${timeframeDef(timeframe).label} candles, times in IST`;
+  const unit = isIntraday(timeframe)
+    ? `${timeframeDef(timeframe).label} candles, times in IST`
+    : { '1d': 'daily bars', '1w': 'weekly bars', '1mo': 'monthly bars' }[
+        timeframe as '1d' | '1w' | '1mo'
+      ];
   return [
     `Symbol: ${symbol} (Indian-listed, ${unit}, prices in INR).`,
     `Last close: ${lastClose}`,

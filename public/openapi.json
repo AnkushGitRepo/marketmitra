@@ -6443,7 +6443,7 @@
           "AI"
         ],
         "summary": "Generate an AI Auto-Chart and save it",
-        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars or the timeframe's candles, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Every call generates a new run and saves it for the signed-in user, stock and timeframe next to the earlier ones (the latest 10 are kept); it never reuses an old one. The mode is resolved on the server, never from the body: guarded by default (structure only). A local install, or a hosted admin listed in ADMIN_USER_IDS, in unrestricted mode (ADR 0054, 0070) may also get `setup` (direction, entry, stop, target, riskReward, stopPct, targetPct, entryType now|pullback|retest, lastClose), planned by the server from the levels and the trend, and `setupNote` when no setup qualifies. Body `{ symbol, interval? }`; `interval` is 1m, 5m, 15m, 1h or 1d (default 1d).",
+        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars or the timeframe's candles, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Every call generates a new run and saves it for the signed-in user, stock and timeframe next to the earlier ones (the latest 10 are kept); it never reuses an old one. The mode is resolved on the server, never from the body: guarded by default (structure only). A local install, or a hosted admin listed in ADMIN_USER_IDS, in unrestricted mode (ADR 0054, 0070) may also get `setup` (direction, entry, stop, target, riskReward, stopPct, targetPct, entryType now|pullback|retest, lastClose), planned by the server from the levels and the trend, and `setupNote` when no setup qualifies. Body `{ symbol, interval? }`; `interval` is 1m, 5m, 15m, 30m, 1h, 1d, 1w or 1mo (default 1d).",
         "security": [
           {
             "cookieAuth": []
@@ -6471,8 +6471,11 @@
                       "1m",
                       "5m",
                       "15m",
+                      "30m",
                       "1h",
-                      "1d"
+                      "1d",
+                      "1w",
+                      "1mo"
                     ]
                   }
                 }
@@ -6534,8 +6537,11 @@
                 "1m",
                 "5m",
                 "15m",
+                "30m",
                 "1h",
-                "1d"
+                "1d",
+                "1w",
+                "1mo"
               ],
               "default": "1d"
             }
@@ -6559,8 +6565,8 @@
         "tags": [
           "Market data"
         ],
-        "summary": "Candles for a timeframe (1m, 5m, 15m, 1h, 1d)",
-        "description": "Public, read-only market data from Yahoo (delayed and unofficial like all Yahoo data; ADR 0069). `interval` is one of 1m, 5m, 15m, 1h, 1d. Without `last`, the timeframe's whole window (1m about 5 days, 5m 30, 15m 55, 1h about a year, 1d a year). With `last` (1 to 50), only the newest bars, for live polling. Bars are oldest first; an intraday bar's `time` is the epoch seconds of its start shifted to IST wall-clock, as a decimal string, and a daily bar's `time` is its date. `pollMs` is how often to ask again (hosted: 1m 10 s, 5m 30 s, 15m 60 s, 1h 120 s, 1d 30 s; a local install polls twice as fast, never under 5 s). `marketOpen` is true on weekdays 09:15 to 15:30 IST (exchange holidays are not known).",
+        "summary": "Candles for a timeframe (1m, 5m, 15m, 30m, 1h, 1d, 1w, 1mo)",
+        "description": "Public, read-only market data from Yahoo (delayed and unofficial like all Yahoo data; ADR 0069). `interval` is one of 1m, 5m, 15m, 30m, 1h, 1d, 1w, 1mo. Without `last`, the timeframe's whole window (1m about 5 days, 5m 30, 15m and 30m 55, 1h about a year, 1d a year, 1w ten years, 1mo twenty). With `last` (1 to 50), only the newest bars, for live polling. Bars are oldest first; an intraday bar's `time` is the epoch seconds of its start shifted to IST wall-clock, as a decimal string, and a daily, weekly or monthly bar's `time` is its date (the first day of the week or month). `pollMs` is how often to ask again (hosted: 1m 10 s, 5m 30 s, 15m 60 s, 30m 90 s, 1h 120 s, 1d 30 s, 1w 120 s, 1mo 300 s; a local install polls twice as fast, never under 5 s). `marketOpen` is true on weekdays 09:15 to 15:30 IST (exchange holidays are not known).",
         "parameters": [
           {
             "name": "ticker",
@@ -6580,8 +6586,11 @@
                 "1m",
                 "5m",
                 "15m",
+                "30m",
                 "1h",
-                "1d"
+                "1d",
+                "1w",
+                "1mo"
               ]
             }
           },

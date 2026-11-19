@@ -23,9 +23,11 @@ import type { Series } from '@/lib/chart/indicators';
 import { rangeStartTime, type Bar, type RangeKey } from '@/lib/chart/bars';
 import {
   INTRADAY_VISIBLE_BARS,
+  intradayRangeStart,
   isIntraday,
   isIntradayTime,
   isTailUpdate,
+  type IntradayRange,
   type Timeframe,
 } from '@/lib/chart/timeframes';
 import { INDICATORS, type IndicatorId } from './constants';
@@ -50,6 +52,8 @@ interface ChartCanvasProps {
   /** The user's indicator settings; anything missing draws with the default. */
   params: StoredParams;
   range: RangeKey;
+  /** Bottom-bar choice on an intraday chart; null shows the default window. */
+  intradayRange?: IntradayRange | null;
   onReady: (handle: ChartHandle | null) => void;
   onHover: (bar: Bar | null) => void;
   /** Called when the chart can't start, throws, or measures as collapsed, so the page can show its fallback. */
@@ -130,6 +134,7 @@ export function ChartCanvas({
   indicators,
   params,
   range,
+  intradayRange = null,
   onReady,
   onHover,
   onFailure,
@@ -487,15 +492,17 @@ export function ChartCanvas({
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || bars.length === 0) return;
-    const key = `${timeframe}|${range}|${bars[0].time}`;
+    const key = `${timeframe}|${range}|${intradayRange ?? ''}|${bars[0].time}`;
     if (appliedRange.current === key) return;
     appliedRange.current = key;
     const last = bars[bars.length - 1].time;
     try {
       if (isIntraday(timeframe)) {
-        const visible = INTRADAY_VISIBLE_BARS[timeframe];
+        const from = intradayRange
+          ? intradayRangeStart(bars, intradayRange)
+          : Math.max(0, bars.length - INTRADAY_VISIBLE_BARS[timeframe]);
         chart.timeScale().setVisibleLogicalRange({
-          from: Math.max(0, bars.length - visible),
+          from,
           to: bars.length + 4,
         });
         return;
@@ -506,7 +513,7 @@ export function ChartCanvas({
     } catch {
       chart.timeScale().fitContent();
     }
-  }, [range, timeframe, bars]);
+  }, [range, intradayRange, timeframe, bars]);
 
   return <div ref={containerRef} className={styles.canvas} />;
 }
