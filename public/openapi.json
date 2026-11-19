@@ -3172,7 +3172,7 @@
         ],
         "summary": "Mutual fund screener",
         "security": [],
-        "description": "Filter and rank Indian mutual funds (ADR 0067). Direct-plan Growth schemes by default (`plan`, `option`). Returns and risk ratios are computed from AMFI NAV history: returns of a year or more are annualised (CAGR), shorter ones are absolute; Sharpe/Sortino/std dev use 3 years of daily NAV and a 6.5% risk-free rate. A `null` figure means not enough history (or, for expense ratio and AUM, not disclosed yet), never zero. Past performance does not indicate future returns; this is reference data, not advice. Public, read-only.",
+        "description": "Filter and rank Indian mutual funds (ADR 0068). Direct-plan Growth schemes by default (`plan`, `option`). Returns and risk ratios are computed from AMFI NAV history: returns of a year or more are annualised (CAGR), shorter ones are absolute; Sharpe/Sortino/std dev use 3 years of daily NAV and a 6.5% risk-free rate. A `null` figure means not enough history (or, for expense ratio and AUM, not disclosed yet), never zero. Past performance does not indicate future returns; this is reference data, not advice. Public, read-only.",
         "parameters": [
           {
             "name": "q",
@@ -6433,6 +6433,64 @@
           },
           "500": {
             "description": "Could not run the check."
+          }
+        }
+      }
+    },
+    "/api/insights/chart-overlay": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Draw AI chart levels for a stock (Auto-Chart)",
+        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 12 hours per user, symbol, mode and latest bar. Mode is resolved on the server, never from the body: guarded by default (structure only). On a local / self-host instance with unrestricted mode on (ADR 0054) the response may also carry `setup` (entry, stop, target; risk/reward and percentages computed by the server). The hosted site never returns `setup` (ADR 0068). Body `{ symbol, force? }`.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "force": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {
+                "symbol": "RELIANCE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ success, data: { overlay: { levels: [{ kind, price, label }], trendlines: [{ a, b }], indicators: [id], setup?: { direction, entry, stop, target, riskReward, stopPct, targetPct } }, mode: 'guarded'|'unrestricted', generatedAt }, meta: { cached } }"
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "429": {
+            "description": "Rate limited."
+          },
+          "502": {
+            "description": "Not enough price history, or the model reply was unusable."
           }
         }
       }

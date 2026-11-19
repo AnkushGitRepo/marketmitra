@@ -477,6 +477,7 @@ Using a token: `Authorization: Bearer <token>`. `read` allows GET/HEAD/OPTIONS, 
 
 ## Stock brief (ADR 0054, ADR 0056)
 
+- `POST /api/insights/chart-overlay` — body `{ symbol, force? }`. AI Auto-Chart (ADR 0068): coordinates only, from the last year of daily bars with the caller's own AI key (`no_ai_key` 400 if none). Response `data: { overlay: { levels[{kind,price,label}], trendlines[{a,b}], indicators[], setup? }, mode, generatedAt }`. `setup` (entry, stop, target, riskReward, stopPct, targetPct; ratio computed by the server) appears only in unrestricted mode, which exists only on local / self-host instances. Cached 12 h per user, symbol, mode and latest bar.
 - `POST /api/insights/stock-brief` — body `{ symbol, force? }`. Up to five points (`quality`, `growth`, `valuation`, `ownership`, `risk`), each `{ key, signal: strength|neutral|concern, text }`, written from computed figures (ROCE/ROE, debt/equity, free cash flow, CAGRs, peer-median P/E, promoter/FII/DII change, headline tone, distance from the 52-week high and 200-day average) with the caller's own AI key (`no_ai_key` 400 if none). Cached 12 h per user, symbol and mode. Response `data: { brief: { points[], valuation?, entry? }, mode, generatedAt }`; `valuation` / `entry` appear only in unrestricted mode, which exists only on local / self-host instances and is off by default. The figures themselves are shown on the stock page without calling this endpoint.
 
 ## Structured widget briefs (ADR 0057)
