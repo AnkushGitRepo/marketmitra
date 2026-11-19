@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { createPortal } from 'react-dom';
 import { RANGE_KEYS, type Bar, type RangeKey } from '@/lib/chart/bars';
 import type { Drawing, DrawingTool } from '@/lib/chart/drawings';
 import { ChartCanvas, type ChartHandle, type ChartKind } from './ChartCanvas';
@@ -27,7 +28,15 @@ interface ProChartProps {
   onRangeChange?: (range: RangeKey) => void;
 }
 
-const RANGE_LABELS: Record<RangeKey, string> = { '1M': '1M', '3M': '3M', '6M': '6M', YTD: 'YTD', '1Y': '1Y', '5Y': '5Y', ALL: 'All' };
+const RANGE_LABELS: Record<RangeKey, string> = {
+  '1M': '1M',
+  '3M': '3M',
+  '6M': '6M',
+  YTD: 'YTD',
+  '1Y': '1Y',
+  '5Y': '5Y',
+  ALL: 'All',
+};
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
 /** localStorage can throw (private mode, blocked site data) — the chart must
@@ -48,10 +57,34 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
+function ExpandIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <path
+        d={
+          expanded
+            ? 'M8 3v5H3M14 3v5h5M8 19v-5H3M14 19v-5h5'
+            : 'M3 8V3h5M19 8V3h-5M3 14v5h5M19 14v5h-5'
+        }
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function BellIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path d="M6 16V10a5 5 0 0 1 10 0v6l1.5 2h-13L6 16ZM9.5 19.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M6 16V10a5 5 0 0 1 10 0v6l1.5 2h-13L6 16ZM9.5 19.5a1.5 1.5 0 0 0 3 0"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -62,20 +95,35 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
   // Client-only component (loaded with ssr: false), so reading localStorage in
   // the initializers can't cause a hydration mismatch.
   const [indicators, setIndicators] = useState<IndicatorId[]>(() =>
-    readJson<IndicatorId[]>(INDICATOR_STORAGE_KEY, DEFAULT_INDICATORS)
+    readJson<IndicatorId[]>(INDICATOR_STORAGE_KEY, DEFAULT_INDICATORS),
   );
   const [tool, setTool] = useState<DrawingTool>('cursor');
-  const [drawings, setDrawings] = useState<Drawing[]>(() => readJson<Drawing[]>(drawingsStorageKey(symbol), []));
+  const [drawings, setDrawings] = useState<Drawing[]>(() =>
+    readJson<Drawing[]>(drawingsStorageKey(symbol), []),
+  );
   const [handle, setHandle] = useState<ChartHandle | null>(null);
   const [hover, setHover] = useState<Bar | null>(null);
   // Fail-safe: set when the interactive chart can't start / errors / collapses; the stage then shows a simple SVG chart.
   const [failure, setFailure] = useState<string | null>(null);
   const [chartKey, setChartKey] = useState(0);
+  // Full screen is a CSS overlay, not the browser Fullscreen API: it also works in embedded browsers and keeps all chart state.
+  const [expanded, setExpanded] = useState(false);
   const retryInteractive = useCallback(() => {
     setFailure(null);
     setChartKey((k) => k + 1);
   }, []);
 
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setExpanded(false);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [expanded]);
   useEffect(() => {
     writeJson(INDICATOR_STORAGE_KEY, indicators);
   }, [indicators]);
@@ -105,11 +153,13 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
   const up = shown ? (change ?? shown.close - shown.open) >= 0 : true;
   const stateClass = up ? styles.up : styles.down;
 
-  return (
-    <div className={styles.workspace}>
+  const workspace = (
+    <div className={`${styles.workspace} ${expanded ? styles.workspaceExpanded : ''}`}>
       <div className={styles.topbar}>
         <span className={styles.symbolChip}>{symbol}</span>
-        <span className={styles.interval} title="Daily bars">D</span>
+        <span className={styles.interval} title="Daily bars">
+          D
+        </span>
         <span className={styles.divider} />
         <div className={styles.segment} role="group" aria-label="Chart type">
           {(['candles', 'line'] as const).map((k) => (
@@ -137,10 +187,25 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
             Alert
           </Link>
         )}
+        <button
+          type="button"
+          className={`${styles.topBtn} ${styles.fullscreenBtn}`}
+          aria-pressed={expanded}
+          aria-label={expanded ? 'Exit full screen' : 'Full screen'}
+          title={expanded ? 'Exit full screen (Esc)' : 'Full screen'}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <ExpandIcon expanded={expanded} />
+        </button>
       </div>
 
       <div className={styles.body}>
-        <DrawingToolbar tool={tool} onTool={setTool} hasDrawings={drawings.length > 0} onClear={clearDrawings} />
+        <DrawingToolbar
+          tool={tool}
+          onTool={setTool}
+          hasDrawings={drawings.length > 0}
+          onClear={clearDrawings}
+        />
 
         <div className={`${styles.stage} ${failure ? styles.stageFailed : ''}`}>
           {shown && !failure && (
@@ -165,7 +230,12 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
           )}
 
           {bars.length > 0 && failure ? (
-            <ChartFallback symbol={symbol} bars={bars} reason={failure} onRetry={retryInteractive} />
+            <ChartFallback
+              symbol={symbol}
+              bars={bars}
+              reason={failure}
+              onRetry={retryInteractive}
+            />
           ) : bars.length > 0 ? (
             <>
               <ChartCanvas
@@ -210,4 +280,8 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
       </div>
     </div>
   );
+
+  // The page's enter animation leaves a transform on an ancestor, which would trap `position: fixed` inside the page, so full screen
+  // is portalled to <body>. The chart canvas remounts on toggle; indicators, drawings and Auto-Chart state live here and are kept.
+  return expanded ? createPortal(workspace, document.body) : workspace;
 }
