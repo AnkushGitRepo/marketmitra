@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { FIB_LEVELS, describeDrawing, fibPrices, measure, positionLevels } from './drawings';
+import {
+  FIB_LEVELS,
+  describeDrawing,
+  fibPrices,
+  measure,
+  positionLevels,
+  toggleHidden,
+  visibleDrawings,
+  type Drawing,
+} from './drawings';
 
 describe('fibPrices', () => {
   it('places each level between the two anchor prices (0 at p2, 1 at p1)', () => {
@@ -70,5 +79,30 @@ describe('describeDrawing', () => {
     expect(
       describeDrawing({ id: '4', kind: 'long', a, b: { time: '2026-03-09', price: 1300 } }).name,
     ).toBe('Long position');
+  });
+});
+
+describe('hiding drawings', () => {
+  const a = { time: '2026-03-02', price: 100 };
+  const list: Drawing[] = [
+    { id: '1', kind: 'hline', a },
+    { id: '2', kind: 'vline', a },
+  ];
+
+  it('toggles one drawing hidden and back, without changing the list it was given', () => {
+    const hidden = toggleHidden(list, '1');
+    expect(hidden[0].hidden).toBe(true);
+    expect(hidden[1].hidden).toBeUndefined();
+    expect(list[0].hidden).toBeUndefined();
+    expect(toggleHidden(hidden, '1')[0].hidden).toBe(false);
+  });
+
+  it('draws only the drawings that are not hidden', () => {
+    expect(visibleDrawings(toggleHidden(list, '2')).map((d) => d.id)).toEqual(['1']);
+    expect(visibleDrawings(list)).toHaveLength(2);
+  });
+
+  it('ignores an unknown id', () => {
+    expect(toggleHidden(list, 'nope')).toEqual(list);
   });
 });
