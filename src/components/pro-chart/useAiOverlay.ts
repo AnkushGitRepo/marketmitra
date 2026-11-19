@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import type { PromptMode } from '@/lib/ai/promptMode';
+import type { Timeframe } from '@/lib/chart/timeframes';
 
 export type AiOverlayStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -25,6 +26,7 @@ const NO_KEY_MESSAGE = 'Add your AI provider key in Settings to use Auto-Chart.'
 /** Auto-Chart request state (#228). Turning it off clears everything; a late reply after that is ignored. */
 export function useAiOverlay(
   symbol: string,
+  timeframe: Timeframe,
 ): AiOverlayState & { enable: () => Promise<ChartOverlay | null>; disable: () => void } {
   const [state, setState] = useState<AiOverlayState>(IDLE);
   const run = useRef(0);
@@ -38,7 +40,7 @@ export function useAiOverlay(
       const res = await fetch('/api/insights/chart-overlay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, force: retryFresh.current }),
+        body: JSON.stringify({ symbol, interval: timeframe, force: retryFresh.current }),
       });
       const body = (await res.json().catch(() => null)) as OverlayResponse | null;
       if (id !== run.current) return null;
@@ -62,7 +64,7 @@ export function useAiOverlay(
         });
       return null;
     }
-  }, [symbol]);
+  }, [symbol, timeframe]);
 
   const disable = useCallback(() => {
     run.current += 1;

@@ -16,15 +16,26 @@ const state = {
   modelText: '',
   system: '',
   ttl: 0,
+  key: '',
+  candles: [] as unknown[],
+  candleCalls: [] as unknown[][],
+  prompt: '',
 };
 
 vi.mock('@/lib/currentUserId', () => ({ getCurrentUserId: async () => state.userId }));
 vi.mock('@/lib/ai/userAiConfig', () => ({ getUserAiConfig: async () => state.aiConfig }));
 vi.mock('@/lib/ai/promptModeStore', () => ({ resolvePromptMode: async () => state.mode }));
 vi.mock('@/lib/dashboard/fundamentalsApi', () => ({ getPrices: async () => state.prices }));
+vi.mock('@/lib/dashboard/yahooCandles', () => ({
+  getCandles: async (...a: unknown[]) => {
+    state.candleCalls.push(a);
+    return state.candles;
+  },
+}));
 vi.mock('@/lib/ai/generate', () => ({
-  generateInsightText: async (_c: unknown, system: string) => {
+  generateInsightText: async (_c: unknown, system: string, prompt: string) => {
     state.system = system;
+    state.prompt = prompt;
     return { ok: true, text: state.modelText, model: 'm', finishReason: 'stop' };
   },
 }));
@@ -33,16 +44,30 @@ vi.mock('@/lib/system/eventLog', () => ({ logEvent }));
 vi.mock('@/lib/rateLimit', () => ({ withRateLimit: (h: unknown) => h }));
 vi.mock('@/lib/insights', () => ({
   hashInput: (v: unknown) => JSON.stringify(v),
-  getOrGenerate: async (a: { generate: () => Promise<{ content?: string; model?: string; error?: string }>; ttlMs: number }) => {
+  getOrGenerate: async (a: {
+    generate: () => Promise<{ content?: string; model?: string; error?: string }>;
+    ttlMs: number;
+    key: string;
+  }) => {
     state.ttl = a.ttlMs;
+    state.key = a.key;
     const g = await a.generate();
     if (g.error) return { ok: false, error: g.error };
-    return { ok: true, cached: false, insight: { content: g.content, model: g.model, generatedAt: new Date('2026-11-19T00:00:00Z') } };
+    return {
+      ok: true,
+      cached: false,
+      insight: {
+        content: g.content,
+        model: g.model,
+        generatedAt: new Date('2026-11-19T00:00:00Z'),
+      },
+    };
   },
 }));
 
 const { POST } = await import('./route');
-const call = (body: unknown = { symbol: 'acc' }) => POST(new Request('http://x', { method: 'POST', body: JSON.stringify(body) }));
+const call = (body: unknown = { symbol: 'acc' }) =>
+  POST(new Request('http://x', { method: 'POST', body: JSON.stringify(body) }));
 const reply = JSON.stringify({
   levels: [{ type: 'support', price: 150 }],
   setup: { direction: 'long', entry: 159, stop: 150, target: 180 },
@@ -90,7 +115,12 @@ describe('POST /api/insights/chart-overlay', () => {
     state.mode = 'unrestricted';
     const body = await (await call()).json();
     expect(body.data.mode).toBe('unrestricted');
-    expect(body.data.overlay.setup).toMatchObject({ direction: 'long', entry: 159, stop: 150, riskReward: 2.3 });
+    expect(body.data.overlay.setup).toMatchObject({
+      direction: 'long',
+      entry: 159,
+      stop: 150,
+      riskReward: 2.3,
+    });
     expect(state.ttl).toBe(12 * 60 * 60 * 1000);
   });
 
@@ -99,5 +129,36 @@ describe('POST /api/insights/chart-overlay', () => {
     const res = await call();
     expect(res.status).toBe(502);
     expect(logEvent).toHaveBeenCalled();
+  });
+
+  it('Day: reads the price history and keeps the plain symbol as the cache key', async () => {
+    await call();
+    expect(state.key).toBe('ACC');
+    expect(state.candleCalls).toHaveLength(0);
+  });
+
+  it("intraday: reads that timeframe's candles, keys the cache by it and uses its shorter freshness window", async () => {
+    const start = Date.UTC(2026, 10, 18, 3, 45) / 1000 + 19_800;
+    state.candles = Array.from({ length: 60 }, (_, i) => {
+      const close = 100 + i;
+      return {
+        time: String(start + i * 300),
+        open: close,
+        high: close + 0.2,
+        low: close - 0.2,
+        close,
+        volume: 10,
+      };
+    });
+    const res = await call({ symbol: 'acc', interval: '5m' });
+    expect(res.status).toBe(200);
+    expect(state.candleCalls[0]).toEqual(['ACC', '5m']);
+    expect(state.key).toBe('ACC:5m');
+    expect(state.ttl).toBe(5 * 60 * 1000);
+    expect(state.prompt).toContain('5m candles, times in IST');
+  });
+
+  it('422s an unknown interval', async () => {
+    expect((await call({ symbol: 'ACC', interval: '2m' })).status).toBe(422);
   });
 });

@@ -696,6 +696,8 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+}
+
 /* AI Auto-Chart (#228). Literal fallbacks mirror the chart's gain / loss colours. */
 .aiLevel {
   stroke-width: 1.4;
@@ -757,6 +759,8 @@
 }
 .aiBarError {
   color: var(--app-loss, #d6452f);
+}
+
 /* Full screen (#230): fixed over the viewport; the stage grows to fill what the toolbar and range bar leave. */
 .workspaceExpanded {
   position: fixed;
@@ -773,4 +777,42 @@
 }
 .fullscreenBtn {
   margin-left: auto;
+}
+
+/* Timeframes and live updates (#236) */
+.liveDot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--app-gain, #0b8266);
+}
+.liveDot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: livePulse 1.6s ease-in-out infinite;
+}
+@keyframes livePulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liveDot::before {
+    animation: none;
+  }
+}
+.retryBtn {
+  border: 0;
+  background: none;
+  color: var(--app-teal, #0c8a6c);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
 }

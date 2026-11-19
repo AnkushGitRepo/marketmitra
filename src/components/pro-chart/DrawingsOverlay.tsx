@@ -10,6 +10,7 @@ import {
   type Drawing,
   type DrawingTool,
 } from '@/lib/chart/drawings';
+import { barTimeLabel } from '@/lib/chart/timeframes';
 import type { ChartHandle } from './ChartCanvas';
 import styles from './ProChart.module.css';
 
@@ -235,7 +236,7 @@ export function DrawingsOverlay({
             strokeDasharray="5 4"
           />
           <text x={a.x + 5} y={14} className={styles.drawLabel}>
-            {d.a.time}
+            {barTimeLabel(d.a.time)}
           </text>
         </g>
       );

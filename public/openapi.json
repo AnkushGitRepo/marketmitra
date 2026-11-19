@@ -6443,7 +6443,7 @@
           "AI"
         ],
         "summary": "Draw AI chart levels for a stock (Auto-Chart)",
-        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 12 hours per user, symbol, mode and latest bar. Mode is resolved on the server, never from the body: guarded by default (structure only). On a local / self-host instance with unrestricted mode on (ADR 0054) the response may also carry `setup` (entry, stop, target; risk/reward and percentages computed by the server). The hosted site never returns `setup` (ADR 0068). Body `{ symbol, force? }`.",
+        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 12 hours per user, symbol, mode and latest bar. Mode is resolved on the server, never from the body: guarded by default (structure only). On a local / self-host instance with unrestricted mode on (ADR 0054) the response may also carry `setup` (entry, stop, target; risk/reward and percentages computed by the server). The hosted site never returns `setup` (ADR 0068). Body `{ symbol, interval?, force? }`; `interval` is 1m, 5m, 15m, 1h or 1d (default 1d) and the bars, the freshness window (2 minutes on 1m up to 12 hours on 1d) and the cache key follow it. Trendline `a` / `b` times are bar times as in the candles endpoint.",
         "security": [
           {
             "cookieAuth": []
@@ -6467,6 +6467,16 @@
                   },
                   "force": {
                     "type": "boolean"
+                  },
+                  "interval": {
+                    "type": "string",
+                    "enum": [
+                      "1m",
+                      "5m",
+                      "15m",
+                      "1h",
+                      "1d"
+                    ]
                   }
                 }
               },
@@ -6491,6 +6501,91 @@
           },
           "502": {
             "description": "Not enough price history, or the model reply was unusable."
+          }
+        }
+      }
+    },
+    "/api/stock/{ticker}/candles": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Candles for a timeframe (1m, 5m, 15m, 1h, 1d)",
+        "description": "Public, read-only market data from Yahoo (delayed and unofficial like all Yahoo data; ADR 0069). `interval` is one of 1m, 5m, 15m, 1h, 1d. Without `last`, the timeframe's whole window (1m about 5 days, 5m 30, 15m 55, 1h about a year, 1d a year). With `last` (1 to 50), only the newest bars, for live polling. Bars are oldest first; an intraday bar's `time` is the epoch seconds of its start shifted to IST wall-clock, as a decimal string, and a daily bar's `time` is its date. `pollMs` is how often to ask again (hosted: 1m 10 s, 5m 30 s, 15m 60 s, 1h 120 s, 1d 30 s; a local install polls twice as fast, never under 5 s). `marketOpen` is true on weekdays 09:15 to 15:30 IST (exchange holidays are not known).",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1m",
+                "5m",
+                "15m",
+                "1h",
+                "1d"
+              ]
+            }
+          },
+          {
+            "name": "last",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { symbol, interval, bars: [{ time, open, high, low, close, volume }], pollMs, marketOpen }, error }"
+          },
+          "400": {
+            "description": "invalid_ticker, invalid_interval or invalid_last."
+          },
+          "502": {
+            "description": "candles_unavailable (retryable)."
+          }
+        }
+      }
+    },
+    "/api/stock/{ticker}/live": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Live price for the stock header",
+        "description": "One Yahoo quote, shared between callers for a few seconds (ADR 0069). `pollMs` is how often to ask again (hosted 15 s; local about 7.5 s).",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { symbol, price, prevClose, changePct, asOf, pollMs, marketOpen }, error }"
+          },
+          "400": {
+            "description": "invalid_ticker."
+          },
+          "502": {
+            "description": "quote_unavailable (retryable)."
           }
         }
       }

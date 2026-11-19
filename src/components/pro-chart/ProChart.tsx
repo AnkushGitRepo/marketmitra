@@ -6,8 +6,16 @@ import { createPortal } from 'react-dom';
 import type { IndicatorParams, StoredParams } from '@/lib/chart/indicatorParams';
 import { RANGE_KEYS, type Bar, type RangeKey } from '@/lib/chart/bars';
 import type { Drawing, DrawingTool } from '@/lib/chart/drawings';
+import {
+  DEFAULT_TIMEFRAME,
+  TIMEFRAMES,
+  isIntraday,
+  isTimeframe,
+  type Timeframe,
+} from '@/lib/chart/timeframes';
 import { AiOverlay } from './AiOverlay';
 import { useAiOverlay } from './useAiOverlay';
+import { useCandles } from './useCandles';
 import { ChartCanvas, type ChartHandle, type ChartKind } from './ChartCanvas';
 import { ChartFallback } from './ChartFallback';
 import { DrawingToolbar } from './DrawingToolbar';
@@ -19,6 +27,7 @@ import {
   DEFAULT_INDICATORS,
   INDICATOR_PARAMS_STORAGE_KEY,
   INDICATOR_STORAGE_KEY,
+  TIMEFRAME_STORAGE_KEY,
   drawingsStorageKey,
   type IndicatorId,
 } from './constants';
@@ -96,7 +105,19 @@ function BellIcon() {
   );
 }
 
-export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: ProChartProps) {
+export function ProChart({
+  symbol,
+  bars: dailyBars,
+  alertHref,
+  onAlert,
+  onRangeChange,
+}: ProChartProps) {
+  const [timeframe, setTimeframe] = useState<Timeframe>(() => {
+    const saved = readJson<unknown>(TIMEFRAME_STORAGE_KEY, DEFAULT_TIMEFRAME);
+    return isTimeframe(saved) ? saved : DEFAULT_TIMEFRAME;
+  });
+  const candles = useCandles(symbol, timeframe, dailyBars);
+  const bars = candles.bars;
   const [range, setRange] = useState<RangeKey>('1Y');
   const [kind, setKind] = useState<ChartKind>('candles');
   // Client-only component (loaded with ssr: false), so reading localStorage in
@@ -108,8 +129,23 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
     readJson<StoredParams>(INDICATOR_PARAMS_STORAGE_KEY, {}),
   );
   const [tool, setTool] = useState<DrawingTool>('cursor');
-  const [drawings, setDrawings] = useState<Drawing[]>(() =>
-    readJson<Drawing[]>(drawingsStorageKey(symbol), []),
+  // Drawings belong to a timeframe: a line drawn on the 5m chart means nothing at a different zoom. The stored list swaps in the
+  // same render as the timeframe, so the save effect never writes one timeframe's drawings under another's key.
+  const drawKey = drawingsStorageKey(symbol, timeframe);
+  const [drawState, setDrawState] = useState(() => ({
+    key: drawKey,
+    list: readJson<Drawing[]>(drawKey, []),
+  }));
+  let activeDraw = drawState;
+  if (drawState.key !== drawKey) {
+    activeDraw = { key: drawKey, list: readJson<Drawing[]>(drawKey, []) };
+    setDrawState(activeDraw);
+  }
+  const drawings = activeDraw.list;
+  const setDrawings = useCallback(
+    (update: (cur: Drawing[]) => Drawing[]) =>
+      setDrawState((st) => ({ ...st, list: update(st.list) })),
+    [],
   );
   const [handle, setHandle] = useState<ChartHandle | null>(null);
   const [hover, setHover] = useState<Bar | null>(null);
@@ -141,10 +177,13 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
     writeJson(INDICATOR_PARAMS_STORAGE_KEY, params);
   }, [params]);
   useEffect(() => {
-    writeJson(drawingsStorageKey(symbol), drawings);
-  }, [drawings, symbol]);
+    writeJson(drawState.key, drawState.list);
+  }, [drawState]);
+  useEffect(() => {
+    writeJson(TIMEFRAME_STORAGE_KEY, timeframe);
+  }, [timeframe]);
 
-  const ai = useAiOverlay(symbol);
+  const ai = useAiOverlay(symbol, timeframe);
   // Indicators Auto-Chart switched on, so turning it off puts back exactly what the user had.
   const [aiIndicators, setAiIndicators] = useState<IndicatorId[]>([]);
   const toggleAi = useCallback(async () => {
@@ -173,13 +212,29 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
       return next === null ? rest : { ...rest, [id]: next };
     });
   }, []);
-  const commitDrawing = useCallback((d: Drawing) => setDrawings((cur) => [...cur, d]), []);
+  const commitDrawing = useCallback(
+    (d: Drawing) => setDrawings((cur) => [...cur, d]),
+    [setDrawings],
+  );
   const toolDone = useCallback(() => setTool('cursor'), []);
   const removeDrawing = useCallback(
     (id: string) => setDrawings((cur) => cur.filter((d) => d.id !== id)),
-    [],
+    [setDrawings],
   );
-  const clearDrawings = useCallback(() => setDrawings([]), []);
+  const clearDrawings = useCallback(() => setDrawings(() => []), [setDrawings]);
+
+  // Auto-Chart is drawn for one timeframe's bars, so changing timeframe turns it off (and puts back the indicators it added).
+  const pickTimeframe = (next: Timeframe) => {
+    if (next === timeframe) return;
+    if (ai.status !== 'idle') {
+      ai.disable();
+      setIndicators((cur) => cur.filter((id) => !aiIndicators.includes(id)));
+      setAiIndicators([]);
+    }
+    setTool('cursor');
+    setHover(null);
+    setTimeframe(next);
+  };
 
   const pickRange = (r: RangeKey) => {
     setRange(r);
@@ -200,9 +255,24 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
     <div className={`${styles.workspace} ${expanded ? styles.workspaceExpanded : ''}`}>
       <div className={styles.topbar}>
         <span className={styles.symbolChip}>{symbol}</span>
-        <span className={styles.interval} title="Daily bars">
-          D
-        </span>
+        <div className={styles.segment} role="group" aria-label="Timeframe">
+          {TIMEFRAMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              aria-pressed={timeframe === t.id}
+              className={`${styles.segBtn} ${timeframe === t.id ? styles.segBtnActive : ''}`}
+              onClick={() => pickTimeframe(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {candles.live && (
+          <span className={styles.liveDot} title="Live: updating while the market is open">
+            Live
+          </span>
+        )}
         <span className={styles.divider} />
         <div className={styles.segment} role="group" aria-label="Chart type">
           {(['candles', 'line'] as const).map((k) => (
@@ -342,6 +412,7 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
                 key={chartKey}
                 bars={bars}
                 kind={kind}
+                timeframe={timeframe}
                 indicators={indicators}
                 params={params}
                 range={range}
@@ -363,6 +434,15 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
                 onRemove={removeDrawing}
               />
             </>
+          ) : isIntraday(timeframe) && candles.status === 'loading' ? (
+            <p className={styles.empty}>Loading {timeframe} candles…</p>
+          ) : isIntraday(timeframe) && candles.status === 'error' ? (
+            <p className={styles.empty}>
+              Could not load {timeframe} candles.{' '}
+              <button type="button" className={styles.retryBtn} onClick={candles.retry}>
+                Try again
+              </button>
+            </p>
           ) : (
             <p className={styles.empty}>No price history available.</p>
           )}
@@ -370,18 +450,23 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
       </div>
 
       <div className={styles.footer} role="group" aria-label="Date range">
-        {RANGE_KEYS.map((r) => (
-          <button
-            key={r}
-            type="button"
-            aria-pressed={range === r}
-            className={`${styles.rangeBtn} ${range === r ? styles.rangeBtnActive : ''}`}
-            onClick={() => pickRange(r)}
-          >
-            {RANGE_LABELS[r]}
-          </button>
-        ))}
-        <span className={styles.footerNote}>Daily bars · prices in ₹</span>
+        {!isIntraday(timeframe) &&
+          RANGE_KEYS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              aria-pressed={range === r}
+              className={`${styles.rangeBtn} ${range === r ? styles.rangeBtnActive : ''}`}
+              onClick={() => pickRange(r)}
+            >
+              {RANGE_LABELS[r]}
+            </button>
+          ))}
+        <span className={styles.footerNote}>
+          {isIntraday(timeframe)
+            ? `${timeframe} candles · IST · prices in ₹`
+            : 'Daily bars · prices in ₹'}
+        </span>
       </div>
     </div>
   );

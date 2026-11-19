@@ -1,3 +1,5 @@
+import { barTimeLabel } from './timeframes';
+
 /** Drawing-tool model. Drawings are stored in data space (bar time + price),
  * never pixels, so they stay put when the chart zooms, pans or resizes. */
 
@@ -83,7 +85,7 @@ const rupees = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionD
 export function describeDrawing(d: Drawing): { name: string; detail: string } {
   const name = KIND_NAMES[d.kind];
   if (d.kind === 'text') return { name, detail: d.text };
-  if (d.kind === 'vline') return { name, detail: d.a.time };
+  if (d.kind === 'vline') return { name, detail: barTimeLabel(d.a.time) };
   if (d.kind === 'hline') return { name, detail: rupees(d.a.price) };
   return { name, detail: `${rupees(d.a.price)} → ${rupees((d as { b: ChartPoint }).b.price)}` };
 }

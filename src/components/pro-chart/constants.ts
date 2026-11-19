@@ -198,4 +198,7 @@ export const DEFAULT_INDICATORS: IndicatorId[] = ['volume'];
 
 export const INDICATOR_STORAGE_KEY = 'mm:chart:indicators';
 export const INDICATOR_PARAMS_STORAGE_KEY = 'mm:chart:indicator-params';
-export const drawingsStorageKey = (symbol: string) => `mm:chart:drawings:${symbol}`;
+export const TIMEFRAME_STORAGE_KEY = 'mm:chart:timeframe';
+/** Day keeps its original key, so drawings made before timeframes existed are still there. */
+export const drawingsStorageKey = (symbol: string, timeframe: string = '1d') =>
+  timeframe === '1d' ? `mm:chart:drawings:${symbol}` : `mm:chart:drawings:${symbol}:${timeframe}`;

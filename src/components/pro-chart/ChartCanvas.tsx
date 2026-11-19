@@ -225,6 +225,9 @@ export function ChartCanvas({
       chartRef.current = null;
       seriesRef.current = [];
       priceRef.current = null;
+      // The series died with the chart; a later build must not take the in-place update path against them.
+      updatersRef.current = [];
+      builtRef.current = null;
     };
   }, []);
 
