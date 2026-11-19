@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- AI Auto-Charts are now saved for each stock and timeframe (the latest 10): turning Auto-Chart on shows the newest saved one without another AI call, a new "Saved" menu next to the button lists them, lets you show or delete any of them, and **Generate new** makes a fresh one while keeping the old ones. The chart says how old the shown one is. ([#253](https://github.com/AnkushGitRepo/marketmitra/issues/253))
 - The drawing tools on the chart's left toolbar now show a tooltip with the tool's name and a one-line hint on how to use it, on hover and keyboard focus. ([#249](https://github.com/AnkushGitRepo/marketmitra/issues/249))
 - What AI Auto-Chart draws now appears in the chart's Drawings menu under its own "AI Auto-Chart" heading: each level, trendline and the trade setup can be removed on its own, or all at once. Every row in the Drawings menu, your own and the AI's, also has an eye button to hide or show it without removing it. ([#245](https://github.com/AnkushGitRepo/marketmitra/issues/245), [#247](https://github.com/AnkushGitRepo/marketmitra/issues/247))
 - On the hosted site, an admin (a user listed in `ADMIN_USER_IDS`) can now use Unrestricted Mitra and Mitra Advisor like a local install does; every other hosted user still cannot, whatever they send. ([#243](https://github.com/AnkushGitRepo/marketmitra/issues/243))

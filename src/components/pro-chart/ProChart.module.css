@@ -908,3 +908,52 @@
 .toolBtn:focus-visible .toolTip {
   display: flex;
 }
+
+/* Saved Auto-Charts menu (#253) */
+.runShow {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.runActive {
+  background: var(--app-cream, #f4f1ea);
+}
+.runBadge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.runsEmpty {
+  margin: 4px 8px 8px;
+  font-size: 12px;
+  color: var(--app-text-subtle);
+}
+.runGenerate {
+  width: 100%;
+  margin-top: 4px;
+  padding: 9px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.runGenerate:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
