@@ -450,7 +450,10 @@ export function ProChart({
   const stateClass = up ? styles.up : styles.down;
 
   const workspace = (
-    <div className={`${styles.workspace} ${expanded ? styles.workspaceExpanded : ''}`}>
+    <div
+      className={`${styles.workspace} ${expanded ? styles.workspaceExpanded : ''}`}
+      data-menu-bounds=""
+    >
       <div className={styles.topbar}>
         {expanded && <span className={styles.symbolChip}>{symbol}</span>}
         <div className={`${styles.segment} ${styles.tfInline}`} role="group" aria-label="Timeframe">

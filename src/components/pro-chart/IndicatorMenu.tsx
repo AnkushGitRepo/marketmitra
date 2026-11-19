@@ -9,6 +9,7 @@ import {
   type StoredParams,
 } from '@/lib/chart/indicatorParams';
 import { INDICATORS, type IndicatorId } from './constants';
+import { useMenuPlacement } from './useMenuPlacement';
 import styles from './ProChart.module.css';
 
 interface IndicatorMenuProps {
@@ -53,6 +54,7 @@ export function IndicatorMenu({ active, params, onToggle, onParams }: IndicatorM
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<IndicatorId | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  useMenuPlacement(open, rootRef);
 
   useEffect(() => {
     if (!open) return;
