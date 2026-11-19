@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The search box, notifications, settings and hide-values buttons in the top header now show the same tip (name and a one-line hint) after a short pause when you rest the pointer on them. ([#271](https://github.com/AnkushGitRepo/marketmitra/issues/271))
+
 - When the main sidebar is collapsed, hovering an icon (or tabbing to it) now shows its name and go-to shortcut in the same tip as the chart's toolbar, at once. ([#269](https://github.com/AnkushGitRepo/marketmitra/issues/269))
 
 - The chart's timeframe and chart-type pickers now open a menu in the same style as the other chart menus (with a properly spaced check mark and arrow-key support) instead of the browser's own list. ([#268](https://github.com/AnkushGitRepo/marketmitra/issues/268))

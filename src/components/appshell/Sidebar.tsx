@@ -2,26 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useSyncExternalStore, type FocusEvent, type MouseEvent } from 'react';
-import { createPortal } from 'react-dom';
+import { useSyncExternalStore } from 'react';
 import { buildNavSections, isNavActive } from './navItems';
 import { NAV_ICONS, ResearchIcon } from './NavIcons';
 import { shortcutHintFor } from '@/lib/shortcuts/shortcuts';
 import { Logo } from '@/components/landing/Logo';
+import { useFloatingTip } from './useFloatingTip';
 import styles from './Sidebar.module.css';
 
 const COLLAPSE_KEY = 'mm-sidebar-collapsed';
-/** Gap between a collapsed-sidebar icon and its tip, in px. */
-const TIP_GAP_PX = 10;
-
-interface SidebarTip {
-  label: string;
-  hint?: string;
-  /** Viewport coordinates: the tip's left edge and vertical centre. */
-  left: number;
-  top: number;
-}
-
 // useSyncExternalStore (not useState+useEffect) so reading localStorage
 // can't produce a hydration-mismatch flash — same pattern as CookieNotice.
 function subscribe(onStoreChange: () => void) {
@@ -57,32 +46,8 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
   const pathname = usePathname();
   const sections = buildNavSections(advisorEnabled);
   const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  // A collapsed sidebar shows only icons, so each gets a tip with its name (#269). The tip is drawn on the page, not inside the sidebar,
-  // because the sidebar clips whatever sticks out of it.
-  const [tip, setTip] = useState<SidebarTip | null>(null);
-  const showTip = (
-    e: MouseEvent<HTMLElement> | FocusEvent<HTMLElement>,
-    label: string,
-    hint?: string,
-  ) => {
-    if (!collapsed) return;
-    // Hover only on a real pointer (on touch it would stick after a tap); focus only from the keyboard.
-    if (
-      e.type === 'focus'
-        ? !e.currentTarget.matches(':focus-visible')
-        : !window.matchMedia('(hover: hover)').matches
-    )
-      return;
-    const r = e.currentTarget.getBoundingClientRect();
-    setTip({ label, hint, left: r.right + TIP_GAP_PX, top: r.top + r.height / 2 });
-  };
-  const hideTip = () => setTip(null);
-  const tipHandlers = (label: string, hint?: string) => ({
-    onMouseEnter: (e: MouseEvent<HTMLElement>) => showTip(e, label, hint),
-    onFocus: (e: FocusEvent<HTMLElement>) => showTip(e, label, hint),
-    onMouseLeave: hideTip,
-    onBlur: hideTip,
-  });
+  // A collapsed sidebar shows only icons, so each gets a tip with its name (#269).
+  const { tip, tipProps: tipHandlers } = useFloatingTip({ place: 'right', enabled: collapsed });
 
   const toggleCollapsed = () => {
     try {
@@ -163,14 +128,7 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
           </div>
         ))}
       </nav>
-      {tip &&
-        createPortal(
-          <span className={styles.tip} role="tooltip" style={{ left: tip.left, top: tip.top }}>
-            <span className={styles.tipLabel}>{tip.label}</span>
-            {tip.hint && <span className={styles.tipHint}>{tip.hint}</span>}
-          </span>,
-          document.body,
-        )}
+      {tip}
     </aside>
   );
 }

@@ -1,0 +1,31 @@
+/* One tip on the page, beside the control being hovered (#269, #271): the same dark bubble as the chart toolbar's tips */
+.tip {
+  position: fixed;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: 230px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+  font-family: var(--font-sans);
+  text-align: left;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(22, 25, 28, 0.25);
+}
+.right {
+  transform: translateY(-50%);
+}
+.label {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.hint {
+  font-size: 11.5px;
+  font-weight: 400;
+  opacity: 0.8;
+  line-height: 1.35;
+}
