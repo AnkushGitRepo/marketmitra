@@ -22,7 +22,12 @@ export interface ChartPoint {
   price: number;
 }
 
-export type Drawing =
+export type Drawing = DrawingShape & {
+  /** Not drawn, but kept in the list and saved (the Drawings menu's hide / show). */
+  hidden?: boolean;
+};
+
+type DrawingShape =
   | { id: string; kind: 'trend'; a: ChartPoint; b: ChartPoint }
   | { id: string; kind: 'ray'; a: ChartPoint; b: ChartPoint }
   | { id: string; kind: 'hline'; a: ChartPoint }
@@ -88,4 +93,14 @@ export function describeDrawing(d: Drawing): { name: string; detail: string } {
   if (d.kind === 'vline') return { name, detail: barTimeLabel(d.a.time) };
   if (d.kind === 'hline') return { name, detail: rupees(d.a.price) };
   return { name, detail: `${rupees(d.a.price)} → ${rupees((d as { b: ChartPoint }).b.price)}` };
+}
+
+/** A copy of the list with one drawing's hidden flag flipped. An unknown id changes nothing. */
+export function toggleHidden(drawings: readonly Drawing[], id: string): Drawing[] {
+  return drawings.map((d) => (d.id === id ? { ...d, hidden: !d.hidden } : d));
+}
+
+/** The drawings that should be drawn: everything not hidden. */
+export function visibleDrawings(drawings: readonly Drawing[]): Drawing[] {
+  return drawings.filter((d) => !d.hidden);
 }

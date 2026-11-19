@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import type { IndicatorParams, StoredParams } from '@/lib/chart/indicatorParams';
 import { RANGE_KEYS, type Bar, type RangeKey } from '@/lib/chart/bars';
-import type { Drawing, DrawingTool } from '@/lib/chart/drawings';
+import {
+  toggleHidden,
+  visibleDrawings,
+  type Drawing,
+  type DrawingTool,
+} from '@/lib/chart/drawings';
 import {
   DEFAULT_TIMEFRAME,
   TIMEFRAMES,
@@ -13,6 +18,12 @@ import {
   isTimeframe,
   type Timeframe,
 } from '@/lib/chart/timeframes';
+import {
+  isOverlayEmpty,
+  overlayItems,
+  removeOverlayItem,
+  visibleOverlay,
+} from '@/lib/chart/overlayItems';
 import { AiOverlay } from './AiOverlay';
 import { useAiOverlay } from './useAiOverlay';
 import { useCandles } from './useCandles';
@@ -190,7 +201,10 @@ export function ProChart({
   // stay readable); turning it off puts back exactly what the user had.
   const [aiIndicators, setAiIndicators] = useState<IndicatorId[]>([]);
   const [aiHidden, setAiHidden] = useState<IndicatorId[]>([]);
+  // AI items the user hid from the Drawings menu; cleared whenever Auto-Chart goes off.
+  const [aiHiddenIds, setAiHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
   const restoreIndicators = useCallback(() => {
+    setAiHiddenIds(new Set());
     setIndicators((cur) => [
       ...cur.filter((id) => !aiIndicators.includes(id)),
       ...aiHidden.filter((id) => !cur.includes(id)),
@@ -218,6 +232,42 @@ export function ProChart({
       ...added.filter((id) => !cur.includes(id)),
     ]);
   }, [ai, indicators, restoreIndicators]);
+
+  // Auto-Chart's drawings are items in the Drawings menu: remove one, or all (which is turning it off). Removing the last turns it off.
+  const aiItems = useMemo(
+    () => (ai.status === 'ready' && ai.overlay ? overlayItems(ai.overlay) : []),
+    [ai.status, ai.overlay],
+  );
+  const removeAiItem = useCallback(
+    (id: string) => {
+      if (!ai.overlay) return;
+      const next = removeOverlayItem(ai.overlay, id);
+      setAiHiddenIds((cur) => new Set([...cur].filter((x) => x !== id)));
+      if (isOverlayEmpty(next)) {
+        ai.disable();
+        restoreIndicators();
+      } else {
+        ai.update(next);
+      }
+    },
+    [ai, restoreIndicators],
+  );
+  const toggleAiHidden = useCallback((id: string) => {
+    setAiHiddenIds((cur) => new Set(cur.has(id) ? [...cur].filter((x) => x !== id) : [...cur, id]));
+  }, []);
+  const shownOverlay = useMemo(
+    () => (ai.status === 'ready' && ai.overlay ? visibleOverlay(ai.overlay, aiHiddenIds) : null),
+    [ai.status, ai.overlay, aiHiddenIds],
+  );
+  const drawnDrawings = useMemo(() => visibleDrawings(drawings), [drawings]);
+  const toggleHideDrawing = useCallback(
+    (id: string) => setDrawings((cur) => toggleHidden(cur, id)),
+    [setDrawings],
+  );
+  const clearAi = useCallback(() => {
+    ai.disable();
+    restoreIndicators();
+  }, [ai, restoreIndicators]);
 
   const toggleIndicator = useCallback((id: IndicatorId) => {
     setIndicators((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
@@ -311,7 +361,17 @@ export function ProChart({
           onToggle={toggleIndicator}
           onParams={changeParams}
         />
-        <DrawingsMenu drawings={drawings} onRemove={removeDrawing} onClear={clearDrawings} />
+        <DrawingsMenu
+          drawings={drawings}
+          onRemove={removeDrawing}
+          onClear={clearDrawings}
+          onToggleHide={toggleHideDrawing}
+          hiddenAi={aiHiddenIds}
+          onToggleHideAi={toggleAiHidden}
+          aiItems={aiItems}
+          onRemoveAi={removeAiItem}
+          onClearAi={clearAi}
+        />
         <button
           type="button"
           className={`${styles.topBtn} ${ai.status === 'ready' ? styles.aiBtnOn : ''}`}
@@ -448,15 +508,13 @@ export function ProChart({
                 onHover={setHover}
                 onFailure={setFailure}
               />
-              {ai.status === 'ready' && ai.overlay && (
-                <AiOverlay handle={handle} bars={bars} overlay={ai.overlay} />
-              )}
+              {shownOverlay && <AiOverlay handle={handle} bars={bars} overlay={shownOverlay} />}
               <DrawingsOverlay
                 key={tool}
                 handle={handle}
                 bars={bars}
                 tool={tool}
-                drawings={drawings}
+                drawings={drawnDrawings}
                 onCommit={commitDrawing}
                 onToolDone={toolDone}
                 onRemove={removeDrawing}
