@@ -855,3 +855,46 @@
   background: #3ddc97;
   box-shadow: 0 0 0 3px rgba(61, 220, 151, 0.25);
 }
+
+/* Tooltips on the drawing tools (#249) */
+.toolBtn {
+  position: relative;
+}
+.toolTip {
+  position: absolute;
+  z-index: 30;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: 230px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+  text-align: left;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(22, 25, 28, 0.25);
+}
+.toolTipLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.toolTipHint {
+  font-size: 11.5px;
+  font-weight: 400;
+  opacity: 0.8;
+  line-height: 1.35;
+}
+/* Hover needs a real pointer: on touch it would stick after a tap. */
+@media (hover: hover) {
+  .toolBtn:hover .toolTip {
+    display: flex;
+  }
+}
+.toolBtn:focus-visible .toolTip {
+  display: flex;
+}
