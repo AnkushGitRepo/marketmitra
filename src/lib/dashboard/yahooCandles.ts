@@ -5,7 +5,13 @@
 import YahooFinance from 'yahoo-finance2';
 import { isHosted } from '@/lib/deployment-mode';
 import type { Bar } from '@/lib/chart/bars';
-import { pollIntervalMs, timeframeDef, toBarTime, type Timeframe } from '@/lib/chart/timeframes';
+import {
+  isIntraday,
+  pollIntervalMs,
+  timeframeDef,
+  toBarTime,
+  type Timeframe,
+} from '@/lib/chart/timeframes';
 import { createTtlCache, type TtlCache } from '@/lib/markets/ttlCache';
 
 declare global {
@@ -23,12 +29,13 @@ interface ChartRow {
   volume: number | null;
 }
 
-const HOURLY_OFFSET_S = 45 * 60; // NSE hourly bars start at :15 IST (09:15, 10:15, ...), which is :45 in UTC
+/** NSE bars longer than 15 minutes start at :15 IST (09:15, 10:15, ...), which is :45 in UTC; the half-hourly ones at :15 and :45 IST, which is :45 and :15 UTC. */
+const BAR_OFFSET_S: Partial<Record<Timeframe, number>> = { '30m': 15 * 60, '1h': 45 * 60 };
 
 /** Yahoo stamps the still-forming last bar with the time of the last trade, not the bar start; snap it back so the next poll replaces it. */
 function alignToBar(epochSeconds: number, timeframe: Timeframe): number {
   const { seconds } = timeframeDef(timeframe);
-  const offset = timeframe === '1h' ? HOURLY_OFFSET_S : 0;
+  const offset = BAR_OFFSET_S[timeframe] ?? 0;
   return Math.floor((epochSeconds - offset) / seconds) * seconds + offset;
 }
 
@@ -37,10 +44,9 @@ export function toCandleBars(rows: readonly ChartRow[], timeframe: Timeframe): B
   const byTime = new Map<string, Bar>();
   for (const r of rows) {
     if (r.open == null || r.high == null || r.low == null || r.close == null) continue;
-    const time =
-      timeframe === '1d'
-        ? r.date.toISOString().slice(0, 10)
-        : toBarTime(alignToBar(r.date.getTime() / 1000, timeframe));
+    const time = !isIntraday(timeframe)
+      ? r.date.toISOString().slice(0, 10)
+      : toBarTime(alignToBar(r.date.getTime() / 1000, timeframe));
     byTime.set(time, {
       time,
       open: r.open,
@@ -128,10 +134,9 @@ export async function getCandles(
   }
   // Only the newest bars matter to the poll, so the window is a handful of bars wide (empty overnight and at weekends, which is
   // right: nothing changed). A daily tail needs a few days so the previous session is included.
-  const windowMs =
-    timeframe === '1d'
-      ? 5 * DAY_MS
-      : Math.max(last + TAIL_BARS_MARGIN, MIN_TAIL_BARS) * def.seconds * 1000;
+  const windowMs = isIntraday(timeframe)
+    ? Math.max(last + TAIL_BARS_MARGIN, MIN_TAIL_BARS) * def.seconds * 1000
+    : Math.max(5, (last + TAIL_BARS_MARGIN) * (def.seconds / 86_400)) * DAY_MS;
   const bars = await cacheFor('tail', timeframe).get(key, () =>
     fetchBars(key, timeframe, new Date(Date.now() - windowMs)),
   );

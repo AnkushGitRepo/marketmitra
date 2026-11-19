@@ -47,6 +47,17 @@ describe('toCandleBars', () => {
     expect(hourly[0].time).toBe(String(Date.UTC(2026, 10, 18, 4, 45) / 1000 + 19_800));
   });
 
+  it('keeps the date as the time for weekly and monthly rows', () => {
+    expect(toCandleBars([q('2026-11-16T03:45:00Z', 100)], '1w')[0].time).toBe('2026-11-16');
+    expect(toCandleBars([q('2026-11-01T03:45:00Z', 100)], '1mo')[0].time).toBe('2026-11-01');
+  });
+
+  it('snaps half-hourly bars to :15 and :45 IST', () => {
+    // 10:07 IST = 04:37 UTC, inside the 09:45 IST (04:15 UTC) bar.
+    const [bar] = toCandleBars([q('2026-11-18T04:37:10Z', 100)], '30m');
+    expect(bar.time).toBe(String(Date.UTC(2026, 10, 18, 4, 15) / 1000 + 19_800));
+  });
+
   it('keeps one bar per time, the later row winning', () => {
     const bars = toCandleBars(
       [q('2026-11-18T03:45:00Z', 100), q('2026-11-18T03:45:00Z', 105)],

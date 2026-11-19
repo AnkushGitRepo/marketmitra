@@ -4,6 +4,8 @@ import {
   MAX_RUNS_PER_VIEW,
   describeRun,
   anchorBarTime,
+  compareSetups,
+  isBoxBars,
   idsToPrune,
   runForMode,
   type OverlayRun,
@@ -133,5 +135,52 @@ describe('anchorBarTime', () => {
 
   it('is null for no bars', () => {
     expect(anchorBarTime([], '2026-11-17T10:00:00Z')).toBeNull();
+  });
+});
+
+describe('compareSetups', () => {
+  const bar = (time: string) => ({ time, open: 1, high: 1, low: 1, close: 1, volume: 0 });
+  const bars = [bar('2026-11-16'), bar('2026-11-17'), bar('2026-11-18')];
+  const setup = {
+    direction: 'short',
+    entry: 10,
+    stop: 11,
+    target: 8,
+    riskReward: 2,
+    stopPct: 10,
+    targetPct: -20,
+    entryType: 'now',
+    lastClose: 10,
+  } as const;
+  const run = (id: string, createdAt: string, withSetup: boolean): OverlayRun => ({
+    id,
+    symbol: 'X',
+    interval: '1d',
+    mode: 'unrestricted',
+    overlay: { levels: [], trendlines: [], indicators: [], ...(withSetup ? { setup } : {}) },
+    model: 'm',
+    lastClose: 10,
+    createdAt,
+  });
+  const now = new Date('2026-11-18T12:00:00Z');
+
+  it('lists the other runs that carry a setup, each at its own bar', () => {
+    const out = compareSetups(
+      [
+        run('a', '2026-11-16T10:00:00Z', true),
+        run('b', '2026-11-17T10:00:00Z', true),
+        run('c', '2026-11-17T10:00:00Z', false),
+      ],
+      'b',
+      bars,
+      now,
+    );
+    expect(out.map((o) => [o.id, o.anchorTime])).toEqual([['a', '2026-11-16']]);
+    expect(out[0].label).toMatch(/^Short · /);
+  });
+
+  it('validates the box length choice', () => {
+    expect([10, 100, null].every(isBoxBars)).toBe(true);
+    expect(isBoxBars(7)).toBe(false);
   });
 });

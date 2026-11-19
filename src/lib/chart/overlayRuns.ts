@@ -2,7 +2,7 @@
 // "Saved" menu. Pure. The database access is in `overlayRunsStore.ts`.
 
 import type { PromptMode } from '@/lib/ai/promptMode';
-import type { ChartOverlay } from './aiOverlay';
+import type { ChartOverlay, TradeSetup } from './aiOverlay';
 import type { Bar } from './bars';
 import { barTimeMs, isIntradayTime, toBarTime, type Timeframe } from './timeframes';
 
@@ -84,4 +84,40 @@ export function anchorBarTime(bars: readonly Bar[], createdAt: string): string |
   let anchor = bars[0].time;
   for (const b of bars) if (barTimeMs(b.time) <= key) anchor = b.time;
   return anchor;
+}
+
+/** Longest a setup box may run, in candles; `null` runs it to the right edge. The user's choice (#257). */
+export type BoxBars = number | null;
+export const BOX_LENGTHS: readonly BoxBars[] = [10, 25, 50, 100, null];
+export const DEFAULT_BOX_BARS: BoxBars = 50;
+
+export function isBoxBars(value: unknown): value is BoxBars {
+  return value === null || (typeof value === 'number' && BOX_LENGTHS.includes(value));
+}
+
+export interface CompareSetup {
+  id: string;
+  setup: TradeSetup;
+  anchorTime: string;
+  /** `Long · 2 days ago`, shown on the box. */
+  label: string;
+}
+
+/** The trade setups of every saved run except the one shown in full, each at the bar it was generated on, to see what taking them would have done. */
+export function compareSetups(
+  runs: readonly OverlayRun[],
+  activeId: string | null,
+  bars: readonly Bar[],
+  now: Date,
+): CompareSetup[] {
+  const out: CompareSetup[] = [];
+  for (const run of runs) {
+    const setup = run.overlay.setup;
+    if (run.id === activeId || !setup) continue;
+    const anchorTime = anchorBarTime(bars, run.createdAt);
+    if (!anchorTime) continue;
+    const dir = setup.direction === 'long' ? 'Long' : 'Short';
+    out.push({ id: run.id, setup, anchorTime, label: `${dir} · ${describeRun(run, now).when}` });
+  }
+  return out;
 }
