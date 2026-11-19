@@ -1,4 +1,4 @@
-// Shapes returned by services/fundamentals-api `/funds` (ADR 0068). Every metric
+// Shapes returned by services/fundamentals-api `/funds` (ADR 0067). Every metric
 // can be null: null means "not enough history" or "not disclosed", never zero.
 
 export interface FundSummary {
