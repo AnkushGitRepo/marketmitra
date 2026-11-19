@@ -14,9 +14,17 @@ import {
   type ISeriesApi,
   type SeriesType,
   type Time,
+  type UTCTimestamp,
 } from 'lightweight-charts';
 import type { Series } from '@/lib/chart/indicators';
 import { rangeStartTime, type Bar, type RangeKey } from '@/lib/chart/bars';
+import {
+  INTRADAY_VISIBLE_BARS,
+  isIntraday,
+  isIntradayTime,
+  isTailUpdate,
+  type Timeframe,
+} from '@/lib/chart/timeframes';
 import { INDICATORS, type IndicatorId } from './constants';
 import type { StoredParams } from '@/lib/chart/indicatorParams';
 import { computeIndicator } from './indicatorRegistry';
@@ -32,6 +40,7 @@ export interface ChartHandle {
 interface ChartCanvasProps {
   bars: Bar[];
   kind: ChartKind;
+  timeframe: Timeframe;
   indicators: IndicatorId[];
   /** The user's indicator settings; anything missing draws with the default. */
   params: StoredParams;
@@ -85,9 +94,13 @@ function themeColors() {
   };
 }
 
+/** A bar time as lightweight-charts wants it: epoch seconds for intraday bars, the `YYYY-MM-DD` string for daily ones. */
+const chartTime = (time: string): Time =>
+  isIntradayTime(time) ? (Number(time) as UTCTimestamp) : (time as Time);
+
 const toPoints = (bars: Bar[], values: Series) =>
   bars.flatMap((b, i) =>
-    values[i] === null ? [] : [{ time: b.time as Time, value: values[i] as number }],
+    values[i] === null ? [] : [{ time: chartTime(b.time), value: values[i] as number }],
   );
 
 /** Like `toPoints`, with a colour per point (a line that changes colour as it runs). */
@@ -95,12 +108,13 @@ const toColoredPoints = (bars: Bar[], values: Series, colors: string[]) =>
   bars.flatMap((b, i) =>
     values[i] === null
       ? []
-      : [{ time: b.time as Time, value: values[i] as number, color: colors[i] }],
+      : [{ time: chartTime(b.time), value: values[i] as number, color: colors[i] }],
   );
 
 export function ChartCanvas({
   bars,
   kind,
+  timeframe,
   indicators,
   params,
   range,
@@ -113,6 +127,9 @@ export function ChartCanvas({
   const seriesRef = useRef<ISeriesApi<SeriesType>[]>([]);
   const priceRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const barsByTime = useRef<Map<string, Bar>>(new Map());
+  /** What each series needs to refresh its newest points, so a live tick can update in place instead of rebuilding the chart. */
+  const updatersRef = useRef<Array<(bars: Bar[], from: number) => void>>([]);
+  const builtRef = useRef<{ sig: string; bars: Bar[] } | null>(null);
   const onReadyRef = useRef(onReady);
   const onHoverRef = useRef(onHover);
   const onFailureRef = useRef(onFailure);
@@ -184,7 +201,7 @@ export function ChartCanvas({
 
     chart.subscribeCrosshairMove((p) => {
       onHoverRef.current(
-        typeof p.time === 'string' ? (barsByTime.current.get(p.time) ?? null) : null,
+        p.time === undefined ? null : (barsByTime.current.get(String(p.time)) ?? null),
       );
     });
 
@@ -215,10 +232,25 @@ export function ChartCanvas({
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
+    const sig = `${kind}|${timeframe}|${indicators.join(',')}|${JSON.stringify(params)}`;
+    const built = builtRef.current;
+    if (built && built.sig === sig && isTailUpdate(built.bars, bars)) {
+      try {
+        const from = built.bars.length - 1;
+        for (const update of updatersRef.current) update(bars, from);
+        barsByTime.current = new Map(bars.map((b) => [b.time, b]));
+        builtRef.current = { sig, bars };
+        return;
+      } catch {
+        // fall through to a full rebuild
+      }
+    }
     try {
       const c = themeColors();
       const timeScale = chart.timeScale();
       const keepRange = timeScale.getVisibleLogicalRange();
+      timeScale.applyOptions({ timeVisible: isIntraday(timeframe), secondsVisible: false });
+      const updaters: Array<(bars: Bar[], from: number) => void> = [];
 
       for (const s of seriesRef.current) chart.removeSeries(s);
       seriesRef.current = [];
@@ -255,15 +287,24 @@ export function ChartCanvas({
       price.setData(
         kind === 'candles'
           ? bars.map((b) => ({
-              time: b.time as Time,
+              time: chartTime(b.time),
               open: b.open,
               high: b.high,
               low: b.low,
               close: b.close,
             }))
-          : bars.map((b) => ({ time: b.time as Time, value: b.close })),
+          : bars.map((b) => ({ time: chartTime(b.time), value: b.close })),
       );
       priceRef.current = price as unknown as ISeriesApi<SeriesType>;
+      updaters.push((bs, from) => {
+        for (const b of bs.slice(from)) {
+          price.update(
+            (kind === 'candles'
+              ? { time: chartTime(b.time), open: b.open, high: b.high, low: b.low, close: b.close }
+              : { time: chartTime(b.time), value: b.close }) as never,
+          );
+        }
+      });
 
       const on = new Set(indicators);
 
@@ -279,11 +320,20 @@ export function ChartCanvas({
         vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
         vol.setData(
           bars.map((b) => ({
-            time: b.time as Time,
+            time: chartTime(b.time),
             value: b.volume,
             color: `${b.close >= b.open ? c.up : c.down}66`,
           })),
         );
+        updaters.push((bs, from) => {
+          for (const b of bs.slice(from)) {
+            vol.update({
+              time: chartTime(b.time),
+              value: b.volume,
+              color: `${b.close >= b.open ? c.up : c.down}66`,
+            });
+          }
+        });
       }
 
       // Menu order decides draw order and pane order, so panes stay in a stable sequence however they were switched on.
@@ -292,21 +342,23 @@ export function ChartCanvas({
         if (def.id === 'volume' || !on.has(def.id)) continue;
         const out = computeIndicator(def.id, bars, params[def.id]);
         const paneIndex = def.group === 'Panes' ? pane : 0;
+        let histSeries = null as ISeriesApi<'Histogram'> | null;
         if (out.histogram) {
           const hv = out.histogram.values;
-          add(
+          histSeries = add(
             chart.addSeries(
               HistogramSeries,
               { priceLineVisible: false, lastValueVisible: false },
               paneIndex,
             ),
-          ).setData(
+          );
+          histSeries.setData(
             bars.flatMap((b, i) =>
               hv[i] === null
                 ? []
                 : [
                     {
-                      time: b.time as Time,
+                      time: chartTime(b.time),
                       value: hv[i] as number,
                       color: `${(hv[i] as number) >= 0 ? c.up : c.down}99`,
                     },
@@ -315,6 +367,7 @@ export function ChartCanvas({
           );
         }
         let first: ISeriesApi<'Line'> | null = null;
+        const lineSeries: ISeriesApi<'Line'>[] = [];
         for (const l of out.lines) {
           // Pane indicators show their latest value on the axis, for the first line only.
           const showLast: boolean = paneIndex > 0 && first === null;
@@ -337,6 +390,7 @@ export function ChartCanvas({
               : toPoints(bars, l.values),
           );
           first ??= series;
+          lineSeries.push(series);
         }
         for (const level of out.levels ?? []) {
           first?.createPriceLine({
@@ -348,6 +402,32 @@ export function ChartCanvas({
             title: '',
           });
         }
+        const id = def.id;
+        updaters.push((bs, from) => {
+          const next = computeIndicator(id as Exclude<IndicatorId, 'volume'>, bs, params[id]);
+          next.lines.forEach((l, li) => {
+            for (let i = from; i < bs.length; i++) {
+              const v = l.values[i];
+              if (v === null) continue;
+              lineSeries[li].update(
+                (l.pointColors
+                  ? { time: chartTime(bs[i].time), value: v, color: l.pointColors[i] }
+                  : { time: chartTime(bs[i].time), value: v }) as never,
+              );
+            }
+          });
+          const hv = next.histogram?.values;
+          if (hv && histSeries) {
+            for (let i = from; i < bs.length; i++) {
+              if (hv[i] === null) continue;
+              histSeries.update({
+                time: chartTime(bs[i].time),
+                value: hv[i] as number,
+                color: `${(hv[i] as number) >= 0 ? c.up : c.down}99`,
+              });
+            }
+          }
+        });
         if (paneIndex > 0) pane += 1;
       }
 
@@ -355,25 +435,40 @@ export function ChartCanvas({
       panes.forEach((p, i) => p.setStretchFactor(i === 0 ? 3 : 1));
 
       if (keepRange) timeScale.setVisibleLogicalRange(keepRange);
+      updatersRef.current = updaters;
+      builtRef.current = { sig, bars };
       onReadyRef.current({ chart, price: priceRef.current });
     } catch {
       onFailureRef.current?.('The chart hit a problem drawing this data.');
     }
-  }, [bars, kind, indicators, params]);
+  }, [bars, kind, timeframe, indicators, params]);
 
-  // Apply the range tab to the visible window.
+  // Apply the range tab (daily) or a sensible window of recent bars (intraday), once per timeframe/range/dataset: a live tick
+  // must not snap the view back while the user is looking around.
+  const appliedRange = useRef('');
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || bars.length === 0) return;
+    const key = `${timeframe}|${range}|${bars[0].time}`;
+    if (appliedRange.current === key) return;
+    appliedRange.current = key;
     const last = bars[bars.length - 1].time;
-    const from = rangeStartTime(range, last);
     try {
+      if (isIntraday(timeframe)) {
+        const visible = INTRADAY_VISIBLE_BARS[timeframe];
+        chart.timeScale().setVisibleLogicalRange({
+          from: Math.max(0, bars.length - visible),
+          to: bars.length + 4,
+        });
+        return;
+      }
+      const from = rangeStartTime(range, last);
       if (from === null) chart.timeScale().fitContent();
       else chart.timeScale().setVisibleRange({ from: from as Time, to: last as Time });
     } catch {
       chart.timeScale().fitContent();
     }
-  }, [range, bars]);
+  }, [range, timeframe, bars]);
 
   return <div ref={containerRef} className={styles.canvas} />;
 }

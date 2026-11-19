@@ -1,4 +1,4 @@
-// Server-side client for fundamentals-api `/funds` (ADR 0067), shared by the
+// Server-side client for fundamentals-api `/funds` (ADR 0068), shared by the
 // /funds pages and the /api/funds routes so neither can drift from the other.
 // Never throws: an unreachable service returns null / [], the same "no data
 // available, not a crash" contract as the rest of src/lib/dashboard.

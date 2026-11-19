@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 const PERIODS: readonly PricePeriod[] = ['1mo', '6mo', '1y', '5y'];
 const TICKER = /^[A-Za-z0-9&._-]{1,20}$/;
 
-const fail = (error: string, status: number) => NextResponse.json({ success: false, data: null, error }, { status });
+const fail = (error: string, status: number) =>
+  NextResponse.json({ success: false, data: null, error }, { status });
 
 export async function GET(request: Request, { params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = await params;
@@ -28,7 +29,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tick
     if (points === null) return fail('price_history_unavailable', 502);
     return NextResponse.json(
       { success: true, data: { symbol, period, bars: toBars(points) }, error: null },
-      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=300' } }
+      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=300' } },
     );
   } catch {
     return fail('price_history_unavailable', 502);

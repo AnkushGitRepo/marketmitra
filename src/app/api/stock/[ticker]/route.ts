@@ -16,10 +16,7 @@ import {
 // financial statements in one call. The same aggregation also backs the MCP
 // `get_company_fundamentals` tool (src/lib/mcp/tools.ts) via
 // src/lib/dashboard/stockAggregate.ts, so the two never drift apart.
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ ticker: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = await params;
   const { searchParams } = new URL(request.url);
   const sectionsParam = searchParams.get('sections');
@@ -28,7 +25,7 @@ export async function GET(
   if (sectionsParam) {
     const requested = sectionsParam.split(',').map((s) => s.trim());
     const invalid = requested.filter(
-      (s) => !STOCK_AGGREGATE_SECTIONS.includes(s as StockAggregateSection)
+      (s) => !STOCK_AGGREGATE_SECTIONS.includes(s as StockAggregateSection),
     );
     if (invalid.length > 0) {
       return NextResponse.json(
@@ -36,7 +33,7 @@ export async function GET(
           error: 'invalid_sections',
           message: `Unknown section(s): ${invalid.join(', ')}. Valid: ${STOCK_AGGREGATE_SECTIONS.join(', ')}.`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
     sections = requested as StockAggregateSection[];
