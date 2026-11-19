@@ -14,7 +14,7 @@
 3. Next.js is **v16 with breaking changes** — read `node_modules/next/dist/docs/` first. The middleware file is `src/proxy.ts`. App pages are top-level (`/portfolio`, not `/dashboard/portfolio`; only `/dashboard` is the home) — see [ADR 0037](./decisions/0037-top-level-app-routes.md); a new page must be registered in `src/lib/routes.ts` and `src/proxy.ts` (a test enforces it).
 4. CSS Modules + tokens only. No Tailwind. Every feature = UI **and** a documented API route (`public/openapi.json`).
 5. No paid tier, ever. Hosted vs self-host is gated by `isHosted()`.
-6. The **Mitra Advisor** is local-only, off by default, recommend-only (ADR 0035).
+6. The **Mitra Advisor** is off by default and recommend-only (ADR 0035). Local install, or a hosted admin in `ADMIN_USER_IDS` with `ADVISOR_MODE=enabled` set on the host (ADR 0070; the Vercel variables are still to be set, see Open work).
 7. Verify before claiming: check production state yourself, report what was and wasn't tested.
 8. Keep this file and `docs/session-log.md` current.
 
@@ -60,7 +60,7 @@
   the source says "BSE SME"/"NSE SME"); status filters (Open/Upcoming/Closed/Allotted/Listed), type filters and
   pagination on `/ipos` (#21/#19; "Allotted" is derived from the allotment date). Production verified
   after a manual `refresh-ipos` run: 7 mainboard / 9 SME.
-- **Mitra Advisor** (#22/#13, [ADR 0035](./decisions/0035-mitra-advisor.md)) — local-only, rules-first decision
+- **Mitra Advisor** (#22/#13, [ADR 0035](./decisions/0035-mitra-advisor.md)) — rules-first decision (local install or hosted admin, ADR 0070)
   support: policy + deterministic monthly plan, quantitative quality screen, citation-enforced LLM research memos,
   decision journal + kill-criteria alerts, paper-trading vs a Nifty 50 fund, behaviour guard (policy-based replies in
   market stress, "buy the dip" cooldown), read-only advisor tools in Mitra chat. Off unless `ADVISOR_MODE=enabled`,
@@ -78,6 +78,14 @@
 - **Wiki**: `docs/wiki/` is published to the GitHub wiki by `.github/workflows/wiki-sync.yml` on every push to `main`.
 
 ## Open work (verify before acting — this list ages)
+
+**Waiting on the Vercel account being unpaused (added 2026-11-19, issue #243, ADR 0070)**
+- The maintainer cannot set environment variables on Vercel while the account is paused. **When it is unpaused, set these on the production project (`marketmitra-v2`) and redeploy** (with the maintainer's go-ahead; `npm run deploy:prod`):
+  - `ADMIN_USER_IDS` = the maintainer's Clerk user id (comma-separated for more). Also unlocks the System page and event log for them. Closed by default: with no value, nobody is an admin.
+  - `ADVISOR_MODE` = `enabled`. Without it the Advisor stays off even for the admin.
+  - Then, signed in as that user: Settings > AI & Models > turn on Unrestricted Mitra (needs their own AI key saved there), and check `/advisor` opens (it asks to accept the disclaimer first).
+- Until then nothing changes on production: ordinary users and the admin alike get guarded Mitra, no Advisor, and the AI Auto-Chart trade setup does not appear. Verify afterwards with a second, non-admin account: the setting must be refused (403) and `/advisor` must 404.
+- The code for this is in PR #244 (merge it first). The advisor cron and local scheduler stay local-only; a hosted admin runs the thesis review from the Advisor page.
 
 **Changelog rule (ADR 0061, 2026-11-12)**
 - `CHANGELOG.md` follows Keep a Changelog 1.1.0 (AGENTS.md rule 9, ADR 0061); the release script and a CI test enforce it (issue #183). Add your entry under `## [Unreleased]` in each PR; `npm run release` moves it into the new version.

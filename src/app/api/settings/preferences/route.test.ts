@@ -7,9 +7,11 @@ const updatePreferences = vi.fn(async (_u: string, patch: unknown) => patch);
 vi.mock('@/lib/preferences/store', () => ({ getPreferences: vi.fn(), updatePreferences }));
 
 const { PATCH } = await import('./route');
-const patch = (body: unknown) => PATCH(new Request('http://x', { method: 'PATCH', body: JSON.stringify(body) }));
+const patch = (body: unknown) =>
+  PATCH(new Request('http://x', { method: 'PATCH', body: JSON.stringify(body) }));
 
 beforeEach(() => {
+  vi.unstubAllEnvs();
   state.hosted = false;
   vi.clearAllMocks();
 });
@@ -19,11 +21,23 @@ describe('PATCH /api/settings/preferences - unrestricted Mitra', () => {
     expect((await patch({ chat: { unrestricted: true } })).status).toBe(200);
     expect(updatePreferences).toHaveBeenCalled();
   });
-  it('refuses turning it on on the hosted site, and stores nothing', async () => {
+  it('refuses turning it on for an ordinary hosted user, and stores nothing', async () => {
     state.hosted = true;
+    vi.stubEnv('ADMIN_USER_IDS', 'someone_else');
     const res = await patch({ chat: { unrestricted: true } });
     expect(res.status).toBe(403);
     expect(updatePreferences).not.toHaveBeenCalled();
+  });
+  it('refuses it on the hosted site when no admin is configured', async () => {
+    state.hosted = true;
+    vi.stubEnv('ADMIN_USER_IDS', '');
+    expect((await patch({ chat: { unrestricted: true } })).status).toBe(403);
+  });
+  it('allows a hosted admin to turn it on', async () => {
+    state.hosted = true;
+    vi.stubEnv('ADMIN_USER_IDS', 'u1');
+    expect((await patch({ chat: { unrestricted: true } })).status).toBe(200);
+    expect(updatePreferences).toHaveBeenCalled();
   });
   it('still lets the hosted site turn it off and change other settings', async () => {
     state.hosted = true;

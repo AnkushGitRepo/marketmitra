@@ -1,12 +1,12 @@
-// Server-side resolution of Mitra's prompt mode for a user (ADR 0054). Enforced here, never in the UI:
-// the hosted site is always guarded, and any failure to read the setting also means guarded.
+// Server-side resolution of Mitra's prompt mode for a user (ADR 0054, 0070). Enforced here, never in the UI: a hosted user who is not an
+// admin is always guarded (the stored setting is not even read), and any failure to read the setting also means guarded.
 
-import { isHosted } from '@/lib/deployment-mode';
+import { canUsePrivilegedModes } from '@/lib/auth/privilegedModes';
 import { getPreferences } from '@/lib/preferences/store';
 import { selectPromptMode, type PromptMode } from './promptMode';
 
 export async function resolvePromptMode(userId: string): Promise<PromptMode> {
-  if (isHosted()) return 'guarded';
+  if (!canUsePrivilegedModes(userId)) return 'guarded';
   try {
     const prefs = await getPreferences(userId);
     return selectPromptMode({ hosted: false, unrestricted: prefs.chat.unrestricted === true });

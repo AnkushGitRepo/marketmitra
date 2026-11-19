@@ -10,9 +10,8 @@ import styles from '@/components/advisor/advisor.module.css';
 export const dynamic = 'force-dynamic';
 
 export default async function AdvisorLayout({ children }: { children: React.ReactNode }) {
-  if (!isAdvisorEnabled()) notFound();
   const userId = await getCurrentUserId();
-  if (!userId) notFound();
+  if (!userId || !isAdvisorEnabled(userId)) notFound();
 
   const accepted = await hasAcknowledged(userId).catch(() => false);
   if (!accepted) {

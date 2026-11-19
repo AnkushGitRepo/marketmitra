@@ -21,7 +21,7 @@ export interface BriefData {
 interface MitraBriefProps {
   readonly symbol: string;
   readonly hasKey: boolean;
-  /** The mode the server resolved for this user right now (hosted is always guarded). */
+  /** The mode the server resolved for this user right now (hosted users other than an admin are always guarded). */
   readonly mode: PromptMode;
   readonly initial: BriefData | null;
   /** Computed data panel: shown without an AI key or any generation. */
@@ -35,7 +35,9 @@ const SKELETON_ROWS = 5;
 function Emphasized({ text }: { readonly text: string }) {
   return (
     <>
-      {emphasizeNumbers(text).map((part, i) => (part.bold ? <strong key={i}>{part.text}</strong> : <span key={i}>{part.text}</span>))}
+      {emphasizeNumbers(text).map((part, i) =>
+        part.bold ? <strong key={i}>{part.text}</strong> : <span key={i}>{part.text}</span>,
+      )}
     </>
   );
 }
@@ -57,12 +59,23 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals }: MitraBrie
         body: JSON.stringify({ symbol, force }),
       });
       // A reply that is not JSON (a platform timeout page, a login redirect) must not surface the parser's own error.
-      const json = (await res.json().catch(() => null)) as { success?: boolean; data?: BriefData; error?: string } | null;
-      if (!res.ok || !json?.success || !json.data) throw new Error(generationError(res.status, json?.error));
+      const json = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        data?: BriefData;
+        error?: string;
+      } | null;
+      if (!res.ok || !json?.success || !json.data)
+        throw new Error(generationError(res.status, json?.error));
       setData(json.data);
     } catch (e) {
       // A thrown network error (TypeError: Load failed / Failed to fetch) is a connection problem, not a message to show raw.
-      setError(e instanceof TypeError ? 'The connection dropped while the brief was being written. Try again: a finished brief is kept for 24 hours, so it shows straight away.' : e instanceof Error ? e.message : 'Could not generate the brief.');
+      setError(
+        e instanceof TypeError
+          ? 'The connection dropped while the brief was being written. Try again: a finished brief is kept for 24 hours, so it shows straight away.'
+          : e instanceof Error
+            ? e.message
+            : 'Could not generate the brief.',
+      );
     } finally {
       setLoading(false);
     }
@@ -82,18 +95,29 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals }: MitraBrie
         <div>
           <p className={styles.title}>Mitra 360 brief</p>
           <p className={styles.meta}>
-            Built from {c.financialYears > 0 ? `${c.financialYears} years of financials` : 'the available financials'}, {c.quarters} quarters of shareholding and {c.headlines}{' '}
-            recent headlines.
+            Built from{' '}
+            {c.financialYears > 0
+              ? `${c.financialYears} years of financials`
+              : 'the available financials'}
+            , {c.quarters} quarters of shareholding and {c.headlines} recent headlines.
           </p>
         </div>
         <div className={styles.headActions}>
           {unrestricted && (
-            <span className={styles.badge} title="Local only. Mitra may give valuation opinions. Change this in Settings > AI & Models.">
-              Unrestricted · local only
+            <span
+              className={styles.badge}
+              title="Mitra may give valuation opinions for you only. Change this in Settings > AI & Models."
+            >
+              Unrestricted mode
             </span>
           )}
           {brief && (
-            <button type="button" className={styles.link} disabled={loading} onClick={() => void generate(true)}>
+            <button
+              type="button"
+              className={styles.link}
+              disabled={loading}
+              onClick={() => void generate(true)}
+            >
               {loading ? 'Writing…' : 'Regenerate'}
             </button>
           )}
@@ -114,14 +138,21 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals }: MitraBrie
             </div>
           ) : !hasKey ? (
             <p className={styles.muted}>
-              Add your AI provider key to get the written read. The numbers on the right need no key. <Link href="/settings?tab=ai">Open Settings</Link>
+              Add your AI provider key to get the written read. The numbers on the right need no
+              key. <Link href="/settings?tab=ai">Open Settings</Link>
             </p>
           ) : !brief ? (
             <div className={styles.empty}>
               <p className={styles.muted}>
-                Five points on quality, growth, valuation, smart money and the biggest risk, written from the numbers on the right. It uses your own AI key, only when you ask.
+                Five points on quality, growth, valuation, smart money and the biggest risk, written
+                from the numbers on the right. It uses your own AI key, only when you ask.
               </p>
-              <button type="button" className={styles.primary} disabled={loading} onClick={() => void generate(false)}>
+              <button
+                type="button"
+                className={styles.primary}
+                disabled={loading}
+                onClick={() => void generate(false)}
+              >
                 Generate brief
               </button>
               <SensitivityCard signals={signals} />
@@ -130,20 +161,35 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals }: MitraBrie
             <>
               <div className={styles.tabs} role="tablist" aria-label="Brief sections">
                 {BRIEF_TABS.map((t) => (
-                  <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={styles.tab} onClick={() => setTab(t.id)}>
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === t.id}
+                    className={styles.tab}
+                    onClick={() => setTab(t.id)}
+                  >
                     {t.label} <span className={styles.tabCount}>{counts[t.id]}</span>
                   </button>
                 ))}
               </div>
               {visible.length === 0 ? (
-                <p className={styles.muted}>{tab === 'supports' ? 'No point reads as a clear strength.' : tab === 'weak' ? 'No point reads as a concern.' : 'No valuation point in this brief.'}</p>
+                <p className={styles.muted}>
+                  {tab === 'supports'
+                    ? 'No point reads as a clear strength.'
+                    : tab === 'weak'
+                      ? 'No point reads as a concern.'
+                      : 'No valuation point in this brief.'}
+                </p>
               ) : (
                 <ul className={styles.pointList}>
                   {visible.map((p) => (
                     <li key={p.key} className={`${styles.point} ${styles[p.signal]}`}>
                       <div className={styles.pointHead}>
                         <span className={styles.pointTitle}>{POINT_TITLES[p.key]}</span>
-                        <span className={`${styles.pill} ${styles[`pill_${p.signal}`]}`}>{signalLabel(p.signal, activeMode)}</span>
+                        <span className={`${styles.pill} ${styles[`pill_${p.signal}`]}`}>
+                          {signalLabel(p.signal, activeMode)}
+                        </span>
                       </div>
                       <p className={styles.pointText}>
                         <Emphasized text={p.text} />
@@ -155,11 +201,15 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals }: MitraBrie
               {tab === 'valuation' && <SensitivityCard signals={signals} />}
               {(brief.valuation || brief.entry) && (
                 <div className={styles.view}>
-                  {brief.valuation && <span className={styles.viewPill}>Valuation view: {brief.valuation}</span>}
+                  {brief.valuation && (
+                    <span className={styles.viewPill}>Valuation view: {brief.valuation}</span>
+                  )}
                   {brief.entry && <p className={styles.entry}>{brief.entry}</p>}
                 </div>
               )}
-              <p className={styles.disclaimer}>{unrestricted ? UNRESTRICTED_DISCLAIMER : GUARDED_DISCLAIMER}</p>
+              <p className={styles.disclaimer}>
+                {unrestricted ? UNRESTRICTED_DISCLAIMER : GUARDED_DISCLAIMER}
+              </p>
             </>
           )}
           {error && (
@@ -184,7 +234,6 @@ export function MitraBrief({ symbol, hasKey, mode, initial, signals }: MitraBrie
           <span aria-hidden="true"> →</span>
         </Link>
       </div>
-
     </section>
   );
 }

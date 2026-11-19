@@ -11,6 +11,7 @@ vi.mock('@/lib/preferences/store', () => ({ getPreferences }));
 const { resolvePromptMode } = await import('./promptModeStore');
 
 beforeEach(() => {
+  vi.unstubAllEnvs();
   state.hosted = false;
   state.unrestricted = true;
   state.fail = false;
@@ -25,10 +26,23 @@ describe('resolvePromptMode', () => {
     state.unrestricted = false;
     expect(await resolvePromptMode('local')).toBe('guarded');
   });
-  it('is guarded on the hosted site and never even reads the stored setting', async () => {
+  it('is guarded for an ordinary hosted user and never even reads the stored setting', async () => {
     state.hosted = true;
+    vi.stubEnv('ADMIN_USER_IDS', 'admin1');
     expect(await resolvePromptMode('u1')).toBe('guarded');
     expect(getPreferences).not.toHaveBeenCalled();
+  });
+  it('is guarded on the hosted site when no admin is configured', async () => {
+    state.hosted = true;
+    vi.stubEnv('ADMIN_USER_IDS', '');
+    expect(await resolvePromptMode('admin1')).toBe('guarded');
+  });
+  it('lets a hosted admin who switched it on use it, and honours their setting being off', async () => {
+    state.hosted = true;
+    vi.stubEnv('ADMIN_USER_IDS', 'admin1');
+    expect(await resolvePromptMode('admin1')).toBe('unrestricted');
+    state.unrestricted = false;
+    expect(await resolvePromptMode('admin1')).toBe('guarded');
   });
   it('fails closed to guarded if preferences cannot be read', async () => {
     state.fail = true;

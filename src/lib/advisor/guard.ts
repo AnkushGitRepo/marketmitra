@@ -10,10 +10,11 @@ type Refused = { ok: false; response: NextResponse };
  * exist (404, no body that hints at the feature); `requireAck` additionally
  * demands the disclaimer has been accepted. */
 export async function advisorGate(opts: { requireAck?: boolean } = {}): Promise<Ok | Refused> {
-  if (!isAdvisorEnabled()) {
+  // Who is asking decides whether the Advisor exists for them (hosted: admins only, ADR 0070); to anyone else it is a plain 404.
+  const userId = await getCurrentUserId();
+  if (!isAdvisorEnabled(userId)) {
     return { ok: false, response: new NextResponse(null, { status: 404 }) };
   }
-  const userId = await getCurrentUserId();
   if (!userId) {
     return {
       ok: false,

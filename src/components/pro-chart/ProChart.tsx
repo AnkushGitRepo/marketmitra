@@ -353,7 +353,7 @@ export function ProChart({
             ai.overlay &&
             (ai.overlay.setup ? (
               <>
-                <span>Unrestricted · local only</span>
+                <span>Unrestricted mode</span>
                 <span className={styles.aiBarStrong}>
                   {ai.overlay.setup.direction === 'long' ? 'Long' : 'Short'} setup
                   {ai.overlay.setup.entryType === 'pullback'
@@ -374,7 +374,7 @@ export function ProChart({
               </>
             ) : (
               <span>
-                Unrestricted · local only:{' '}
+                Unrestricted mode:{' '}
                 {ai.overlay.setupNote ?? 'no clear setup for this chart right now.'} Levels are
                 still shown. Turn Auto-Chart off and on to look again.
               </span>

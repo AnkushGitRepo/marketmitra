@@ -50,7 +50,7 @@
     },
     {
       "name": "Advisor",
-      "description": "Local-only, opt-in decision-support (ADVISOR_MODE=enabled)."
+      "description": "Opt-in decision-support (ADVISOR_MODE=enabled); a local install, or a hosted admin listed in ADMIN_USER_IDS (ADR 0070)."
     }
   ],
   "components": {
@@ -3545,7 +3545,7 @@
           "Advisor"
         ],
         "summary": "Disclaimer acceptance status",
-        "description": "Whether the current disclaimer version has been accepted. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Whether the current disclaimer version has been accepted. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "cookieAuth": []
@@ -3568,7 +3568,7 @@
           "Advisor"
         ],
         "summary": "Accept the Advisor disclaimer",
-        "description": "Records acceptance of the current disclaimer version. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Records acceptance of the current disclaimer version. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "cookieAuth": []
@@ -3593,7 +3593,7 @@
           "Advisor"
         ],
         "summary": "Get the Investment Policy",
-        "description": "The saved policy (null if none). `?format=file` downloads it as JSON. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "The saved policy (null if none). `?format=file` downloads it as JSON. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "cookieAuth": []
@@ -3619,7 +3619,7 @@
           "Advisor"
         ],
         "summary": "Save the Investment Policy",
-        "description": "Validates (allocation sums to 100, index weights sum to 100, position limits can fill the satellite sleeve) and saves. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Validates (allocation sums to 100, index weights sum to 100, position limits can fill the satellite sleeve) and saves. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "cookieAuth": []
@@ -3650,7 +3650,7 @@
           "Advisor"
         ],
         "summary": "This month's plan",
-        "description": "Deterministic monthly plan from the policy: identical input gives identical output, and 'No action this month' is a valid result. Recommend-only; nothing is executed. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Deterministic monthly plan from the policy: identical input gives identical output, and 'No action this month' is a valid result. Recommend-only; nothing is executed. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "cookieAuth": []
@@ -3684,7 +3684,7 @@
           "Advisor"
         ],
         "summary": "Quality screen for one symbol",
-        "description": "Runs the deterministic quality screen (5-year ROCE, debt/equity, free cash flow, growth consistency, promoter pledge and trend, P/E vs own history, data freshness/completeness) and returns every gate with its measured value. A gate that cannot be evaluated is `unknown` and blocks eligibility. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Runs the deterministic quality screen (5-year ROCE, debt/equity, free cash flow, growth consistency, promoter pledge and trend, P/E vs own history, data freshness/completeness) and returns every gate with its measured value. A gate that cannot be evaluated is `unknown` and blocks eligibility. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "cookieAuth": []
@@ -3734,7 +3734,7 @@
           }
         ],
         "summary": "Latest stored research memo for a symbol",
-        "description": "Returns the most recent cited memo (null if none). Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Returns the most recent cited memo (null if none). Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "parameters": [
           {
             "name": "symbol",
@@ -3845,7 +3845,7 @@
           }
         ],
         "summary": "List decision-journal entries",
-        "description": "Recorded recommendations, newest first. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Recorded recommendations, newest first. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "responses": {
           "200": {
             "description": "Entries."
@@ -3871,7 +3871,7 @@
           }
         ],
         "summary": "Record a recommendation",
-        "description": "Records a stock (from a stored memo, with its price and kill criteria) or this month's plan. Recording is not executing. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Records a stock (from a stored memo, with its price and kill criteria) or this month's plan. Recording is not executing. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "requestBody": {
           "required": true,
           "content": {
@@ -3930,7 +3930,7 @@
           }
         ],
         "summary": "Record what you did",
-        "description": "Marks an entry followed, ignored or modified (with the amount actually invested). Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Marks an entry followed, ignored or modified (with the amount actually invested). Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "parameters": [
           {
             "name": "id",
@@ -4000,7 +4000,7 @@
           }
         ],
         "summary": "Check kill criteria now",
-        "description": "Evaluates every monitored recommendation's kill criteria against fresh data and notifies once per criterion that has fired. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Evaluates every monitored recommendation's kill criteria against fresh data and notifies once per criterion that has fired. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "responses": {
           "200": {
             "description": "Review summary."
@@ -4023,7 +4023,7 @@
           "Cron"
         ],
         "summary": "Advisor thesis review (local scheduler)",
-        "description": "Runs the kill-criteria review for all journal entries. Not registered in vercel.json or any workflow; call it from your own scheduler with the CRON_SECRET bearer. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Runs the kill-criteria review for all journal entries. Not registered in vercel.json or any workflow; call it from your own scheduler with the CRON_SECRET bearer. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "bearerAuth": []
@@ -4046,7 +4046,7 @@
           "Cron"
         ],
         "summary": "Advisor thesis review (local scheduler)",
-        "description": "Runs the kill-criteria review for all journal entries. Not registered in vercel.json or any workflow; call it from your own scheduler with the CRON_SECRET bearer. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Runs the kill-criteria review for all journal entries. Not registered in vercel.json or any workflow; call it from your own scheduler with the CRON_SECRET bearer. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "bearerAuth": []
@@ -4076,7 +4076,7 @@
           }
         ],
         "summary": "Advisor sleeve vs Nifty 50 fund",
-        "description": "Paper-trades every recorded stock recommendation at that day's close against the same rupees in NIFTYBEES: per-entry results, totals (annualised only after a year), month-by-month history including losing stretches, and a plain-language warning when the stock sleeve trails the index over entries at least 180 days old. Forward tracking only — no backtest. Local-only: 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Paper-trades every recorded stock recommendation at that day's close against the same rupees in NIFTYBEES: per-entry results, totals (annualised only after a year), month-by-month history including losing stretches, and a plain-language warning when the stock sleeve trails the index over entries at least 180 days old. Forward tracking only — no backtest. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "responses": {
           "200": {
             "description": "Performance report."
@@ -5694,7 +5694,7 @@
           "AI"
         ],
         "summary": "Generate the stock page 360 brief",
-        "description": "Up to five points (quality, growth, valuation, ownership, risk), each with a signal (strength / neutral / concern) and text citing numbers computed from the stock's own data, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 12 hours per user, symbol and mode. Mode is guarded by default (no verdicts). On a local / self-host instance a user can opt in to unrestricted mode (Settings > AI & Models), and the response may then also carry `valuation` and `entry`; the hosted site is always guarded (ADR 0054). Body `{ symbol, force? }`.",
+        "description": "Up to five points (quality, growth, valuation, ownership, risk), each with a signal (strength / neutral / concern) and text citing numbers computed from the stock's own data, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 12 hours per user, symbol and mode. Mode is guarded by default (no verdicts). On a local / self-host instance, or for a hosted admin, a user can opt in to unrestricted mode (Settings > AI & Models), and the response may then also carry `valuation` and `entry`; on the hosted site only an admin (ADMIN_USER_IDS) can turn it on, everyone else is always guarded (ADR 0054, 0070). Body `{ symbol, force? }`.",
         "security": [
           {
             "cookieAuth": []
@@ -6315,7 +6315,7 @@
           "Advisor"
         ],
         "summary": "Portfolio against your limits",
-        "description": "Drift audit (single-stock and sector weights against limits), drawdown review, the holdings-synced decision tracker and, with `amount`, how new money sits against the limits. Works with no saved policy (a preset applies). Recommend-only; nothing is executed. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Drift audit (single-stock and sector weights against limits), drawdown review, the holdings-synced decision tracker and, with `amount`, how new money sits against the limits. Works with no saved policy (a preset applies). Recommend-only; nothing is executed. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "cookieAuth": []
@@ -6376,7 +6376,7 @@
           "Advisor"
         ],
         "summary": "Does a stock fit my rules",
-        "description": "Checks whether adding an amount of one ticker would break your single-stock limit, sector limit or exclusions. It checks your own rules, not the company. Local-only: returns 404 unless ADVISOR_MODE=enabled on a non-hosted deployment.",
+        "description": "Checks whether adding an amount of one ticker would break your single-stock limit, sector limit or exclusions. It checks your own rules, not the company. Returns 404 unless ADVISOR_MODE=enabled and the caller is a local user or a hosted admin (ADMIN_USER_IDS, ADR 0070).",
         "security": [
           {
             "cookieAuth": []
@@ -6443,7 +6443,7 @@
           "AI"
         ],
         "summary": "Draw AI chart levels for a stock (Auto-Chart)",
-        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 12 hours per user, symbol, mode and latest bar. Mode is resolved on the server, never from the body: guarded by default (structure only). On a local / self-host instance with unrestricted mode on (ADR 0054) the response may also carry `setup` (direction, entry, stop, target, riskReward, stopPct, targetPct, entryType now|pullback|retest, lastClose), planned by the server from the levels and the trend, and `setupNote` when no setup qualifies. The hosted site never returns `setup` (ADR 0068). Body `{ symbol, interval?, force? }`; `interval` is 1m, 5m, 15m, 1h or 1d (default 1d) and the bars, the freshness window (2 minutes on 1m up to 12 hours on 1d) and the cache key follow it. Trendline `a` / `b` times are bar times as in the candles endpoint.",
+        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 12 hours per user, symbol, mode and latest bar. Mode is resolved on the server, never from the body: guarded by default (structure only). On a local / self-host instance with unrestricted mode on (ADR 0054) the response may also carry `setup` (direction, entry, stop, target, riskReward, stopPct, targetPct, entryType now|pullback|retest, lastClose), planned by the server from the levels and the trend, and `setupNote` when no setup qualifies. On the hosted site only an admin (ADMIN_USER_IDS) can get `setup`; everyone else never does (ADR 0068, 0070). Body `{ symbol, interval?, force? }`; `interval` is 1m, 5m, 15m, 1h or 1d (default 1d) and the bars, the freshness window (2 minutes on 1m up to 12 hours on 1d) and the cache key follow it. Trendline `a` / `b` times are bar times as in the candles endpoint.",
         "security": [
           {
             "cookieAuth": []

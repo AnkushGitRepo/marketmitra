@@ -18,9 +18,27 @@ describe('isAdvisorEnabled', () => {
     expect(isAdvisorEnabled()).toBe(true);
   });
 
-  it('is refused on a hosted deployment even if the flag is set', () => {
+  it('is refused on a hosted deployment for everyone but an admin, even if the flag is set', () => {
     vi.stubEnv('ADVISOR_MODE', 'enabled');
     vi.stubEnv('NEXT_PUBLIC_DEPLOYMENT_MODE', 'hosted');
-    expect(isAdvisorEnabled()).toBe(false);
+    vi.stubEnv('ADMIN_USER_IDS', 'user_admin');
+    expect(isAdvisorEnabled()).toBe(false); // no user (scheduler, signed out)
+    expect(isAdvisorEnabled(null)).toBe(false);
+    expect(isAdvisorEnabled('user_regular')).toBe(false);
+    expect(isAdvisorEnabled('user_admin')).toBe(true);
+  });
+
+  it('needs the flag for an admin too', () => {
+    vi.stubEnv('NEXT_PUBLIC_DEPLOYMENT_MODE', 'hosted');
+    vi.stubEnv('ADMIN_USER_IDS', 'user_admin');
+    vi.stubEnv('ADVISOR_MODE', '');
+    expect(isAdvisorEnabled('user_admin')).toBe(false);
+  });
+
+  it('is closed on a hosted deployment with no admin configured', () => {
+    vi.stubEnv('ADVISOR_MODE', 'enabled');
+    vi.stubEnv('NEXT_PUBLIC_DEPLOYMENT_MODE', 'hosted');
+    vi.stubEnv('ADMIN_USER_IDS', '');
+    expect(isAdvisorEnabled('user_admin')).toBe(false);
   });
 });

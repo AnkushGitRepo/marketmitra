@@ -1,6 +1,6 @@
 # 0054 — Unrestricted Mitra: an opt-in, local-only exception to "no investment advice"
 
-Status: accepted (2026-11-11, issue #103; decided by the maintainer)
+Status: accepted (2026-11-11, issue #103; decided by the maintainer). Amended by [0070](./0070-admin-users-get-unrestricted-and-advisor-on-hosted.md): a hosted admin can also use it.
 
 ## Context
 

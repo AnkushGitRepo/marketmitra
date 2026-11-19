@@ -10,7 +10,7 @@ export const ADVISOR_REVIEW_SOURCE = 'advisor:review';
  * the Advisor is on. A failure is logged and rethrown for the caller's own handling.
  */
 export async function runAdvisorReviewJob(userId: string = 'local', now: Date = new Date()): Promise<ReviewSummary | null> {
-  if (!isAdvisorEnabled()) return null;
+  if (!isAdvisorEnabled(userId)) return null;
   const started = Date.now();
   try {
     const summary = await runKillReview(now.toISOString().slice(0, 10), userId);

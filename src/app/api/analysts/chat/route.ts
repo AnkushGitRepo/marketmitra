@@ -62,7 +62,7 @@ async function handlePOST(request: Request) {
   const aiConfig = await getUserAiConfig(userId);
   if (!aiConfig) return NextResponse.json({ error: 'no_ai_key', hint: 'Add your AI provider key in Settings.' }, { status: 400 });
 
-  // Guarded unless a local user opted in (ADR 0054); the hosted site is always guarded.
+  // Guarded unless a local user or a hosted admin opted in (ADR 0054, 0070).
   const mode = await resolvePromptMode(userId);
   let system: string | null;
   try {

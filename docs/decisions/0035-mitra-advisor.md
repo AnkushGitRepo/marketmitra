@@ -1,6 +1,6 @@
 # 0035 — Mitra Advisor: a local-only, rules-first decision-support tool
 
-**Status:** accepted (Phase 1 built)
+**Status:** accepted (Phase 1 built). Amended by [0070](./0070-admin-users-get-unrestricted-and-advisor-on-hosted.md): a hosted admin can also use it.
 
 ## Decision
 Add an opt-in `Advisor` section for the owner's own long-term investing. Deterministic code decides

@@ -25,14 +25,15 @@ interface AiPanelProps {
   readonly prefs: Preferences;
   readonly onPrefs: (patch: PreferencesPatch) => void;
   /** Unrestricted Mitra (ADR 0054) exists only on a local / self-host instance. */
-  readonly hosted: boolean;
+  /** Local install, or a hosted admin: the Unrestricted Mitra setting is offered (ADR 0070). */
+  readonly canUnrestricted: boolean;
 }
 
 function Switch({ checked, onChange, label }: { checked: boolean; onChange: (next: boolean) => void; label: string }) {
   return <button type="button" role="switch" aria-checked={checked} aria-label={label} className={rowStyles.switch} onClick={() => onChange(!checked)} />;
 }
 
-export function AiPanel({ initialView, encConfigured, prefs, onPrefs, hosted }: AiPanelProps) {
+export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestricted }: AiPanelProps) {
   const router = useRouter();
   const [view, setView] = useState(initialView);
   const [confirmingUnrestricted, setConfirmingUnrestricted] = useState(false);
@@ -248,13 +249,13 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, hosted }: 
             </div>
             <Switch label="Show tool activity" checked={prefs.chat.showToolActivity} onChange={(v) => onPrefs({ chat: { showToolActivity: v } })} />
           </div>
-          {!hosted && (
+          {canUnrestricted && (
             <div className={rowStyles.row}>
               <div className={rowStyles.rowText}>
-                <p className={rowStyles.rowLabel}>Unrestricted Mitra (local only)</p>
+                <p className={rowStyles.rowLabel}>Unrestricted Mitra (local and admin only)</p>
                 <p className={rowStyles.rowHint}>
                   Off by default. When on, Mitra may give a valuation view (undervalued, fairly valued, overvalued) and say whether the current price looks reasonable, from the data it has.
-                  It is an AI opinion, not licensed advice. This option does not exist on the hosted site.
+                  It is an AI opinion, not licensed advice. It is not offered to other users of the hosted site.
                 </p>
               </div>
               <Switch
