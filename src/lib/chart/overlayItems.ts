@@ -54,3 +54,18 @@ export function removeOverlayItem(overlay: ChartOverlay, id: string): ChartOverl
 export function isOverlayEmpty(overlay: ChartOverlay): boolean {
   return overlay.levels.length === 0 && overlay.trendlines.length === 0 && !overlay.setup;
 }
+
+/** What to draw: the overlay without the hidden items. The very same object when nothing is hidden. */
+export function visibleOverlay(overlay: ChartOverlay, hidden: ReadonlySet<string>): ChartOverlay {
+  if (hidden.size === 0) return overlay;
+  const shown: ChartOverlay = {
+    ...overlay,
+    levels: overlay.levels.filter((l) => !hidden.has(`level:${l.label}`)),
+    trendlines: overlay.trendlines.filter((t) => !hidden.has(trendId(t))),
+  };
+  return hidden.has('setup')
+    ? (Object.fromEntries(
+        Object.entries(shown).filter(([k]) => k !== 'setup'),
+      ) as unknown as ChartOverlay)
+    : shown;
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChartOverlay } from './aiOverlay';
-import { isOverlayEmpty, overlayItems, removeOverlayItem } from './overlayItems';
+import { isOverlayEmpty, overlayItems, removeOverlayItem, visibleOverlay } from './overlayItems';
 
 const overlay: ChartOverlay = {
   levels: [
@@ -69,5 +69,22 @@ describe('isOverlayEmpty', () => {
     expect(
       isOverlayEmpty({ levels: [], trendlines: [], indicators: [], setupNote: 'why not' }),
     ).toBe(true);
+  });
+});
+
+describe('visibleOverlay', () => {
+  it('leaves out the hidden items and keeps the rest, without changing the input', () => {
+    const shown = visibleOverlay(
+      overlay,
+      new Set(['level:S1', 'setup', 'trend:2026-01-02|2026-02-02']),
+    );
+    expect(shown.levels.map((l) => l.label)).toEqual(['R1']);
+    expect(shown.trendlines).toEqual([]);
+    expect(shown.setup).toBeUndefined();
+    expect(overlay.setup).toBeDefined();
+    expect(overlay.levels).toHaveLength(2);
+  });
+  it('returns the overlay itself when nothing is hidden', () => {
+    expect(visibleOverlay(overlay, new Set())).toBe(overlay);
   });
 });

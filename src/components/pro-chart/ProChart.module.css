@@ -602,9 +602,20 @@
 .drawingRow .menuHint {
   grid-column: 1;
 }
-.drawingRemove {
+.drawingActions {
   grid-row: 1 / span 2;
   grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.drawingHidden .menuLabel,
+.drawingHidden .menuHint {
+  opacity: 0.45;
+}
+.drawingRemove {
+  display: inline-grid;
+  place-items: center;
   width: 26px;
   height: 26px;
   border: 0;
