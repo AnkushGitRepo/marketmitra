@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { PricePointOut } from '@/lib/dashboard/fundamentalsApi';
-import { rangeStartTime, toBars } from './bars';
+import { mergeBars, rangeStartTime, toBars, type Bar } from './bars';
 
-const row = (d: string, o: number | null, h = 12, l = 9, c = 11, v: number | null = 1000): PricePointOut => ({
+const row = (
+  d: string,
+  o: number | null,
+  h = 12,
+  l = 9,
+  c = 11,
+  v: number | null = 1000,
+): PricePointOut => ({
   trade_date: d,
   open: o === null ? null : String(o),
   high: String(h),
@@ -38,5 +45,38 @@ describe('rangeStartTime', () => {
   it('returns null for ranges that show everything', () => {
     expect(rangeStartTime('5Y', last)).toBeNull();
     expect(rangeStartTime('ALL', last)).toBeNull();
+  });
+});
+
+describe('mergeBars', () => {
+  const bar = (time: string, close: number): Bar => ({
+    time,
+    open: close,
+    high: close,
+    low: close,
+    close,
+    volume: 1,
+  });
+  const base = [bar('1', 10), bar('2', 11), bar('3', 12)];
+
+  it('replaces a bar with the same time and appends newer ones, oldest first', () => {
+    expect(mergeBars(base, [bar('3', 13), bar('4', 14)]).map((b) => b.close)).toEqual([
+      10, 11, 13, 14,
+    ]);
+  });
+  it('ignores bars older than the first one it holds', () => {
+    expect(mergeBars(base, [bar('0', 1)])).toBe(base);
+  });
+  it('returns the same array when nothing changed, so the chart does not redraw', () => {
+    expect(mergeBars(base, [bar('3', 12)])).toBe(base);
+    expect(mergeBars(base, [])).toBe(base);
+  });
+  it('starts from the incoming bars when it holds none', () => {
+    expect(mergeBars([], [bar('1', 5)]).map((b) => b.close)).toEqual([5]);
+  });
+  it('does not change its inputs', () => {
+    const incoming = [bar('3', 13)];
+    mergeBars(base, incoming);
+    expect(base[2].close).toBe(12);
   });
 });

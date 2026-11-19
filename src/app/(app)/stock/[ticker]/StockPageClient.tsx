@@ -1,5 +1,6 @@
 'use client';
 
+import { useLiveQuote } from '@/components/stock/useLiveQuote';
 import { useRouter } from 'next/navigation';
 import { Suspense, use, useEffect, useMemo, useState } from 'react';
 import { SmeBadge } from '@/components/common/SmeBadge';
@@ -69,6 +70,7 @@ interface StockPageClientProps {
 }
 
 interface LiveSectionProps {
+  symbol: string;
   quote: Promise<HeaderQuote>;
   bars: Bar[];
   ratios: RatioOut[];
@@ -76,11 +78,13 @@ interface LiveSectionProps {
 }
 
 /** Price, day move, 52-week bar and the key-ratio tiles: everything that needs the live quote, so the rest of the page streams first. */
-function LiveSection({ quote, bars, ratios, peers }: LiveSectionProps) {
+function LiveSection({ symbol, quote, bars, ratios, peers }: LiveSectionProps) {
   const { masked } = useMask();
   const q = use(quote);
-  const price = q.latestClose !== null ? Number(q.latestClose) : null;
-  const prev = q.previousClose !== null ? Number(q.previousClose) : null;
+  // The page's own quote is the first paint; while the market is open the live poll takes over.
+  const live = useLiveQuote(symbol);
+  const price = live ? live.price : q.latestClose !== null ? Number(q.latestClose) : null;
+  const prev = live ? (live.prevClose ?? (q.previousClose !== null ? Number(q.previousClose) : null)) : q.previousClose !== null ? Number(q.previousClose) : null;
   const change = price !== null && prev !== null ? price - prev : null;
   const changePct = change !== null && prev ? (change / prev) * 100 : null;
   const up = (change ?? 0) >= 0;
@@ -196,7 +200,7 @@ export function StockPageClient({
           </div>
         }
       >
-        <LiveSection quote={quote} bars={bars} ratios={ratios} peers={peers} />
+        <LiveSection symbol={symbol} quote={quote} bars={bars} ratios={ratios} peers={peers} />
       </Suspense>
 
       <div className={styles.chartRow}>

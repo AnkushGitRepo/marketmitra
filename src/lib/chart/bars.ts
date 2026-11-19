@@ -60,3 +60,32 @@ export function rangeStartTime(range: RangeKey, lastTime: string): string | null
       return null;
   }
 }
+
+const sameBar = (a: Bar, b: Bar) =>
+  a.open === b.open &&
+  a.high === b.high &&
+  a.low === b.low &&
+  a.close === b.close &&
+  a.volume === b.volume;
+
+/**
+ * Folds freshly polled bars into the ones already held: a bar with a known time replaces it, newer ones are appended.
+ * Bars older than the first held bar are ignored. Returns the very same array when nothing changed, so callers can skip a redraw.
+ * Times are compared as text for equality and ordered by their numeric value (intraday) or text (daily dates).
+ */
+export function mergeBars(existing: Bar[], incoming: Bar[]): Bar[] {
+  if (existing.length === 0) return incoming;
+  const first = existing[0].time;
+  const order = (a: string, b: string) =>
+    /^\d+$/.test(a) && /^\d+$/.test(b) ? Number(a) - Number(b) : a < b ? -1 : a > b ? 1 : 0;
+  const byTime = new Map(existing.map((b) => [b.time, b]));
+  let changed = false;
+  for (const bar of incoming) {
+    if (order(bar.time, first) < 0) continue;
+    const held = byTime.get(bar.time);
+    if (held && sameBar(held, bar)) continue;
+    byTime.set(bar.time, bar);
+    changed = true;
+  }
+  return changed ? [...byTime.values()].sort((a, b) => order(a.time, b.time)) : existing;
+}

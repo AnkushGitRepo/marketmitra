@@ -14,10 +14,20 @@ import {
   type ISeriesApi,
   type SeriesType,
   type Time,
+  type UTCTimestamp,
 } from 'lightweight-charts';
-import { bollinger, ema, macd, rsi, sma, type Series } from '@/lib/chart/indicators';
+import type { Series } from '@/lib/chart/indicators';
 import { rangeStartTime, type Bar, type RangeKey } from '@/lib/chart/bars';
-import { INDICATOR_COLORS, type IndicatorId } from './constants';
+import {
+  INTRADAY_VISIBLE_BARS,
+  isIntraday,
+  isIntradayTime,
+  isTailUpdate,
+  type Timeframe,
+} from '@/lib/chart/timeframes';
+import { INDICATORS, type IndicatorId } from './constants';
+import type { StoredParams } from '@/lib/chart/indicatorParams';
+import { computeIndicator } from './indicatorRegistry';
 import styles from './ProChart.module.css';
 
 export type ChartKind = 'candles' | 'line';
@@ -30,7 +40,12 @@ export interface ChartHandle {
 interface ChartCanvasProps {
   bars: Bar[];
   kind: ChartKind;
+  timeframe: Timeframe;
+  /** Leave empty space after the latest candle for Auto-Chart's badges and setup box. */
+  roomOnRight?: boolean;
   indicators: IndicatorId[];
+  /** The user's indicator settings; anything missing draws with the default. */
+  params: StoredParams;
   range: RangeKey;
   onReady: (handle: ChartHandle | null) => void;
   onHover: (bar: Bar | null) => void;
@@ -55,7 +70,8 @@ function paintedAnything(el: HTMLElement): boolean {
     if (!canvas.width || !canvas.height) continue;
     try {
       const ctx = canvas.getContext('2d');
-      if (ctx && hasVisibleInk(ctx.getImageData(0, 0, canvas.width, canvas.height).data)) return true;
+      if (ctx && hasVisibleInk(ctx.getImageData(0, 0, canvas.width, canvas.height).data))
+        return true;
     } catch {
       return true; // can't inspect the pixels: assume it is fine rather than discard a working chart
     }
@@ -80,15 +96,49 @@ function themeColors() {
   };
 }
 
-const toPoints = (bars: Bar[], values: Series) =>
-  bars.flatMap((b, i) => (values[i] === null ? [] : [{ time: b.time as Time, value: values[i] as number }]));
+/** A bar time as lightweight-charts wants it: epoch seconds for intraday bars, the `YYYY-MM-DD` string for daily ones. */
+const chartTime = (time: string): Time =>
+  isIntradayTime(time) ? (Number(time) as UTCTimestamp) : (time as Time);
 
-export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover, onFailure }: ChartCanvasProps) {
+const DEFAULT_RIGHT_OFFSET_BARS = 4;
+/** Empty space after the latest candle while Auto-Chart is on: enough for its badges. */
+const ROOM_ON_RIGHT_PX = 240;
+const FALLBACK_BAR_SPACING_PX = 8;
+const MAX_ROOM_BARS = 120;
+
+const toPoints = (bars: Bar[], values: Series) =>
+  bars.flatMap((b, i) =>
+    values[i] === null ? [] : [{ time: chartTime(b.time), value: values[i] as number }],
+  );
+
+/** Like `toPoints`, with a colour per point (a line that changes colour as it runs). */
+const toColoredPoints = (bars: Bar[], values: Series, colors: string[]) =>
+  bars.flatMap((b, i) =>
+    values[i] === null
+      ? []
+      : [{ time: chartTime(b.time), value: values[i] as number, color: colors[i] }],
+  );
+
+export function ChartCanvas({
+  bars,
+  kind,
+  timeframe,
+  roomOnRight = false,
+  indicators,
+  params,
+  range,
+  onReady,
+  onHover,
+  onFailure,
+}: ChartCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<SeriesType>[]>([]);
   const priceRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const barsByTime = useRef<Map<string, Bar>>(new Map());
+  /** What each series needs to refresh its newest points, so a live tick can update in place instead of rebuilding the chart. */
+  const updatersRef = useRef<Array<(bars: Bar[], from: number) => void>>([]);
+  const builtRef = useRef<{ sig: string; bars: Bar[] } | null>(null);
   const onReadyRef = useRef(onReady);
   const onHoverRef = useRef(onHover);
   const onFailureRef = useRef(onFailure);
@@ -111,23 +161,38 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover, o
     let chart: IChartApi;
     try {
       chart = createChart(el, {
-      autoSize: true,
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: c.text,
-        fontFamily: 'var(--font-mono), ui-monospace, monospace',
-        fontSize: 11,
-        panes: { separatorColor: c.grid, enableResize: true },
-      },
-      grid: { vertLines: { color: c.grid, style: LineStyle.Dotted }, horzLines: { color: c.grid, style: LineStyle.Dotted } },
-      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: 0.08 } },
-      timeScale: { borderVisible: false, rightOffset: 4, timeVisible: false },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-        vertLine: { color: c.crosshair, style: LineStyle.Dashed, labelBackgroundColor: '#15171c' },
-        horzLine: { color: c.crosshair, style: LineStyle.Dashed, labelBackgroundColor: '#15171c' },
-      },
-    });
+        autoSize: true,
+        layout: {
+          background: { type: ColorType.Solid, color: 'transparent' },
+          textColor: c.text,
+          fontFamily: 'var(--font-mono), ui-monospace, monospace',
+          fontSize: 11,
+          panes: { separatorColor: c.grid, enableResize: true },
+        },
+        grid: {
+          vertLines: { color: c.grid, style: LineStyle.Dotted },
+          horzLines: { color: c.grid, style: LineStyle.Dotted },
+        },
+        rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: {
+          borderVisible: false,
+          rightOffset: DEFAULT_RIGHT_OFFSET_BARS,
+          timeVisible: false,
+        },
+        crosshair: {
+          mode: CrosshairMode.Normal,
+          vertLine: {
+            color: c.crosshair,
+            style: LineStyle.Dashed,
+            labelBackgroundColor: '#15171c',
+          },
+          horzLine: {
+            color: c.crosshair,
+            style: LineStyle.Dashed,
+            labelBackgroundColor: '#15171c',
+          },
+        },
+      });
     } catch {
       onFailureRef.current?.('The interactive chart couldn\u2019t start on this device.');
       return;
@@ -142,12 +207,15 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover, o
     }, 600);
     // Later, once painting has had time to happen (slow phones included), verify something is actually visible.
     const paintCheck = window.setTimeout(() => {
-      if (!paintedAnything(el)) onFailureRef.current?.('The chart didn\u2019t draw on this device.');
+      if (!paintedAnything(el))
+        onFailureRef.current?.('The chart didn\u2019t draw on this device.');
     }, 2200);
     const watchdogs = [collapsedCheck, paintCheck];
 
     chart.subscribeCrosshairMove((p) => {
-      onHoverRef.current(typeof p.time === 'string' ? (barsByTime.current.get(p.time) ?? null) : null);
+      onHoverRef.current(
+        p.time === undefined ? null : (barsByTime.current.get(String(p.time)) ?? null),
+      );
     });
 
     const observer = new MutationObserver(() => {
@@ -157,7 +225,10 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover, o
         grid: { vertLines: { color: t.grid }, horzLines: { color: t.grid } },
       });
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'class'],
+    });
 
     return () => {
       watchdogs.forEach((id) => window.clearTimeout(id));
@@ -167,6 +238,9 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover, o
       chartRef.current = null;
       seriesRef.current = [];
       priceRef.current = null;
+      // The series died with the chart; a later build must not take the in-place update path against them.
+      updatersRef.current = [];
+      builtRef.current = null;
     };
   }, []);
 
@@ -174,124 +248,260 @@ export function ChartCanvas({ bars, kind, indicators, range, onReady, onHover, o
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
-    try {
-    const c = themeColors();
-    const timeScale = chart.timeScale();
-    const keepRange = timeScale.getVisibleLogicalRange();
-
-    for (const s of seriesRef.current) chart.removeSeries(s);
-    seriesRef.current = [];
-    barsByTime.current = new Map(bars.map((b) => [b.time, b]));
-    const add = <T extends SeriesType>(s: ISeriesApi<T>) => {
-      seriesRef.current.push(s as unknown as ISeriesApi<SeriesType>);
-      return s;
-    };
-
-    const closes = bars.map((b) => b.close);
-    const lineOpts = { lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false } as const;
-
-    const price =
-      kind === 'candles'
-        ? add(
-            chart.addSeries(CandlestickSeries, {
-              upColor: c.up,
-              downColor: c.down,
-              borderVisible: false,
-              wickUpColor: c.up,
-              wickDownColor: c.down,
-            })
-          )
-        : add(chart.addSeries(LineSeries, { color: c.line, lineWidth: 2, crosshairMarkerRadius: 4 }));
-    price.setData(
-      kind === 'candles'
-        ? bars.map((b) => ({ time: b.time as Time, open: b.open, high: b.high, low: b.low, close: b.close }))
-        : bars.map((b) => ({ time: b.time as Time, value: b.close }))
-    );
-    priceRef.current = price as unknown as ISeriesApi<SeriesType>;
-
-    const on = new Set(indicators);
-
-    if (on.has('volume')) {
-      const vol = add(
-        chart.addSeries(HistogramSeries, {
-          priceFormat: { type: 'volume' },
-          priceScaleId: 'volume',
-          priceLineVisible: false,
-          lastValueVisible: false,
-        })
-      );
-      vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
-      vol.setData(
-        bars.map((b) => ({ time: b.time as Time, value: b.volume, color: `${b.close >= b.open ? c.up : c.down}66` }))
-      );
-    }
-
-    const overlay = (id: 'sma20' | 'sma50' | 'sma200' | 'ema20' | 'ema50', values: Series) => {
-      if (!on.has(id)) return;
-      add(chart.addSeries(LineSeries, { ...lineOpts, lineWidth: 1, color: INDICATOR_COLORS[id] })).setData(toPoints(bars, values));
-    };
-    overlay('sma20', sma(closes, 20));
-    overlay('sma50', sma(closes, 50));
-    overlay('sma200', sma(closes, 200));
-    overlay('ema20', ema(closes, 20));
-    overlay('ema50', ema(closes, 50));
-
-    if (on.has('bb')) {
-      const { mid, upper, lower } = bollinger(closes, 20, 2);
-      const band = { ...lineOpts, lineWidth: 1, color: INDICATOR_COLORS.bb } as const;
-      add(chart.addSeries(LineSeries, band)).setData(toPoints(bars, upper));
-      add(chart.addSeries(LineSeries, band)).setData(toPoints(bars, lower));
-      add(chart.addSeries(LineSeries, { ...band, lineStyle: LineStyle.Dashed })).setData(toPoints(bars, mid));
-    }
-
-    let pane = 1;
-    if (on.has('rsi')) {
-      const line = add(
-        chart.addSeries(LineSeries, { ...lineOpts, lineWidth: 1, color: INDICATOR_COLORS.rsi, lastValueVisible: true }, pane)
-      );
-      line.setData(toPoints(bars, rsi(closes, 14)));
-      for (const level of [30, 70]) {
-        line.createPriceLine({ price: level, color: c.text, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: false, title: '' });
+    const sig = `${kind}|${timeframe}|${indicators.join(',')}|${JSON.stringify(params)}`;
+    const built = builtRef.current;
+    if (built && built.sig === sig && isTailUpdate(built.bars, bars)) {
+      try {
+        const from = built.bars.length - 1;
+        for (const update of updatersRef.current) update(bars, from);
+        barsByTime.current = new Map(bars.map((b) => [b.time, b]));
+        builtRef.current = { sig, bars };
+        return;
+      } catch {
+        // fall through to a full rebuild
       }
-      pane += 1;
     }
-    if (on.has('macd')) {
-      const { line, signal, histogram } = macd(closes, 12, 26, 9);
-      const hist = add(chart.addSeries(HistogramSeries, { priceLineVisible: false, lastValueVisible: false }, pane));
-      hist.setData(
-        bars.flatMap((b, i) =>
-          histogram[i] === null
-            ? []
-            : [{ time: b.time as Time, value: histogram[i] as number, color: `${(histogram[i] as number) >= 0 ? c.up : c.down}99` }]
-        )
+    try {
+      const c = themeColors();
+      const timeScale = chart.timeScale();
+      const keepRange = timeScale.getVisibleLogicalRange();
+      timeScale.applyOptions({ timeVisible: isIntraday(timeframe), secondsVisible: false });
+      const updaters: Array<(bars: Bar[], from: number) => void> = [];
+
+      for (const s of seriesRef.current) chart.removeSeries(s);
+      seriesRef.current = [];
+      barsByTime.current = new Map(bars.map((b) => [b.time, b]));
+      const add = <T extends SeriesType>(s: ISeriesApi<T>) => {
+        seriesRef.current.push(s as unknown as ISeriesApi<SeriesType>);
+        return s;
+      };
+      const lineOpts = {
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+      } as const;
+
+      const price =
+        kind === 'candles'
+          ? add(
+              chart.addSeries(CandlestickSeries, {
+                upColor: c.up,
+                downColor: c.down,
+                borderVisible: false,
+                wickUpColor: c.up,
+                wickDownColor: c.down,
+              }),
+            )
+          : add(
+              chart.addSeries(LineSeries, {
+                color: c.line,
+                lineWidth: 2,
+                crosshairMarkerRadius: 4,
+              }),
+            );
+      price.setData(
+        kind === 'candles'
+          ? bars.map((b) => ({
+              time: chartTime(b.time),
+              open: b.open,
+              high: b.high,
+              low: b.low,
+              close: b.close,
+            }))
+          : bars.map((b) => ({ time: chartTime(b.time), value: b.close })),
       );
-      add(chart.addSeries(LineSeries, { ...lineOpts, lineWidth: 1, color: INDICATOR_COLORS.macdLine }, pane)).setData(toPoints(bars, line));
-      add(chart.addSeries(LineSeries, { ...lineOpts, lineWidth: 1, color: INDICATOR_COLORS.macdSignal }, pane)).setData(toPoints(bars, signal));
-    }
+      priceRef.current = price as unknown as ISeriesApi<SeriesType>;
+      updaters.push((bs, from) => {
+        for (const b of bs.slice(from)) {
+          price.update(
+            (kind === 'candles'
+              ? { time: chartTime(b.time), open: b.open, high: b.high, low: b.low, close: b.close }
+              : { time: chartTime(b.time), value: b.close }) as never,
+          );
+        }
+      });
 
-    const panes = chart.panes();
-    panes.forEach((p, i) => p.setStretchFactor(i === 0 ? 3 : 1));
+      const on = new Set(indicators);
 
-    if (keepRange) timeScale.setVisibleLogicalRange(keepRange);
-    onReadyRef.current({ chart, price: priceRef.current });
+      if (on.has('volume')) {
+        const vol = add(
+          chart.addSeries(HistogramSeries, {
+            priceFormat: { type: 'volume' },
+            priceScaleId: 'volume',
+            priceLineVisible: false,
+            lastValueVisible: false,
+          }),
+        );
+        vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+        vol.setData(
+          bars.map((b) => ({
+            time: chartTime(b.time),
+            value: b.volume,
+            color: `${b.close >= b.open ? c.up : c.down}66`,
+          })),
+        );
+        updaters.push((bs, from) => {
+          for (const b of bs.slice(from)) {
+            vol.update({
+              time: chartTime(b.time),
+              value: b.volume,
+              color: `${b.close >= b.open ? c.up : c.down}66`,
+            });
+          }
+        });
+      }
+
+      // Menu order decides draw order and pane order, so panes stay in a stable sequence however they were switched on.
+      let pane = 1;
+      for (const def of INDICATORS) {
+        if (def.id === 'volume' || !on.has(def.id)) continue;
+        const out = computeIndicator(def.id, bars, params[def.id]);
+        const paneIndex = def.group === 'Panes' ? pane : 0;
+        let histSeries = null as ISeriesApi<'Histogram'> | null;
+        if (out.histogram) {
+          const hv = out.histogram.values;
+          histSeries = add(
+            chart.addSeries(
+              HistogramSeries,
+              { priceLineVisible: false, lastValueVisible: false },
+              paneIndex,
+            ),
+          );
+          histSeries.setData(
+            bars.flatMap((b, i) =>
+              hv[i] === null
+                ? []
+                : [
+                    {
+                      time: chartTime(b.time),
+                      value: hv[i] as number,
+                      color: `${(hv[i] as number) >= 0 ? c.up : c.down}99`,
+                    },
+                  ],
+            ),
+          );
+        }
+        let first: ISeriesApi<'Line'> | null = null;
+        const lineSeries: ISeriesApi<'Line'>[] = [];
+        for (const l of out.lines) {
+          // Pane indicators show their latest value on the axis, for the first line only.
+          const showLast: boolean = paneIndex > 0 && first === null;
+          const series: ISeriesApi<'Line'> = add(
+            chart.addSeries(
+              LineSeries,
+              {
+                ...lineOpts,
+                lineWidth: 1,
+                color: l.color,
+                lineStyle: l.dashed ? LineStyle.Dashed : LineStyle.Solid,
+                lastValueVisible: showLast,
+              },
+              paneIndex,
+            ),
+          );
+          series.setData(
+            l.pointColors
+              ? toColoredPoints(bars, l.values, l.pointColors)
+              : toPoints(bars, l.values),
+          );
+          first ??= series;
+          lineSeries.push(series);
+        }
+        for (const level of out.levels ?? []) {
+          first?.createPriceLine({
+            price: level,
+            color: c.text,
+            lineWidth: 1,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: false,
+            title: '',
+          });
+        }
+        const id = def.id;
+        updaters.push((bs, from) => {
+          const next = computeIndicator(id as Exclude<IndicatorId, 'volume'>, bs, params[id]);
+          next.lines.forEach((l, li) => {
+            for (let i = from; i < bs.length; i++) {
+              const v = l.values[i];
+              if (v === null) continue;
+              lineSeries[li].update(
+                (l.pointColors
+                  ? { time: chartTime(bs[i].time), value: v, color: l.pointColors[i] }
+                  : { time: chartTime(bs[i].time), value: v }) as never,
+              );
+            }
+          });
+          const hv = next.histogram?.values;
+          if (hv && histSeries) {
+            for (let i = from; i < bs.length; i++) {
+              if (hv[i] === null) continue;
+              histSeries.update({
+                time: chartTime(bs[i].time),
+                value: hv[i] as number,
+                color: `${(hv[i] as number) >= 0 ? c.up : c.down}99`,
+              });
+            }
+          }
+        });
+        if (paneIndex > 0) pane += 1;
+      }
+
+      const panes = chart.panes();
+      panes.forEach((p, i) => p.setStretchFactor(i === 0 ? 3 : 1));
+
+      if (keepRange) timeScale.setVisibleLogicalRange(keepRange);
+      updatersRef.current = updaters;
+      builtRef.current = { sig, bars };
+      onReadyRef.current({ chart, price: priceRef.current });
     } catch {
       onFailureRef.current?.('The chart hit a problem drawing this data.');
     }
-  }, [bars, kind, indicators]);
+  }, [bars, kind, timeframe, indicators, params]);
 
-  // Apply the range tab to the visible window.
+  // Make (or give back) the empty space after the latest candle. The space is sized in pixels, not bars, so the badges fit whatever the zoom.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const timeScale = chart.timeScale();
+    if (!roomOnRight) {
+      timeScale.applyOptions({ rightOffset: DEFAULT_RIGHT_OFFSET_BARS });
+      return;
+    }
+    const range = timeScale.getVisibleLogicalRange();
+    const span = range ? range.to - range.from : 0;
+    const spacing = span > 0 ? timeScale.width() / span : FALLBACK_BAR_SPACING_PX;
+    timeScale.applyOptions({
+      rightOffset: Math.min(MAX_ROOM_BARS, Math.ceil(ROOM_ON_RIGHT_PX / spacing)),
+    });
+  }, [roomOnRight, timeframe, bars.length]);
+
+  // Apply the range tab (daily) or a sensible window of recent bars (intraday), once per timeframe/range/dataset: a live tick
+  // must not snap the view back while the user is looking around.
+  const appliedRange = useRef('');
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || bars.length === 0) return;
+    const key = `${timeframe}|${range}|${bars[0].time}`;
+    if (appliedRange.current === key) return;
+    appliedRange.current = key;
     const last = bars[bars.length - 1].time;
-    const from = rangeStartTime(range, last);
     try {
+      if (isIntraday(timeframe)) {
+        const visible = INTRADAY_VISIBLE_BARS[timeframe];
+        chart.timeScale().setVisibleLogicalRange({
+          from: Math.max(0, bars.length - visible),
+          to: bars.length + 4,
+        });
+        return;
+      }
+      const from = rangeStartTime(range, last);
       if (from === null) chart.timeScale().fitContent();
       else chart.timeScale().setVisibleRange({ from: from as Time, to: last as Time });
     } catch {
       chart.timeScale().fitContent();
     }
-  }, [range, bars]);
+  }, [range, timeframe, bars]);
 
   return <div ref={containerRef} className={styles.canvas} />;
 }

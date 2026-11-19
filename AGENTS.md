@@ -124,7 +124,7 @@ security fixes; leave out docs, tests, chores, CI and invisible refactors. A pul
   make it pass. Use Playwright for end-to-end flows.
 - **No `console.log`** in committed code. No hardcoded secrets or magic values.
 - Docs move with code: update `docs/` (architecture, api-surface, data-sources, ADR) and add an
-  ADR (next number: 0067) for a real decision. ADRs are never pruned.
+  ADR (next number: 0070) for a real decision. ADRs are never pruned.
 
 ## Commands
 

@@ -3,7 +3,7 @@ import { listFunds } from '@/lib/funds/api';
 import { badRequest, unavailable } from '@/lib/funds/http';
 import { parseFundParams } from '@/lib/funds/params';
 
-// Public, read-only. The mutual fund screener (ADR 0067): Direct-Growth plans by
+// Public, read-only. The mutual fund screener (ADR 0068): Direct-Growth plans by
 // default; filter by category, fund house, returns, risk and (when disclosed)
 // expense ratio and AUM. Returns `{ total, limit, offset, items }`.
 export async function GET(request: Request) {
