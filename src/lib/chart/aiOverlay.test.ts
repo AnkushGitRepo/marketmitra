@@ -103,52 +103,59 @@ describe('parseOverlay trendlines and indicators', () => {
 });
 
 describe('parseOverlay trade setup', () => {
-  const setup = { direction: 'LONG', entry: 160, stop: 150, target: 185 };
+  // `bars` rise 100 → 159 (last close 159, ATR about 1.2). Model prices are ignored: the planner works from the levels.
+  const modelSetup = { direction: 'LONG', entry: 1, stop: 2, target: 3, risk_reward: '1:9' };
+  const levels = [
+    { type: 'support', price: 152 },
+    { type: 'resistance', price: 172 },
+  ];
 
-  it('never returns a setup in guarded mode, even when the model emitted one', () => {
-    const o = parseOverlay(
-      reply({ levels: [{ type: 'support', price: 150 }], setup }),
-      bars,
-      'guarded',
-    );
+  it('never returns a setup or a note in guarded mode, even when the model emitted one', () => {
+    const o = parseOverlay(reply({ levels, setup: modelSetup, bias: 'long' }), bars, 'guarded');
     expect(o).not.toBeNull();
     expect(o?.setup).toBeUndefined();
+    expect(o?.setupNote).toBeUndefined();
   });
 
-  it("computes risk/reward and percentages in code, ignoring the model's own ratio", () => {
-    const o = parseOverlay(
-      reply({ setup: { ...setup, stop: 151, risk_reward: '1:9' } }),
-      bars,
-      'unrestricted',
-    );
-    expect(o?.setup).toEqual({
-      direction: 'long',
-      entry: 160,
-      stop: 151,
-      target: 185,
-      riskReward: 2.8,
-      stopPct: -5.6,
-      targetPct: 15.6,
-    });
+  it("plans the entry at the support, the stop beyond it and the target at resistance, ignoring the model's prices", () => {
+    const o = parseOverlay(reply({ levels, setup: modelSetup }), bars, 'unrestricted');
+    const s = o?.setup;
+    expect(s).toBeDefined();
+    expect(s?.direction).toBe('long');
+    expect(s?.entryType).toBe('pullback');
+    expect(s?.entry).toBeGreaterThan(152);
+    expect(s?.entry).toBeLessThan(153);
+    expect(s?.stop).toBeLessThan(152);
+    expect(s?.target).toBe(172);
+    expect(s?.riskReward).toBeGreaterThanOrEqual(1.5);
+    expect(s?.lastClose).toBe(159);
   });
 
-  it('supports a short setup', () => {
-    const o = parseOverlay(
-      reply({ setup: { direction: 'SHORT', entry: 158, stop: 166, target: 140 } }),
-      bars,
-      'unrestricted',
-    );
-    expect(o?.setup).toMatchObject({ direction: 'short', riskReward: 2.3 });
+  it("follows the model's lean when the trend does not decide and both sides work", () => {
+    const flatBars: Bar[] = bars.map((b, i) => ({
+      ...b,
+      open: 150,
+      high: 150.2,
+      low: 149.8,
+      close: 150,
+      time: b.time + (i ? '' : ''),
+    }));
+    const both = [
+      { type: 'support', price: 148.5 },
+      { type: 'resistance', price: 151.5 },
+    ];
+    const o = parseOverlay(reply({ levels: both, bias: 'short' }), flatBars, 'unrestricted');
+    expect(o?.setup?.direction).toBe('short');
   });
 
-  it.each([
-    ['stop above entry for a long', { direction: 'LONG', entry: 160, stop: 165, target: 185 }],
-    ['target below entry for a long', { direction: 'LONG', entry: 160, stop: 150, target: 155 }],
-    ['entry far from the current price', { direction: 'LONG', entry: 220, stop: 200, target: 260 }],
-    ['a stop wider than 25%', { direction: 'LONG', entry: 160, stop: 100, target: 400 }],
-    ['an unknown direction', { direction: 'HOLD', entry: 160, stop: 150, target: 185 }],
-  ])('drops a setup with %s', (_name, bad) => {
-    expect(parseOverlay(reply({ setup: bad }), bars, 'unrestricted')?.setup).toBeUndefined();
+  it('gives a plain reason instead of a setup when nothing pays enough', () => {
+    const tight = [
+      { type: 'support', price: 158.5 },
+      { type: 'resistance', price: 159.4 },
+    ];
+    const o = parseOverlay(reply({ levels: tight }), bars, 'unrestricted');
+    expect(o?.setup).toBeUndefined();
+    expect(o?.setupNote).toMatch(/1\.5/);
   });
 });
 
@@ -233,23 +240,14 @@ describe('intraday timeframes', () => {
     expect(parseOverlay(reply({ levels }), intraday, 'guarded', '5m')?.levels).toHaveLength(2);
   });
 
-  it('holds a trade setup to a tighter stop than Day: a 5.7% stop is too wide for 5m', () => {
-    const wide = { direction: 'LONG', entry: 159, stop: 150, target: 175 };
+  it('plans on the timeframe: a support 5.7% away is too far for a 5m limit order but fine on Day', () => {
+    const far = [
+      { type: 'support', price: 150 },
+      { type: 'resistance', price: 175 },
+    ];
     expect(
-      parseOverlay(
-        reply({ levels: [{ type: 'support', price: 150 }], setup: wide }),
-        intraday,
-        'unrestricted',
-        '5m',
-      )?.setup,
+      parseOverlay(reply({ levels: far }), intraday, 'unrestricted', '5m')?.setup,
     ).toBeUndefined();
-    expect(
-      parseOverlay(
-        reply({ levels: [{ type: 'support', price: 150 }], setup: wide }),
-        bars,
-        'unrestricted',
-        '1d',
-      )?.setup,
-    ).toBeDefined();
+    expect(parseOverlay(reply({ levels: far }), bars, 'unrestricted', '1d')?.setup).toBeDefined();
   });
 });

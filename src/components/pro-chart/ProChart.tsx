@@ -52,6 +52,8 @@ const RANGE_LABELS: Record<RangeKey, string> = {
   '5Y': '5Y',
   ALL: 'All',
 };
+/** Bands that turn a busy chart into spaghetti next to Auto-Chart's own levels; hidden while it is on. */
+const NOISY_INDICATORS: IndicatorId[] = ['bb'];
 // Short form of UNRESTRICTED_DISCLAIMER; the real constant lives in a server module that must stay out of the chart bundle.
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
@@ -184,22 +186,38 @@ export function ProChart({
   }, [timeframe]);
 
   const ai = useAiOverlay(symbol, timeframe);
-  // Indicators Auto-Chart switched on, so turning it off puts back exactly what the user had.
+  // Auto-Chart changes the indicator set while it is on (adds what it recommends, hides noisy bands so the candles and its levels
+  // stay readable); turning it off puts back exactly what the user had.
   const [aiIndicators, setAiIndicators] = useState<IndicatorId[]>([]);
+  const [aiHidden, setAiHidden] = useState<IndicatorId[]>([]);
+  const restoreIndicators = useCallback(() => {
+    setIndicators((cur) => [
+      ...cur.filter((id) => !aiIndicators.includes(id)),
+      ...aiHidden.filter((id) => !cur.includes(id)),
+    ]);
+    setAiIndicators([]);
+    setAiHidden([]);
+  }, [aiIndicators, aiHidden]);
   const toggleAi = useCallback(async () => {
     if (ai.status === 'loading') return;
     if (ai.status === 'ready') {
       ai.disable();
-      setIndicators((cur) => cur.filter((id) => !aiIndicators.includes(id)));
-      setAiIndicators([]);
+      restoreIndicators();
       return;
     }
     const overlay = await ai.enable();
     if (!overlay) return;
-    const added = overlay.indicators.filter((id) => !indicators.includes(id));
+    const hidden = indicators.filter((id) => NOISY_INDICATORS.includes(id));
+    const added = overlay.indicators.filter(
+      (id) => !indicators.includes(id) && !NOISY_INDICATORS.includes(id),
+    );
+    setAiHidden(hidden);
     setAiIndicators(added);
-    setIndicators((cur) => [...cur, ...added.filter((id) => !cur.includes(id))]);
-  }, [ai, aiIndicators, indicators]);
+    setIndicators((cur) => [
+      ...cur.filter((id) => !hidden.includes(id)),
+      ...added.filter((id) => !cur.includes(id)),
+    ]);
+  }, [ai, indicators, restoreIndicators]);
 
   const toggleIndicator = useCallback((id: IndicatorId) => {
     setIndicators((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
@@ -228,8 +246,7 @@ export function ProChart({
     if (next === timeframe) return;
     if (ai.status !== 'idle') {
       ai.disable();
-      setIndicators((cur) => cur.filter((id) => !aiIndicators.includes(id)));
-      setAiIndicators([]);
+      restoreIndicators();
     }
     setTool('cursor');
     setHover(null);
@@ -297,12 +314,17 @@ export function ProChart({
         <DrawingsMenu drawings={drawings} onRemove={removeDrawing} onClear={clearDrawings} />
         <button
           type="button"
-          className={`${styles.topBtn} ${ai.status === 'ready' ? styles.topBtnActive : ''}`}
+          className={`${styles.topBtn} ${ai.status === 'ready' ? styles.aiBtnOn : ''}`}
           aria-pressed={ai.status === 'ready'}
           disabled={ai.status === 'loading'}
           onClick={toggleAi}
         >
-          ✨ {ai.status === 'loading' ? 'Drawing…' : 'AI Auto-Chart'}
+          {ai.status === 'ready' && <span className={styles.aiOnDot} aria-hidden="true" />}✨{' '}
+          {ai.status === 'loading'
+            ? 'Drawing…'
+            : ai.status === 'ready'
+              ? 'AI Auto-Chart: ON'
+              : 'AI Auto-Chart'}
         </button>
         {onAlert ? (
           <button type="button" className={styles.topBtn} onClick={onAlert}>
@@ -337,10 +359,18 @@ export function ProChart({
               <>
                 <span>Unrestricted · local only</span>
                 <span className={styles.aiBarStrong}>
-                  {ai.overlay.setup.direction === 'long' ? 'Long' : 'Short'} setup: Entry ₹
-                  {fmt(ai.overlay.setup.entry)} | Stop ₹{fmt(ai.overlay.setup.stop)} | Target ₹
-                  {fmt(ai.overlay.setup.target)} (1 : {ai.overlay.setup.riskReward})
+                  {ai.overlay.setup.direction === 'long' ? 'Long' : 'Short'} setup
+                  {ai.overlay.setup.entryType === 'pullback'
+                    ? ' on a pullback'
+                    : ai.overlay.setup.entryType === 'retest'
+                      ? ' on a retest'
+                      : ' at the current zone'}
+                  : Entry ₹{fmt(ai.overlay.setup.entry)} | Stop ₹{fmt(ai.overlay.setup.stop)} |
+                  Target ₹{fmt(ai.overlay.setup.target)} (1 : {ai.overlay.setup.riskReward})
                 </span>
+                {ai.overlay.setup.entryType !== 'now' && (
+                  <span>Price now ₹{fmt(ai.overlay.setup.lastClose)}</span>
+                )}
                 <span>
                   AI opinion from public data, not licensed investment advice. You make the
                   decision.
@@ -348,8 +378,9 @@ export function ProChart({
               </>
             ) : (
               <span>
-                Unrestricted · local only: no clear entry, stop and target for this chart right now.
-                Levels are still shown. Turn Auto-Chart off and on to try again.
+                Unrestricted · local only:{' '}
+                {ai.overlay.setupNote ?? 'no clear setup for this chart right now.'} Levels are
+                still shown. Turn Auto-Chart off and on to look again.
               </span>
             ))
           )}

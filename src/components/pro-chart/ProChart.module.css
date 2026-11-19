@@ -710,10 +710,21 @@
   stroke: var(--app-loss, #d6452f);
 }
 .aiTrend {
-  stroke: var(--app-ink);
-  stroke-width: 1.6;
-  stroke-dasharray: 2 3;
-  opacity: 0.8;
+  stroke: #4f46e5;
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+  opacity: 0.85;
+}
+.aiTagTrend {
+  fill: #4f46e5;
+}
+.aiEdgeTarget {
+  stroke: var(--app-gain, #0c8a6c);
+  stroke-width: 1.2;
+}
+.aiEdgeStop {
+  stroke: var(--app-loss, #d6452f);
+  stroke-width: 1.2;
 }
 .aiZoneTarget {
   fill: var(--app-gain, #0c8a6c);
@@ -815,4 +826,18 @@
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* AI Auto-Chart button: unmistakable while it is drawing (#238) */
+.aiBtnOn,
+.aiBtnOn:hover {
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+}
+.aiOnDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3ddc97;
+  box-shadow: 0 0 0 3px rgba(61, 220, 151, 0.25);
 }

@@ -21,7 +21,7 @@ export interface TimeframeDef {
   seconds: number;
   /** How long an Auto-Chart answer stays fresh, in ms. */
   overlayTtlMs: number;
-  /** Auto-Chart: how far an entry may sit from the last close, and how wide a stop may be, in percent. */
+  /** Auto-Chart: how far a planned entry (a limit at a level) may sit from the last close, and how wide a stop may be, in percent. */
   maxEntryDistancePct: number;
   maxStopDistancePct: number;
 }
@@ -38,7 +38,7 @@ export const TIMEFRAMES: readonly TimeframeDef[] = [
     hostedPollMs: 10_000,
     seconds: 60,
     overlayTtlMs: 2 * MINUTE,
-    maxEntryDistancePct: 0.5,
+    maxEntryDistancePct: 0.6,
     maxStopDistancePct: 2,
   },
   {
@@ -49,7 +49,7 @@ export const TIMEFRAMES: readonly TimeframeDef[] = [
     hostedPollMs: 30_000,
     seconds: 300,
     overlayTtlMs: 5 * MINUTE,
-    maxEntryDistancePct: 1,
+    maxEntryDistancePct: 1.2,
     maxStopDistancePct: 4,
   },
   {
@@ -60,7 +60,7 @@ export const TIMEFRAMES: readonly TimeframeDef[] = [
     hostedPollMs: 60_000,
     seconds: 900,
     overlayTtlMs: 10 * MINUTE,
-    maxEntryDistancePct: 1.5,
+    maxEntryDistancePct: 2,
     maxStopDistancePct: 6,
   },
   {
@@ -71,7 +71,7 @@ export const TIMEFRAMES: readonly TimeframeDef[] = [
     hostedPollMs: 120_000,
     seconds: 3600,
     overlayTtlMs: 30 * MINUTE,
-    maxEntryDistancePct: 3,
+    maxEntryDistancePct: 4,
     maxStopDistancePct: 12,
   },
   {
@@ -82,7 +82,7 @@ export const TIMEFRAMES: readonly TimeframeDef[] = [
     hostedPollMs: 30_000,
     seconds: 86_400,
     overlayTtlMs: 12 * HOUR,
-    maxEntryDistancePct: 5,
+    maxEntryDistancePct: 8,
     maxStopDistancePct: 25,
   },
 ];

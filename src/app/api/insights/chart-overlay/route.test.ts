@@ -69,8 +69,12 @@ const { POST } = await import('./route');
 const call = (body: unknown = { symbol: 'acc' }) =>
   POST(new Request('http://x', { method: 'POST', body: JSON.stringify(body) }));
 const reply = JSON.stringify({
-  levels: [{ type: 'support', price: 150 }],
-  setup: { direction: 'long', entry: 159, stop: 150, target: 180 },
+  levels: [
+    { type: 'support', price: 150 },
+    { type: 'resistance', price: 175 },
+  ],
+  bias: 'long',
+  setup: { direction: 'long', entry: 1, stop: 2, target: 3 },
 });
 
 beforeEach(() => {
@@ -100,7 +104,7 @@ describe('POST /api/insights/chart-overlay', () => {
   it('guarded: strips the setup even though the model emitted one, and says so in the mode', async () => {
     const body = await (await call()).json();
     expect(body.data.mode).toBe('guarded');
-    expect(body.data.overlay.levels).toHaveLength(1);
+    expect(body.data.overlay.levels).toHaveLength(2);
     expect(body.data.overlay.setup).toBeUndefined();
     expect(state.system).not.toContain('"setup"'.concat(':{'));
   });
@@ -111,16 +115,16 @@ describe('POST /api/insights/chart-overlay', () => {
     expect(body.data.overlay.setup).toBeUndefined();
   });
 
-  it('unrestricted: returns a validated setup with code-computed risk/reward', async () => {
+  it('unrestricted: plans the setup from the levels, not from the model prices', async () => {
     state.mode = 'unrestricted';
     const body = await (await call()).json();
     expect(body.data.mode).toBe('unrestricted');
     expect(body.data.overlay.setup).toMatchObject({
       direction: 'long',
-      entry: 159,
-      stop: 150,
-      riskReward: 2.3,
+      entryType: 'pullback',
+      target: 175,
     });
+    expect(body.data.overlay.setup.entry).toBeGreaterThan(150);
     expect(state.ttl).toBe(12 * 60 * 60 * 1000);
   });
 

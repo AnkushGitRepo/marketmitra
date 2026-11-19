@@ -1,13 +1,15 @@
 // AI Auto-Chart (#228, ADR 0068): the model returns coordinates only and this module decides what may be drawn.
 // Pure: parsing, validation and prompt building. The model call and the mode lookup live in the route.
 // Labels, risk/reward and percentages are made here, never taken from the model, and a trade setup
-// exists only in unrestricted mode (local, opt-in, ADR 0054).
+// exists only in unrestricted mode (local, opt-in, ADR 0054). The trade setup is planned by `setupPlanner.ts` from the validated
+// levels; the model's own entry, stop and target prices are never used.
 
 import { z } from 'zod';
 import type { PromptMode } from '@/lib/ai/promptMode';
 import type { IndicatorId } from '@/components/pro-chart/constants';
 import type { Bar } from './bars';
 import type { ChartPoint } from './drawings';
+import { planSetup, swingLevels, type TradeSetup } from './setupPlanner';
 import {
   barTimeLabel,
   barTimeMs,
@@ -30,17 +32,7 @@ export interface OverlayTrendline {
   b: ChartPoint;
 }
 
-export interface TradeSetup {
-  direction: 'long' | 'short';
-  entry: number;
-  stop: number;
-  target: number;
-  /** Reward divided by risk, one decimal. */
-  riskReward: number;
-  /** Signed percent move from entry to stop and to target. */
-  stopPct: number;
-  targetPct: number;
-}
+export type { TradeSetup } from './setupPlanner';
 
 export interface ChartOverlay {
   levels: OverlayLevel[];
@@ -48,12 +40,14 @@ export interface ChartOverlay {
   indicators: IndicatorId[];
   /** Unrestricted mode only. */
   setup?: TradeSetup;
+  /** Unrestricted mode only: why there is no setup, when there is none. */
+  setupNote?: string;
 }
 
 const MAX_PER_SIDE = 2;
 const MAX_TRENDLINES = 2;
-/** Levels closer than a tenth of the timeframe's entry distance to a kept one add clutter, not information (0.5% on Day). */
-const DUPLICATE_PCT_DIVISOR = 10;
+/** Levels closer than a sixteenth of the timeframe's entry distance to a kept one add clutter, not information (0.5% on Day). */
+const DUPLICATE_PCT_DIVISOR = 16;
 /** A level must sit inside the traded range, widened by this much each way. */
 const RANGE_SLACK = 0.1;
 const PROMPT_BARS = 150;
@@ -83,6 +77,7 @@ const rawSchema = z.object({
   levels: z.array(z.unknown()).optional(),
   trendlines: z.array(z.unknown()).optional(),
   indicators: z.array(z.unknown()).optional(),
+  bias: z.unknown().optional(),
   setup: z.unknown().optional(),
 });
 const levelSchema = z.object({ type: z.enum(['support', 'resistance']), price: num });
@@ -92,7 +87,10 @@ const trendSchema = z.object({
   endTime: z.string(),
   endPrice: num,
 });
-const setupSchema = z.object({ direction: z.string(), entry: num, stop: num, target: num });
+const biasSchema = z.object({
+  bias: z.string().optional(),
+  setup: z.object({ direction: z.string().optional() }).partial().optional(),
+});
 
 /** The first `{ ... }` in the text; fences and chatter around it are ignored. */
 function extractJson(text: string): unknown {
@@ -105,9 +103,6 @@ function extractJson(text: string): unknown {
     return undefined;
   }
 }
-
-const round = (n: number, digits: number) => Math.round(n * 10 ** digits) / 10 ** digits;
-const pct = (from: number, to: number) => round(((to - from) / from) * 100, 1);
 
 function readLevels(
   raw: unknown[],
@@ -184,30 +179,21 @@ function readTrendlines(
   return out;
 }
 
-function readSetup(
-  raw: unknown,
-  lastClose: number,
-  maxEntryPct: number,
-  maxStopPct: number,
-): TradeSetup | undefined {
-  const parsed = setupSchema.safeParse(raw);
-  if (!parsed.success) return undefined;
-  const { entry, stop, target } = parsed.data;
-  const direction = parsed.data.direction.trim().toLowerCase();
-  if (direction !== 'long' && direction !== 'short') return undefined;
-  const ordered =
-    direction === 'long' ? stop < entry && entry < target : target < entry && entry < stop;
-  if (!ordered || entry <= 0 || stop <= 0 || target <= 0) return undefined;
-  if ((Math.abs(entry - lastClose) / lastClose) * 100 > maxEntryPct) return undefined;
-  if ((Math.abs(entry - stop) / entry) * 100 > maxStopPct) return undefined;
+/** The model's lean ("long" / "short"); anything else is no lean. Its prices are ignored. */
+function readBias(raw: unknown): 'long' | 'short' | null {
+  const parsed = biasSchema.safeParse(raw);
+  if (!parsed.success) return null;
+  const word = (parsed.data.bias ?? parsed.data.setup?.direction ?? '').trim().toLowerCase();
+  return word === 'long' || word === 'short' ? word : null;
+}
+
+/** Support and resistance prices to plan around: the model's validated levels first, then swing points the price really turned at. */
+function planningLevels(levels: OverlayLevel[], bars: Bar[]): { supports: number[]; resistances: number[] } {
+  const swings = swingLevels(bars);
+  const unique = (xs: number[]) => [...new Set(xs)];
   return {
-    direction,
-    entry,
-    stop,
-    target,
-    riskReward: round(Math.abs(target - entry) / Math.abs(entry - stop), 1),
-    stopPct: pct(entry, stop),
-    targetPct: pct(entry, target),
+    supports: unique([...levels.filter((l) => l.kind === 'support').map((l) => l.price), ...swings.supports]),
+    resistances: unique([...levels.filter((l) => l.kind === 'resistance').map((l) => l.price), ...swings.resistances]),
   };
 }
 
@@ -249,11 +235,16 @@ export function parseOverlay(
     indicators,
   };
   // Guarded mode never carries a setup, whatever the model emitted (ADR 0054: enforced on the server).
-  const setup =
-    mode === 'unrestricted'
-      ? readSetup(whole.data.setup, lastClose, def.maxEntryDistancePct, def.maxStopDistancePct)
-      : undefined;
-  if (setup) overlay.setup = setup;
+  if (mode === 'unrestricted') {
+    const plan = planSetup({
+      bars,
+      ...planningLevels(overlay.levels, bars),
+      timeframe,
+      bias: readBias(whole.data),
+    });
+    if (plan.setup) overlay.setup = plan.setup;
+    else overlay.setupNote = plan.reason;
+  }
 
   const empty =
     overlay.levels.length === 0 &&

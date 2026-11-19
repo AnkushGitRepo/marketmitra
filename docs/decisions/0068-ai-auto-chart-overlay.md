@@ -29,3 +29,16 @@ The maintainer wants the model to draw on the chart instead of writing paragraph
 - The hosted site cannot obtain a trade setup, even by editing a request or a stored document.
 - Local unrestricted users get model-drawn levels that can be wrong; the note limits, but does not remove, that.
 - Not built here: a Drawing Tools menu, a manual Long/Short position tool, and intraday bars.
+
+## Addendum (2026-11-19, #238): the setup is planned in code
+
+The first version took the model's entry, stop and target, and they clustered at the current price. The setup is now planned by
+`src/lib/chart/setupPlanner.ts` from the validated levels plus swing points, ATR(14) and the EMA 20 / 50 trend; the model supplies only
+levels and a lean (`bias`), and its prices are ignored. An investor's plan: enter at the nearest support (long) or resistance (short), as a
+limit order if price is not already within 0.75 ATR of it (`pullback` / `retest`), else at the current price (`now`); stop half an ATR
+beyond the level; target at the nearest opposing level that pays at least 1.5 : 1; direction from the trend, else the model's lean, else
+the better reward. When nothing qualifies there is no setup and `setupNote` says why. Entry and stop distances are capped per timeframe.
+Still unrestricted-only, still no position sizes or return claims.
+Overlay: STOP / ENTRY / TARGET badges sit on their own boundaries, a level within 0.15% of the target or stop is merged into its badge,
+the trendline is styled and labelled, Bollinger Bands are hidden while Auto-Chart is on (and restored after), and the button shows an
+unmistakable on state.
