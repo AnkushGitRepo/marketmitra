@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The chart's timeframe and chart-type pickers now open a menu in the same style as the other chart menus (with a properly spaced check mark and arrow-key support) instead of the browser's own list. ([#268](https://github.com/AnkushGitRepo/marketmitra/issues/268))
+
 - The chart's timeframe is now always picked from one dropdown; the row of timeframe buttons next to it is gone. ([#266](https://github.com/AnkushGitRepo/marketmitra/issues/266))
 
 - The tooltips on the chart's top and bottom bars now look and behave like the ones on the left toolbar (a dark label with a one-line hint, shown at once) instead of the browser's slow default. ([#266](https://github.com/AnkushGitRepo/marketmitra/issues/266))

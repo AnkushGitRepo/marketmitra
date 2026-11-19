@@ -1018,17 +1018,6 @@
   justify-content: center;
   padding: 0;
 }
-.pickSelect {
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 8px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--app-cream, #f4f1ea);
-  color: var(--app-ink);
-  cursor: pointer;
-}
 .btnIcon {
   display: none;
 }
@@ -1093,4 +1082,66 @@
 }
 [aria-expanded='true'] > .barTip {
   display: none;
+}
+
+/* Pick menu (timeframe, chart type) (#268) */
+.pickBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 10px 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--app-cream, #f4f1ea);
+  color: var(--app-ink);
+  cursor: pointer;
+}
+.pickBtn:hover {
+  background: var(--border-hairline);
+}
+.pickMenu {
+  width: 210px;
+  padding: 6px;
+}
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px 8px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  color: var(--app-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.pickRow:hover,
+.pickRow:focus-visible {
+  background: var(--app-cream, #f4f1ea);
+  outline: none;
+}
+.pickCheck {
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-teal, #0c8a6c);
+}
+.pickText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pickLabel {
+  font-size: 13px;
+  font-weight: 600;
+}
+.pickRowOn .pickLabel {
+  color: var(--app-teal, #0c8a6c);
 }

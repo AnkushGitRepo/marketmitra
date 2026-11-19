@@ -32,6 +32,7 @@ import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import { AiOverlay } from './AiOverlay';
 import { AiRunsMenu } from './AiRunsMenu';
 import { ChartTip } from './ChartTip';
+import { PickMenu, type PickOption } from './PickMenu';
 import { SetupMenu } from './SetupMenu';
 import {
   addCustomSetup,
@@ -67,6 +68,18 @@ interface ProChartProps {
   onAlert?: () => void;
   onRangeChange?: (range: RangeKey) => void;
 }
+
+const TIMEFRAME_OPTIONS: readonly PickOption<Timeframe>[] = TIMEFRAMES.map((t) => ({
+  value: t.id,
+  label: t.label,
+  hint:
+    { '1d': 'Daily', '1w': 'Weekly', '1mo': 'Monthly' }[t.id as '1d' | '1w' | '1mo'] ??
+    `${t.label.replace('m', ' minute').replace('h', ' hour')} candles`,
+}));
+const KIND_OPTIONS: readonly PickOption<ChartKind>[] = [
+  { value: 'candles', label: 'Candles', hint: 'Open, high, low and close' },
+  { value: 'line', label: 'Line', hint: 'The closing price' },
+];
 
 /** Tooltips for the toolbar and the bottom bar. */
 const RANGE_TITLES: Record<RangeKey, string> = {
@@ -441,21 +454,13 @@ export function ProChart({
     >
       <div className={styles.topbar}>
         {expanded && <span className={styles.symbolChip}>{symbol}</span>}
-        <span className={styles.tipHost}>
-          <select
-            className={styles.pickSelect}
-            aria-label="Timeframe"
-            value={timeframe}
-            onChange={(e) => pickTimeframe(e.target.value as Timeframe)}
-          >
-            {TIMEFRAMES.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-          <ChartTip label="Timeframe" hint="The size of each candle" />
-        </span>
+        <PickMenu
+          label="Timeframe"
+          tip="The size of each candle"
+          value={timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={pickTimeframe}
+        />
         {candles.live && (
           <span className={`${styles.liveDot} ${styles.tipHost}`}>
             Live
@@ -463,18 +468,13 @@ export function ProChart({
           </span>
         )}
         <span className={styles.divider} />
-        <span className={styles.tipHost}>
-          <select
-            className={styles.pickSelect}
-            aria-label="Chart type"
-            value={kind}
-            onChange={(e) => setKind(e.target.value as ChartKind)}
-          >
-            <option value="candles">Candles</option>
-            <option value="line">Line</option>
-          </select>
-          <ChartTip label="Chart type" hint="Candles or a line" />
-        </span>
+        <PickMenu
+          label="Chart type"
+          tip="Candles or a line"
+          value={kind}
+          options={KIND_OPTIONS}
+          onChange={setKind}
+        />
         <span className={styles.divider} />
         <IndicatorMenu
           active={indicators}
