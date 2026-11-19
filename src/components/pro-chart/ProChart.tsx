@@ -24,7 +24,7 @@ import {
   removeOverlayItem,
   visibleOverlay,
 } from '@/lib/chart/overlayItems';
-import { describeRun } from '@/lib/chart/overlayRuns';
+import { anchorBarTime, describeRun } from '@/lib/chart/overlayRuns';
 import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import { AiOverlay } from './AiOverlay';
 import { AiRunsMenu } from './AiRunsMenu';
@@ -554,7 +554,14 @@ export function ProChart({
                 onHover={setHover}
                 onFailure={setFailure}
               />
-              {shownOverlay && <AiOverlay handle={handle} bars={bars} overlay={shownOverlay} />}
+              {shownOverlay && (
+                <AiOverlay
+                  handle={handle}
+                  bars={bars}
+                  overlay={shownOverlay}
+                  anchorTime={activeRun ? anchorBarTime(bars, activeRun.createdAt) : null}
+                />
+              )}
               <DrawingsOverlay
                 key={tool}
                 handle={handle}

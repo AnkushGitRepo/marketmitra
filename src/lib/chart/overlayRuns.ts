@@ -3,7 +3,8 @@
 
 import type { PromptMode } from '@/lib/ai/promptMode';
 import type { ChartOverlay } from './aiOverlay';
-import type { Timeframe } from './timeframes';
+import type { Bar } from './bars';
+import { barTimeMs, isIntradayTime, toBarTime, type Timeframe } from './timeframes';
 
 export interface OverlayRun {
   id: string;
@@ -71,4 +72,16 @@ export function describeRun(run: OverlayRun, now: Date = new Date()): RunDescrip
     summary: parts.join(' · ') || 'nothing drawn',
     price: `₹${run.lastClose.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`,
   };
+}
+
+/** The bar a run was generated on: the last bar that had started by `createdAt`, so its setup box begins there, not at the latest candle. */
+export function anchorBarTime(bars: readonly Bar[], createdAt: string): string | null {
+  if (bars.length === 0) return null;
+  const created = Date.parse(createdAt);
+  if (Number.isNaN(created)) return bars[bars.length - 1].time;
+  const istMs = Number(toBarTime(created / 1000)) * 1000;
+  const key = isIntradayTime(bars[0].time) ? istMs : Math.floor(istMs / 86_400_000) * 86_400_000;
+  let anchor = bars[0].time;
+  for (const b of bars) if (barTimeMs(b.time) <= key) anchor = b.time;
+  return anchor;
 }
