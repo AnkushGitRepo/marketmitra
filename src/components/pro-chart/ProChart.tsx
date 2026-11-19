@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import type { IndicatorParams, StoredParams } from '@/lib/chart/indicatorParams';
 import { RANGE_KEYS, type Bar, type RangeKey } from '@/lib/chart/bars';
 import type { Drawing, DrawingTool } from '@/lib/chart/drawings';
 import { ChartCanvas, type ChartHandle, type ChartKind } from './ChartCanvas';
@@ -13,6 +14,7 @@ import { DrawingsMenu } from './DrawingsMenu';
 import { IndicatorMenu } from './IndicatorMenu';
 import {
   DEFAULT_INDICATORS,
+  INDICATOR_PARAMS_STORAGE_KEY,
   INDICATOR_STORAGE_KEY,
   drawingsStorageKey,
   type IndicatorId,
@@ -80,6 +82,9 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
   const [indicators, setIndicators] = useState<IndicatorId[]>(() =>
     readJson<IndicatorId[]>(INDICATOR_STORAGE_KEY, DEFAULT_INDICATORS),
   );
+  const [params, setParams] = useState<StoredParams>(() =>
+    readJson<StoredParams>(INDICATOR_PARAMS_STORAGE_KEY, {}),
+  );
   const [tool, setTool] = useState<DrawingTool>('cursor');
   const [drawings, setDrawings] = useState<Drawing[]>(() =>
     readJson<Drawing[]>(drawingsStorageKey(symbol), []),
@@ -98,11 +103,22 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
     writeJson(INDICATOR_STORAGE_KEY, indicators);
   }, [indicators]);
   useEffect(() => {
+    writeJson(INDICATOR_PARAMS_STORAGE_KEY, params);
+  }, [params]);
+  useEffect(() => {
     writeJson(drawingsStorageKey(symbol), drawings);
   }, [drawings, symbol]);
 
   const toggleIndicator = useCallback((id: IndicatorId) => {
     setIndicators((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  }, []);
+  const changeParams = useCallback((id: IndicatorId, next: Partial<IndicatorParams> | null) => {
+    setParams((cur) => {
+      const rest = Object.fromEntries(
+        Object.entries(cur).filter(([key]) => key !== id),
+      ) as StoredParams;
+      return next === null ? rest : { ...rest, [id]: next };
+    });
   }, []);
   const commitDrawing = useCallback((d: Drawing) => setDrawings((cur) => [...cur, d]), []);
   const toolDone = useCallback(() => setTool('cursor'), []);
@@ -149,7 +165,12 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
           ))}
         </div>
         <span className={styles.divider} />
-        <IndicatorMenu active={indicators} onToggle={toggleIndicator} />
+        <IndicatorMenu
+          active={indicators}
+          params={params}
+          onToggle={toggleIndicator}
+          onParams={changeParams}
+        />
         <DrawingsMenu drawings={drawings} onRemove={removeDrawing} onClear={clearDrawings} />
         {onAlert ? (
           <button type="button" className={styles.topBtn} onClick={onAlert}>
@@ -195,10 +216,16 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
           )}
 
           {!failure && bars.length > 0 && (
-            <IndicatorLegend bars={bars} active={indicators} hover={hover} />
+            <IndicatorLegend bars={bars} active={indicators} params={params} hover={hover} />
           )}
           {!failure && bars.length > 0 && (
-            <PaneLabels handle={handle} bars={bars} active={indicators} hover={hover} />
+            <PaneLabels
+              handle={handle}
+              bars={bars}
+              active={indicators}
+              params={params}
+              hover={hover}
+            />
           )}
 
           {bars.length > 0 && failure ? (
@@ -215,6 +242,7 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
                 bars={bars}
                 kind={kind}
                 indicators={indicators}
+                params={params}
                 range={range}
                 onReady={setHandle}
                 onHover={setHover}

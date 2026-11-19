@@ -18,6 +18,7 @@ import {
 import type { Series } from '@/lib/chart/indicators';
 import { rangeStartTime, type Bar, type RangeKey } from '@/lib/chart/bars';
 import { INDICATORS, type IndicatorId } from './constants';
+import type { StoredParams } from '@/lib/chart/indicatorParams';
 import { computeIndicator } from './indicatorRegistry';
 import styles from './ProChart.module.css';
 
@@ -32,6 +33,8 @@ interface ChartCanvasProps {
   bars: Bar[];
   kind: ChartKind;
   indicators: IndicatorId[];
+  /** The user's indicator settings; anything missing draws with the default. */
+  params: StoredParams;
   range: RangeKey;
   onReady: (handle: ChartHandle | null) => void;
   onHover: (bar: Bar | null) => void;
@@ -99,6 +102,7 @@ export function ChartCanvas({
   bars,
   kind,
   indicators,
+  params,
   range,
   onReady,
   onHover,
@@ -286,7 +290,7 @@ export function ChartCanvas({
       let pane = 1;
       for (const def of INDICATORS) {
         if (def.id === 'volume' || !on.has(def.id)) continue;
-        const out = computeIndicator(def.id, bars);
+        const out = computeIndicator(def.id, bars, params[def.id]);
         const paneIndex = def.group === 'Panes' ? pane : 0;
         if (out.histogram) {
           const hv = out.histogram.values;
@@ -355,7 +359,7 @@ export function ChartCanvas({
     } catch {
       onFailureRef.current?.('The chart hit a problem drawing this data.');
     }
-  }, [bars, kind, indicators]);
+  }, [bars, kind, indicators, params]);
 
   // Apply the range tab to the visible window.
   useEffect(() => {

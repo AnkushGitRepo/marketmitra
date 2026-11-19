@@ -197,4 +197,5 @@ export const INDICATORS: IndicatorDef[] = [
 export const DEFAULT_INDICATORS: IndicatorId[] = ['volume'];
 
 export const INDICATOR_STORAGE_KEY = 'mm:chart:indicators';
+export const INDICATOR_PARAMS_STORAGE_KEY = 'mm:chart:indicator-params';
 export const drawingsStorageKey = (symbol: string) => `mm:chart:drawings:${symbol}`;

@@ -15,6 +15,11 @@ import {
   type Series,
 } from '@/lib/chart/indicators';
 import type { Bar } from '@/lib/chart/bars';
+import {
+  resolveParams,
+  type IndicatorParams,
+  type StoredParams,
+} from '@/lib/chart/indicatorParams';
 import { INDICATOR_COLORS, type IndicatorId } from './constants';
 
 export interface LineOutput {
@@ -45,29 +50,34 @@ const maLine = (values: Series, color: string): IndicatorOutput => ({
   lines: [{ name: '', color, values }],
 });
 
-export function computeIndicator(id: NonVolume, bars: Bar[]): IndicatorOutput {
+export function computeIndicator(
+  id: NonVolume,
+  bars: Bar[],
+  stored?: StoredParams[IndicatorId],
+): IndicatorOutput {
+  const p: IndicatorParams = resolveParams(id, stored);
   const close = bars.map((b) => b.close);
   const high = bars.map((b) => b.high);
   const low = bars.map((b) => b.low);
   switch (id) {
     case 'sma20':
-      return maLine(sma(close, 20), INDICATOR_COLORS.sma20);
+      return maLine(sma(close, p.period), INDICATOR_COLORS.sma20);
     case 'sma50':
-      return maLine(sma(close, 50), INDICATOR_COLORS.sma50);
+      return maLine(sma(close, p.period), INDICATOR_COLORS.sma50);
     case 'sma100':
-      return maLine(sma(close, 100), INDICATOR_COLORS.sma100);
+      return maLine(sma(close, p.period), INDICATOR_COLORS.sma100);
     case 'sma200':
-      return maLine(sma(close, 200), INDICATOR_COLORS.sma200);
+      return maLine(sma(close, p.period), INDICATOR_COLORS.sma200);
     case 'ema20':
-      return maLine(ema(close, 20), INDICATOR_COLORS.ema20);
+      return maLine(ema(close, p.period), INDICATOR_COLORS.ema20);
     case 'ema50':
-      return maLine(ema(close, 50), INDICATOR_COLORS.ema50);
+      return maLine(ema(close, p.period), INDICATOR_COLORS.ema50);
     case 'ema100':
-      return maLine(ema(close, 100), INDICATOR_COLORS.ema100);
+      return maLine(ema(close, p.period), INDICATOR_COLORS.ema100);
     case 'ema200':
-      return maLine(ema(close, 200), INDICATOR_COLORS.ema200);
+      return maLine(ema(close, p.period), INDICATOR_COLORS.ema200);
     case 'bb': {
-      const { upper, mid, lower } = bollinger(close, 20, 2);
+      const { upper, mid, lower } = bollinger(close, p.period, p.mult);
       return {
         lines: [
           { name: 'Upper', color: INDICATOR_COLORS.bb, values: upper },
@@ -77,7 +87,7 @@ export function computeIndicator(id: NonVolume, bars: Bar[]): IndicatorOutput {
       };
     }
     case 'donchian': {
-      const { upper, mid, lower } = donchian(high, low, 20);
+      const { upper, mid, lower } = donchian(high, low, p.period);
       return {
         lines: [
           { name: 'Upper', color: INDICATOR_COLORS.donchian, values: upper },
@@ -87,7 +97,7 @@ export function computeIndicator(id: NonVolume, bars: Bar[]): IndicatorOutput {
       };
     }
     case 'supertrend': {
-      const { line, up } = supertrend(high, low, close, 10, 3);
+      const { line, up } = supertrend(high, low, close, p.period, p.mult);
       return {
         lines: [
           {
@@ -103,11 +113,11 @@ export function computeIndicator(id: NonVolume, bars: Bar[]): IndicatorOutput {
     }
     case 'rsi':
       return {
-        lines: [{ name: '', color: INDICATOR_COLORS.rsi, values: rsi(close, 14) }],
+        lines: [{ name: '', color: INDICATOR_COLORS.rsi, values: rsi(close, p.period) }],
         levels: [30, 70],
       };
     case 'macd': {
-      const { line, signal, histogram } = macd(close, 12, 26, 9);
+      const { line, signal, histogram } = macd(close, p.fast, p.slow, p.signal);
       return {
         lines: [
           { name: 'MACD', color: INDICATOR_COLORS.macdLine, values: line },
@@ -117,7 +127,7 @@ export function computeIndicator(id: NonVolume, bars: Bar[]): IndicatorOutput {
       };
     }
     case 'stoch': {
-      const { k, d } = stochastic(high, low, close, 14, 3, 3);
+      const { k, d } = stochastic(high, low, close, p.period, p.smoothK, p.smoothD);
       return {
         lines: [
           { name: '%K', color: INDICATOR_COLORS.stochK, values: k },
@@ -128,7 +138,7 @@ export function computeIndicator(id: NonVolume, bars: Bar[]): IndicatorOutput {
     }
     case 'atr':
       return {
-        lines: [{ name: '', color: INDICATOR_COLORS.atr, values: atr(high, low, close, 14) }],
+        lines: [{ name: '', color: INDICATOR_COLORS.atr, values: atr(high, low, close, p.period) }],
       };
     case 'obv':
       return {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Bar } from '@/lib/chart/bars';
 import { INDICATORS, type IndicatorId } from './constants';
+import { indicatorTitle, type StoredParams } from '@/lib/chart/indicatorParams';
 import { computeIndicator, type IndicatorOutput } from './indicatorRegistry';
 import type { ChartHandle } from './ChartCanvas';
 import styles from './ProChart.module.css';
@@ -10,6 +11,7 @@ import styles from './ProChart.module.css';
 interface IndicatorLegendProps {
   bars: Bar[];
   active: IndicatorId[];
+  params: StoredParams;
   /** The bar under the crosshair; the latest bar when null. */
   hover: Bar | null;
 }
@@ -19,14 +21,17 @@ const compact = (n: number) =>
   new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 2 }).format(n);
 
 /** Active indicators in menu order, each with what it draws. Volume has no registry entry: its value is the bar's own. */
-function useActiveOutputs(bars: Bar[], active: IndicatorId[]) {
+function useActiveOutputs(bars: Bar[], active: IndicatorId[], params: StoredParams) {
   return useMemo(
     () =>
       INDICATORS.filter((d) => active.includes(d.id)).map((def) => ({
         def,
-        out: def.id === 'volume' ? null : (computeIndicator(def.id, bars) as IndicatorOutput),
+        out:
+          def.id === 'volume'
+            ? null
+            : (computeIndicator(def.id, bars, params[def.id]) as IndicatorOutput),
       })),
-    [bars, active],
+    [bars, active, params],
   );
 }
 
@@ -62,8 +67,8 @@ function Values({ row, bars, at }: { row: Row; bars: Bar[]; at: number }) {
 }
 
 /** Which colour is which on the price chart: name with periods and the value at the hovered bar. Top-left, under the OHLC line. */
-export function IndicatorLegend({ bars, active, hover }: IndicatorLegendProps) {
-  const rows = useActiveOutputs(bars, active).filter((r) => r.def.group === 'Overlays');
+export function IndicatorLegend({ bars, active, params, hover }: IndicatorLegendProps) {
+  const rows = useActiveOutputs(bars, active, params).filter((r) => r.def.group === 'Overlays');
   if (rows.length === 0) return null;
   const at = barIndex(bars, hover);
   return (
@@ -71,7 +76,7 @@ export function IndicatorLegend({ bars, active, hover }: IndicatorLegendProps) {
       {rows.map((row) => (
         <li key={row.def.id} className={styles.indRow}>
           <i className={styles.swatch} style={{ background: row.def.color }} aria-hidden="true" />
-          <span className={styles.indName}>{row.def.title}</span>
+          <span className={styles.indName}>{indicatorTitle(row.def.id, params[row.def.id])}</span>
           <Values row={row} bars={bars} at={at} />
         </li>
       ))}
@@ -83,12 +88,13 @@ interface PaneLabelsProps {
   handle: ChartHandle | null;
   bars: Bar[];
   active: IndicatorId[];
+  params: StoredParams;
   hover: Bar | null;
 }
 
 /** Names each indicator pane (RSI, MACD, ...) at its top-left corner. Pane heights change when the user drags a separator, so they are polled. */
-export function PaneLabels({ handle, bars, active, hover }: PaneLabelsProps) {
-  const rows = useActiveOutputs(bars, active).filter((r) => r.def.group === 'Panes');
+export function PaneLabels({ handle, bars, active, params, hover }: PaneLabelsProps) {
+  const rows = useActiveOutputs(bars, active, params).filter((r) => r.def.group === 'Panes');
   const titles = rows.map((r) => r.def);
   const at = barIndex(bars, hover);
   const [tops, setTops] = useState<number[]>([]);
@@ -127,7 +133,7 @@ export function PaneLabels({ handle, bars, active, hover }: PaneLabelsProps) {
             style={{ top: top + 4 }}
           >
             <i className={styles.swatch} style={{ background: row.def.color }} aria-hidden="true" />
-            <span className={styles.indName}>{row.def.title}</span>
+            <span className={styles.indName}>{indicatorTitle(row.def.id, params[row.def.id])}</span>
             <Values row={row} bars={bars} at={at} />
           </span>
         );
