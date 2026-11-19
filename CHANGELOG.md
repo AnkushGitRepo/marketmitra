@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The tooltips on the chart's top and bottom bars now look and behave like the ones on the left toolbar (a dark label with a one-line hint, shown at once) instead of the browser's slow default. ([#266](https://github.com/AnkushGitRepo/marketmitra/issues/266))
+
 - The stock chart no longer shows the "Unrestricted mode. AI opinion from public data, not licensed investment advice. You make the decision." line under the toolbar when an Auto-Chart trade setup is shown. ([#264](https://github.com/AnkushGitRepo/marketmitra/issues/264))
 
 - The stock chart's toolbar now stays on one row: the symbol is no longer repeated (it shows in full screen only), the timeframes become one dropdown and Candles/Line one picker when the chart is narrow, Alert and full screen are icon-only with tooltips, and on narrower charts Setups, Drawings, Saved and AI Auto-Chart show as icons. Every control in the top and bottom bars now has a tooltip. The "Auto-Chart from X ago (price then X)" line above the chart is gone (the Saved menu already shows it). ([#264](https://github.com/AnkushGitRepo/marketmitra/issues/264))

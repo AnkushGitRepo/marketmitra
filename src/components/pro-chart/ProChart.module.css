@@ -870,6 +870,7 @@
 
 /* Credit to TradingView Lightweight Charts, in place of the logo (#251) */
 .creditLink {
+  position: relative;
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -1062,7 +1063,7 @@
     display: none;
   }
   .tfSelect {
-    display: inline-block;
+    display: inline-flex;
   }
 }
 @container topbar (max-width: 880px) {
@@ -1072,4 +1073,55 @@
   .btnIcon {
     display: inline;
   }
+}
+
+/* Tips on the top and bottom bars, in the style of the left toolbar's (#266) */
+.topBtn,
+.segBtn,
+.rangeBtn,
+.tipHost {
+  position: relative;
+}
+.tipHost {
+  display: inline-flex;
+}
+.barTip {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: 230px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--app-ink);
+  color: var(--app-cream, #fff);
+  font-weight: 400;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(22, 25, 28, 0.25);
+}
+.barTipAbove {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+.barTipEnd {
+  left: auto;
+  right: 0;
+}
+/* Hover needs a real pointer: on touch it would stick after a tap. Not while the control's own menu is open. */
+@media (hover: hover) {
+  :hover > .barTip {
+    display: flex;
+  }
+}
+:focus-visible > .barTip {
+  display: flex;
+}
+[aria-expanded='true'] > .barTip {
+  display: none;
 }

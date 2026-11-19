@@ -31,6 +31,7 @@ import { DEFAULT_BOX_BARS, anchorBarTime, compareSetups, isBoxBars } from '@/lib
 import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import { AiOverlay } from './AiOverlay';
 import { AiRunsMenu } from './AiRunsMenu';
+import { ChartTip } from './ChartTip';
 import { SetupMenu } from './SetupMenu';
 import {
   addCustomSetup,
@@ -456,43 +457,48 @@ export function ProChart({
               key={t.id}
               type="button"
               aria-pressed={timeframe === t.id}
-              title={TIMEFRAME_TITLES[t.id]}
               className={`${styles.segBtn} ${timeframe === t.id ? styles.segBtnActive : ''}`}
               onClick={() => pickTimeframe(t.id)}
             >
               {t.label}
+              <ChartTip label={TIMEFRAME_TITLES[t.id]} />
             </button>
           ))}
         </div>
-        <select
-          className={`${styles.pickSelect} ${styles.tfSelect}`}
-          aria-label="Timeframe"
-          title="Candle size"
-          value={timeframe}
-          onChange={(e) => pickTimeframe(e.target.value as Timeframe)}
-        >
-          {TIMEFRAMES.map((t) => (
-            <option key={t.id} value={t.id} title={TIMEFRAME_TITLES[t.id]}>
-              {t.label}
-            </option>
-          ))}
-        </select>
+        <span className={`${styles.tipHost} ${styles.tfSelect}`}>
+          <select
+            className={styles.pickSelect}
+            aria-label="Timeframe"
+            value={timeframe}
+            onChange={(e) => pickTimeframe(e.target.value as Timeframe)}
+          >
+            {TIMEFRAMES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <ChartTip label="Timeframe" hint="The size of each candle" />
+        </span>
         {candles.live && (
-          <span className={styles.liveDot} title="Live: updating while the market is open">
+          <span className={`${styles.liveDot} ${styles.tipHost}`}>
             Live
+            <ChartTip label="Live" hint="Updating while the market is open" />
           </span>
         )}
         <span className={styles.divider} />
-        <select
-          className={styles.pickSelect}
-          aria-label="Chart type"
-          title="Chart type: candles or a line"
-          value={kind}
-          onChange={(e) => setKind(e.target.value as ChartKind)}
-        >
-          <option value="candles">Candles</option>
-          <option value="line">Line</option>
-        </select>
+        <span className={styles.tipHost}>
+          <select
+            className={styles.pickSelect}
+            aria-label="Chart type"
+            value={kind}
+            onChange={(e) => setKind(e.target.value as ChartKind)}
+          >
+            <option value="candles">Candles</option>
+            <option value="line">Line</option>
+          </select>
+          <ChartTip label="Chart type" hint="Candles or a line" />
+        </span>
         <span className={styles.divider} />
         <IndicatorMenu
           active={indicators}
@@ -524,7 +530,6 @@ export function ProChart({
           className={`${styles.topBtn} ${ai.status === 'ready' ? styles.aiBtnOn : ''}`}
           aria-pressed={ai.status === 'ready'}
           aria-label="AI Auto-Chart"
-          title="AI Auto-Chart: levels, trendlines and a trade setup"
           disabled={ai.status === 'loading'}
           onClick={toggleAi}
         >
@@ -532,6 +537,7 @@ export function ProChart({
           <span className={styles.btnText}>
             {ai.status === 'loading' ? 'Drawing…' : 'AI Auto-Chart'}
           </span>
+          <ChartTip label="AI Auto-Chart" hint="Levels, trendlines and a trade setup" />
         </button>
         <AiRunsMenu
           runs={ai.runs}
@@ -557,19 +563,19 @@ export function ProChart({
               type="button"
               className={`${styles.topBtn} ${styles.iconBtn}`}
               aria-label="Set price alert"
-              title="Set price alert"
               onClick={onAlert}
             >
               <BellIcon />
+              <ChartTip label="Set price alert" align="end" />
             </button>
           ) : (
             <Link
               href={alertHref}
               className={`${styles.topBtn} ${styles.iconBtn}`}
               aria-label="Set price alert"
-              title="Set price alert"
             >
               <BellIcon />
+              <ChartTip label="Set price alert" align="end" />
             </Link>
           )}
           <button
@@ -577,10 +583,14 @@ export function ProChart({
             className={`${styles.topBtn} ${styles.iconBtn}`}
             aria-pressed={expanded}
             aria-label={expanded ? 'Exit full screen' : 'Full screen'}
-            title={expanded ? 'Exit full screen (Esc)' : 'Full screen'}
             onClick={() => setExpanded((v) => !v)}
           >
             <ExpandIcon expanded={expanded} />
+            <ChartTip
+              label={expanded ? 'Exit full screen' : 'Full screen'}
+              hint={expanded ? 'Esc works too' : 'Make the chart fill the window'}
+              align="end"
+            />
           </button>
         </div>
       </div>
@@ -726,15 +736,15 @@ export function ProChart({
                   type="button"
                   aria-pressed={shownIntradayRange === r}
                   disabled={!available}
-                  title={
-                    available
-                      ? INTRADAY_RANGE_TITLES[r]
-                      : `${INTRADAY_RANGE_TITLES[r]} (not enough history at this timeframe)`
-                  }
                   className={`${styles.rangeBtn} ${shownIntradayRange === r ? styles.rangeBtnActive : ''}`}
                   onClick={() => setIntradayRange(r)}
                 >
                   {r === 'ALL' ? 'All' : r}
+                  <ChartTip
+                    label={INTRADAY_RANGE_TITLES[r]}
+                    hint={available ? undefined : 'Not enough history at this timeframe'}
+                    place="above"
+                  />
                 </button>
               );
             })
@@ -743,29 +753,39 @@ export function ProChart({
                 key={r}
                 type="button"
                 aria-pressed={shownRange === r}
-                title={RANGE_TITLES[r]}
                 className={`${styles.rangeBtn} ${shownRange === r ? styles.rangeBtnActive : ''}`}
                 onClick={() => pickRange(r)}
               >
                 {RANGE_LABELS[r]}
+                <ChartTip label={RANGE_TITLES[r]} place="above" />
               </button>
             ))}
-        <span
-          className={styles.footerNote}
-          title="Candle size and the zone the times are in; prices are in rupees"
-        >
-          {isIntraday(timeframe)
-            ? `${timeframe} candles · IST · prices in ₹`
-            : `${{ '1d': 'Daily', '1w': 'Weekly', '1mo': 'Monthly' }[timeframe as '1d' | '1w' | '1mo']} bars · prices in ₹`}
+        <span className={styles.footerNote}>
+          <span className={styles.tipHost}>
+            {isIntraday(timeframe)
+              ? `${timeframe} candles · IST · prices in ₹`
+              : `${{ '1d': 'Daily', '1w': 'Weekly', '1mo': 'Monthly' }[timeframe as '1d' | '1w' | '1mo']} bars · prices in ₹`}
+            <ChartTip
+              label="Candle size and time zone"
+              hint="Prices are in rupees"
+              place="above"
+              align="end"
+            />
+          </span>
           {' · '}
           <a
             className={styles.creditLink}
-            title="Charts by TradingView Lightweight Charts"
             href="https://www.tradingview.com/"
             target="_blank"
             rel="noopener noreferrer"
           >
             TradingView
+            <ChartTip
+              label="TradingView"
+              hint="Charts by TradingView Lightweight Charts"
+              place="above"
+              align="end"
+            />
           </a>
         </span>
       </div>
