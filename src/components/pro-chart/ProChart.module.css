@@ -856,6 +856,16 @@
   box-shadow: 0 0 0 3px rgba(61, 220, 151, 0.25);
 }
 
+/* Credit to TradingView Lightweight Charts, in place of the logo (#251) */
+.creditLink {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.creditLink:hover {
+  color: var(--app-ink);
+}
+
 /* Tooltips on the drawing tools (#249) */
 .toolBtn {
   position: relative;
