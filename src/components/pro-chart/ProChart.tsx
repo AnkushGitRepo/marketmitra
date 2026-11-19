@@ -320,11 +320,7 @@ export function ProChart({
           onClick={toggleAi}
         >
           {ai.status === 'ready' && <span className={styles.aiOnDot} aria-hidden="true" />}✨{' '}
-          {ai.status === 'loading'
-            ? 'Drawing…'
-            : ai.status === 'ready'
-              ? 'AI Auto-Chart: ON'
-              : 'AI Auto-Chart'}
+          {ai.status === 'loading' ? 'Drawing…' : 'AI Auto-Chart'}
         </button>
         {onAlert ? (
           <button type="button" className={styles.topBtn} onClick={onAlert}>
@@ -444,6 +440,7 @@ export function ProChart({
                 bars={bars}
                 kind={kind}
                 timeframe={timeframe}
+                roomOnRight={ai.status === 'ready'}
                 indicators={indicators}
                 params={params}
                 range={range}

@@ -728,11 +728,11 @@
 }
 .aiZoneTarget {
   fill: var(--app-gain, #0c8a6c);
-  fill-opacity: 0.14;
+  fill-opacity: 0.1;
 }
 .aiZoneStop {
   fill: var(--app-loss, #d6452f);
-  fill-opacity: 0.14;
+  fill-opacity: 0.1;
 }
 .aiEntry {
   stroke: var(--app-ink);
@@ -746,6 +746,9 @@
 }
 .aiTagEntry {
   fill: var(--app-ink);
+}
+.aiTagGroup {
+  opacity: 0.92;
 }
 .aiTagText {
   font-family: var(--font-mono);

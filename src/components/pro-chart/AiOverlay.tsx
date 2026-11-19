@@ -4,8 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChartOverlay } from '@/lib/chart/aiOverlay';
 import type { Bar } from '@/lib/chart/bars';
 import type { ChartPoint } from '@/lib/chart/drawings';
+import { spreadTags } from '@/lib/chart/tagLayout';
 import type { ChartHandle } from './ChartCanvas';
 import styles from './ProChart.module.css';
+
+interface Tag {
+  key: string;
+  y: number;
+  text: string;
+  className: string;
+}
 
 interface AiOverlayProps {
   handle: ChartHandle | null;
@@ -15,7 +23,8 @@ interface AiOverlayProps {
 
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 const signed = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
-const SETUP_LEAD_PX = 80;
+/** Gap between the last candle and the start of the setup box. */
+const BOX_GAP_PX = 6;
 const TAG_HEIGHT = 18;
 const CHAR_PX = 6.4;
 /** A level this close (in percent) to the target or stop is the same line. */
@@ -70,38 +79,19 @@ export function AiOverlay({ handle, bars, overlay }: AiOverlayProps) {
   const width = handle.chart.timeScale().width();
   const height = handle.chart.panes()[0]?.getHeight() ?? 0;
 
-  const tag = (
-    x: number,
-    y: number,
-    text: string,
-    className: string,
-    anchor: 'start' | 'end' = 'end',
-  ) => {
-    const w = text.length * CHAR_PX + 10;
-    const left = anchor === 'end' ? x - w : x;
-    return (
-      <g>
-        <rect
-          x={left}
-          y={y - TAG_HEIGHT / 2}
-          width={w}
-          height={TAG_HEIGHT}
-          rx={4}
-          className={className}
-        />
-        <text x={left + w / 2} y={y + 4} textAnchor="middle" className={styles.aiTagText}>
-          {text}
-        </text>
-      </g>
-    );
-  };
-
   const setup = overlay.setup;
   const lastBar = bars[bars.length - 1];
   const lastX = lastBar ? xOf({ time: lastBar.time, price: 0 }) : null;
   const setupY = setup
     ? { entry: yOf(setup.entry), stop: yOf(setup.stop), target: yOf(setup.target) }
     : null;
+  const hasSetup =
+    setup &&
+    setupY &&
+    setupY.entry !== null &&
+    setupY.stop !== null &&
+    setupY.target !== null &&
+    lastX !== null;
 
   // A support or resistance sitting on the target or stop is the same line: it is named in that badge instead of being drawn twice.
   const levelOn = (price: number | undefined) =>
@@ -111,8 +101,49 @@ export function AiOverlay({ handle, bars, overlay }: AiOverlayProps) {
   const onTarget = levelOn(setup?.target);
   const onStop = levelOn(setup?.stop);
   const drawnLevels = overlay.levels.filter((l) => l !== onTarget && l !== onStop);
-  const entryNote =
-    setup?.entryType === 'pullback' ? ' · limit' : setup?.entryType === 'retest' ? ' · limit' : '';
+  const entryNote = setup?.entryType === 'now' ? '' : ' limit';
+
+  // Every badge goes in the free space at the right edge, beside its line, never over the candles; those that would overlap
+  // (a target next to a resistance, an entry next to a stop) are spread apart.
+  const wants: Tag[] = [];
+  for (const level of drawnLevels) {
+    const y = yOf(level.price);
+    if (y === null) continue;
+    wants.push({
+      key: level.label,
+      y,
+      text: `${level.label} ₹${fmt(level.price)}`,
+      className: level.kind === 'support' ? styles.aiTagSupport : styles.aiTagResistance,
+    });
+  }
+  if (hasSetup) {
+    wants.push(
+      {
+        key: 'target',
+        y: setupY.target as number,
+        text: `TARGET${onTarget ? ` / ${onTarget.label}` : ''} ₹${fmt(setup.target)} (${signed(setup.targetPct)})`,
+        className: styles.aiTagSupport,
+      },
+      {
+        key: 'entry',
+        y: setupY.entry as number,
+        text: `ENTRY ₹${fmt(setup.entry)}${entryNote}`,
+        className: styles.aiTagEntry,
+      },
+      {
+        key: 'stop',
+        y: setupY.stop as number,
+        text: `STOP${onStop ? ` / ${onStop.label}` : ''} ₹${fmt(setup.stop)} (${signed(setup.stopPct)})`,
+        className: styles.aiTagResistance,
+      },
+    );
+  }
+  const spread = spreadTags(
+    wants.map((t) => t.y),
+    TAG_HEIGHT + 2,
+    TAG_HEIGHT / 2,
+    Math.max(TAG_HEIGHT / 2, height - TAG_HEIGHT / 2),
+  );
 
   return (
     <div className={styles.overlay} style={{ width, height }} aria-hidden="true">
@@ -122,15 +153,14 @@ export function AiOverlay({ handle, bars, overlay }: AiOverlayProps) {
           if (y === null) return null;
           const tone = level.kind === 'support' ? styles.aiSupport : styles.aiResistance;
           return (
-            <g key={level.label}>
-              <line x1={0} x2={width} y1={y} y2={y} className={`${styles.aiLevel} ${tone}`} />
-              {tag(
-                width - 6,
-                y - TAG_HEIGHT,
-                `${level.label} · ₹${fmt(level.price)}`,
-                tone === styles.aiSupport ? styles.aiTagSupport : styles.aiTagResistance,
-              )}
-            </g>
+            <line
+              key={level.label}
+              x1={0}
+              x2={width}
+              y1={y}
+              y2={y}
+              className={`${styles.aiLevel} ${tone}`}
+            />
           );
         })}
         {overlay.trendlines.map((t, i) => {
@@ -146,84 +176,89 @@ export function AiOverlay({ handle, bars, overlay }: AiOverlayProps) {
               : change > 0
                 ? '↗ Uptrend'
                 : '↘ Downtrend';
+          const w = name.length * CHAR_PX + 10;
+          // The name sits at the line's last point, on the side away from the candles it belongs to.
           return (
             <g key={i}>
               <line x1={x1} y1={y1} x2={x2} y2={y2} className={styles.aiTrend} />
-              {tag(
-                (x1 + x2) / 2 + (name.length * CHAR_PX + 10) / 2,
-                (y1 + y2) / 2,
-                name,
-                styles.aiTagTrend,
-              )}
+              <g opacity={0.9}>
+                <rect
+                  x={x2 - w}
+                  y={y2 - TAG_HEIGHT - 4}
+                  width={w}
+                  height={TAG_HEIGHT}
+                  rx={4}
+                  className={styles.aiTagTrend}
+                />
+                <text x={x2 - w / 2} y={y2 - 8} textAnchor="middle" className={styles.aiTagText}>
+                  {name}
+                </text>
+              </g>
             </g>
           );
         })}
-        {setup &&
-          setupY &&
-          setupY.entry !== null &&
-          setupY.stop !== null &&
-          setupY.target !== null &&
-          lastX !== null && (
-            <g>
-              {(() => {
-                const x0 = Math.max(0, lastX - SETUP_LEAD_PX);
-                const w = Math.max(0, width - x0);
-                const entry = setupY.entry as number;
-                const stop = setupY.stop as number;
-                const target = setupY.target as number;
-                // Each badge sits just inside the zone, on that zone's own outer boundary; ENTRY is on the dividing line.
-                const inside = (edge: number, other: number) =>
-                  edge + (other > edge ? 1 : -1) * (TAG_HEIGHT / 2 + 2);
-                return (
-                  <>
-                    <rect
-                      x={x0}
-                      y={Math.min(entry, target)}
-                      width={w}
-                      height={Math.abs(entry - target)}
-                      className={styles.aiZoneTarget}
-                    />
-                    <rect
-                      x={x0}
-                      y={Math.min(entry, stop)}
-                      width={w}
-                      height={Math.abs(entry - stop)}
-                      className={styles.aiZoneStop}
-                    />
-                    <line
-                      x1={x0}
-                      x2={width}
-                      y1={target}
-                      y2={target}
-                      className={styles.aiEdgeTarget}
-                    />
-                    <line x1={x0} x2={width} y1={stop} y2={stop} className={styles.aiEdgeStop} />
-                    <line x1={x0} x2={width} y1={entry} y2={entry} className={styles.aiEntry} />
-                    {tag(
-                      x0 + 4,
-                      inside(target, entry),
-                      `TARGET${onTarget ? ` / ${onTarget.label}` : ''} ₹${fmt(setup.target)} (${signed(setup.targetPct)})`,
-                      styles.aiTagSupport,
-                      'start',
-                    )}
-                    {tag(
-                      x0 + 4,
-                      inside(stop, entry),
-                      `STOP${onStop ? ` / ${onStop.label}` : ''} ₹${fmt(setup.stop)} (${signed(setup.stopPct)})`,
-                      styles.aiTagResistance,
-                      'start',
-                    )}
-                    {tag(
-                      width - 6,
-                      entry,
-                      `ENTRY ₹${fmt(setup.entry)}${entryNote} · 1 : ${setup.riskReward} R:R`,
-                      styles.aiTagEntry,
-                    )}
-                  </>
-                );
-              })()}
+        {hasSetup && (
+          <g>
+            {(() => {
+              // The box starts right after the last candle, so the price action stays visible.
+              const x0 = Math.min(width, (lastX as number) + BOX_GAP_PX);
+              const w = Math.max(0, width - x0);
+              const entry = setupY.entry as number;
+              const stop = setupY.stop as number;
+              const target = setupY.target as number;
+              return (
+                <>
+                  <rect
+                    x={x0}
+                    y={Math.min(entry, target)}
+                    width={w}
+                    height={Math.abs(entry - target)}
+                    className={styles.aiZoneTarget}
+                  />
+                  <rect
+                    x={x0}
+                    y={Math.min(entry, stop)}
+                    width={w}
+                    height={Math.abs(entry - stop)}
+                    className={styles.aiZoneStop}
+                  />
+                  <line
+                    x1={x0}
+                    x2={width}
+                    y1={target}
+                    y2={target}
+                    className={styles.aiEdgeTarget}
+                  />
+                  <line x1={x0} x2={width} y1={stop} y2={stop} className={styles.aiEdgeStop} />
+                  <line x1={x0} x2={width} y1={entry} y2={entry} className={styles.aiEntry} />
+                </>
+              );
+            })()}
+          </g>
+        )}
+        {wants.map((t, i) => {
+          const w = t.text.length * CHAR_PX + 10;
+          return (
+            <g key={t.key} className={styles.aiTagGroup}>
+              <rect
+                x={width - 6 - w}
+                y={spread[i] - TAG_HEIGHT / 2}
+                width={w}
+                height={TAG_HEIGHT}
+                rx={4}
+                className={t.className}
+              />
+              <text
+                x={width - 6 - w / 2}
+                y={spread[i] + 4}
+                textAnchor="middle"
+                className={styles.aiTagText}
+              >
+                {t.text}
+              </text>
             </g>
-          )}
+          );
+        })}
       </svg>
     </div>
   );

@@ -42,3 +42,7 @@ Still unrestricted-only, still no position sizes or return claims.
 Overlay: STOP / ENTRY / TARGET badges sit on their own boundaries, a level within 0.15% of the target or stop is merged into its badge,
 the trendline is styled and labelled, Bollinger Bands are hidden while Auto-Chart is on (and restored after), and the button shows an
 unmistakable on state.
+
+Badges (#240): all badges sit in the free space at the right edge beside their lines and are spread apart when they would overlap
+(`tagLayout.ts`); while Auto-Chart is on the chart keeps about 240 px of empty space after the latest candle (sized in pixels, so it holds at
+any zoom), and the setup box starts after the last candle, so nothing covers the price action.

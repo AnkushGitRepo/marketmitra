@@ -41,6 +41,8 @@ interface ChartCanvasProps {
   bars: Bar[];
   kind: ChartKind;
   timeframe: Timeframe;
+  /** Leave empty space after the latest candle for Auto-Chart's badges and setup box. */
+  roomOnRight?: boolean;
   indicators: IndicatorId[];
   /** The user's indicator settings; anything missing draws with the default. */
   params: StoredParams;
@@ -98,6 +100,12 @@ function themeColors() {
 const chartTime = (time: string): Time =>
   isIntradayTime(time) ? (Number(time) as UTCTimestamp) : (time as Time);
 
+const DEFAULT_RIGHT_OFFSET_BARS = 4;
+/** Empty space after the latest candle while Auto-Chart is on: enough for its badges. */
+const ROOM_ON_RIGHT_PX = 240;
+const FALLBACK_BAR_SPACING_PX = 8;
+const MAX_ROOM_BARS = 120;
+
 const toPoints = (bars: Bar[], values: Series) =>
   bars.flatMap((b, i) =>
     values[i] === null ? [] : [{ time: chartTime(b.time), value: values[i] as number }],
@@ -115,6 +123,7 @@ export function ChartCanvas({
   bars,
   kind,
   timeframe,
+  roomOnRight = false,
   indicators,
   params,
   range,
@@ -165,7 +174,11 @@ export function ChartCanvas({
           horzLines: { color: c.grid, style: LineStyle.Dotted },
         },
         rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: 0.08 } },
-        timeScale: { borderVisible: false, rightOffset: 4, timeVisible: false },
+        timeScale: {
+          borderVisible: false,
+          rightOffset: DEFAULT_RIGHT_OFFSET_BARS,
+          timeVisible: false,
+        },
         crosshair: {
           mode: CrosshairMode.Normal,
           vertLine: {
@@ -445,6 +458,23 @@ export function ChartCanvas({
       onFailureRef.current?.('The chart hit a problem drawing this data.');
     }
   }, [bars, kind, timeframe, indicators, params]);
+
+  // Make (or give back) the empty space after the latest candle. The space is sized in pixels, not bars, so the badges fit whatever the zoom.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const timeScale = chart.timeScale();
+    if (!roomOnRight) {
+      timeScale.applyOptions({ rightOffset: DEFAULT_RIGHT_OFFSET_BARS });
+      return;
+    }
+    const range = timeScale.getVisibleLogicalRange();
+    const span = range ? range.to - range.from : 0;
+    const spacing = span > 0 ? timeScale.width() / span : FALLBACK_BAR_SPACING_PX;
+    timeScale.applyOptions({
+      rightOffset: Math.min(MAX_ROOM_BARS, Math.ceil(ROOM_ON_RIGHT_PX / spacing)),
+    });
+  }, [roomOnRight, timeframe, bars.length]);
 
   // Apply the range tab (daily) or a sensible window of recent bars (intraday), once per timeframe/range/dataset: a live tick
   // must not snap the view back while the user is looking around.
