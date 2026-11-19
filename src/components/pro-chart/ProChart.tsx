@@ -494,6 +494,15 @@ export function ProChart({
           {isIntraday(timeframe)
             ? `${timeframe} candles · IST · prices in ₹`
             : 'Daily bars · prices in ₹'}
+          {' · '}
+          <a
+            className={styles.creditLink}
+            href="https://www.tradingview.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Charts by TradingView
+          </a>
         </span>
       </div>
     </div>

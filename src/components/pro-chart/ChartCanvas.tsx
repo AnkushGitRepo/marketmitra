@@ -1,5 +1,8 @@
 'use client';
 
+// This software uses TradingView Lightweight Charts™ (Apache License 2.0). Copyright (c) TradingView, Inc. https://www.tradingview.com/
+// The chart footer carries the visible credit and the link the licence asks for.
+
 import { useEffect, useRef } from 'react';
 import { hasVisibleInk, shouldUseFallback } from '@/lib/chart/fallback';
 import {
@@ -168,6 +171,8 @@ export function ChartCanvas({
           fontFamily: 'var(--font-mono), ui-monospace, monospace',
           fontSize: 11,
           panes: { separatorColor: c.grid, enableResize: true },
+          // The logo is off because the credit is given in words and a link in the chart footer (see ProChart), as the library licence allows.
+          attributionLogo: false,
         },
         grid: {
           vertLines: { color: c.grid, style: LineStyle.Dotted },

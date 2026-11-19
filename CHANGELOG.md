@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The stock chart has a full-screen button at the top right of its toolbar; Esc or the same button goes back. ([#230](https://github.com/AnkushGitRepo/marketmitra/issues/230))
 - The data service now holds every Indian mutual fund scheme with its category, daily NAV and full NAV history, and computes 1M–10Y returns, SIP returns and risk ratios from it, served at `/funds`. Expense ratios come from AMFI's disclosure via a community-maintained dataset, shown with where and when they were updated. On a local install, one command (`refresh_funds.py seed`) fills the fund data into your own database, the same way the stock screener is filled. A new Funds page screens them by category, fund house, returns, risk and expense ratio, and each fund has a page with its NAV chart, returns, SIP returns, risk ratios and peers. ([#220](https://github.com/AnkushGitRepo/marketmitra/issues/220))
 
+### Changed
+
+- The TradingView logo at the bottom left of the stock chart is gone; the chart footer now credits "Charts by TradingView" with a link instead, as the chart library's licence asks. ([#251](https://github.com/AnkushGitRepo/marketmitra/issues/251))
+
 ## [0.6.0] - 2026-11-17
 
 ### Added
