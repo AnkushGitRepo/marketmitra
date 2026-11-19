@@ -63,3 +63,27 @@ export function positionLevels(
   void kind; // direction comes from where the target was clicked; the maths is symmetric
   return { stop, riskReward: 2, targetPct: pct(target), stopPct: pct(stop) };
 }
+
+const KIND_NAMES: Record<Drawing['kind'], string> = {
+  trend: 'Trend line',
+  ray: 'Ray',
+  hline: 'Horizontal line',
+  vline: 'Vertical line',
+  rect: 'Rectangle',
+  long: 'Long position',
+  short: 'Short position',
+  fib: 'Fib retracement',
+  measure: 'Measure',
+  text: 'Note',
+};
+
+const rupees = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+
+/** A short name and where-it-is text for listing a drawing in the chart's Drawings menu. */
+export function describeDrawing(d: Drawing): { name: string; detail: string } {
+  const name = KIND_NAMES[d.kind];
+  if (d.kind === 'text') return { name, detail: d.text };
+  if (d.kind === 'vline') return { name, detail: d.a.time };
+  if (d.kind === 'hline') return { name, detail: rupees(d.a.price) };
+  return { name, detail: `${rupees(d.a.price)} → ${rupees((d as { b: ChartPoint }).b.price)}` };
+}

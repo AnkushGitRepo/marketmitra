@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIB_LEVELS, fibPrices, measure, positionLevels } from './drawings';
+import { FIB_LEVELS, describeDrawing, fibPrices, measure, positionLevels } from './drawings';
 
 describe('fibPrices', () => {
   it('places each level between the two anchor prices (0 at p2, 1 at p1)', () => {
@@ -49,5 +49,26 @@ describe('positionLevels', () => {
       targetPct: -10,
       stopPct: 5,
     });
+  });
+});
+
+describe('describeDrawing', () => {
+  const a = { time: '2026-03-02', price: 1234.5 };
+  it('names a drawing by its kind and where it sits', () => {
+    expect(describeDrawing({ id: '1', kind: 'hline', a })).toEqual({
+      name: 'Horizontal line',
+      detail: '₹1,234.5',
+    });
+    expect(describeDrawing({ id: '2', kind: 'vline', a })).toEqual({
+      name: 'Vertical line',
+      detail: '2026-03-02',
+    });
+    expect(describeDrawing({ id: '3', kind: 'text', a, text: 'Breakout' })).toEqual({
+      name: 'Note',
+      detail: 'Breakout',
+    });
+    expect(
+      describeDrawing({ id: '4', kind: 'long', a, b: { time: '2026-03-09', price: 1300 } }).name,
+    ).toBe('Long position');
   });
 });

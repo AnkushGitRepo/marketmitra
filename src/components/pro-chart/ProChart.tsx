@@ -9,6 +9,7 @@ import { ChartFallback } from './ChartFallback';
 import { DrawingToolbar } from './DrawingToolbar';
 import { DrawingsOverlay } from './DrawingsOverlay';
 import { IndicatorLegend, PaneLabels } from './IndicatorLegend';
+import { DrawingsMenu } from './DrawingsMenu';
 import { IndicatorMenu } from './IndicatorMenu';
 import {
   DEFAULT_INDICATORS,
@@ -105,7 +106,10 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
   }, []);
   const commitDrawing = useCallback((d: Drawing) => setDrawings((cur) => [...cur, d]), []);
   const toolDone = useCallback(() => setTool('cursor'), []);
-  const removeDrawing = useCallback((id: string) => setDrawings((cur) => cur.filter((d) => d.id !== id)), []);
+  const removeDrawing = useCallback(
+    (id: string) => setDrawings((cur) => cur.filter((d) => d.id !== id)),
+    [],
+  );
   const clearDrawings = useCallback(() => setDrawings([]), []);
 
   const pickRange = (r: RangeKey) => {
@@ -146,6 +150,7 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
         </div>
         <span className={styles.divider} />
         <IndicatorMenu active={indicators} onToggle={toggleIndicator} />
+        <DrawingsMenu drawings={drawings} onRemove={removeDrawing} onClear={clearDrawings} />
         {onAlert ? (
           <button type="button" className={styles.topBtn} onClick={onAlert}>
             <BellIcon />
@@ -192,7 +197,9 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
           {!failure && bars.length > 0 && (
             <IndicatorLegend bars={bars} active={indicators} hover={hover} />
           )}
-          {!failure && bars.length > 0 && <PaneLabels handle={handle} bars={bars} active={indicators} hover={hover} />}
+          {!failure && bars.length > 0 && (
+            <PaneLabels handle={handle} bars={bars} active={indicators} hover={hover} />
+          )}
 
           {bars.length > 0 && failure ? (
             <ChartFallback
