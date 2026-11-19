@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The chart's toolbar dropdowns (Saved, Setups, Drawings, Indicators) now move to stay fully inside the chart instead of being cut off at its right edge. ([#262](https://github.com/AnkushGitRepo/marketmitra/issues/262))
+
 - A saved AI Auto-Chart's Long/Short box now starts at the candle it was generated on and runs through the candles since, instead of starting after the latest candle as if it were new. ([#255](https://github.com/AnkushGitRepo/marketmitra/issues/255))
 
 ## [0.6.0] - 2026-11-17

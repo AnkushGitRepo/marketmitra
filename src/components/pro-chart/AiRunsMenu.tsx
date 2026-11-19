@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { BOX_LENGTHS, describeRun, type BoxBars, type OverlayRun } from '@/lib/chart/overlayRuns';
+import { useMenuPlacement } from './useMenuPlacement';
 import styles from './ProChart.module.css';
 
 interface AiRunsMenuProps {
@@ -32,6 +33,7 @@ export function AiRunsMenu({
 }: AiRunsMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  useMenuPlacement(open, rootRef);
 
   useEffect(() => {
     if (!open) return;
