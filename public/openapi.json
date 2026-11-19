@@ -6442,8 +6442,8 @@
         "tags": [
           "AI"
         ],
-        "summary": "Draw AI chart levels for a stock (Auto-Chart)",
-        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Cached for 12 hours per user, symbol, mode and latest bar. Mode is resolved on the server, never from the body: guarded by default (structure only). On a local / self-host instance with unrestricted mode on (ADR 0054) the response may also carry `setup` (direction, entry, stop, target, riskReward, stopPct, targetPct, entryType now|pullback|retest, lastClose), planned by the server from the levels and the trend, and `setupNote` when no setup qualifies. On the hosted site only an admin (ADMIN_USER_IDS) can get `setup`; everyone else never does (ADR 0068, 0070). Body `{ symbol, interval?, force? }`; `interval` is 1m, 5m, 15m, 1h or 1d (default 1d) and the bars, the freshness window (2 minutes on 1m up to 12 hours on 1d) and the cache key follow it. Trendline `a` / `b` times are bar times as in the candles endpoint.",
+        "summary": "Generate an AI Auto-Chart and save it",
+        "description": "Coordinates only, no prose: up to 2 support and 2 resistance levels (labelled S1, S2, R1, R2 by the server), up to 2 trendlines and recommended indicators, from the last year of daily bars or the timeframe's candles, written with the caller's own AI key (BYOK; hosted never uses the operator's key). Every call generates a new run and saves it for the signed-in user, stock and timeframe next to the earlier ones (the latest 10 are kept); it never reuses an old one. The mode is resolved on the server, never from the body: guarded by default (structure only). A local install, or a hosted admin listed in ADMIN_USER_IDS, in unrestricted mode (ADR 0054, 0070) may also get `setup` (direction, entry, stop, target, riskReward, stopPct, targetPct, entryType now|pullback|retest, lastClose), planned by the server from the levels and the trend, and `setupNote` when no setup qualifies. Body `{ symbol, interval? }`; `interval` is 1m, 5m, 15m, 1h or 1d (default 1d).",
         "security": [
           {
             "cookieAuth": []
@@ -6465,9 +6465,6 @@
                   "symbol": {
                     "type": "string"
                   },
-                  "force": {
-                    "type": "boolean"
-                  },
                   "interval": {
                     "type": "string",
                     "enum": [
@@ -6488,7 +6485,7 @@
         },
         "responses": {
           "200": {
-            "description": "{ success, data: { overlay: { levels: [{ kind, price, label }], trendlines: [{ a, b }], indicators: [id], setup?: { direction, entry, stop, target, riskReward, stopPct, targetPct } }, mode: 'guarded'|'unrestricted', generatedAt }, meta: { cached } }"
+            "description": "{ success, data: { run: { id, symbol, interval, mode, overlay: { levels: [{ kind, price, label }], trendlines: [{ a, b }], indicators: [id], setup?, setupNote? }, model, lastClose, createdAt }, saved? } }. `saved: false` means it was generated but could not be stored."
           },
           "400": {
             "description": "no_ai_key."
@@ -6501,6 +6498,58 @@
           },
           "502": {
             "description": "Not enough price history, or the model reply was unusable."
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "List the saved AI Auto-Charts for a stock and timeframe",
+        "description": "The signed-in user's saved runs for one stock and timeframe, newest first. A saved trade setup is only returned while the caller is in unrestricted mode now (a local user or a hosted admin who turned it on); everyone else gets the levels and trendlines only. Never returns another user's runs.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1m",
+                "5m",
+                "15m",
+                "1h",
+                "1d"
+              ],
+              "default": "1d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { runs: [ run ] } } with run as in POST."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "422": {
+            "description": "Invalid symbol or interval."
           }
         }
       }
@@ -6586,6 +6635,44 @@
           },
           "502": {
             "description": "quote_unavailable (retryable)."
+          }
+        }
+      }
+    },
+    "/api/insights/chart-overlay/{id}": {
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Delete a saved AI Auto-Chart",
+        "description": "Deletes one of the signed-in user's saved runs. Another user's run answers the same 404 as a missing one.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { id } }"
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such run for this user."
           }
         }
       }
