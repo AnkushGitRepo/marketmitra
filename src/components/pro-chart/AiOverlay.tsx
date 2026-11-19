@@ -19,6 +19,8 @@ interface AiOverlayProps {
   handle: ChartHandle | null;
   bars: Bar[];
   overlay: ChartOverlay;
+  /** Bar the setup box starts on (the bar the run was generated on). Defaults to the latest bar. */
+  anchorTime?: string | null;
 }
 
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -33,7 +35,7 @@ const MERGE_PCT = 0.15;
 const FLAT_TREND_PCT = 0.3;
 
 /** Read-only SVG layer for Auto-Chart (#228). Anchors are data (bar time + price) so it follows zoom and pan like drawings do. */
-export function AiOverlay({ handle, bars, overlay }: AiOverlayProps) {
+export function AiOverlay({ handle, bars, overlay, anchorTime }: AiOverlayProps) {
   const [, setTick] = useState(0);
   const indexByTime = useMemo(() => new Map(bars.map((b, i) => [b.time, i])), [bars]);
 
@@ -81,7 +83,8 @@ export function AiOverlay({ handle, bars, overlay }: AiOverlayProps) {
 
   const setup = overlay.setup;
   const lastBar = bars[bars.length - 1];
-  const lastX = lastBar ? xOf({ time: lastBar.time, price: 0 }) : null;
+  const startBar = anchorTime ?? lastBar?.time;
+  const lastX = startBar ? xOf({ time: startBar, price: 0 }) : null;
   const setupY = setup
     ? { entry: yOf(setup.entry), stop: yOf(setup.stop), target: yOf(setup.target) }
     : null;
@@ -200,8 +203,8 @@ export function AiOverlay({ handle, bars, overlay }: AiOverlayProps) {
         {hasSetup && (
           <g>
             {(() => {
-              // The box starts right after the last candle, so the price action stays visible.
-              const x0 = Math.min(width, (lastX as number) + BOX_GAP_PX);
+              // The box starts at the candle the setup was made on and runs right, so later candles sit inside it.
+              const x0 = Math.min(width, Math.max(0, (lastX as number) + BOX_GAP_PX));
               const w = Math.max(0, width - x0);
               const entry = setupY.entry as number;
               const stop = setupY.stop as number;

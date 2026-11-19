@@ -3,6 +3,7 @@ import type { ChartOverlay } from './aiOverlay';
 import {
   MAX_RUNS_PER_VIEW,
   describeRun,
+  anchorBarTime,
   idsToPrune,
   runForMode,
   type OverlayRun,
@@ -102,5 +103,35 @@ describe('describeRun', () => {
         now,
       ).summary,
     ).toBe('1 trendline');
+  });
+});
+
+describe('anchorBarTime', () => {
+  const bar = (time: string) => ({ time, open: 1, high: 1, low: 1, close: 1, volume: 0 });
+  // 09:15 IST = 03:45Z; intraday bar times are epoch seconds shifted +5:30.
+  const at = (isoUtc: string) => String(Date.parse(isoUtc) / 1000 + 19_800);
+
+  it('picks the intraday bar the run was created in, not the latest', () => {
+    const bars = [
+      bar(at('2026-11-19T09:30:00Z')),
+      bar(at('2026-11-19T09:31:00Z')),
+      bar(at('2026-11-19T09:40:00Z')),
+      bar(at('2026-11-19T09:41:00Z')),
+    ];
+    expect(anchorBarTime(bars, '2026-11-19T09:40:30Z')).toBe(bars[2].time);
+  });
+
+  it('uses the first bar when the run predates the loaded data', () => {
+    const bars = [bar(at('2026-11-19T09:30:00Z')), bar(at('2026-11-19T09:31:00Z'))];
+    expect(anchorBarTime(bars, '2026-11-18T09:00:00Z')).toBe(bars[0].time);
+  });
+
+  it('uses the IST day for daily bars', () => {
+    const bars = [bar('2026-11-16'), bar('2026-11-17'), bar('2026-11-18')];
+    expect(anchorBarTime(bars, '2026-11-17T10:00:00Z')).toBe('2026-11-17');
+  });
+
+  it('is null for no bars', () => {
+    expect(anchorBarTime([], '2026-11-17T10:00:00Z')).toBeNull();
   });
 });
