@@ -757,4 +757,20 @@
 }
 .aiBarError {
   color: var(--app-loss, #d6452f);
+/* Full screen (#230): fixed over the viewport; the stage grows to fill what the toolbar and range bar leave. */
+.workspaceExpanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  border-radius: 0;
+  border: 0;
+}
+.workspaceExpanded .body {
+  flex: 1 1 auto;
+}
+.workspaceExpanded .stage {
+  height: auto;
+}
+.fullscreenBtn {
+  margin-left: auto;
 }
