@@ -186,3 +186,8 @@
     gap: 10px;
   }
 }
+
+/* Lets the notification bell take a tip without changing the header's layout (#271) */
+.tipWrap {
+  display: inline-flex;
+}

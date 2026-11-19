@@ -10,6 +10,7 @@ import { HostedUserBadge } from './HostedUserBadge';
 import { SettingsIcon } from './NavIcons';
 import { NotificationBell } from './NotificationBell';
 import { NotificationsProvider } from './NotificationsProvider';
+import { useFloatingTip } from './useFloatingTip';
 import { SEARCH_INPUT_ATTR, useIsMac } from './useKeyboardShortcuts';
 import styles from './AppHeader.module.css';
 
@@ -17,10 +18,14 @@ interface AppHeaderProps {
   onToggleMask: () => void;
 }
 
+/** How long the pointer rests on a header control before its tip shows. */
+const TIP_DELAY_MS = 450;
+
 export function AppHeader({ onToggleMask }: AppHeaderProps) {
   const { query, setQuery, results, loading, selectResult, activeIndex, handleKeyDown } = useSymbolSearch();
   const [focused, setFocused] = useState(false);
   const isMac = useIsMac();
+  const { tip, tipProps } = useFloatingTip({ place: 'below', delayMs: TIP_DELAY_MS });
 
   const userBadge = isHosted() ? (
     <HostedUserBadge />
@@ -36,7 +41,7 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
       <header className={styles.headerDesktop} data-app-desktop>
         <div className={styles.headerInner}>
           <div className={styles.searchWrap}>
-            <div className={styles.search}>
+            <div className={styles.search} {...tipProps('Search', `Stocks, ISIN or indices (${isMac ? '⌘K' : 'Ctrl K'})`)}>
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <circle cx="7" cy="7" r="5" stroke="#A9B2B8" strokeWidth="1.6" />
                 <line x1="10.8" y1="10.8" x2="14.4" y2="14.4" stroke="#A9B2B8" strokeWidth="1.6" strokeLinecap="round" />
@@ -72,16 +77,30 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
           </div>
 
           <div className={styles.actions}>
-            <NotificationBell />
-            <Link href="/settings" title="Settings" className={styles.iconButton}>
+            <span className={styles.tipWrap} {...tipProps('Notifications', 'Alerts and the morning brief')}>
+              <NotificationBell />
+            </span>
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              className={styles.iconButton}
+              {...tipProps('Settings', 'Your AI key, preferences and data')}
+            >
               <SettingsIcon size={16} />
             </Link>
-            <button onClick={onToggleMask} title="Hide values" className={styles.iconButton} type="button">
+            <button
+              onClick={onToggleMask}
+              aria-label="Hide values"
+              className={styles.iconButton}
+              type="button"
+              {...tipProps('Hide values', 'Masks the amounts on the page')}
+            >
               ₹
             </button>
             {userBadge}
           </div>
         </div>
+        {tip}
       </header>
 
       <header className={styles.headerMobile} data-app-mobile>

@@ -7,10 +7,10 @@ import { buildNavSections, isNavActive } from './navItems';
 import { NAV_ICONS, ResearchIcon } from './NavIcons';
 import { shortcutHintFor } from '@/lib/shortcuts/shortcuts';
 import { Logo } from '@/components/landing/Logo';
+import { useFloatingTip } from './useFloatingTip';
 import styles from './Sidebar.module.css';
 
 const COLLAPSE_KEY = 'mm-sidebar-collapsed';
-
 // useSyncExternalStore (not useState+useEffect) so reading localStorage
 // can't produce a hydration-mismatch flash — same pattern as CookieNotice.
 function subscribe(onStoreChange: () => void) {
@@ -31,7 +31,13 @@ function getServerSnapshot() {
 function ChevronIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M10 3 5 8l5 5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M10 3 5 8l5 5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -40,6 +46,8 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
   const pathname = usePathname();
   const sections = buildNavSections(advisorEnabled);
   const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  // A collapsed sidebar shows only icons, so each gets a tip with its name (#269).
+  const { tip, tipProps: tipHandlers } = useFloatingTip({ place: 'right', enabled: collapsed });
 
   const toggleCollapsed = () => {
     try {
@@ -58,7 +66,11 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
       aria-label="Main navigation"
     >
       <div className={styles.top}>
-        <Link href="/dashboard" className={styles.brand}>
+        <Link
+          href="/dashboard"
+          className={styles.brand}
+          {...tipHandlers('MarketMitra', 'Go to the dashboard')}
+        >
           <Logo size={26} showWordmark={false} />
           {!collapsed && <span className={styles.brandName}>MarketMitra</span>}
         </Link>
@@ -68,6 +80,7 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
           type="button"
           aria-expanded={!collapsed}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          {...tipHandlers('Expand sidebar')}
         >
           <span className={collapsed ? styles.chevronFlipped : ''}>
             <ChevronIcon />
@@ -93,7 +106,8 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
               const Icon = NAV_ICONS[item.href as keyof typeof NAV_ICONS] ?? ResearchIcon;
               const active = isNavActive(pathname, item.href);
               const hint = shortcutHintFor(item.href);
-              const tooltip = hint ? `${item.label} — ${hint}` : collapsed ? item.label : undefined;
+              // Expanded, the label is on screen already: only the shortcut is worth a (native) tooltip.
+              const tooltip = !collapsed && hint ? `${item.label} — ${hint}` : undefined;
               return (
                 <Link
                   key={item.href}
@@ -101,6 +115,8 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
                   className={`${styles.navItem} ${active ? styles.navItemActive : ''}`}
                   aria-current={active ? 'page' : undefined}
                   title={tooltip}
+                  aria-label={collapsed ? item.label : undefined}
+                  {...tipHandlers(item.label, hint ? `Shortcut: ${hint}` : undefined)}
                 >
                   <span className={styles.navIcon}>
                     <Icon />
@@ -112,6 +128,7 @@ export function Sidebar({ advisorEnabled = false }: { advisorEnabled?: boolean }
           </div>
         ))}
       </nav>
+      {tip}
     </aside>
   );
 }
