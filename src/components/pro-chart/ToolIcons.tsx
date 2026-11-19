@@ -1,7 +1,18 @@
 import type { DrawingTool } from '@/lib/chart/drawings';
 
-const P = { width: 22, height: 22, viewBox: '0 0 22 22', fill: 'none', 'aria-hidden': true } as const;
-const S = { stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+const P = {
+  width: 22,
+  height: 22,
+  viewBox: '0 0 22 22',
+  fill: 'none',
+  'aria-hidden': true,
+} as const;
+const S = {
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+} as const;
 
 export function ToolIcon({ tool }: { tool: DrawingTool | 'trash' }) {
   switch (tool) {
@@ -17,6 +28,43 @@ export function ToolIcon({ tool }: { tool: DrawingTool | 'trash' }) {
           <path d="M4 17 18 5" {...S} />
           <circle cx="4" cy="17" r="2" {...S} />
           <circle cx="18" cy="5" r="2" {...S} />
+        </svg>
+      );
+    case 'ray':
+      return (
+        <svg {...P}>
+          <path d="M4 17 19 7" {...S} />
+          <circle cx="4" cy="17" r="2" {...S} />
+          <path d="m16 6 3 1-1 3" {...S} />
+        </svg>
+      );
+    case 'vline':
+      return (
+        <svg {...P}>
+          <path d="M11 3v16" {...S} strokeDasharray="3 3" />
+          <circle cx="11" cy="11" r="2" {...S} />
+        </svg>
+      );
+    case 'rect':
+      return (
+        <svg {...P}>
+          <rect x="4" y="6" width="14" height="10" rx="1.5" {...S} />
+        </svg>
+      );
+    case 'long':
+      return (
+        <svg {...P}>
+          <rect x="4" y="4" width="14" height="7" {...S} />
+          <rect x="4" y="11" width="14" height="6" {...S} strokeDasharray="2 2" />
+          <path d="m11 9-2 0 2-3 2 3z" {...S} />
+        </svg>
+      );
+    case 'short':
+      return (
+        <svg {...P}>
+          <rect x="4" y="5" width="14" height="6" {...S} strokeDasharray="2 2" />
+          <rect x="4" y="11" width="14" height="7" {...S} />
+          <path d="m11 13 2 0-2 3-2-3z" {...S} />
         </svg>
       );
     case 'hline':

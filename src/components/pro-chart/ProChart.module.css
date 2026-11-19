@@ -105,6 +105,8 @@
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(22, 25, 28, 0.16);
   padding: 8px;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
 }
 .menuGroup {
   margin: 8px 8px 4px;
@@ -492,4 +494,94 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Indicator legend, pane names and menu swatches (#232) */
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  flex: none;
+}
+.indLegend {
+  position: absolute;
+  z-index: 3;
+  top: 30px;
+  left: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-surface, #fff) 78%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  pointer-events: none;
+}
+.indRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.indRow .swatch {
+  margin-right: 0;
+}
+.indName {
+  color: var(--app-ink);
+  font-weight: 600;
+}
+.paneLabel {
+  position: absolute;
+  z-index: 3;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-surface, #fff) 78%, transparent);
+  pointer-events: none;
+}
+.menuLabel {
+  display: inline-flex;
+  align-items: center;
+}
+
+.drawRect {
+  fill: var(--app-teal, #0c8a6c);
+  fill-opacity: 0.1;
+  stroke: var(--app-teal, #0c8a6c);
+  stroke-width: 1.4;
+}
+
+/* Selecting and removing a drawing (#232) */
+.overlaySvg {
+  pointer-events: none;
+}
+.drawHit {
+  pointer-events: all;
+  cursor: pointer;
+}
+.drawSelected {
+  filter: drop-shadow(0 0 3px var(--app-teal, #0c8a6c));
+}
+.drawRemove {
+  pointer-events: all;
+  cursor: pointer;
+}
+.drawRemove circle {
+  fill: var(--app-ink);
+}
+.drawRemove path {
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }

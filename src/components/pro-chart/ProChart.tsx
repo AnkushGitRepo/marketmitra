@@ -8,6 +8,7 @@ import { ChartCanvas, type ChartHandle, type ChartKind } from './ChartCanvas';
 import { ChartFallback } from './ChartFallback';
 import { DrawingToolbar } from './DrawingToolbar';
 import { DrawingsOverlay } from './DrawingsOverlay';
+import { IndicatorLegend, PaneLabels } from './IndicatorLegend';
 import { IndicatorMenu } from './IndicatorMenu';
 import {
   DEFAULT_INDICATORS,
@@ -27,7 +28,15 @@ interface ProChartProps {
   onRangeChange?: (range: RangeKey) => void;
 }
 
-const RANGE_LABELS: Record<RangeKey, string> = { '1M': '1M', '3M': '3M', '6M': '6M', YTD: 'YTD', '1Y': '1Y', '5Y': '5Y', ALL: 'All' };
+const RANGE_LABELS: Record<RangeKey, string> = {
+  '1M': '1M',
+  '3M': '3M',
+  '6M': '6M',
+  YTD: 'YTD',
+  '1Y': '1Y',
+  '5Y': '5Y',
+  ALL: 'All',
+};
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
 /** localStorage can throw (private mode, blocked site data) — the chart must
@@ -51,7 +60,13 @@ function writeJson(key: string, value: unknown): void {
 function BellIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path d="M6 16V10a5 5 0 0 1 10 0v6l1.5 2h-13L6 16ZM9.5 19.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M6 16V10a5 5 0 0 1 10 0v6l1.5 2h-13L6 16ZM9.5 19.5a1.5 1.5 0 0 0 3 0"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -62,10 +77,12 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
   // Client-only component (loaded with ssr: false), so reading localStorage in
   // the initializers can't cause a hydration mismatch.
   const [indicators, setIndicators] = useState<IndicatorId[]>(() =>
-    readJson<IndicatorId[]>(INDICATOR_STORAGE_KEY, DEFAULT_INDICATORS)
+    readJson<IndicatorId[]>(INDICATOR_STORAGE_KEY, DEFAULT_INDICATORS),
   );
   const [tool, setTool] = useState<DrawingTool>('cursor');
-  const [drawings, setDrawings] = useState<Drawing[]>(() => readJson<Drawing[]>(drawingsStorageKey(symbol), []));
+  const [drawings, setDrawings] = useState<Drawing[]>(() =>
+    readJson<Drawing[]>(drawingsStorageKey(symbol), []),
+  );
   const [handle, setHandle] = useState<ChartHandle | null>(null);
   const [hover, setHover] = useState<Bar | null>(null);
   // Fail-safe: set when the interactive chart can't start / errors / collapses; the stage then shows a simple SVG chart.
@@ -88,6 +105,7 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
   }, []);
   const commitDrawing = useCallback((d: Drawing) => setDrawings((cur) => [...cur, d]), []);
   const toolDone = useCallback(() => setTool('cursor'), []);
+  const removeDrawing = useCallback((id: string) => setDrawings((cur) => cur.filter((d) => d.id !== id)), []);
   const clearDrawings = useCallback(() => setDrawings([]), []);
 
   const pickRange = (r: RangeKey) => {
@@ -109,7 +127,9 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
     <div className={styles.workspace}>
       <div className={styles.topbar}>
         <span className={styles.symbolChip}>{symbol}</span>
-        <span className={styles.interval} title="Daily bars">D</span>
+        <span className={styles.interval} title="Daily bars">
+          D
+        </span>
         <span className={styles.divider} />
         <div className={styles.segment} role="group" aria-label="Chart type">
           {(['candles', 'line'] as const).map((k) => (
@@ -140,7 +160,12 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
       </div>
 
       <div className={styles.body}>
-        <DrawingToolbar tool={tool} onTool={setTool} hasDrawings={drawings.length > 0} onClear={clearDrawings} />
+        <DrawingToolbar
+          tool={tool}
+          onTool={setTool}
+          hasDrawings={drawings.length > 0}
+          onClear={clearDrawings}
+        />
 
         <div className={`${styles.stage} ${failure ? styles.stageFailed : ''}`}>
           {shown && !failure && (
@@ -164,8 +189,18 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
             </div>
           )}
 
+          {!failure && bars.length > 0 && (
+            <IndicatorLegend bars={bars} active={indicators} hover={hover} />
+          )}
+          {!failure && bars.length > 0 && <PaneLabels handle={handle} bars={bars} active={indicators} hover={hover} />}
+
           {bars.length > 0 && failure ? (
-            <ChartFallback symbol={symbol} bars={bars} reason={failure} onRetry={retryInteractive} />
+            <ChartFallback
+              symbol={symbol}
+              bars={bars}
+              reason={failure}
+              onRetry={retryInteractive}
+            />
           ) : bars.length > 0 ? (
             <>
               <ChartCanvas
@@ -186,6 +221,7 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
                 drawings={drawings}
                 onCommit={commitDrawing}
                 onToolDone={toolDone}
+                onRemove={removeDrawing}
               />
             </>
           ) : (

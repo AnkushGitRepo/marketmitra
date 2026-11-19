@@ -39,7 +39,13 @@ export function IndicatorMenu({ active, onToggle }: IndicatorMenuProps) {
         onClick={() => setOpen((o) => !o)}
       >
         <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <path d="M3 17 8 11l4 3 7-9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M3 17 8 11l4 3 7-9"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
         Indicators{active.length > 0 && <span className={styles.badge}>{active.length}</span>}
         <span aria-hidden="true">▾</span>
@@ -48,11 +54,24 @@ export function IndicatorMenu({ active, onToggle }: IndicatorMenuProps) {
         <div className={styles.menu} role="menu">
           {groups.map((g) => (
             <div key={g}>
-              <p className={styles.menuGroup}>{g === 'Panes' ? 'Separate panes' : 'On the price chart'}</p>
+              <p className={styles.menuGroup}>
+                {g === 'Panes' ? 'Separate panes' : 'On the price chart'}
+              </p>
               {INDICATORS.filter((i) => i.group === g).map((i) => (
                 <label key={i.id} className={styles.menuItem}>
-                  <input type="checkbox" checked={active.includes(i.id)} onChange={() => onToggle(i.id)} />
-                  <span className={styles.menuLabel}>{i.label}</span>
+                  <input
+                    type="checkbox"
+                    checked={active.includes(i.id)}
+                    onChange={() => onToggle(i.id)}
+                  />
+                  <span className={styles.menuLabel}>
+                    <i
+                      className={styles.swatch}
+                      style={{ background: i.color }}
+                      aria-hidden="true"
+                    />
+                    {i.label}
+                  </span>
                   <span className={styles.menuHint}>{i.hint}</span>
                 </label>
               ))}

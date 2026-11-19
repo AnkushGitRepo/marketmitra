@@ -7,8 +7,13 @@ import styles from './ProChart.module.css';
 const TOOLS: { id: DrawingTool; label: string }[] = [
   { id: 'cursor', label: 'Cursor' },
   { id: 'trend', label: 'Trend line' },
+  { id: 'ray', label: 'Ray' },
   { id: 'hline', label: 'Horizontal line' },
+  { id: 'vline', label: 'Vertical line' },
+  { id: 'rect', label: 'Rectangle' },
   { id: 'fib', label: 'Fib retracement' },
+  { id: 'long', label: 'Long position' },
+  { id: 'short', label: 'Short position' },
   { id: 'measure', label: 'Measure' },
   { id: 'text', label: 'Text note' },
 ];
@@ -22,7 +27,12 @@ interface DrawingToolbarProps {
 
 export function DrawingToolbar({ tool, onTool, hasDrawings, onClear }: DrawingToolbarProps) {
   return (
-    <div className={styles.tools} role="toolbar" aria-label="Drawing tools" aria-orientation="vertical">
+    <div
+      className={styles.tools}
+      role="toolbar"
+      aria-label="Drawing tools"
+      aria-orientation="vertical"
+    >
       {TOOLS.map((t) => (
         <button
           key={t.id}

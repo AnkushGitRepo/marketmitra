@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIB_LEVELS, fibPrices, measure } from './drawings';
+import { FIB_LEVELS, fibPrices, measure, positionLevels } from './drawings';
 
 describe('fibPrices', () => {
   it('places each level between the two anchor prices (0 at p2, 1 at p1)', () => {
@@ -29,6 +29,25 @@ describe('measure', () => {
       change: -50,
       percent: -25,
       bars: 20,
+    });
+  });
+});
+
+describe('positionLevels', () => {
+  it('puts the stop on the other side of entry at half the target distance, so a long reads 2 : 1', () => {
+    expect(positionLevels('long', 100, 110)).toEqual({
+      stop: 95,
+      riskReward: 2,
+      targetPct: 10,
+      stopPct: -5,
+    });
+  });
+  it('mirrors for a short', () => {
+    expect(positionLevels('short', 100, 90)).toEqual({
+      stop: 105,
+      riskReward: 2,
+      targetPct: -10,
+      stopPct: 5,
     });
   });
 });
