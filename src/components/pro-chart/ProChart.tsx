@@ -5,6 +5,8 @@ import Link from 'next/link';
 import type { IndicatorParams, StoredParams } from '@/lib/chart/indicatorParams';
 import { RANGE_KEYS, type Bar, type RangeKey } from '@/lib/chart/bars';
 import type { Drawing, DrawingTool } from '@/lib/chart/drawings';
+import { AiOverlay } from './AiOverlay';
+import { useAiOverlay } from './useAiOverlay';
 import { ChartCanvas, type ChartHandle, type ChartKind } from './ChartCanvas';
 import { ChartFallback } from './ChartFallback';
 import { DrawingToolbar } from './DrawingToolbar';
@@ -40,6 +42,7 @@ const RANGE_LABELS: Record<RangeKey, string> = {
   '5Y': '5Y',
   ALL: 'All',
 };
+// Short form of UNRESTRICTED_DISCLAIMER; the real constant lives in a server module that must stay out of the chart bundle.
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
 /** localStorage can throw (private mode, blocked site data) — the chart must
@@ -109,6 +112,24 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
     writeJson(drawingsStorageKey(symbol), drawings);
   }, [drawings, symbol]);
 
+  const ai = useAiOverlay(symbol);
+  // Indicators Auto-Chart switched on, so turning it off puts back exactly what the user had.
+  const [aiIndicators, setAiIndicators] = useState<IndicatorId[]>([]);
+  const toggleAi = useCallback(async () => {
+    if (ai.status === 'loading') return;
+    if (ai.status === 'ready') {
+      ai.disable();
+      setIndicators((cur) => cur.filter((id) => !aiIndicators.includes(id)));
+      setAiIndicators([]);
+      return;
+    }
+    const overlay = await ai.enable();
+    if (!overlay) return;
+    const added = overlay.indicators.filter((id) => !indicators.includes(id));
+    setAiIndicators(added);
+    setIndicators((cur) => [...cur, ...added.filter((id) => !cur.includes(id))]);
+  }, [ai, aiIndicators, indicators]);
+
   const toggleIndicator = useCallback((id: IndicatorId) => {
     setIndicators((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   }, []);
@@ -172,6 +193,15 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
           onParams={changeParams}
         />
         <DrawingsMenu drawings={drawings} onRemove={removeDrawing} onClear={clearDrawings} />
+        <button
+          type="button"
+          className={`${styles.topBtn} ${ai.status === 'ready' ? styles.topBtnActive : ''}`}
+          aria-pressed={ai.status === 'ready'}
+          disabled={ai.status === 'loading'}
+          onClick={toggleAi}
+        >
+          ✨ {ai.status === 'loading' ? 'Drawing…' : 'AI Auto-Chart'}
+        </button>
         {onAlert ? (
           <button type="button" className={styles.topBtn} onClick={onAlert}>
             <BellIcon />
@@ -184,6 +214,35 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
           </Link>
         )}
       </div>
+
+      {(ai.status === 'error' || (ai.status === 'ready' && ai.mode === 'unrestricted')) && (
+        <div className={styles.aiBar} role="status">
+          {ai.status === 'error' ? (
+            <span className={styles.aiBarError}>{ai.error}</span>
+          ) : (
+            ai.overlay &&
+            (ai.overlay.setup ? (
+              <>
+                <span>Unrestricted · local only</span>
+                <span className={styles.aiBarStrong}>
+                  {ai.overlay.setup.direction === 'long' ? 'Long' : 'Short'} setup: Entry ₹
+                  {fmt(ai.overlay.setup.entry)} | Stop ₹{fmt(ai.overlay.setup.stop)} | Target ₹
+                  {fmt(ai.overlay.setup.target)} (1 : {ai.overlay.setup.riskReward})
+                </span>
+                <span>
+                  AI opinion from public data, not licensed investment advice. You make the
+                  decision.
+                </span>
+              </>
+            ) : (
+              <span>
+                Unrestricted · local only: no clear entry, stop and target for this chart right now.
+                Levels are still shown. Turn Auto-Chart off and on to try again.
+              </span>
+            ))
+          )}
+        </div>
+      )}
 
       <div className={styles.body}>
         <DrawingToolbar
@@ -248,6 +307,9 @@ export function ProChart({ symbol, bars, alertHref, onAlert, onRangeChange }: Pr
                 onHover={setHover}
                 onFailure={setFailure}
               />
+              {ai.status === 'ready' && ai.overlay && (
+                <AiOverlay handle={handle} bars={bars} overlay={ai.overlay} />
+              )}
               <DrawingsOverlay
                 key={tool}
                 handle={handle}

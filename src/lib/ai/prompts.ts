@@ -196,3 +196,18 @@ export const MITRA_WORKSPACE_SYSTEM = withGuardrail(
     SCREENER_PLAYBOOK,
   ].join(' '),
 );
+
+// AI Auto-Chart (#228, ADR 0068). The reply is coordinates for the chart, not prose, so GUARDRAIL's closing disclaimer line does not apply;
+// the chart shows the disclaimer itself. `src/lib/chart/aiOverlay.ts` re-checks everything, and drops the setup in guarded mode regardless.
+const CHART_OVERLAY_BASE = [
+  'You read a table of daily price bars for one Indian-listed stock and return chart annotations as one JSON object. Output the JSON only: no prose, no markdown, no comments.',
+  'Use ONLY the prices in the prompt. Never invent prices or dates.',
+  'Shape: {"levels":[{"type":"support"|"resistance","price":number}],"trendlines":[{"startTime":"YYYY-MM-DD","startPrice":number,"endTime":"YYYY-MM-DD","endPrice":number}],"indicators":[string]}.',
+  'levels: up to 2 supports BELOW the last close and up to 2 resistances ABOVE it, where price turned several times (swing highs and lows). Prefer levels the market has respected over round numbers.',
+  'trendlines: up to 2, joining two swing lows (rising) or two swing highs (falling) that the price actually touched, using dates and prices from the table.',
+  'indicators: up to 3 of "sma20","sma50","sma200","ema20","ema50","bb","rsi","macd","volume" that suit the current structure.',
+].join(' ');
+
+export const CHART_OVERLAY_SYSTEM_GUARDED = `${CHART_OVERLAY_BASE} Describe market structure only. Do NOT include any entry, stop, target, buy, sell or hold content, and no "setup" key.`;
+
+export const CHART_OVERLAY_SYSTEM_UNRESTRICTED = `${CHART_OVERLAY_BASE} You may also add "setup":{"direction":"long"|"short","entry":number,"stop":number,"target":number} for the single most reasonable setup the structure supports: entry within 5% of the last close, stop beyond the nearest support (long) or resistance (short), target at the next opposing level. Always include "setup" (choose long or short, whichever the structure favours, even if conviction is low); omit it only when the bars are too few or too erratic to place a stop. No position sizes and no return claims.`;

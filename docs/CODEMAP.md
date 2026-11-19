@@ -66,7 +66,7 @@ A new page must be added to `src/lib/routes.ts` **and** `src/proxy.ts`.
 | `alerts`, `alerts/[id]` | alert CRUD |
 | `funds`, `funds/facets`, `funds/[code]` (+ `nav`, `peers`) | mutual funds (ADR 0067) |
 | `holdings`, `holdings/[id]` | portfolio holdings |
-| `insights/*` | one-shot AI briefs: ipo, market, news, portfolio, stock, stock-brief |
+| `insights/*` | one-shot AI briefs: ipo, market, news, portfolio, stock, stock-brief, chart-overlay (Auto-Chart) |
 | `markets/overview`, `news`, `search`, `stock/[ticker]` (+ `prices`) | market data |
 | `mitra/*`, `mitra-activity` | Mitra chat: conversations, messages, files, context |
 | `mcp` | MCP server endpoint |
@@ -158,7 +158,7 @@ One folder per feature, each with `*.module.css`; shared pieces in `common/`.
 | --- | --- | --- | --- | --- |
 | Dashboard home | `(app)/dashboard` | `markets/overview`, `news` | `lib/dashboard`, `lib/markets` | `components/dashboard-charts`, `appshell` |
 | Portfolio + import | `(app)/portfolio` | `holdings`, `portfolio-import/*` | `lib/holdings.ts`, `lib/portfolio*` | `components/portfolio` |
-| Stock page / brief | `(app)/stock/[ticker]` | `stock/[ticker]`, `insights/stock-brief` | `lib/stock`, `lib/ai/stockBrief.ts` | `components/stock`, `pro-chart` |
+| Stock page / brief | `(app)/stock/[ticker]` | `stock/[ticker]`, `insights/stock-brief` | `lib/stock`, `lib/ai/stockBrief.ts`, `lib/chart/aiOverlay.ts` | `components/stock`, `pro-chart` |
 | Screener | `(app)/screener` | `screener/*`, cron `refresh-screener-quotes` | `lib/screener` | `components/screener` |
 | Mutual funds | `(app)/funds`, `(app)/funds/[code]` | `funds/*`; data service `funds`; job `refresh-funds` | `lib/funds` | `components/funds` |
 | IPO tracker | `(app)/ipos` | data service `ipos` | `lib/dashboard/ipo*` | `components/ipos` |
