@@ -55,7 +55,7 @@ export function AiRunsMenu({
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
-        title="Saved Auto-Charts"
+        title="Saved Auto-Charts: show, compare or delete earlier ones"
         onClick={() => setOpen((o) => !o)}
       >
         <span className={styles.btnIcon} aria-hidden="true">

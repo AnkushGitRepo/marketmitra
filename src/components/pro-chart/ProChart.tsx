@@ -73,6 +73,33 @@ interface ProChartProps {
   onRangeChange?: (range: RangeKey) => void;
 }
 
+/** Tooltips for the toolbar and the bottom bar. */
+const TIMEFRAME_TITLES: Record<Timeframe, string> = {
+  '1m': '1 minute candles',
+  '5m': '5 minute candles',
+  '15m': '15 minute candles',
+  '30m': '30 minute candles',
+  '1h': '1 hour candles',
+  '1d': 'Daily candles',
+  '1w': 'Weekly candles',
+  '1mo': 'Monthly candles',
+};
+const RANGE_TITLES: Record<RangeKey, string> = {
+  '1M': 'Show the last month',
+  '3M': 'Show the last 3 months',
+  '6M': 'Show the last 6 months',
+  YTD: 'Show since 1 January',
+  '1Y': 'Show the last year',
+  '5Y': 'Show the last 5 years',
+  ALL: 'Show all available history',
+};
+const INTRADAY_RANGE_TITLES: Record<IntradayRange, string> = {
+  '1D': 'Show the last trading day',
+  '5D': 'Show the last 5 trading days',
+  '1M': 'Show the last 21 trading days (about a month)',
+  ALL: 'Show all loaded candles',
+};
+
 const WIDE_DEFAULT_RANGE: Partial<Record<Timeframe, RangeKey>> = { '1w': '5Y', '1mo': 'ALL' };
 
 const RANGE_LABELS: Record<RangeKey, string> = {
@@ -432,6 +459,7 @@ export function ProChart({
               key={t.id}
               type="button"
               aria-pressed={timeframe === t.id}
+              title={TIMEFRAME_TITLES[t.id]}
               className={`${styles.segBtn} ${timeframe === t.id ? styles.segBtnActive : ''}`}
               onClick={() => pickTimeframe(t.id)}
             >
@@ -442,11 +470,12 @@ export function ProChart({
         <select
           className={`${styles.pickSelect} ${styles.tfSelect}`}
           aria-label="Timeframe"
+          title="Candle size"
           value={timeframe}
           onChange={(e) => pickTimeframe(e.target.value as Timeframe)}
         >
           {TIMEFRAMES.map((t) => (
-            <option key={t.id} value={t.id}>
+            <option key={t.id} value={t.id} title={TIMEFRAME_TITLES[t.id]}>
               {t.label}
             </option>
           ))}
@@ -460,6 +489,7 @@ export function ProChart({
         <select
           className={styles.pickSelect}
           aria-label="Chart type"
+          title="Chart type: candles or a line"
           value={kind}
           onChange={(e) => setKind(e.target.value as ChartKind)}
         >
@@ -705,7 +735,11 @@ export function ProChart({
                   type="button"
                   aria-pressed={shownIntradayRange === r}
                   disabled={!available}
-                  title={available ? undefined : 'Not enough history at this timeframe'}
+                  title={
+                    available
+                      ? INTRADAY_RANGE_TITLES[r]
+                      : `${INTRADAY_RANGE_TITLES[r]} (not enough history at this timeframe)`
+                  }
                   className={`${styles.rangeBtn} ${shownIntradayRange === r ? styles.rangeBtnActive : ''}`}
                   onClick={() => setIntradayRange(r)}
                 >
@@ -718,19 +752,24 @@ export function ProChart({
                 key={r}
                 type="button"
                 aria-pressed={shownRange === r}
+                title={RANGE_TITLES[r]}
                 className={`${styles.rangeBtn} ${shownRange === r ? styles.rangeBtnActive : ''}`}
                 onClick={() => pickRange(r)}
               >
                 {RANGE_LABELS[r]}
               </button>
             ))}
-        <span className={styles.footerNote}>
+        <span
+          className={styles.footerNote}
+          title="Candle size and the zone the times are in; prices are in rupees"
+        >
           {isIntraday(timeframe)
             ? `${timeframe} candles · IST · prices in ₹`
             : `${{ '1d': 'Daily', '1w': 'Weekly', '1mo': 'Monthly' }[timeframe as '1d' | '1w' | '1mo']} bars · prices in ₹`}
           {' · '}
           <a
             className={styles.creditLink}
+            title="Charts by TradingView Lightweight Charts"
             href="https://www.tradingview.com/"
             target="_blank"
             rel="noopener noreferrer"

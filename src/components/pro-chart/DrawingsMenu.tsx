@@ -72,7 +72,7 @@ export function DrawingsMenu({
         className={`${styles.topBtn} ${open ? styles.topBtnActive : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
-        title="Drawings on this chart"
+        title="Drawings: hide or remove what is on this chart"
         onClick={() => setOpen((o) => !o)}
       >
         <span className={styles.btnIcon} aria-hidden="true">
