@@ -18,7 +18,7 @@ const MAX_TEXT = { q: 80, category: 32, sub_category: 96, fund_house: 160 } as c
 
 export const NUMERIC_KEYS = [
   'min_ret_1y', 'min_ret_3y', 'min_ret_5y', 'max_expense_ratio',
-  'min_aum_cr', 'max_std_dev_3y', 'min_sharpe_3y',
+  'min_aum_cr', 'max_std_dev_3y', 'max_fall_3y', 'min_sharpe_3y',
 ] as const;
 export type NumericKey = (typeof NUMERIC_KEYS)[number];
 
@@ -30,6 +30,8 @@ export const NUMBER_BOUNDS: Readonly<Record<NumericKey, { readonly min: number; 
   max_expense_ratio: { min: 0, max: 10 },
   min_aum_cr: { min: 0, max: Number.MAX_SAFE_INTEGER },
   max_std_dev_3y: { min: 0, max: 500 },
+  /** Worst 3-year fall, as a positive percentage. */
+  max_fall_3y: { min: 0, max: 100 },
   min_sharpe_3y: { min: -20, max: 20 },
 };
 export const MAX_FUND_OFFSET = 100_000;
@@ -64,6 +66,7 @@ export interface FundFilters {
   max_expense_ratio?: number;
   min_aum_cr?: number;
   max_std_dev_3y?: number;
+  max_fall_3y?: number;
   min_sharpe_3y?: number;
   sort?: FundSortKey;
   order?: 'asc' | 'desc';

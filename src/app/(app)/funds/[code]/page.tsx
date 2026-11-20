@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DataUnavailable } from '@/components/common/DataUnavailable';
+import { CompareToggle } from '@/components/funds/CompareToggle';
 import { FundPeers } from '@/components/funds/FundPeers';
 import { FundChartPanel } from '@/components/funds/FundChartPanel';
 import { MetricsStrip } from '@/components/funds/MetricsStrip';
@@ -55,6 +56,7 @@ export default async function FundPage({ params }: FundPageProps) {
             <span className={styles.badge}>{fund.sub_category ?? fund.category}</span>
             {fund.sub_category && <span className={styles.badge}>{fund.category}</span>}
             <span className={styles.badge}>{fund.plan === 'direct' ? 'Direct' : 'Regular'} · {fund.option === 'growth' ? 'Growth' : fund.option === 'idcw' ? 'IDCW' : 'Other option'}</span>
+            <CompareToggle schemeCode={fund.scheme_code} name={fund.base_name} />
           </div>
         </div>
         <div className={styles.navBox}>

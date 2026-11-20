@@ -1,0 +1,56 @@
+.pageRoot {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 96px;
+}
+
+.back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+  text-decoration: none;
+}
+
+.back:hover,
+.back:focus-visible {
+  color: var(--app-ink);
+  text-decoration: underline;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.h1 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--app-ink);
+}
+
+.intro,
+.empty {
+  margin: 0;
+  max-width: 80ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--app-text-muted);
+}
+
+.notice {
+  margin: 8px 0 0;
+  max-width: 80ch;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--app-text-faint);
+}

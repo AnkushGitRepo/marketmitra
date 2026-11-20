@@ -38,9 +38,53 @@
   text-align: right;
 }
 
-.fundCol {
+.pickCol {
   position: sticky;
   left: 0;
+  width: 44px;
+  min-width: 44px;
+  padding-left: 12px;
+  padding-right: 4px;
+  text-align: center;
+  background: var(--color-surface);
+}
+
+thead .pickCol {
+  z-index: 20;
+}
+
+tbody .pickCol {
+  z-index: 5;
+}
+
+.pickBox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--app-ink);
+  cursor: pointer;
+}
+
+.pickBox[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* The sticky cells have their own background, so the tint goes on every cell of the row. */
+.pickedRow td {
+  background: var(--app-border-softer);
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fundCol {
+  position: sticky;
+  left: 44px;
   text-align: left;
   background: var(--color-surface);
   min-width: 260px;
