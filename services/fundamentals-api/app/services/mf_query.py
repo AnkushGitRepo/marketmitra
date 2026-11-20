@@ -11,7 +11,7 @@ from sqlalchemy import Select, asc, desc, func, not_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import MfFactsheetORM, MfMetricsORM, MfNavORM, MfSchemeORM
-from app.services.mf_peer_group import peer_group
+from app.services.mf_peer_group import is_thematic_sub_category, peer_group
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
@@ -206,22 +206,42 @@ async def get_nav_history(session: AsyncSession, scheme_code: int, range_key: st
     return [{"date": d, "nav": float(n)} for d, n in rows]
 
 
+async def _same_family_sub_categories(session: AsyncSession, me: MfSchemeORM) -> list[str]:
+    """Sub-categories that are compared together with `me`'s: just its own, except the sector and
+    theme ones, which SEBI spreads over several names for the same kind of fund."""
+    own = me.sub_category or ""
+    if not is_thematic_sub_category(own):
+        return [own]
+    rows = await session.scalars(
+        select(MfSchemeORM.sub_category)
+        .where(MfSchemeORM.category == me.category, MfSchemeORM.sub_category.is_not(None))
+        .distinct()
+    )
+    return sorted({sub for sub in rows if is_thematic_sub_category(sub)} | {own})
+
+
 async def get_peers(session: AsyncSession, scheme_code: int, limit: int = 8) -> list[dict]:
     me = await session.get(MfSchemeORM, scheme_code)
     if me is None or me.sub_category is None:
         return []
     group = peer_group(me.name, me.sub_category)
-    # The group can be narrower than the sub-category (SEBI's "Thematic Fund" mixes a Taiwan
-    # feeder with a defence fund), so fetch the whole sub-category and narrow it here.
-    f = FundFilters(
-        category=me.category, sub_category=me.sub_category, plan=me.plan, option=me.option,
-        sort="ret_3y", limit=MAX_LIMIT,
-    )
-    items = (await list_funds(session, f, with_total=False))["items"]
+    # The group can be narrower than the sub-category (SEBI's sector and theme sub-categories mix a
+    # Taiwan feeder with a defence fund), so fetch the whole family and narrow it here. Each sub-category
+    # is read up to MAX_LIMIT funds, best 3-year return first, before the theme filter: the largest today
+    # holds 170 Direct-Growth funds. Past MAX_LIMIT a theme's weakest funds would drop out and bias the peers.
+    candidates: list[dict] = []
+    for sub_category in await _same_family_sub_categories(session, me):
+        f = FundFilters(
+            category=me.category, sub_category=sub_category, plan=me.plan, option=me.option,
+            sort="ret_3y", limit=MAX_LIMIT,
+        )
+        candidates += (await list_funds(session, f, with_total=False))["items"]
     same_group = [
-        i for i in items
+        i for i in candidates
         if i["scheme_code"] != scheme_code and peer_group(i["name"], i["sub_category"]) == group
     ]
+    # Best 3-year return first across the pooled sub-categories; a fund with no figure goes last.
+    same_group.sort(key=lambda i: (i["ret_3y"] is None, -(i["ret_3y"] or 0.0)))
     return same_group[:limit]
 
 

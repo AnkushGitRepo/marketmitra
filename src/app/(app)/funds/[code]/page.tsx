@@ -6,7 +6,14 @@ import { CompareToggle } from '@/components/funds/CompareToggle';
 import { FundPeers } from '@/components/funds/FundPeers';
 import { FundChartPanel } from '@/components/funds/FundChartPanel';
 import { MetricsStrip } from '@/components/funds/MetricsStrip';
+import { FundXRay } from '@/components/funds/FundXRay';
+import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
+import { getCurrentUserId } from '@/lib/currentUserId';
 import { getFund, getFundFacets, getFundNav, getFundPeers } from '@/lib/funds/api';
+import { buildXray } from '@/lib/funds/xray';
+import { currentWriteUp } from '@/lib/funds/xrayCache';
+import { loadHoldings, xrayInputHash } from '@/lib/funds/xrayServer';
+import { getCachedInsight } from '@/lib/insights';
 import { formatDate, formatNav } from '@/lib/funds/format';
 import { parseSchemeCode } from '@/lib/funds/types';
 import styles from './page.module.css';
@@ -27,7 +34,16 @@ export default async function FundPage({ params }: FundPageProps) {
   const code = parseSchemeCode((await params).code);
   if (code === null) notFound();
 
-  const [fund, navSeries, peerList] = await Promise.all([getFund(code), getFundNav(code, '1y'), getFundPeers(code)]);
+  const userId = await getCurrentUserId();
+  const [fund, navSeries, peerList, holdings, hasKey, cachedXray] = await Promise.all([
+    getFund(code),
+    getFundNav(code, '1y'),
+    getFundPeers(code),
+    // The X-Ray reads the signed-in user's holdings; if they are slow or cannot be read, the rest of the page still renders.
+    userId ? loadHoldings(userId).catch(() => null) : Promise.resolve(null),
+    userId ? resolveHasAiKey(getUserAiConfig(userId)) : Promise.resolve(false),
+    userId ? getCachedInsight('fund_xray', String(code), userId).catch(() => null) : Promise.resolve(null),
+  ]);
   // A failed side request just leaves that block empty; the fund itself decides whether the page works.
   const nav = navSeries ?? [];
   const peers = peerList ?? [];
@@ -43,6 +59,10 @@ export default async function FundPage({ params }: FundPageProps) {
       </div>
     );
   }
+
+  // The Mitra write-up is shown only while it was made from these same findings.
+  const xray = userId ? buildXray(fund, peers, holdings) : null;
+  const writeUp = xray ? currentWriteUp(cachedXray?.content, xrayInputHash(xray.items)) : null;
 
   return (
     <div className={styles.pageRoot}>
@@ -72,7 +92,12 @@ export default async function FundPage({ params }: FundPageProps) {
         </p>
       )}
 
-      <FundChartPanel schemeCode={fund.scheme_code} initialSeries={nav} />
+      <div className={userId ? styles.top : undefined}>
+        <FundChartPanel schemeCode={fund.scheme_code} initialSeries={nav} />
+        {xray && (
+          <FundXRay schemeCode={fund.scheme_code} fundName={fund.base_name} items={xray.items} initial={writeUp} hasKey={hasKey} />
+        )}
+      </div>
       <MetricsStrip fund={fund} />
       <FundPeers peers={peers} group={fund.peer_group} currentCode={fund.scheme_code} />
 

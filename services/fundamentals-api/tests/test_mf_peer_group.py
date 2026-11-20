@@ -35,6 +35,31 @@ def test_thematic_funds_group_by_theme(name: str, expected: str):
     assert peer_group(name, THEMATIC) == expected
 
 
+@pytest.mark.parametrize("sub_category", ["Thematic Fund", "Sectoral Fund", "Sectoral/ Thematic", "Sectoral/Thematic"])
+def test_every_sectoral_and_thematic_sub_category_is_refined_by_theme(sub_category: str):
+    assert peer_group("HDFC Defence Fund", sub_category) == "Defence"
+    assert peer_group("quant Healthcare Fund", sub_category) == "Healthcare"
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("quant Teck Fund", "Technology"),
+        ("quant Quantamental Fund", "Quant and factor"),
+        ("quant PSU Fund", "PSU"),
+        ("WhiteOak Capital Digital Bharat Fund", "Technology"),
+        ("Nippon India Power & Infra Fund", "Infrastructure"),
+        ("Nippon India Pharma Fund", "Healthcare"),
+    ],
+)
+def test_sector_fund_names_map_to_their_theme(name: str, expected: str):
+    assert peer_group(name, "Sectoral/ Thematic") == expected
+
+
+def test_unrelated_sub_categories_that_merely_mention_sector_are_untouched():
+    assert peer_group("Some Fund", "Large Cap Fund") == "Large Cap Fund"
+
+
 def test_taiwan_and_defence_are_never_peers():
     assert peer_group("Nippon India Taiwan Equity Fund", THEMATIC) != peer_group("HDFC Defence Fund", THEMATIC)
 
@@ -49,3 +74,32 @@ def test_other_sub_categories_keep_their_sebi_group():
 
 def test_no_sub_category_has_no_group():
     assert peer_group("Some Fund", None) is None
+
+
+def test_is_thematic_sub_category_matches_every_spelling_only():
+    from app.services.mf_peer_group import is_thematic_sub_category
+
+    assert all(is_thematic_sub_category(s) for s in ("Thematic Fund", "Sectoral Fund", "Sectoral/ Thematic"))
+    assert not any(is_thematic_sub_category(s) for s in ("Large Cap Fund", "Flexi Cap Fund", "Index Funds", ""))
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("ICICI Prudential FMCG Fund", "Consumption"),
+        ("Baroda BNP Paribas Health and Wellness Fund", "Healthcare"),
+        ("TATA HOUSING OPPORTUNITIES FUND", "Housing"),
+        ("ICICI Prudential Commodities Fund", "Energy and resources"),
+        ("SBI COMMA FUND", "Energy and resources"),
+        ("Tata Ethical Fund", "ESG"),
+        ("SBI Automotive Opportunities Fund", "Manufacturing"),
+        ("Kotak Manufacture in India Fund", "Manufacturing"),
+        ("SBI Innovative Opportunities Fund", "Innovation"),
+        ("ICICI Prudential US Bluechip Equity Fund", "International"),
+        ("Franklin Asian Equity Fund", "International"),
+        ("Aditya Birla Sun Life Conglomerate Fund", "Conglomerate"),
+        ("Kotak Rural Opportunities Fund", "Rural"),
+    ],
+)
+def test_more_real_theme_names(name: str, expected: str):
+    assert peer_group(name, "Sectoral/ Thematic") == expected

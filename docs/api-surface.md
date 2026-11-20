@@ -106,6 +106,12 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 ### `GET /api/funds/compare`
 - `?codes=122639,149329[,...]` — two or three different AMFI scheme codes. Returns `{ funds, best }`: each fund's full detail (as `GET /api/funds/{code}`), in the order asked, and `best`, the scheme code that wins each row (`ret_1y`, `ret_3y`, `ret_5y`, `sip_xirr_3y`, `sip_xirr_5y`, `sharpe_3y`, `sortino_3y`, `std_dev_3y`, `max_drawdown_3y`, `expense_ratio`). Highest wins, except volatility and expense ratio (lowest wins); a tie, or fewer than two funds with a figure, gives `null`. `400 invalid_codes` unless two or three valid, different codes are given, `404` naming an unknown code, `503` data service down.
 
+### `GET /api/funds/{code}/xray`  _(auth)_
+- The Mitra Fund X-Ray findings for the signed-in user, in the standard envelope: `{ success, data: { schemeCode, items: [{ key: "role" | "overlap" | "cost", tone: "positive" | "neutral" | "warning", text }], theme, sectors, portfolioPct, peerCount } }`. `role`: the kind of fund and its 3-year volatility against the peer median. `overlap`: the share of the portfolio already in the sectors the fund's theme invests in (`portfolioPct`, null when the theme is tied to no sector or nothing is priced); **sector level only**: a fund's own holdings are not loaded, so stock-level overlap is never claimed (the card's footer states the scope). A fund tied to no sector is described by what it is: an international fund by its overseas and rupee exposure, a diversified fund as holding across sectors. `cost`: expense ratio and worst 3-year fall against the peer medians (a median needs at least three peers with a figure). Computed from stored figures: no AI, no AI key. `400` bad code, `401`, `404`, `503`.
+
+### `POST /api/insights/fund-xray`  _(auth, own AI key)_
+- Body `{ code, force? }`. Mitra words the three findings above in plain language; it is given only those findings, so it cannot invent a figure or a stock-level overlap, and it uses the guarded prompt in every mode. `{ success, data: { content, model, generatedAt }, meta: { cached } }`, `content` being JSON `{ items: [{ key, tone, text }] }`; cached 12 hours per user and fund. `400 no_ai_key`, `401`, `404`, `422`, `429`, `502`, `503`.
+
 ### `GET /api/funds/{code}/nav`
 - `?range=1m|6m|1y|3y|5y|10y|max` (default `1y`). Stored daily NAV as published, oldest first: `[{ date, nav }]`. A unit split appears as a step; returns and ratios are adjusted for it, this series is not.
 
