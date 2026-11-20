@@ -66,7 +66,7 @@ def test_get_fund_404(client, monkeypatch):
 
 def test_get_fund_detail_shape(client, monkeypatch):
     async def fake(session, code):
-        return {**SUMMARY, "scheme_type": "open_ended", "isin_growth": "INF1", "isin_reinvest": None,
+        return {**SUMMARY, "scheme_type": "open_ended", "isin_growth": "INF1", "isin_reinvest": None, "peer_group": "Flexi Cap Fund",
                 "is_active": True, "metrics_as_of": date(2026, 11, 17), "factsheet": None}
 
     monkeypatch.setattr(mf_query, "get_fund", fake)

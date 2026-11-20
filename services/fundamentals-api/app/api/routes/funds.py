@@ -79,6 +79,7 @@ class FundDetailOut(FundSummary):
     scheme_type: str
     isin_growth: str | None
     isin_reinvest: str | None
+    peer_group: str | None
     is_active: bool
     metrics_as_of: date | None
     factsheet: FactsheetOut | None
