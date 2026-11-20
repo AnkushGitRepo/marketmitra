@@ -27,17 +27,21 @@ export function downsample(series: readonly NavPoint[], max: number): NavPoint[]
   return Array.from({ length: max }, (_, i) => series[Math.round(i * step)] as NavPoint);
 }
 
-export function buildChart(series: readonly NavPoint[], width: number, height: number, pad: number): Chart | null {
+/**
+ * `pad` is the margin on the other three sides; `padLeft` (default `pad`) is a wider left margin for the axis
+ * labels, so a label sits beside the line and never on it.
+ */
+export function buildChart(series: readonly NavPoint[], width: number, height: number, pad: number, padLeft: number = pad): Chart | null {
   if (series.length < 2) return null;
   const navs = series.map((p) => p.nav);
   const min = Math.min(...navs);
   const max = Math.max(...navs);
   const span = max - min;
-  const innerW = width - pad * 2;
+  const innerW = width - padLeft - pad;
   const innerH = height - pad * 2;
 
   const points: ChartPoint[] = series.map((p, index) => ({
-    x: pad + (index / (series.length - 1)) * innerW,
+    x: padLeft + (index / (series.length - 1)) * innerW,
     // A flat series sits mid-chart; otherwise the high is at the top.
     y: span === 0 ? height / 2 : pad + (1 - (p.nav - min) / span) * innerH,
     index,

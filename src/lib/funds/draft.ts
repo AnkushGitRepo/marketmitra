@@ -55,6 +55,7 @@ export function filtersFromDraft(
   // Applied by a shared link or the API but not editable in the panel: carry them so an edit does not drop them silently.
   if (base.option) filters.option = base.option;
   if (base.min_aum_cr !== undefined) filters.min_aum_cr = base.min_aum_cr;
+  if (base.exclude_thematic !== undefined) filters.exclude_thematic = base.exclude_thematic;
 
   for (const key of TEXT_DRAFT_KEYS) {
     const value = draft[key].trim();

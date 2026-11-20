@@ -11,6 +11,8 @@ import styles from './SipSimulator.module.css';
 const WIDTH = 720;
 const HEIGHT = 280;
 const PAD = 24;
+/** The left margin holds the amount label beside the lines, so it never sits on them. */
+const PAD_LEFT = 104;
 
 const rupees = (n: number): string => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -39,7 +41,7 @@ export function SipSimulator({ schemeCode }: { readonly schemeCode: number }) {
   }, [schemeCode]);
 
   const result = useMemo(() => (series ? simulateSip(series, amount, years) : null), [series, amount, years]);
-  const chart = useMemo(() => (result ? buildSipChart(result.points, WIDTH, HEIGHT, PAD) : null), [result]);
+  const chart = useMemo(() => (result ? buildSipChart(result.points, WIDTH, HEIGHT, PAD, PAD_LEFT) : null), [result]);
 
   const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
     const box = svgRef.current?.getBoundingClientRect();
@@ -98,8 +100,8 @@ export function SipSimulator({ schemeCode }: { readonly schemeCode: number }) {
             onPointerMove={onPointerMove}
             onPointerLeave={() => setHover(null)}
           >
-            <text className={styles.axis} x={PAD} y={14}>{rupees(chart.max)}</text>
-            <text className={styles.axis} x={PAD} y={HEIGHT - 6}>{formatDate(result.points[0]?.date ?? null)}</text>
+            <text className={styles.axis} x={PAD_LEFT - 8} y={PAD + 4} textAnchor="end">{rupees(chart.max)}</text>
+            <text className={styles.axis} x={PAD_LEFT} y={HEIGHT - 6}>{formatDate(result.points[0]?.date ?? null)}</text>
             <text className={styles.axis} x={WIDTH - PAD} y={HEIGHT - 6} textAnchor="end">{formatDate(result.points[result.points.length - 1]?.date ?? null)}</text>
             <path className={styles.invested} d={chart.investedPath} />
             <path className={styles.value} d={chart.valuePath} />

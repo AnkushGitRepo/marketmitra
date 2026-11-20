@@ -39,4 +39,15 @@ describe('buildSipChart', () => {
     buildSipChart(points, 720, 280, 24);
     expect(JSON.stringify(points)).toBe(copy);
   });
+
+  it('starts the lines after a left gutter and ends at the right padding', () => {
+    const chart = buildSipChart(points, 720, 280, 24, 80);
+    expect(chart?.marks[0]?.x).toBe(80);
+    expect(chart?.marks[2]?.x).toBeCloseTo(720 - 24, 6);
+    expect(chart?.valuePath.startsWith('M80,')).toBe(true);
+  });
+
+  it('is unchanged when no gutter is given', () => {
+    expect(buildSipChart(points, 720, 280, 24)).toEqual(buildSipChart(points, 720, 280, 24, 24));
+  });
 });

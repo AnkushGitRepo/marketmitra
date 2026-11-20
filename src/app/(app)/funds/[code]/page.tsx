@@ -99,7 +99,7 @@ export default async function FundPage({ params }: FundPageProps) {
         )}
       </div>
       <MetricsStrip fund={fund} />
-      <FundPeers peers={peers} group={fund.peer_group} />
+      <FundPeers peers={peers} group={fund.peer_group} currentCode={fund.scheme_code} />
 
       <p className={styles.ids}>
         AMFI scheme code {fund.scheme_code}

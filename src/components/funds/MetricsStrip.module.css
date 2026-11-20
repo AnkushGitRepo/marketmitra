@@ -1,6 +1,6 @@
 .strip {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   background: var(--color-surface);
   border: 1px solid var(--app-border-soft);
   border-radius: var(--radius-xl);
@@ -9,25 +9,18 @@
   min-width: 0;
 }
 
-.group {
-  min-width: 0;
-}
-
-.title {
-  margin: 0 0 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--app-text-subtle);
-  font-weight: 500;
-}
-
-.tiles {
+/* Eight cells: four across, two rows. Two across on phones, four rows. */
+.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 0;
+}
+
+@media (max-width: 700px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .tile {
@@ -56,6 +49,43 @@
 }
 
 .down {
+  color: var(--app-loss);
+}
+
+/* The rest on one wrapping line of small text, so it never adds ragged rows of cards. */
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--app-border-softer);
+  font-size: 13px;
+}
+
+.moreItem {
+  display: inline-flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.moreItem dt {
+  color: var(--app-text-muted);
+}
+
+.moreItem dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+
+.moreItem dd.up {
+  color: var(--app-gain);
+}
+
+.moreItem dd.down {
   color: var(--app-loss);
 }
 

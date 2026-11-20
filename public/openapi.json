@@ -3320,6 +3320,15 @@
             }
           },
           {
+            "name": "exclude_thematic",
+            "in": "query",
+            "required": false,
+            "description": "`true` leaves out sector and thematic funds (SEBI's \"Thematic Fund\", \"Sectoral Fund\" and \"Sectoral/ Thematic\", whatever the spelling): the diversified view. `false` or absent shows everything. The Funds page opens with `true`, and ignores it while a name or sub-category is searched.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "min_sharpe_3y",
             "in": "query",
             "required": false,

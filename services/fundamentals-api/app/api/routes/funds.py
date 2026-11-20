@@ -117,6 +117,7 @@ async def list_funds(
     min_aum_cr: float | None = Query(default=None, ge=0),
     max_std_dev_3y: float | None = Query(default=None, ge=0, le=500),
     max_fall_3y: float | None = Query(default=None, ge=0, le=100),
+    exclude_thematic: bool = False,
     min_sharpe_3y: float | None = Query(default=None, ge=-20, le=20),
     sort: str = "ret_3y",
     order: Literal["asc", "desc"] = "desc",
@@ -130,7 +131,7 @@ async def list_funds(
         q=q, category=category, sub_category=sub_category, fund_house=fund_house,
         plan=plan, option=option, min_ret_1y=min_ret_1y, min_ret_3y=min_ret_3y,
         min_ret_5y=min_ret_5y, max_expense_ratio=max_expense_ratio, min_aum_cr=min_aum_cr,
-        max_std_dev_3y=max_std_dev_3y, max_fall_3y=max_fall_3y, min_sharpe_3y=min_sharpe_3y,
+        max_std_dev_3y=max_std_dev_3y, max_fall_3y=max_fall_3y, exclude_thematic=exclude_thematic, min_sharpe_3y=min_sharpe_3y,
         sort=sort, order=order, limit=limit, offset=offset,
     )
     return FundListOut(**await mf_query.list_funds(session, filters))

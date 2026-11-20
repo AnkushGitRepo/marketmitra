@@ -110,3 +110,36 @@ describe('worst-fall filter', () => {
     expect(built.ok).toBe(false);
   });
 });
+
+describe('diversified view and the draft', () => {
+  const base = { plan: 'direct', sort: 'sharpe_3y', order: 'desc', exclude_thematic: true } as const;
+
+  it('carries the flag over from the applied filters', () => {
+    expect(filtersFromDraft(draftFromFilters({}), base)).toEqual({ ok: true, filters: base });
+    expect(filtersFromDraft(draftFromFilters({}), { ...base, exclude_thematic: false })).toMatchObject({ ok: true, filters: { exclude_thematic: false } });
+  });
+
+  it('keeps it while a name is searched or a sub-category chosen: it is the reader\'s choice, remembered for when the search is cleared', () => {
+    const searched = filtersFromDraft({ ...draftFromFilters({}), q: 'healthcare' }, base);
+    expect(searched.ok && searched.filters.exclude_thematic).toBe(true);
+    const chosen = filtersFromDraft({ ...draftFromFilters({}), sub_category: 'Sectoral Fund' }, base);
+    expect(chosen.ok && chosen.filters.exclude_thematic).toBe(true);
+  });
+
+  it('is still there after the search is cleared again', () => {
+    const searched = filtersFromDraft({ ...draftFromFilters({}), q: 'axis' }, base);
+    expect(searched.ok).toBe(true);
+    if (!searched.ok) return;
+    const cleared = filtersFromDraft(draftFromFilters({}), searched.filters);
+    expect(cleared.ok && cleared.filters.exclude_thematic).toBe(true);
+  });
+
+  it('is part of "the same screen" when comparing filters', () => {
+    expect(canonicalQuery({ ...base, exclude_thematic: true })).not.toBe(canonicalQuery({ ...base, exclude_thematic: false }));
+  });
+
+  it('shows no chip for either state: it is the view, not a filter the user added', () => {
+    expect(describeFilters({ exclude_thematic: true })).toEqual([]);
+    expect(describeFilters({ exclude_thematic: false })).toEqual([]);
+  });
+});
