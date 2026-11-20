@@ -103,6 +103,12 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 ### `GET /api/funds/{code}`
 - One scheme (`code` = AMFI scheme code): `FundSummary` plus `{ scheme_type, isin_growth, isin_reinvest, peer_group, is_active, metrics_as_of, factsheet }`. `factsheet` is `null` until disclosed data is loaded, else `{ expense_ratio, aum_cr, exit_load, fund_manager, benchmark, launch_date, as_of, source }`. `400` for a non-integer or out-of-range code, `404` unknown, `503` data service down. Dormant schemes are returned (`is_active: false`).
 
+### `GET /api/funds/{code}/xray`  _(auth)_
+- The Mitra Fund X-Ray findings for the signed-in user, in the standard envelope: `{ success, data: { schemeCode, items: [{ key: "role" | "overlap" | "cost", tone: "positive" | "neutral" | "warning", text }], theme, sectors, portfolioPct, peerCount } }`. `role`: the kind of fund and its 3-year volatility against the peer median. `overlap`: the share of the portfolio already in the sectors the fund's theme invests in (`portfolioPct`, null when the theme is tied to no sector or nothing is priced); **sector level only**: a fund's own holdings are not loaded, so stock-level overlap is never claimed and the text says so. `cost`: expense ratio and worst 3-year fall against the peer medians (a median needs at least three peers with a figure). Computed from stored figures: no AI, no AI key. `400` bad code, `401`, `404`, `503`.
+
+### `POST /api/insights/fund-xray`  _(auth, own AI key)_
+- Body `{ code, force? }`. Mitra words the three findings above in plain language; it is given only those findings, so it cannot invent a figure or a stock-level overlap, and it uses the guarded prompt in every mode. `{ success, data: { content, model, generatedAt }, meta: { cached } }`, `content` being JSON `{ items: [{ key, tone, text }] }`; cached 12 hours per user and fund. `400 no_ai_key`, `401`, `404`, `422`, `429`, `502`, `503`.
+
 ### `GET /api/funds/{code}/nav`
 - `?range=1m|6m|1y|3y|5y|10y|max` (default `1y`). Stored daily NAV as published, oldest first: `[{ date, nav }]`. A unit split appears as a step; returns and ratios are adjusted for it, this series is not.
 

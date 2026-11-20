@@ -210,7 +210,9 @@ async def get_peers(session: AsyncSession, scheme_code: int, limit: int = 8) -> 
         return []
     group = peer_group(me.name, me.sub_category)
     # The group can be narrower than the sub-category (SEBI's sector and theme sub-categories mix a
-    # Taiwan feeder with a defence fund), so fetch the whole family and narrow it here.
+    # Taiwan feeder with a defence fund), so fetch the whole family and narrow it here. Each sub-category
+    # is read up to MAX_LIMIT funds, best 3-year return first, before the theme filter: the largest today
+    # holds 170 Direct-Growth funds. Past MAX_LIMIT a theme's weakest funds would drop out and bias the peers.
     candidates: list[dict] = []
     for sub_category in await _same_family_sub_categories(session, me):
         f = FundFilters(

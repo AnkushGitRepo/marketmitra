@@ -3539,6 +3539,53 @@
         }
       }
     },
+    "/api/funds/{code}/xray": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Mitra Fund X-Ray findings",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Three plain findings about one fund set against the caller's own portfolio and the fund's peers: `role` (kind of fund and 3-year volatility against the peer median), `overlap` (the portfolio weight already in the sectors the fund's theme invests in; sector level only, because a fund's own holdings are not loaded, so stock-level overlap is never claimed) and `cost` (expense ratio and worst 3-year fall against the peer medians). Computed from stored figures, with no AI and no AI key. Each item has a `tone` (positive / neutral / warning).",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "AMFI scheme code (positive integer).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { schemeCode, items: [{ key: 'role'|'overlap'|'cost', tone, text }], theme, sectors, portfolioPct | null, peerCount } }"
+          },
+          "400": {
+            "description": "Invalid scheme code."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No fund with that code."
+          },
+          "503": {
+            "description": "The data service did not answer."
+          }
+        }
+      }
+    },
     "/api/advisor/acknowledge": {
       "get": {
         "tags": [
@@ -5739,6 +5786,75 @@
           },
           "429": {
             "description": "Rate limited."
+          }
+        }
+      }
+    },
+    "/api/insights/fund-xray": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Write up a fund's X-Ray with Mitra",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Mitra words the three Fund X-Ray findings (role, portfolio fit, cost and downside) in plain language, with the caller's own AI key (BYOK; hosted never uses the operator's key). It is given only the findings computed by `GET /api/funds/{code}/xray`, so it cannot invent figures or a stock-level overlap, and it stays on the guarded prompt (no buy / sell / hold, no verdict on the fund) in every mode. Cached for 12 hours per user and fund. Body `{ code, force? }`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "force": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {
+                "code": 119783
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ success, data: { content, model, generatedAt }, meta: { cached } } where `content` is JSON `{ items: [{ key, tone, text }] }`."
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No fund with that code."
+          },
+          "422": {
+            "description": "Invalid body."
+          },
+          "429": {
+            "description": "Rate limited."
+          },
+          "502": {
+            "description": "The model call failed or its answer could not be read."
+          },
+          "503": {
+            "description": "The data service did not answer."
           }
         }
       }

@@ -1,7 +1,7 @@
 // What each Mitra widget returns (#125, ADR 0057): a few fixed, labelled items. The key set and the wording of the labels live here
 // so the prompt, the parser and the UI agree.
 
-export type BriefSurface = 'dashboard' | 'market' | 'news' | 'ipo';
+export type BriefSurface = 'dashboard' | 'market' | 'news' | 'ipo' | 'fund';
 export type Tone = 'positive' | 'neutral' | 'warning';
 
 export interface BriefItemSpec {
@@ -68,9 +68,22 @@ export const IPO_SPEC: BriefSpec = {
   ],
 };
 
+// The Mitra Fund X-Ray on a fund page (#274): the same three findings the page computes, written up in plain words.
+export const FUND_XRAY_SPEC: BriefSpec = {
+  surface: 'fund',
+  minItems: 3,
+  toneLabels: DEFAULT_TONES,
+  items: [
+    { key: 'role', label: 'Role', aliases: ['role', 'profile', 'character', 'type'] },
+    { key: 'overlap', label: 'Portfolio fit', aliases: ['overlap', 'fit', 'concentration', 'sector', 'portfolio'] },
+    { key: 'cost', label: 'Cost & downside', aliases: ['cost', 'downside', 'expense', 'drawdown', 'fall'] },
+  ],
+};
+
 export const BRIEF_SPECS: Readonly<Record<BriefSurface, BriefSpec>> = {
   dashboard: DASHBOARD_SPEC,
   market: MARKET_SPEC,
   news: NEWS_SPEC,
   ipo: IPO_SPEC,
+  fund: FUND_XRAY_SPEC,
 };
