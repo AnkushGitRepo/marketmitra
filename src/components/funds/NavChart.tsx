@@ -16,6 +16,8 @@ const WIDTH = 720;
 const HEIGHT = 280;
 const PAD_X = 24;
 const PAD_Y = 24;
+/** The left margin holds the price labels beside the line, so a label never sits on the curve. */
+const PAD_LEFT = 100;
 const MAX_POINTS = 360;
 
 const RANGE_LABEL: Record<NavRange, string> = { '1m': '1M', '6m': '6M', '1y': '1Y', '3y': '3Y', '5y': '5Y', '10y': '10Y', max: 'Max' };
@@ -29,7 +31,7 @@ export function NavChart({ schemeCode, initialRange, initialSeries }: NavChartPr
   const requestId = useRef(0);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const chart = useMemo(() => buildChart(downsample(series, MAX_POINTS), WIDTH, HEIGHT, PAD_X), [series]);
+  const chart = useMemo(() => buildChart(downsample(series, MAX_POINTS), WIDTH, HEIGHT, PAD_X, PAD_LEFT), [series]);
 
   const selectRange = useCallback(
     async (next: NavRange) => {
@@ -106,9 +108,9 @@ export function NavChart({ schemeCode, initialRange, initialSeries }: NavChartPr
             onPointerMove={onPointerMove}
             onPointerLeave={() => setHover(null)}
           >
-            <text className={styles.axis} x={PAD_X} y={14}>{formatNav(chart.max)}</text>
-            <text className={styles.axis} x={PAD_X} y={HEIGHT - PAD_Y - 4}>{formatNav(chart.min)}</text>
-            <text className={styles.axis} x={PAD_X} y={HEIGHT - 6}>{formatDate(first.date)}</text>
+            <text className={styles.axis} x={PAD_LEFT - 8} y={PAD_Y + 4} textAnchor="end">{formatNav(chart.max)}</text>
+            <text className={styles.axis} x={PAD_LEFT - 8} y={HEIGHT - PAD_Y + 4} textAnchor="end">{formatNav(chart.min)}</text>
+            <text className={styles.axis} x={PAD_LEFT} y={HEIGHT - 6}>{formatDate(first.date)}</text>
             <text className={styles.axis} x={WIDTH - PAD_X} y={HEIGHT - 6} textAnchor="end">{formatDate(last.date)}</text>
             <path className={`${styles.line} ${tone}`} d={chart.path} />
             {hover && (

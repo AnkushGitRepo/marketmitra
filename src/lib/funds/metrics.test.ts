@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calmarRatio, metricTiles } from './metrics';
+import { calmarRatio, metricGrid, PRIMARY_LABELS } from './metrics';
 import type { FundDetail } from './types';
 
 const base: FundDetail = {
@@ -12,53 +12,72 @@ const base: FundDetail = {
   metrics_as_of: null, factsheet: null,
 };
 
-const labels = (fund: FundDetail): string[] => metricTiles(fund).flatMap((g) => g.tiles.map((t) => t.label));
+const full: FundDetail = {
+  ...base, ret_1y: 12.3456, ret_3y: 21, ret_5y: 18, ret_10y: 15, sip_xirr_3y: 9, sip_xirr_5y: 11, std_dev_3y: 14,
+  sharpe_3y: 1.2, sortino_3y: 1.8, max_drawdown_3y: -14, expense_ratio: 0.68,
+};
 
-describe('metricTiles', () => {
-  it('shows nothing for a fund with no figures: no empty groups, no dash rows', () => {
-    expect(metricTiles(base)).toEqual([]);
+const labels = (tiles: readonly { label: string }[]): string[] => tiles.map((t) => t.label);
+
+describe('metricGrid: the eight headline cells', () => {
+  it('is one grid of up to eight cells in a fixed order, so the rows are balanced', () => {
+    expect(labels(metricGrid(full).primary)).toEqual([...PRIMARY_LABELS]);
+    expect(PRIMARY_LABELS).toHaveLength(8);
   });
 
-  it('shows only the figures that exist', () => {
-    const fund = { ...base, ret_1y: 12.3456, sharpe_3y: 0.9, expense_ratio: 0.68 };
-    expect(labels(fund)).toEqual(['1 year', 'Sharpe', 'Expense ratio']);
+  it('reads 1Y, 3Y CAGR, 3Y SIP and cost on the first row, and the risk ratios on the second', () => {
+    expect([...PRIMARY_LABELS]).toEqual(['1Y return', '3Y CAGR', '3Y SIP', 'Expense ratio', 'Sharpe', 'Sortino', 'Volatility', 'Max drawdown']);
+  });
+
+  it('shows nothing for a fund with no figures: no empty cells, no dashes', () => {
+    expect(metricGrid(base)).toEqual({ primary: [], more: [] });
+  });
+
+  it('leaves out a figure we do not have, and keeps the order of the rest', () => {
+    const grid = metricGrid({ ...full, sortino_3y: null, expense_ratio: null });
+    expect(labels(grid.primary)).toEqual(['1Y return', '3Y CAGR', '3Y SIP', 'Sharpe', 'Volatility', 'Max drawdown']);
+  });
+
+  it('formats percentages and tones them, and keeps ratios plain', () => {
+    const tiles = metricGrid({ ...full, ret_3y: -4 }).primary;
+    expect(tiles.find((t) => t.label === '1Y return')).toMatchObject({ value: '+12.35%', tone: 'up' });
+    expect(tiles.find((t) => t.label === '3Y CAGR')).toMatchObject({ value: '-4.00%', tone: 'down' });
+    expect(tiles.find((t) => t.label === 'Sharpe')).toMatchObject({ value: '1.20' });
+    expect(tiles.find((t) => t.label === 'Volatility')?.value).toBe('14.0%');
   });
 
   it('never renders a dash or an empty value', () => {
-    const fund = { ...base, ret_1y: 5, ret_3y: 8, std_dev_3y: 12, max_drawdown_3y: -20, sip_xirr_3y: 9 };
-    for (const tile of metricTiles(fund).flatMap((g) => g.tiles)) {
+    const grid = metricGrid(full);
+    for (const tile of [...grid.primary, ...grid.more]) {
       expect(tile.value).not.toBe('—');
       expect(tile.value.trim()).not.toBe('');
     }
   });
+});
 
-  it('formats percentages, tones them, and keeps Sharpe plain', () => {
-    const tiles = metricTiles({ ...base, ret_1y: 12.3456, ret_3y: -4, sharpe_3y: 1.234 }).flatMap((g) => g.tiles);
-    expect(tiles.find((t) => t.label === '1 year')).toMatchObject({ value: '+12.35%', tone: 'up' });
-    expect(tiles.find((t) => t.label === '3 years p.a.')).toMatchObject({ value: '-4.00%', tone: 'down' });
-    expect(tiles.find((t) => t.label === 'Sharpe')).toMatchObject({ value: '1.23' });
+describe('metricGrid: further figures go in one quiet line, not more cards', () => {
+  it('holds the longer periods and Calmar, only when they exist', () => {
+    expect(labels(metricGrid(full).more)).toEqual(['5Y CAGR', '10Y CAGR', '5Y SIP', 'Calmar']);
+    expect(labels(metricGrid({ ...full, ret_10y: null, sip_xirr_5y: null }).more)).toEqual(['5Y CAGR', 'Calmar']);
   });
 
   it('adds the factsheet fields only when they hold data', () => {
     const sheet = { expense_ratio: null, aum_cr: 1200, exit_load: '', fund_manager: null, benchmark: 'Nifty 50 TRI', launch_date: null, as_of: null, source: 'x' };
-    const l = labels({ ...base, factsheet: sheet });
-    expect(l).toContain('AUM');
-    expect(l).toContain('Benchmark');
-    expect(l).not.toContain('Exit load');
-    expect(l).not.toContain('Fund manager');
-    expect(l).not.toContain('Launched');
+    const l = labels(metricGrid({ ...base, factsheet: sheet }).more);
+    expect(l).toEqual(['AUM', 'Benchmark']);
   });
 
-  it('puts the expense ratio from the metrics row first and does not repeat it from the factsheet', () => {
+  it('takes the expense ratio from the factsheet when the metrics row has none, and shows it once', () => {
     const sheet = { expense_ratio: 0.7, aum_cr: null, exit_load: null, fund_manager: null, benchmark: null, launch_date: null, as_of: null, source: 'x' };
-    expect(labels({ ...base, expense_ratio: 0.7, factsheet: sheet }).filter((l) => l === 'Expense ratio')).toHaveLength(1);
+    const grid = metricGrid({ ...base, factsheet: sheet });
+    expect(labels(grid.primary)).toEqual(['Expense ratio']);
+    expect(labels(grid.more)).not.toContain('Expense ratio');
   });
 
   it('does not change the fund it is given', () => {
-    const fund = { ...base, ret_1y: 5 };
-    const copy = JSON.stringify(fund);
-    metricTiles(fund);
-    expect(JSON.stringify(fund)).toBe(copy);
+    const copy = JSON.stringify(full);
+    metricGrid(full);
+    expect(JSON.stringify(full)).toBe(copy);
   });
 });
 

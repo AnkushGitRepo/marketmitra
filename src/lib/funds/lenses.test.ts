@@ -19,6 +19,13 @@ describe('LENSES', () => {
     expect(byId('core').filters).toMatchObject({ q: 'index', max_expense_ratio: 0.5 });
     expect(byId('quality').filters).toMatchObject({ min_sharpe_3y: 1.1, min_ret_3y: 18 });
     expect(byId('steady').filters).toMatchObject({ max_std_dev_3y: 14, max_fall_3y: 15 });
+  });
+
+  it('the two risk lenses show diversified funds, so sector funds do not crowd the short list', () => {
+    expect(byId('quality').filters.exclude_thematic).toBe(true);
+    expect(byId('steady').filters.exclude_thematic).toBe(true);
+    expect(byId('core').filters.exclude_thematic).toBeUndefined();
+    expect(byId('tax').filters.exclude_thematic).toBeUndefined();
     expect(byId('tax').filters).toMatchObject({ sub_category: 'ELSS Tax Saver Fund' });
   });
 

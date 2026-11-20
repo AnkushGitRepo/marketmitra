@@ -35,6 +35,14 @@
   color: var(--app-text-muted);
 }
 
+/* The floating Mitra chat button sits at the bottom-right of the screen; keep the last column clear of it. */
+@media (min-width: 761px) {
+  .th:last-child,
+  .td:last-child {
+    padding-right: 76px;
+  }
+}
+
 tbody tr:last-child .td,
 tbody tr:last-child .rowHead {
   border-bottom: none;

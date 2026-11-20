@@ -67,6 +67,8 @@ export interface FundFilters {
   min_aum_cr?: number;
   max_std_dev_3y?: number;
   max_fall_3y?: number;
+  /** True leaves out sector and thematic funds (the diversified view); false shows everything; absent is the service's default (everything). */
+  exclude_thematic?: boolean;
   min_sharpe_3y?: number;
   sort?: FundSortKey;
   order?: 'asc' | 'desc';
@@ -113,6 +115,12 @@ export function parseFundParams(params: ParamSource): ParsedFundFilters {
     const outOfRange = boundError(key, num);
     if (outOfRange) return { ok: false, message: outOfRange };
     filters[key] = num;
+  }
+
+  const exclude = params.get('exclude_thematic');
+  if (exclude) {
+    if (exclude !== 'true' && exclude !== 'false') return { ok: false, message: `exclude_thematic must be true or false, got "${exclude.slice(0, 20)}"` };
+    filters.exclude_thematic = exclude === 'true';
   }
 
   const sort = params.get('sort');

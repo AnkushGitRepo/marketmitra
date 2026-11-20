@@ -18,17 +18,18 @@ export interface SipChart {
 
 const round = (n: number): number => Math.round(n * 100) / 100;
 
-export function buildSipChart(points: readonly SipPoint[], width: number, height: number, pad: number): SipChart | null {
+/** `padLeft` (default `pad`) is a wider left margin for the axis label, so it sits beside the lines and never on them. */
+export function buildSipChart(points: readonly SipPoint[], width: number, height: number, pad: number, padLeft: number = pad): SipChart | null {
   if (points.length < 2) return null;
   const max = Math.max(...points.flatMap((p) => [p.invested, p.value]));
   if (!(max > 0)) return null;
-  const innerW = width - pad * 2;
+  const innerW = width - padLeft - pad;
   const innerH = height - pad * 2;
   const yOf = (amount: number): number => pad + (1 - amount / max) * innerH;
 
   const marks: SipMark[] = points.map((p, i) => ({
     ...p,
-    x: pad + (i / (points.length - 1)) * innerW,
+    x: padLeft + (i / (points.length - 1)) * innerW,
     valueY: yOf(p.value),
     investedY: yOf(p.invested),
   }));

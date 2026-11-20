@@ -77,6 +77,45 @@ def test_worst_fall_limit_is_a_floor_on_the_negative_drawdown():
     assert "mf_metrics.max_drawdown_3y >= -15.0" in sql
 
 
+def test_list_funds_passes_the_exclude_thematic_flag(client, monkeypatch):
+    seen = {}
+
+    async def fake(session, f):
+        seen["f"] = f
+        return {"total": 0, "limit": f.limit, "offset": f.offset, "items": []}
+
+    monkeypatch.setattr(mf_query, "list_funds", fake)
+    assert client.get("/funds?exclude_thematic=true").status_code == 200
+    assert seen["f"].exclude_thematic is True
+    assert client.get("/funds").status_code == 200
+    assert seen["f"].exclude_thematic is False  # not hidden unless asked
+
+
+def test_exclude_thematic_keeps_funds_with_no_sub_category_and_drops_every_sector_spelling():
+    from sqlalchemy.dialects import postgresql
+
+    from app.services.mf_query import FundFilters, _apply_filters, _base_query
+
+    sql = str(
+        _apply_filters(_base_query(), FundFilters(exclude_thematic=True)).compile(
+            dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
+        )
+    ).lower()
+    assert "sub_category is null" in sql
+    # The literal-bound form doubles the percent sign for the driver, so match on the prefix words.
+    assert "ilike 'thematic" in sql and "ilike 'sectoral" in sql
+    assert "not (" in sql
+
+
+def test_no_exclusion_by_default():
+    from sqlalchemy.dialects import postgresql
+
+    from app.services.mf_query import FundFilters, _apply_filters, _base_query
+
+    sql = str(_apply_filters(_base_query(), FundFilters()).compile(dialect=postgresql.dialect())).lower()
+    assert "thematic" not in sql and "sectoral" not in sql
+
+
 @pytest.mark.parametrize("qs", ["sort=name;drop", "max_fall_3y=-1", "max_fall_3y=101", "limit=0", "limit=500", "plan=bogus", "min_ret_3y=abc"])
 def test_list_funds_rejects_bad_input(client, qs):
     assert client.get(f"/funds?{qs}").status_code == 422

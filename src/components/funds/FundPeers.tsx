@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { CompareToggle } from './CompareToggle';
+import { compareHref } from '@/lib/funds/compare';
 import { formatNumber, formatPercent, returnTone } from '@/lib/funds/format';
 import type { FundSummary } from '@/lib/funds/types';
 import styles from './FundPeers.module.css';
 
-export function FundPeers({ peers, group }: { readonly peers: readonly FundSummary[]; readonly group: string | null }) {
+export function FundPeers({ peers, group, currentCode }: { readonly peers: readonly FundSummary[]; readonly group: string | null; readonly currentCode: number }) {
   if (peers.length === 0) return null;
   return (
     <section className={styles.card} aria-label="Peers">
@@ -37,7 +37,9 @@ export function FundPeers({ peers, group }: { readonly peers: readonly FundSumma
                 ))}
                 <td>{formatNumber(peer.sharpe_3y)}</td>
                 <td className={styles.action}>
-                  <CompareToggle schemeCode={peer.scheme_code} name={peer.base_name} />
+                  <Link className={styles.compare} href={compareHref([currentCode, peer.scheme_code])} aria-label={`Compare this fund with ${peer.base_name}`}>
+                    Compare
+                  </Link>
                 </td>
               </tr>
             ))}

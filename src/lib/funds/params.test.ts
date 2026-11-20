@@ -38,6 +38,13 @@ describe('parseFundParams', () => {
     expect(parse('max_fall_3y=101').ok).toBe(false);
   });
 
+  it('parses the diversified-view flag as a real boolean, keeping an explicit false', () => {
+    expect(parse('exclude_thematic=true')).toEqual({ ok: true, filters: { exclude_thematic: true } });
+    expect(parse('exclude_thematic=false')).toEqual({ ok: true, filters: { exclude_thematic: false } });
+    expect(parse('exclude_thematic=maybe').ok).toBe(false);
+    expect(parse('exclude_thematic=').ok).toBe(true);
+  });
+
   it('accepts every sort key the service whitelists', () => {
     for (const key of FUND_SORT_KEYS) expect(parse(`sort=${key}`).ok).toBe(true);
   });
@@ -77,5 +84,12 @@ describe('bounds and strict numbers', () => {
 
   it('still treats a truly empty value as unset', () => {
     expect(parse('min_ret_1y=')).toEqual({ ok: true, filters: {} });
+  });
+});
+
+describe('buildFundsQuery with the diversified-view flag', () => {
+  it('writes both states, so "show everything" survives a reload', () => {
+    expect(buildFundsQuery({ exclude_thematic: true })).toBe('exclude_thematic=true');
+    expect(buildFundsQuery({ exclude_thematic: false })).toBe('exclude_thematic=false');
   });
 });

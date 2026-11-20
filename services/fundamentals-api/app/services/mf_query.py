@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-from sqlalchemy import Select, asc, desc, func, select
+from sqlalchemy import Select, asc, desc, func, not_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import MfFactsheetORM, MfMetricsORM, MfNavORM, MfSchemeORM
@@ -51,6 +51,8 @@ class FundFilters:
     max_std_dev_3y: float | None = None
     # The worst 3-year fall may be at most this many percent (a positive number).
     max_fall_3y: float | None = None
+    # Leave out SEBI's sector and theme sub-categories (any spelling): the diversified-funds view.
+    exclude_thematic: bool = False
     min_sharpe_3y: float | None = None
     sort: str = "ret_3y"
     order: str = "desc"
@@ -94,6 +96,15 @@ def _apply_filters(stmt: Select, f: FundFilters) -> Select:
     for col, value in maximums.items():
         if value is not None:
             stmt = stmt.where(col <= value)
+    if f.exclude_thematic:
+        # SEBI's sector and theme sub-categories reach us as "Thematic Fund", "Sectoral Fund" and
+        # "Sectoral/ Thematic": every spelling starts with one of these two words. A fund with no sub-category stays.
+        stmt = stmt.where(
+            or_(
+                MfSchemeORM.sub_category.is_(None),
+                not_(or_(MfSchemeORM.sub_category.ilike("thematic%"), MfSchemeORM.sub_category.ilike("sectoral%"))),
+            )
+        )
     if f.max_fall_3y is not None:
         # Drawdowns are stored as negative percentages: "at most 15% down" means >= -15.
         stmt = stmt.where(MfMetricsORM.max_drawdown_3y >= -f.max_fall_3y)

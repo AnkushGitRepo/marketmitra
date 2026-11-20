@@ -42,6 +42,26 @@ describe('buildChart', () => {
   });
 });
 
+describe('buildChart with a left gutter for the axis labels', () => {
+  const two = [{ date: '2025-01-01', nav: 10 }, { date: '2025-01-02', nav: 20 }];
+
+  it('starts the line after the gutter and still ends at the right padding', () => {
+    const chart = buildChart(two, 300, 100, 10, 60);
+    expect(chart?.points[0]?.x).toBe(60);
+    expect(chart?.points[1]?.x).toBe(290);
+  });
+
+  it('is unchanged when no gutter is given', () => {
+    expect(buildChart(two, 300, 100, 10)).toEqual(buildChart(two, 300, 100, 10, 10));
+  });
+
+  it('keeps the lowest point at the bottom of the plot and the highest at the top, whatever the gutter', () => {
+    const chart = buildChart(two, 300, 100, 10, 60);
+    expect(chart?.points[0]?.y).toBe(90);
+    expect(chart?.points[1]?.y).toBe(10);
+  });
+});
+
 describe('nearestPoint', () => {
   it('finds the closest point by x', () => {
     const chart = buildChart(series(11), 1000, 100, 0);
