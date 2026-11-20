@@ -11,6 +11,7 @@ from sqlalchemy import Select, asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import MfFactsheetORM, MfMetricsORM, MfNavORM, MfSchemeORM
+from app.services.mf_peer_group import peer_group
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
@@ -160,6 +161,7 @@ async def get_fund(session: AsyncSession, scheme_code: int) -> dict | None:
             "isin_growth": scheme.isin_growth,
             "isin_reinvest": scheme.isin_reinvest,
             "is_active": scheme.is_active,
+            "peer_group": peer_group(scheme.name, scheme.sub_category),
             "metrics_as_of": getattr(metrics, "as_of", None),
             "factsheet": None
             if fact is None
@@ -192,12 +194,19 @@ async def get_peers(session: AsyncSession, scheme_code: int, limit: int = 8) -> 
     me = await session.get(MfSchemeORM, scheme_code)
     if me is None or me.sub_category is None:
         return []
+    group = peer_group(me.name, me.sub_category)
+    # The group can be narrower than the sub-category (SEBI's "Thematic Fund" mixes a Taiwan
+    # feeder with a defence fund), so fetch the whole sub-category and narrow it here.
     f = FundFilters(
         category=me.category, sub_category=me.sub_category, plan=me.plan, option=me.option,
-        sort="ret_3y", limit=limit + 1,
+        sort="ret_3y", limit=MAX_LIMIT,
     )
     items = (await list_funds(session, f, with_total=False))["items"]
-    return [i for i in items if i["scheme_code"] != scheme_code][:limit]
+    same_group = [
+        i for i in items
+        if i["scheme_code"] != scheme_code and peer_group(i["name"], i["sub_category"]) == group
+    ]
+    return same_group[:limit]
 
 
 async def get_facets(session: AsyncSession) -> dict:

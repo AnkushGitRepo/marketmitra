@@ -51,6 +51,8 @@ export interface FundDetail extends FundSummary {
   scheme_type: string;
   isin_growth: string | null;
   isin_reinvest: string | null;
+  /** The group this fund is compared within; finer than `sub_category` for thematic funds. */
+  peer_group: string | null;
   is_active: boolean;
   metrics_as_of: string | null;
   factsheet: FundFactsheet | null;
