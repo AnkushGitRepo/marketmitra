@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Sector funds (healthcare, banking, technology, PSU and the rest, filed by SEBI under "Sectoral Fund" and "Sectoral/ Thematic" as well as "Thematic Fund") now have peers of the same theme, across all three of those groups. ([#274](https://github.com/AnkushGitRepo/marketmitra/issues/274))
 - A fund's peers on its fund page no longer mix unrelated themes: a Taiwan fund is now compared with the other foreign-equity funds, not with defence, healthcare and infrastructure funds that SEBI files under the same "Thematic Fund" sub-category. ([#273](https://github.com/AnkushGitRepo/marketmitra/issues/273))
 - The chart's toolbar dropdowns (Saved, Setups, Drawings, Indicators) now move to stay fully inside the chart instead of being cut off at its right edge. ([#262](https://github.com/AnkushGitRepo/marketmitra/issues/262))
 
