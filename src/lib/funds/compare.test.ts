@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   bestFor,
+  COMPARE_GROUPS,
+  RISK_COST_KEYS,
   compareHref,
   COMPARE_ROWS,
   MAX_COMPARE,
@@ -115,5 +117,29 @@ describe('bestFor', () => {
 
   it('reads a figure that is exactly zero as a real figure', () => {
     expect(bestFor(row('ret_1y'), [fund(1, { ret_1y: 0 }), fund(2, { ret_1y: -3 })])).toBe(1);
+  });
+});
+
+describe('row groups', () => {
+  it('has three groups in reading order', () => {
+    expect(COMPARE_GROUPS.map((g) => g.id)).toEqual(['returns', 'risk', 'cost']);
+    expect(COMPARE_GROUPS.map((g) => g.title)).toEqual(['Returns & SIP', 'Risk-adjusted efficiency', 'Cost & portfolio fit']);
+  });
+
+  it('puts every row in exactly one group, returns first, then risk, then cost', () => {
+    const byGroup = (id: string) => COMPARE_ROWS.filter((r) => r.group === id).map((r) => r.key);
+    expect(byGroup('returns')).toEqual(['ret_1y', 'ret_3y', 'ret_5y', 'sip_xirr_3y', 'sip_xirr_5y']);
+    expect(byGroup('risk')).toEqual(['sharpe_3y', 'sortino_3y', 'std_dev_3y', 'max_drawdown_3y']);
+    expect(byGroup('cost')).toEqual(['expense_ratio']);
+    expect(COMPARE_ROWS.every((r) => COMPARE_GROUPS.some((g) => g.id === r.group))).toBe(true);
+  });
+
+  it('keeps the rows of a group next to each other', () => {
+    const order = COMPARE_ROWS.map((r) => r.group);
+    expect(order).toEqual([...order].sort((a, b) => COMPARE_GROUPS.findIndex((g) => g.id === a) - COMPARE_GROUPS.findIndex((g) => g.id === b)));
+  });
+
+  it('names the risk and cost measures that decide the trade-off, apart from raw returns', () => {
+    expect([...RISK_COST_KEYS]).toEqual(['sharpe_3y', 'sortino_3y', 'std_dev_3y', 'max_drawdown_3y', 'expense_ratio']);
   });
 });

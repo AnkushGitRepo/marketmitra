@@ -1,0 +1,114 @@
+.root {
+  position: relative;
+  display: inline-block;
+}
+
+.trigger {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--app-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.trigger:hover,
+.trigger[aria-expanded='true'] {
+  border-color: var(--app-ink);
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 35;
+  width: min(360px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 10px 30px rgba(22, 25, 28, 0.16);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.input {
+  min-height: 44px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  padding: 0 16px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--app-ink);
+  background: var(--color-surface);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--color-mint-strong);
+  outline-offset: 1px;
+}
+
+.status {
+  min-height: 18px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.results {
+  display: grid;
+  gap: 2px;
+  max-height: 320px;
+  margin: 4px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.result:hover,
+.result:focus-visible {
+  background: var(--app-border-softer);
+}
+
+.name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--app-ink);
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--app-text-faint);
+}
