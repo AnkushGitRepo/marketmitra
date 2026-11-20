@@ -93,3 +93,20 @@ describe('canonicalQuery', () => {
     expect(canonicalQuery({ q: 'a', limit: 50, offset: 100 })).toBe(canonicalQuery({ q: 'a' }));
   });
 });
+
+describe('worst-fall filter', () => {
+  it('round-trips through the draft', () => {
+    const draft = draftFromFilters({ max_fall_3y: 15 });
+    expect(draft.max_fall_3y).toBe('15');
+    expect(filtersFromDraft(draft, {})).toEqual({ ok: true, filters: { max_fall_3y: 15 } });
+  });
+
+  it('is described as a chip that removes only itself', () => {
+    expect(describeFilters({ max_fall_3y: 15 })).toEqual([{ label: 'Worst fall ≤ 15%', keys: ['max_fall_3y'] }]);
+  });
+
+  it('rejects a value outside 0 to 100 with a readable message', () => {
+    const built = filtersFromDraft({ ...draftFromFilters({}), max_fall_3y: '150' }, {});
+    expect(built.ok).toBe(false);
+  });
+});

@@ -3309,6 +3309,17 @@
             }
           },
           {
+            "name": "max_fall_3y",
+            "in": "query",
+            "required": false,
+            "description": "Largest allowed worst 3-year fall (maximum drawdown), as a positive percent: 15 keeps funds that never fell more than 15% from a peak.",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          {
             "name": "min_sharpe_3y",
             "in": "query",
             "required": false,
@@ -3582,6 +3593,41 @@
           },
           "503": {
             "description": "The data service did not answer."
+          }
+        }
+      }
+    },
+    "/api/funds/compare": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Compare mutual funds side by side",
+        "security": [],
+        "description": "Two or three schemes with their full detail, in the order asked, plus `best`: for each comparison row (returns, SIP returns, Sharpe, Sortino, volatility, worst fall, expense ratio) the scheme code that wins it, or null when fewer than two schemes have a figure or the best is tied. Public, read-only.",
+        "parameters": [
+          {
+            "name": "codes",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated AMFI scheme codes, two or three different ones, like 122639,149329.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ funds: FundDetail[], best: { [row]: schemeCode | null } }"
+          },
+          "400": {
+            "description": "{ error: \"invalid_codes\", message } unless two or three valid, different codes are given"
+          },
+          "404": {
+            "description": "{ error: \"not_found\", message } naming the unknown code"
+          },
+          "503": {
+            "description": "{ error: \"data_unavailable\", message } when the data service is down"
           }
         }
       }

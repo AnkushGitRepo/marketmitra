@@ -32,6 +32,12 @@ describe('parseFundParams', () => {
     expect(r.ok && r.filters.q?.length).toBe(80);
   });
 
+  it('parses the worst-fall limit and keeps it between 0 and 100', () => {
+    expect(parse('max_fall_3y=15')).toEqual({ ok: true, filters: { max_fall_3y: 15 } });
+    expect(parse('max_fall_3y=-1').ok).toBe(false);
+    expect(parse('max_fall_3y=101').ok).toBe(false);
+  });
+
   it('accepts every sort key the service whitelists', () => {
     for (const key of FUND_SORT_KEYS) expect(parse(`sort=${key}`).ok).toBe(true);
   });

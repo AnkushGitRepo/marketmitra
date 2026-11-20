@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useId, useState } from 'react';
 import { BRIEF_SPECS } from '@/lib/ai/briefSpecs';
 import { readStoredBrief, toneLabel } from '@/lib/ai/structuredBrief';
-import type { XrayItem } from '@/lib/funds/xray';
+import { XRAY_SCOPE_NOTE, type XrayItem } from '@/lib/funds/xray';
 import styles from './FundXRay.module.css';
 
 interface FundXRayProps {
@@ -101,7 +101,7 @@ export function FundXRay({ schemeCode, fundName, items, initial, hasKey }: FundX
       </div>
 
       <p className={styles.meta}>
-        Worked out from stored figures. Sector level only: this fund&rsquo;s own holdings are not loaded. Not investment advice.
+        Worked out from stored figures. {XRAY_SCOPE_NOTE} Not investment advice.
       </p>
     </section>
   );

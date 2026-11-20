@@ -49,6 +49,8 @@ class FundFilters:
     max_expense_ratio: float | None = None
     min_aum_cr: float | None = None
     max_std_dev_3y: float | None = None
+    # The worst 3-year fall may be at most this many percent (a positive number).
+    max_fall_3y: float | None = None
     min_sharpe_3y: float | None = None
     sort: str = "ret_3y"
     order: str = "desc"
@@ -92,6 +94,9 @@ def _apply_filters(stmt: Select, f: FundFilters) -> Select:
     for col, value in maximums.items():
         if value is not None:
             stmt = stmt.where(col <= value)
+    if f.max_fall_3y is not None:
+        # Drawdowns are stored as negative percentages: "at most 15% down" means >= -15.
+        stmt = stmt.where(MfMetricsORM.max_drawdown_3y >= -f.max_fall_3y)
     return stmt
 
 

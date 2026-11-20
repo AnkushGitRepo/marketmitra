@@ -6,14 +6,14 @@ import { boundError, buildFundsQuery, parseDecimal, type FundFilters } from './p
 
 export const TEXT_DRAFT_KEYS = ['q', 'category', 'sub_category', 'fund_house'] as const;
 export const NUMBER_DRAFT_KEYS = [
-  'min_ret_1y', 'min_ret_3y', 'min_ret_5y', 'max_expense_ratio', 'max_std_dev_3y', 'min_sharpe_3y',
+  'min_ret_1y', 'min_ret_3y', 'min_ret_5y', 'max_expense_ratio', 'max_std_dev_3y', 'max_fall_3y', 'min_sharpe_3y',
 ] as const;
 export type DraftKey = (typeof TEXT_DRAFT_KEYS)[number] | (typeof NUMBER_DRAFT_KEYS)[number];
 export type Draft = Record<DraftKey, string>;
 
 export const EMPTY_DRAFT: Draft = {
   q: '', category: '', sub_category: '', fund_house: '',
-  min_ret_1y: '', min_ret_3y: '', min_ret_5y: '', max_expense_ratio: '', max_std_dev_3y: '', min_sharpe_3y: '',
+  min_ret_1y: '', min_ret_3y: '', min_ret_5y: '', max_expense_ratio: '', max_std_dev_3y: '', max_fall_3y: '', min_sharpe_3y: '',
 };
 
 const NUMBER_LABELS: Record<(typeof NUMBER_DRAFT_KEYS)[number], string> = {
@@ -22,6 +22,7 @@ const NUMBER_LABELS: Record<(typeof NUMBER_DRAFT_KEYS)[number], string> = {
   min_ret_5y: 'Minimum 5Y return',
   max_expense_ratio: 'Maximum expense ratio',
   max_std_dev_3y: 'Maximum volatility',
+  max_fall_3y: 'Maximum worst fall',
   min_sharpe_3y: 'Minimum Sharpe ratio',
 };
 
@@ -92,6 +93,7 @@ export function describeFilters(filters: FundFilters): FilterChip[] {
   if (filters.min_ret_5y !== undefined) chips.push({ label: `5Y return ≥ ${filters.min_ret_5y}%`, keys: ['min_ret_5y'] });
   if (filters.max_expense_ratio !== undefined) chips.push({ label: `Expense ratio ≤ ${filters.max_expense_ratio}%`, keys: ['max_expense_ratio'] });
   if (filters.max_std_dev_3y !== undefined) chips.push({ label: `Volatility ≤ ${filters.max_std_dev_3y}%`, keys: ['max_std_dev_3y'] });
+  if (filters.max_fall_3y !== undefined) chips.push({ label: `Worst fall ≤ ${filters.max_fall_3y}%`, keys: ['max_fall_3y'] });
   if (filters.min_sharpe_3y !== undefined) chips.push({ label: `Sharpe ≥ ${filters.min_sharpe_3y}`, keys: ['min_sharpe_3y'] });
   return chips;
 }

@@ -29,6 +29,10 @@ describe('FUND_XRAY_SYSTEM', () => {
     expect(FUND_XRAY_SYSTEM.endsWith(GUARDRAIL)).toBe(true);
   });
 
+  it('tells the model not to make excuses about missing data inside a finding', () => {
+    expect(FUND_XRAY_SYSTEM).toMatch(/never say that data is (missing|unavailable|not available)/i);
+  });
+
   it('tells the model that fenced text is data, never instructions', () => {
     expect(FUND_XRAY_SYSTEM).toContain(UNTRUSTED_NOTICE);
   });

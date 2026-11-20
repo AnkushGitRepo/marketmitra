@@ -51,7 +51,33 @@ def test_list_funds_passes_filters_and_returns_shape(client, monkeypatch):
     assert (f.plan, f.option) == ("direct", "growth")  # defaults
 
 
-@pytest.mark.parametrize("qs", ["sort=name;drop", "limit=0", "limit=500", "plan=bogus", "min_ret_3y=abc"])
+def test_list_funds_passes_the_worst_fall_limit(client, monkeypatch):
+    seen = {}
+
+    async def fake(session, f):
+        seen["f"] = f
+        return {"total": 0, "limit": f.limit, "offset": f.offset, "items": []}
+
+    monkeypatch.setattr(mf_query, "list_funds", fake)
+    assert client.get("/funds?max_fall_3y=15").status_code == 200
+    assert seen["f"].max_fall_3y == 15.0
+
+
+def test_worst_fall_limit_is_a_floor_on_the_negative_drawdown():
+    # "Worst fall at most 15%" keeps drawdowns of -15 or shallower: max_drawdown_3y >= -15.
+    from sqlalchemy.dialects import postgresql
+
+    from app.services.mf_query import FundFilters, _apply_filters, _base_query
+
+    sql = str(
+        _apply_filters(_base_query(), FundFilters(max_fall_3y=15.0)).compile(
+            dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
+        )
+    )
+    assert "mf_metrics.max_drawdown_3y >= -15.0" in sql
+
+
+@pytest.mark.parametrize("qs", ["sort=name;drop", "max_fall_3y=-1", "max_fall_3y=101", "limit=0", "limit=500", "plan=bogus", "min_ret_3y=abc"])
 def test_list_funds_rejects_bad_input(client, qs):
     assert client.get(f"/funds?{qs}").status_code == 422
 

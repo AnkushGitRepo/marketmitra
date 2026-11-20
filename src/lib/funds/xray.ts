@@ -17,7 +17,13 @@ const WORSE_THAN_MEDIAN_RATIO = 1.2;
 const CLEARLY_CHEAPER_RATIO = 0.9;
 const MAX_HOLDINGS_NAMED = 4;
 
-export const STOCK_OVERLAP_NOTE = "Stock-level overlap isn't available: this fund's own holdings are not loaded.";
+/** The one place the scope of the overlap finding is stated: the card's footer. The findings themselves just say what is true. */
+export const XRAY_SCOPE_NOTE = "Sector level only: this fund's own holdings are not loaded.";
+
+/** "Flexi Cap Fund" and "Thematic Fund" are SEBI category names; as a fund type they read "Flexi Cap" and "Thematic". */
+function kindOf(label: string): string {
+  return label.replace(/\s+funds?$/i, '') || label;
+}
 
 /** Sector names as holdings carry them (company profile sectors) for each fund theme that points at sectors. */
 const THEME_SECTORS: Readonly<Record<string, readonly string[]>> = {
@@ -113,7 +119,7 @@ const joinNames = (names: readonly string[]): string => {
 function roleItem(fund: FundDetail, peers: readonly FundSummary[], label: string): XrayItem {
   const vol = fund.std_dev_3y;
   if (!known(vol)) {
-    return { key: 'role', tone: 'neutral', text: `A ${label} fund. Its 3-year risk figures are not stored yet.` };
+    return { key: 'role', tone: 'neutral', text: `A ${kindOf(label)} fund. Its 3-year risk figures are not stored yet.` };
   }
   const peerVol = peerMedian(peers, (f) => f.std_dev_3y);
   const worst = known(fund.max_drawdown_3y) ? ` and a worst fall of ${pct(Math.abs(fund.max_drawdown_3y))}` : '';
@@ -122,7 +128,7 @@ function roleItem(fund: FundDetail, peers: readonly FundSummary[], label: string
   return {
     key: 'role',
     tone: heavy ? 'warning' : 'neutral',
-    text: `A ${label} fund with 3-year volatility of ${pct(vol)}${versus}${worst}.`,
+    text: `A ${kindOf(label)} fund with 3-year volatility of ${pct(vol)}${versus}${worst}.`,
   };
 }
 
@@ -137,22 +143,28 @@ function leftOut(exposure: Pick<SectorExposure, 'unpriced' | 'unclassified'>): s
 function overlapItem(
   holdings: readonly HoldingLike[] | null,
   sectors: readonly string[],
+  theme: string | null,
   label: string,
 ): { item: XrayItem; pct: number | null } {
-  const note = ` ${STOCK_OVERLAP_NOTE}`;
   const neutral = (text: string, pct: number | null = null) => ({ item: { key: 'overlap' as const, tone: 'neutral' as const, text }, pct });
-  // A failed read, no holdings and no prices are three different situations; each says which it is.
-  if (holdings === null) return neutral(`Your holdings could not be read just now, so portfolio fit is not shown.${note}`);
-  if (holdings.length === 0) return neutral(`Add your holdings to see how this fund fits what you own.${note}`);
-  const exposure = sectorExposure(holdings, sectors);
-  if (exposure === null) return neutral(`None of your holdings has a live price right now, so portfolio fit cannot be worked out.${note}`);
+  const kind = kindOf(label);
+
+  // A fund tied to no single sector has no sector weight to work out, so it is described by what it is.
   if (sectors.length === 0) {
-    return neutral(`${label} funds are not tied to one sector, so there is no direct sector link to your holdings.${leftOut(exposure)}${note}`);
+    return theme === 'International'
+      ? neutral('Invests in overseas markets, so part of its return follows foreign stocks and the rupee rather than Indian ones, which is where your holdings are.')
+      : neutral(`A ${kind} fund holds across sectors rather than one, so there is no single sector to line up against your holdings.`);
   }
+
+  // A failed read, no holdings and no prices are three different situations; each says which it is.
+  if (holdings === null) return neutral('Your holdings could not be read just now, so portfolio fit is not shown.');
+  if (holdings.length === 0) return neutral('Add your holdings to see how this fund fits what you own.');
+  const exposure = sectorExposure(holdings, sectors);
+  if (exposure === null) return neutral('None of your holdings has a live price right now, so portfolio fit cannot be worked out.');
 
   const names = joinNames(sectors);
   if (exposure.pct === 0) {
-    return neutral(`None of your holdings are in ${names}, the sector(s) a ${label} fund invests in.${leftOut(exposure)}${note}`, 0);
+    return neutral(`None of your holdings are in ${names}, the sector(s) a ${kind} fund invests in.${leftOut(exposure)}`, 0);
   }
   const held = joinNames(exposure.symbols.slice(0, MAX_HOLDINGS_NAMED));
   const more = exposure.symbols.length > MAX_HOLDINGS_NAMED ? ' and others' : '';
@@ -162,7 +174,7 @@ function overlapItem(
       key: 'overlap',
       // "Watch" is the same concentration flag the portfolio risk card uses, a fact about the weight and not about the fund.
       tone: heavy ? 'warning' : 'neutral',
-      text: `${pct(exposure.pct)} of your priced holdings is in ${names} (${held}${more}), the sector(s) a ${label} fund invests in${heavy ? '; that is already a large share of the portfolio' : ''}.${leftOut(exposure)}${note}`,
+      text: `${pct(exposure.pct)} of your priced holdings is in ${names} (${held}${more}), the sector(s) a ${kind} fund invests in${heavy ? '; that is already a large share of the portfolio' : ''}.${leftOut(exposure)}`,
     },
     pct: exposure.pct,
   };
@@ -201,7 +213,7 @@ export function buildXray(fund: FundDetail, peers: readonly FundSummary[], holdi
   const theme = fund.peer_group;
   const label = theme ?? fund.sub_category ?? fund.category;
   const sectors = sectorsForTheme(theme);
-  const overlap = overlapItem(holdings, sectors, label);
+  const overlap = overlapItem(holdings, sectors, theme, label);
   return {
     items: [roleItem(fund, peers, label), overlap.item, costItem(fund, peers)],
     theme,

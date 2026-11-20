@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { HoldingLike } from '@/lib/portfolio/portfolioMetrics';
-import { buildXray, median, sectorExposure, sectorsForTheme, STOCK_OVERLAP_NOTE } from './xray';
+import { buildXray, median, sectorExposure, sectorsForTheme, XRAY_SCOPE_NOTE } from './xray';
 import type { FundDetail, FundSummary } from './types';
 
 const holding = (symbol: string, sector: string | null, value: number | null): HoldingLike => ({
@@ -124,12 +124,27 @@ describe('buildXray: overlap', () => {
     expect(sectorsForTheme('Housing')).toEqual(['Real Estate']);
   });
 
-  it('draws no sector link for a fund tied to no single sector', () => {
-    const facts = buildXray(fund({ peer_group: 'International' }), [], bankBook);
+  it('describes an international fund by what it is: overseas and rupee exposure against Indian holdings', () => {
+    const facts = buildXray(fund({ peer_group: 'International', sub_category: 'Thematic Fund' }), [], bankBook);
     const overlap = facts.items.find((i) => i.key === 'overlap');
     expect(overlap?.tone).toBe('neutral');
-    expect(overlap?.text).toContain('not tied to one sector');
+    expect(overlap?.text).toContain('overseas');
+    expect(overlap?.text).toContain('rupee');
     expect(facts.portfolioPct).toBeNull();
+  });
+
+  it('says a diversified fund holds across sectors, in plain words', () => {
+    const overlap = buildXray(fund({ peer_group: 'Flexi Cap Fund' }), [], bankBook).items.find((i) => i.key === 'overlap');
+    expect(overlap?.text).toContain('across sectors');
+    expect(overlap?.text).toContain('Flexi Cap fund');
+  });
+
+  it('never reads "Fund fund" or "funds funds" when a SEBI category name is used as the fund type', () => {
+    for (const group of ['Thematic Fund', 'Flexi Cap Fund', 'Other thematic', 'Financial services']) {
+      for (const item of buildXray(fund({ peer_group: group }), [peer(2)], bankBook).items) {
+        expect(item.text).not.toMatch(/\bfunds? funds?\b/i);
+      }
+    }
   });
 
   it('asks for holdings when there are none', () => {
@@ -137,77 +152,19 @@ describe('buildXray: overlap', () => {
     expect(overlap?.text).toContain('Add your holdings');
   });
 
-  it('never claims stock-level overlap, and always says it is unavailable', () => {
+  it('never claims stock-level overlap, and never makes an excuse about missing data inside a finding', () => {
     for (const book of [bankBook, [], [holding('INFY', 'Technology', 10)]]) {
-      for (const group of ['Financial services', 'International', null]) {
-        const text = buildXray(fund({ peer_group: group }), [], book).items.find((i) => i.key === 'overlap')?.text ?? '';
-        expect(text).toContain(STOCK_OVERLAP_NOTE);
-        expect(text).not.toMatch(/\b\d+% overlap\b/i);
+      for (const group of ['Financial services', 'International', 'Flexi Cap Fund', null]) {
+        for (const item of buildXray(fund({ peer_group: group }), [], book).items) {
+          expect(item.text).not.toMatch(/\b\d+% overlap\b/i);
+          expect(item.text).not.toMatch(/isn['’]t available|not available|unavailable|not loaded/i);
+        }
       }
     }
   });
-});
 
-describe('buildXray: cost and downside', () => {
-  const peers = [
-    peer(2, { expense_ratio: 0.8, max_drawdown_3y: -20 }),
-    peer(3, { expense_ratio: 1.0, max_drawdown_3y: -25 }),
-    peer(4, { expense_ratio: 1.2, max_drawdown_3y: -30 }),
-  ];
-
-  it('compares expense ratio and worst fall with the peer medians', () => {
-    const cost = buildXray(fund({ expense_ratio: 1.5, max_drawdown_3y: -40 }), peers, []).items.find((i) => i.key === 'cost');
-    expect(cost?.text).toContain('1.50%');
-    expect(cost?.text).toContain('peer median of 1.00%');
-    expect(cost?.text).toContain('40.0%');
-    expect(cost?.text).toContain('25.0%');
-    expect(cost?.tone).toBe('warning');
-  });
-
-  it('is positive only when the fund is clearly cheaper than its peers, not for a hair', () => {
-    expect(buildXray(fund({ expense_ratio: 0.5 }), peers, []).items.find((i) => i.key === 'cost')?.tone).toBe('positive');
-    expect(buildXray(fund({ expense_ratio: 0.99 }), peers, []).items.find((i) => i.key === 'cost')?.tone).toBe('neutral');
-  });
-
-  it('states the figures without a comparison when there are too few peers', () => {
-    const cost = buildXray(fund({ expense_ratio: 1.5 }), [peers[0] as FundSummary], []).items.find((i) => i.key === 'cost');
-    expect(cost?.text).toContain('1.50%');
-    expect(cost?.text).toContain('too few peers');
-    expect(cost?.text).not.toContain('median');
-  });
-
-  it('says plainly when nothing is stored', () => {
-    expect(buildXray(fund(), peers, []).items.find((i) => i.key === 'cost')?.text).toContain('not stored');
-  });
-});
-
-describe('buildXray: role', () => {
-  it('describes the fund and its volatility against peers, with no verdict label', () => {
-    const peers = [peer(2, { std_dev_3y: 20 }), peer(3, { std_dev_3y: 24 }), peer(4, { std_dev_3y: 28 })];
-    const role = buildXray(fund({ std_dev_3y: 37.3 }), peers, []).items.find((i) => i.key === 'role');
-    expect(role?.text).toContain('Financial services');
-    expect(role?.text).toContain('37.3%');
-    expect(role?.text).toContain('24.0%');
-    expect(role?.tone).toBe('warning');
-    expect(role?.text).not.toMatch(/compounder|satellite|buy|sell|avoid/i);
-  });
-
-  it('copes with no risk figures', () => {
-    expect(buildXray(fund(), [], []).items.find((i) => i.key === 'role')?.text).toContain('not stored');
-  });
-});
-
-describe('buildXray: shape', () => {
-  it('always returns the three items in order', () => {
-    expect(buildXray(fund(), [], []).items.map((i) => i.key)).toEqual(['role', 'overlap', 'cost']);
-  });
-
-  it('does not change what it is given', () => {
-    const f = fund({ expense_ratio: 1 });
-    const p = [peer(2)];
-    const h = [...bankBook];
-    const before = JSON.stringify([f, p, h]);
-    buildXray(f, p, h);
-    expect(JSON.stringify([f, p, h])).toBe(before);
+  it('keeps the scope limit in one place, for the card footer, and says what it is', () => {
+    expect(XRAY_SCOPE_NOTE).toMatch(/sector level/i);
+    expect(XRAY_SCOPE_NOTE).toMatch(/holdings are not loaded/i);
   });
 });

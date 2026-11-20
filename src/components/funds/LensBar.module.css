@@ -1,0 +1,44 @@
+.bar {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.pill:hover:not(:disabled) {
+  border-color: var(--app-ink);
+}
+
+.pill:disabled {
+  cursor: progress;
+}
+
+.active {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.rule {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
