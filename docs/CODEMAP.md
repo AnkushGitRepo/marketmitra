@@ -64,7 +64,7 @@ A new page must be added to `src/lib/routes.ts` **and** `src/proxy.ts`.
 | `analysts/*` | analyst desk: list, [symbol], chat, dispatch, retry |
 | `ai/chat` | streaming AI chat |
 | `alerts`, `alerts/[id]` | alert CRUD |
-| `funds`, `funds/facets`, `funds/[code]` (+ `nav`, `peers`) | mutual funds (ADR 0067) |
+| `funds`, `funds/facets`, `funds/compare`, `funds/[code]` (+ `nav`, `peers`) | mutual funds (ADR 0067) |
 | `holdings`, `holdings/[id]` | portfolio holdings |
 | `insights/*` | one-shot AI briefs: ipo, market, news, portfolio, stock, stock-brief, chart-overlay (Auto-Chart) |
 | `markets/overview`, `news`, `search`, `stock/[ticker]` (+ `prices`) | market data |

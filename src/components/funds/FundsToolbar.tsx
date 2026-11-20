@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 import { subCategoryOptions, type Draft, type DraftKey, type FilterChip } from '@/lib/funds/draft';
-import type { FundPlan } from '@/lib/funds/params';
+import type { FundFilters, FundPlan } from '@/lib/funds/params';
 import type { FundFacets } from '@/lib/funds/types';
 import styles from './FundsToolbar.module.css';
 
@@ -18,6 +18,12 @@ interface FundsToolbarProps {
   readonly onClear: () => void;
 }
 
+/** Filters that live in the "More filters" panel, so its button can say how many are active. */
+const PANEL_KEYS: readonly (keyof FundFilters)[] = [
+  'sub_category', 'fund_house', 'option', 'min_aum_cr', 'min_ret_1y', 'min_ret_3y', 'min_ret_5y',
+  'min_sharpe_3y', 'max_std_dev_3y', 'max_fall_3y', 'max_expense_ratio',
+];
+
 interface NumberFieldDef {
   readonly key: DraftKey;
   readonly label: string;
@@ -30,6 +36,7 @@ const NUMBER_FIELDS: readonly NumberFieldDef[] = [
   { key: 'min_ret_5y', label: 'Min 5Y return %', placeholder: 'e.g. 15' },
   { key: 'min_sharpe_3y', label: 'Min Sharpe', placeholder: 'e.g. 0.5' },
   { key: 'max_std_dev_3y', label: 'Max volatility %', placeholder: 'e.g. 15' },
+  { key: 'max_fall_3y', label: 'Max worst fall %', placeholder: 'e.g. 20' },
   { key: 'max_expense_ratio', label: 'Max expense ratio %', placeholder: 'e.g. 1' },
 ];
 
@@ -39,22 +46,12 @@ export function FundsToolbar({
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const subCategories = subCategoryOptions(facets.sub_categories, draft.category);
+  const panelCount = chips.filter((chip) => chip.keys.some((key) => PANEL_KEYS.includes(key))).length;
 
   return (
     <section className={styles.toolbar} aria-label="Fund filters">
-      <button
-        type="button"
-        className={styles.toggle}
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span>Filters{chips.length > 0 ? ` (${chips.length})` : ''}</span>
-        <span aria-hidden="true">{open ? '▲' : '▼'}</span>
-      </button>
-
-      <div id={panelId} className={styles.grid} data-open={open}>
-        <label className={`${styles.field} ${styles.wide}`}>
+      <div className={styles.mainRow}>
+        <label className={`${styles.field} ${styles.search}`}>
           <span className={styles.label}>Search</span>
           <input
             className={styles.input}
@@ -76,6 +73,36 @@ export function FundsToolbar({
           </select>
         </label>
 
+        <div className={styles.field} role="group" aria-label="Plan">
+          <span className={styles.label}>Plan</span>
+          <div className={styles.segment}>
+            {(['direct', 'regular'] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={`${styles.segBtn} ${plan === p ? styles.segActive : ''}`}
+                aria-pressed={plan === p}
+                onClick={() => onPlanChange(p)}
+              >
+                {p === 'direct' ? 'Direct' : 'Regular'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className={styles.moreBtn}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((v) => !v)}
+        >
+          More filters{panelCount > 0 ? ` (${panelCount})` : ''}
+          <span aria-hidden="true"> {open ? '▲' : '▼'}</span>
+        </button>
+      </div>
+
+      <div id={panelId} className={styles.panel} hidden={!open}>
         <label className={styles.field}>
           <span className={styles.label}>Sub-category</span>
           <select className={styles.input} value={draft.sub_category} onChange={(e) => onChange('sub_category', e.target.value)}>
@@ -95,23 +122,6 @@ export function FundsToolbar({
             ))}
           </select>
         </label>
-
-        <div className={styles.field} role="group" aria-label="Plan">
-          <span className={styles.label}>Plan</span>
-          <div className={styles.segment}>
-            {(['direct', 'regular'] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                className={`${styles.segBtn} ${plan === p ? styles.segActive : ''}`}
-                aria-pressed={plan === p}
-                onClick={() => onPlanChange(p)}
-              >
-                {p === 'direct' ? 'Direct' : 'Regular'}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {NUMBER_FIELDS.map((field) => (
           <label key={field.key} className={styles.field}>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CompareToggle } from './CompareToggle';
 import { formatNumber, formatPercent, returnTone } from '@/lib/funds/format';
 import type { FundSummary } from '@/lib/funds/types';
 import styles from './FundPeers.module.css';
@@ -17,6 +18,7 @@ export function FundPeers({ peers, group }: { readonly peers: readonly FundSumma
               <th scope="col">3Y</th>
               <th scope="col">5Y</th>
               <th scope="col">Sharpe</th>
+              <th scope="col"><span className={styles.srOnly}>Compare</span></th>
             </tr>
           </thead>
           <tbody>
@@ -34,6 +36,9 @@ export function FundPeers({ peers, group }: { readonly peers: readonly FundSumma
                   </td>
                 ))}
                 <td>{formatNumber(peer.sharpe_3y)}</td>
+                <td className={styles.action}>
+                  <CompareToggle schemeCode={peer.scheme_code} name={peer.base_name} />
+                </td>
               </tr>
             ))}
           </tbody>

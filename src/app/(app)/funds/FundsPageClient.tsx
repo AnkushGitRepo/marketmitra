@@ -5,6 +5,7 @@ import { Pagination } from '@/app/(app)/screener/Pagination';
 import { pageCountFor } from '@/app/(app)/screener/pageMath';
 import { FundsTable, type FundSort } from '@/components/funds/FundsTable';
 import { FundsToolbar } from '@/components/funds/FundsToolbar';
+import { LensBar } from '@/components/funds/LensBar';
 import {
   canonicalQuery,
   describeFilters,
@@ -14,6 +15,7 @@ import {
   type DraftKey,
   type FilterChip,
 } from '@/lib/funds/draft';
+import { activeLens, lensFilters, type Lens } from '@/lib/funds/lenses';
 import { buildFundsQuery, type FundFilters, type FundPlan, type FundSortKey } from '@/lib/funds/params';
 import type { FundFacets, FundPage } from '@/lib/funds/types';
 import styles from './page.module.css';
@@ -22,6 +24,8 @@ interface FundsPageClientProps {
   readonly initialPage: FundPage;
   readonly initialFilters: FundFilters;
   readonly facets: FundFacets;
+  /** How many funds have return figures, of all those in the Direct plan: the rest show dashes. */
+  readonly coverage: { readonly withReturns: number; readonly total: number };
 }
 
 interface Requested {
@@ -48,7 +52,7 @@ function sortOf(filters: FundFilters): FundSort {
   return { key: filters.sort ?? DEFAULT_SORT.key, dir: filters.order ?? DEFAULT_SORT.dir };
 }
 
-export function FundsPageClient({ initialPage, initialFilters, facets }: FundsPageClientProps) {
+export function FundsPageClient({ initialPage, initialFilters, facets, coverage }: FundsPageClientProps) {
   const initialLimit = initialPage.limit;
   const initialPageIndex = Math.floor(initialPage.offset / initialLimit);
   const [draft, setDraft] = useState<Draft>(() => draftFromFilters(initialFilters));
@@ -155,6 +159,14 @@ export function FundsPageClient({ initialPage, initialFilters, facets }: FundsPa
     timer.current = setTimeout(() => submit((f) => f), INSTANT_KEYS.includes(key) ? 0 : DEBOUNCE_MS);
   };
 
+  const handleLens = (lens: Lens) => {
+    cancelPending();
+    // A lens replaces the whole screen, so the panel is reset to match before it runs.
+    const next = lensFilters(lens, requested.current.filters);
+    updateDraft(draftFromFilters(next));
+    submit(() => next);
+  };
+
   const handlePlan = (plan: FundPlan) => submit((f) => ({ ...f, plan }));
 
   const handleSort = (key: FundSortKey) => {
@@ -189,6 +201,13 @@ export function FundsPageClient({ initialPage, initialFilters, facets }: FundsPa
 
   return (
     <>
+      <LensBar active={activeLens(applied)} loading={loading} onSelect={handleLens} onClear={handleClear} />
+      {coverage.withReturns < coverage.total && (
+        <p className={styles.coverage}>
+          Returns and risk figures are calculated for {coverage.withReturns.toLocaleString('en-IN')} of{' '}
+          {coverage.total.toLocaleString('en-IN')} funds so far; the others show a dash.
+        </p>
+      )}
       <FundsToolbar
         draft={draft}
         plan={applied.plan ?? 'direct'}

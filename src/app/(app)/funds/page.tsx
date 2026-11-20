@@ -26,9 +26,11 @@ export default async function FundsPage({ searchParams }: { searchParams: Promis
 
   const pageSize = limit && (PAGE_SIZES as readonly number[]).includes(limit) ? limit : DEFAULT_PAGE_SIZE;
   const pageIndex = Math.floor((offset ?? 0) / pageSize);
-  const [firstTry, facets] = await Promise.all([
+  const [firstTry, facets, withReturns, everyFund] = await Promise.all([
     listFunds({ ...filters, limit: pageSize, offset: pageIndex * pageSize }),
     getFundFacets(),
+    listFunds({ plan: 'direct', min_ret_1y: -100, limit: 1 }),
+    listFunds({ plan: 'direct', limit: 1 }),
   ]);
   // A shared link can point past the end once the data shrinks: land on the last page, not an empty one.
   const lastPageIndex = firstTry && firstTry.total > 0 ? Math.floor((firstTry.total - 1) / pageSize) : 0;
@@ -54,6 +56,7 @@ export default async function FundsPage({ searchParams }: { searchParams: Promis
           initialPage={page}
           initialFilters={filters}
           facets={facets}
+          coverage={{ withReturns: withReturns?.total ?? 0, total: everyFund?.total ?? 0 }}
         />
       ) : (
         <DataUnavailable>
