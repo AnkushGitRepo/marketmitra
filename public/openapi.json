@@ -3438,7 +3438,7 @@
         ],
         "responses": {
           "200": {
-            "description": "FundSummary plus { scheme_type, isin_growth, isin_reinvest, is_active, metrics_as_of, factsheet: { expense_ratio, aum_cr, exit_load, fund_manager, benchmark, launch_date, as_of, source } | null }"
+            "description": "FundSummary plus { scheme_type, isin_growth, isin_reinvest, peer_group, is_active, metrics_as_of, factsheet: { expense_ratio, aum_cr, exit_load, fund_manager, benchmark, launch_date, as_of, source } | null }"
           },
           "400": {
             "description": "{ error, message } for an invalid parameter"
@@ -3512,7 +3512,7 @@
         ],
         "summary": "Mutual fund peers",
         "security": [],
-        "description": "Up to 8 active schemes in the same sub-category with the same plan and option, best 3-year return first. Empty when the scheme has no sub-category. Public, read-only.",
+        "description": "Up to 8 active schemes in the same peer group with the same plan and option, best 3-year return first. The peer group is the sub-category, except under SEBI's \"Thematic Fund\", which mixes unrelated themes, where it is the theme read from the scheme name (International, Defence, Healthcare, ...). Empty when the scheme has no sub-category. Public, read-only.",
         "parameters": [
           {
             "name": "code",

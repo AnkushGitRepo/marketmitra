@@ -1,0 +1,31 @@
+.panel {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.modes {
+  display: inline-flex;
+  justify-self: start;
+  padding: 3px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.mode {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.active {
+  background: var(--app-ink);
+  color: var(--app-cream);
+}

@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DataUnavailable } from '@/components/common/DataUnavailable';
 import { FundPeers } from '@/components/funds/FundPeers';
-import { FundStats } from '@/components/funds/FundStats';
-import { NavChart } from '@/components/funds/NavChart';
+import { FundChartPanel } from '@/components/funds/FundChartPanel';
+import { MetricsStrip } from '@/components/funds/MetricsStrip';
 import { getFund, getFundFacets, getFundNav, getFundPeers } from '@/lib/funds/api';
 import { formatDate, formatNav } from '@/lib/funds/format';
 import { parseSchemeCode } from '@/lib/funds/types';
@@ -70,9 +70,9 @@ export default async function FundPage({ params }: FundPageProps) {
         </p>
       )}
 
-      <NavChart schemeCode={fund.scheme_code} initialRange="1y" initialSeries={nav} />
-      <FundStats fund={fund} />
-      <FundPeers peers={peers} subCategory={fund.sub_category} />
+      <FundChartPanel schemeCode={fund.scheme_code} initialSeries={nav} />
+      <MetricsStrip fund={fund} />
+      <FundPeers peers={peers} group={fund.peer_group} />
 
       <p className={styles.ids}>
         AMFI scheme code {fund.scheme_code}

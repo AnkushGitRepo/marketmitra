@@ -3,11 +3,11 @@ import { formatNumber, formatPercent, returnTone } from '@/lib/funds/format';
 import type { FundSummary } from '@/lib/funds/types';
 import styles from './FundPeers.module.css';
 
-export function FundPeers({ peers, subCategory }: { readonly peers: readonly FundSummary[]; readonly subCategory: string | null }) {
+export function FundPeers({ peers, group }: { readonly peers: readonly FundSummary[]; readonly group: string | null }) {
   if (peers.length === 0) return null;
   return (
     <section className={styles.card} aria-label="Peers">
-      <h2 className={styles.title}>Peers{subCategory ? ` · ${subCategory}` : ''}</h2>
+      <h2 className={styles.title}>Peers{group ? ` · ${group}` : ''}</h2>
       <div className={styles.scroll}>
         <table className={styles.table}>
           <thead>

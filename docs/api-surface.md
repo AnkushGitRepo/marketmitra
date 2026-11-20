@@ -101,13 +101,13 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - Categories with their sub-categories, fund houses and `nav_as_of`: `{ categories, sub_categories: { [category]: string[] }, fund_houses, nav_as_of }`.
 
 ### `GET /api/funds/{code}`
-- One scheme (`code` = AMFI scheme code): `FundSummary` plus `{ scheme_type, isin_growth, isin_reinvest, is_active, metrics_as_of, factsheet }`. `factsheet` is `null` until disclosed data is loaded, else `{ expense_ratio, aum_cr, exit_load, fund_manager, benchmark, launch_date, as_of, source }`. `400` for a non-integer or out-of-range code, `404` unknown, `503` data service down. Dormant schemes are returned (`is_active: false`).
+- One scheme (`code` = AMFI scheme code): `FundSummary` plus `{ scheme_type, isin_growth, isin_reinvest, peer_group, is_active, metrics_as_of, factsheet }`. `factsheet` is `null` until disclosed data is loaded, else `{ expense_ratio, aum_cr, exit_load, fund_manager, benchmark, launch_date, as_of, source }`. `400` for a non-integer or out-of-range code, `404` unknown, `503` data service down. Dormant schemes are returned (`is_active: false`).
 
 ### `GET /api/funds/{code}/nav`
 - `?range=1m|6m|1y|3y|5y|10y|max` (default `1y`). Stored daily NAV as published, oldest first: `[{ date, nav }]`. A unit split appears as a step; returns and ratios are adjusted for it, this series is not.
 
 ### `GET /api/funds/{code}/peers`
-- Up to 8 active schemes in the same sub-category, plan and option, best 3-year return first: `FundSummary[]`.
+- Up to 8 active schemes in the same peer group, plan and option, best 3-year return first: `FundSummary[]`. The peer group is the sub-category, except under SEBI's "Thematic Fund" (which mixes foreign-equity feeders, defence, healthcare and more), where it is the theme read from the scheme name; the detail response carries it as `peer_group`.
 
 ### `GET /api/screener/export`
 - **Purpose:** download the screen as CSV. Same filter/sort params as `/api/screener`; `limit`/`offset` are ignored and **every** matching row is exported (cap 5,000). UTF-8 with BOM, CRLF, units in the headers; text cells beginning `= + - @` are apostrophe-prefixed to defuse spreadsheet formula injection. `400` on an invalid filter.
