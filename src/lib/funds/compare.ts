@@ -62,8 +62,21 @@ export function parseStoredSelection(raw: string | null): CompareItem[] {
   return out;
 }
 
+export type CompareGroupId = 'returns' | 'risk' | 'cost';
+
+/** The comparison table reads in three blocks; the fit row at the bottom of the last one is added by the page. */
+export const COMPARE_GROUPS: readonly { readonly id: CompareGroupId; readonly title: string }[] = [
+  { id: 'returns', title: 'Returns & SIP' },
+  { id: 'risk', title: 'Risk-adjusted efficiency' },
+  { id: 'cost', title: 'Cost & portfolio fit' },
+];
+
+/** The measures that decide a risk-and-cost trade-off, as opposed to a raw return. */
+export const RISK_COST_KEYS = ['sharpe_3y', 'sortino_3y', 'std_dev_3y', 'max_drawdown_3y', 'expense_ratio'] as const;
+
 export interface CompareRow {
   readonly key: string;
+  readonly group: CompareGroupId;
   readonly label: string;
   /** Which end of the range wins. */
   readonly better: 'higher' | 'lower';
@@ -71,33 +84,33 @@ export interface CompareRow {
   readonly render: (fund: FundSummary) => { text: string; tone: Tone };
 }
 
-const percentRow = (key: string, label: string, read: (f: FundSummary) => number | null): CompareRow => ({
-  key, label, better: 'higher', read,
+const percentRow = (key: string, group: CompareGroupId, label: string, read: (f: FundSummary) => number | null): CompareRow => ({
+  key, group, label, better: 'higher', read,
   render: (f) => ({ text: formatPercent(read(f)), tone: returnTone(read(f)) }),
 });
 
 export const COMPARE_ROWS: readonly CompareRow[] = [
-  percentRow('ret_1y', '1 year return', (f) => f.ret_1y),
-  percentRow('ret_3y', '3 year return (p.a.)', (f) => f.ret_3y),
-  percentRow('ret_5y', '5 year return (p.a.)', (f) => f.ret_5y),
-  percentRow('sip_xirr_3y', '3 year SIP return', (f) => f.sip_xirr_3y),
-  percentRow('sip_xirr_5y', '5 year SIP return', (f) => f.sip_xirr_5y),
+  percentRow('ret_1y', 'returns', '1 year return', (f) => f.ret_1y),
+  percentRow('ret_3y', 'returns', '3 year return (p.a.)', (f) => f.ret_3y),
+  percentRow('ret_5y', 'returns', '5 year return (p.a.)', (f) => f.ret_5y),
+  percentRow('sip_xirr_3y', 'returns', '3 year SIP return', (f) => f.sip_xirr_3y),
+  percentRow('sip_xirr_5y', 'returns', '5 year SIP return', (f) => f.sip_xirr_5y),
   {
-    key: 'sharpe_3y', label: 'Sharpe ratio', better: 'higher', read: (f) => f.sharpe_3y,
+    key: 'sharpe_3y', group: 'risk', label: 'Sharpe ratio', better: 'higher', read: (f) => f.sharpe_3y,
     render: (f) => ({ text: formatNumber(f.sharpe_3y), tone: 'flat' }),
   },
   {
-    key: 'sortino_3y', label: 'Sortino ratio', better: 'higher', read: (f) => f.sortino_3y,
+    key: 'sortino_3y', group: 'risk', label: 'Sortino ratio', better: 'higher', read: (f) => f.sortino_3y,
     render: (f) => ({ text: formatNumber(f.sortino_3y), tone: 'flat' }),
   },
   {
-    key: 'std_dev_3y', label: 'Volatility', better: 'lower', read: (f) => f.std_dev_3y,
+    key: 'std_dev_3y', group: 'risk', label: 'Volatility', better: 'lower', read: (f) => f.std_dev_3y,
     render: (f) => ({ text: f.std_dev_3y === null ? formatNumber(null) : `${formatNumber(f.std_dev_3y, 1)}%`, tone: 'flat' }),
   },
   // Drawdowns are negative, so the shallowest fall is the highest number.
-  percentRow('max_drawdown_3y', 'Worst 3 year fall', (f) => f.max_drawdown_3y),
+  percentRow('max_drawdown_3y', 'risk', 'Worst 3 year fall', (f) => f.max_drawdown_3y),
   {
-    key: 'expense_ratio', label: 'Expense ratio', better: 'lower', read: (f) => f.expense_ratio,
+    key: 'expense_ratio', group: 'cost', label: 'Expense ratio', better: 'lower', read: (f) => f.expense_ratio,
     render: (f) => ({ text: f.expense_ratio === null ? formatNumber(null) : `${formatNumber(f.expense_ratio)}%`, tone: 'flat' }),
   },
 ];

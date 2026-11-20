@@ -1,3 +1,4 @@
+/* Narrow screens scroll the table sideways; on wide ones it does not, so the column headers can stick to the page. */
 .scroll {
   overflow-x: auto;
   background: var(--color-surface);
@@ -111,4 +112,59 @@ tbody tr:last-child .rowHead {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .scroll {
+    overflow: visible;
+  }
+
+  /* Just below the sticky app header (70px). */
+  .table thead th {
+    position: sticky;
+    top: 70px;
+    z-index: 30;
+    background: var(--color-surface);
+    box-shadow: 0 1px 0 var(--app-border-softer);
+  }
+
+  .table thead th.rowHead {
+    z-index: 31;
+  }
+}
+
+.groupHead {
+  padding: 10px 16px 6px;
+  background: var(--app-border-softer);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.fitDetail {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--app-text-faint);
+}
+
+/* The empty add column only exists where the table does not scroll sideways (a scrolling table would clip its popover);
+   the header's own "+ Add fund" button is always there. */
+.slot,
+.slotCell {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .slot,
+  .slotCell {
+    display: table-cell;
+    min-width: 170px;
+    vertical-align: middle;
+  }
 }

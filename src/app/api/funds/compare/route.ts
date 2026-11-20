@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getFund, getFundFacets } from '@/lib/funds/api';
 import { bestByRow, MAX_COMPARE, parseCompareCodes } from '@/lib/funds/compare';
+import { compareSummary } from '@/lib/funds/compareSummary';
 import { badRequest, unavailable } from '@/lib/funds/http';
 
 // Public, read-only. Two or three funds side by side: each fund's detail, in the order asked,
-// plus the winner of every comparison row (a tie or a missing figure never wins).
+// plus the winner of every comparison row (a tie or a missing figure never wins) and a plain-language trade-off
+// summary. This endpoint is public, so the summary never uses anyone's portfolio; the portfolio fit is
+// GET /api/funds/{code}/xray, per fund, for the signed-in user.
 export async function GET(request: Request) {
   const codes = parseCompareCodes(new URL(request.url).searchParams.get('codes'));
   if (codes.length < 2) {
@@ -23,5 +26,5 @@ export async function GET(request: Request) {
   }
 
   const funds = found.flatMap((fund) => (fund ? [fund] : []));
-  return NextResponse.json({ funds, best: bestByRow(funds) });
+  return NextResponse.json({ funds, best: bestByRow(funds), summary: compareSummary(funds, null) });
 }

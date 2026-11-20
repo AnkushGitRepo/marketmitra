@@ -3613,7 +3613,7 @@
         ],
         "summary": "Compare mutual funds side by side",
         "security": [],
-        "description": "Two or three schemes with their full detail, in the order asked, plus `best`: for each comparison row (returns, SIP returns, Sharpe, Sortino, volatility, worst fall, expense ratio) the scheme code that wins it, or null when fewer than two schemes have a figure or the best is tied. Public, read-only.",
+        "description": "Two or three schemes with their full detail, in the order asked, plus `best`: for each comparison row (returns, SIP returns, Sharpe, Sortino, volatility, worst fall, expense ratio) the scheme code that wins it, or null when fewer than two schemes have a figure or the best is tied; and `summary`: up to one plain-language point (`key: \"tradeoff\"`) saying which fund leads the risk and cost measures and which has the highest return, quoting figures from the table, never advice. The summary does not use anyone's portfolio (this endpoint is public); a fund's fit against the caller's portfolio is `GET /api/funds/{code}/xray`. Public, read-only.",
         "parameters": [
           {
             "name": "codes",
@@ -3627,7 +3627,7 @@
         ],
         "responses": {
           "200": {
-            "description": "{ funds: FundDetail[], best: { [row]: schemeCode | null } }"
+            "description": "{ funds: FundDetail[], best: { [row]: schemeCode | null }, summary: [{ key: 'tradeoff', tone: 'neutral', text }] }"
           },
           "400": {
             "description": "{ error: \"invalid_codes\", message } unless two or three valid, different codes are given"
