@@ -74,7 +74,7 @@ export default async function FundPage({ params }: FundPageProps) {
 
       <FundChartPanel schemeCode={fund.scheme_code} initialSeries={nav} />
       <MetricsStrip fund={fund} />
-      <FundPeers peers={peers} group={fund.peer_group} />
+      <FundPeers peers={peers} group={fund.peer_group} currentCode={fund.scheme_code} />
 
       <p className={styles.ids}>
         AMFI scheme code {fund.scheme_code}

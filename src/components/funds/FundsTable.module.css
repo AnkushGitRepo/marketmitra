@@ -38,6 +38,14 @@
   text-align: right;
 }
 
+/* The floating Mitra chat button sits at the bottom-right of the screen; keep the last column clear of it. */
+@media (min-width: 761px) {
+  .th:last-child,
+  .td:last-child {
+    padding-right: 76px;
+  }
+}
+
 .pickCol {
   position: sticky;
   left: 0;

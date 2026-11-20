@@ -25,14 +25,14 @@ export const LENSES: readonly Lens[] = [
   {
     id: 'quality',
     label: 'Strong risk-adjusted returns',
-    rule: 'Sharpe ratio above 1.1 and 3-year return above 18% a year, best Sharpe first.',
-    filters: { min_sharpe_3y: 1.1, min_ret_3y: 18, sort: 'sharpe_3y', order: 'desc' },
+    rule: 'Diversified funds (no sector or thematic funds) with a Sharpe ratio above 1.1 and a 3-year return above 18% a year, best Sharpe first.',
+    filters: { min_sharpe_3y: 1.1, min_ret_3y: 18, exclude_thematic: true, sort: 'sharpe_3y', order: 'desc' },
   },
   {
     id: 'steady',
     label: 'Low volatility',
-    rule: 'Volatility of 14% or less and a worst 3-year fall of 15% or less, calmest first.',
-    filters: { max_std_dev_3y: 14, max_fall_3y: 15, sort: 'std_dev_3y', order: 'asc' },
+    rule: 'Diversified funds (no sector or thematic funds) with volatility of 14% or less and a worst 3-year fall of 15% or less, calmest first.',
+    filters: { max_std_dev_3y: 14, max_fall_3y: 15, exclude_thematic: true, sort: 'std_dev_3y', order: 'asc' },
   },
   {
     id: 'tax',

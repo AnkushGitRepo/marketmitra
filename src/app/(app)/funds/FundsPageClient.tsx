@@ -15,6 +15,7 @@ import {
   type DraftKey,
   type FilterChip,
 } from '@/lib/funds/draft';
+import { CLEARED_FILTERS, DEFAULT_SORT, effectiveFilters, isSearching } from '@/lib/funds/defaultView';
 import { activeLens, lensFilters, type Lens } from '@/lib/funds/lenses';
 import { buildFundsQuery, type FundFilters, type FundPlan, type FundSortKey } from '@/lib/funds/params';
 import type { FundFacets, FundPage } from '@/lib/funds/types';
@@ -43,10 +44,6 @@ const PAGE_PATH = '/funds';
 /** Typing pauses this long before the screen re-runs. */
 const DEBOUNCE_MS = 300;
 const INSTANT_KEYS: readonly DraftKey[] = ['category', 'sub_category', 'fund_house'];
-
-export const DEFAULT_SORT: FundSort = { key: 'ret_3y', dir: 'desc' };
-/** What "Clear all" returns to: every Direct-Growth fund, best 3-year return first. */
-const CLEARED: FundFilters = { plan: 'direct', sort: 'ret_3y', order: 'desc' };
 
 function sortOf(filters: FundFilters): FundSort {
   return { key: filters.sort ?? DEFAULT_SORT.key, dir: filters.order ?? DEFAULT_SORT.dir };
@@ -97,9 +94,11 @@ export function FundsPageClient({ initialPage, initialFilters, facets, coverage 
     requested.current = { filters, page: nextPage, size: nextSize };
     setLoading(true);
     setError(null);
-    const query = buildFundsQuery({ ...filters, limit: nextSize, offset: nextPage * nextSize });
+    const paged = { ...filters, limit: nextSize, offset: nextPage * nextSize };
+    // The address keeps the reader's choices; the data service is asked only what they mean right now.
+    const query = buildFundsQuery(paged);
     try {
-      const response = await fetch(`/api/funds?${query}`);
+      const response = await fetch(`/api/funds?${buildFundsQuery(effectiveFilters(paged))}`);
       if (id !== requestId.current) return;
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { message?: string } | null;
@@ -167,6 +166,9 @@ export function FundsPageClient({ initialPage, initialFilters, facets, coverage 
     submit(() => next);
   };
 
+  /** Sector and thematic funds are out of the opening view; this brings them in, or takes them out again. */
+  const handleIncludeThematic = (include: boolean) => submit((f) => ({ ...f, exclude_thematic: !include }));
+
   const handlePlan = (plan: FundPlan) => submit((f) => ({ ...f, plan }));
 
   const handleSort = (key: FundSortKey) => {
@@ -178,8 +180,8 @@ export function FundsPageClient({ initialPage, initialFilters, facets, coverage 
   };
 
   const handleClear = () => {
-    updateDraft(draftFromFilters(CLEARED));
-    submit((f) => ({ ...CLEARED, plan: f.plan ?? 'direct' }));
+    updateDraft(draftFromFilters(CLEARED_FILTERS));
+    submit((f) => ({ ...CLEARED_FILTERS, plan: f.plan ?? 'direct' }));
   };
 
   const handleRemoveChip = (chip: FilterChip) => {
@@ -198,6 +200,8 @@ export function FundsPageClient({ initialPage, initialFilters, facets, coverage 
   };
 
   const lastPage = pageCountFor(data.total, pageSize) - 1;
+  // Searching by name or choosing a sub-category shows everything, so the toggle has nothing to decide while it lasts.
+  const searching = isSearching(applied);
 
   return (
     <>
@@ -219,9 +223,28 @@ export function FundsPageClient({ initialPage, initialFilters, facets, coverage 
         onRemoveChip={handleRemoveChip}
         onClear={handleClear}
       />
-      <p className={styles.resultsCount} aria-live="polite">
-        {data.total.toLocaleString('en-IN')} {data.total === 1 ? 'fund' : 'funds'}
-      </p>
+      <div className={styles.resultsRow}>
+        <p className={styles.resultsCount} aria-live="polite">
+          {data.total.toLocaleString('en-IN')} {data.total === 1 ? 'fund' : 'funds'}
+        </p>
+        <div className={styles.includeToggle}>
+          <label>
+            <input
+              type="checkbox"
+              checked={searching || applied.exclude_thematic !== true}
+              disabled={searching}
+              aria-describedby={searching ? 'include-thematic-hint' : undefined}
+              onChange={(e) => handleIncludeThematic(e.target.checked)}
+            />
+            Include sector &amp; thematic funds
+          </label>
+          {searching && (
+            <span id="include-thematic-hint" className={styles.includeHint}>
+              Showing everything while you search or pick a sub-category.
+            </span>
+          )}
+        </div>
+      </div>
       <FundsTable funds={data.items} sort={sortOf(applied)} loading={loading} onSort={handleSort} onClear={handleClear} />
       <Pagination
         page={Math.min(page, lastPage)}

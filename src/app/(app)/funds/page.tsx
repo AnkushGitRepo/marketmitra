@@ -1,15 +1,13 @@
 import { DataUnavailable } from '@/components/common/DataUnavailable';
 import { getFundFacets, listFunds } from '@/lib/funds/api';
 import { formatDate } from '@/lib/funds/format';
+import { effectiveFilters, resolveFilters } from '@/lib/funds/defaultView';
 import { parseFundParams, type FundFilters } from '@/lib/funds/params';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from '@/app/(app)/screener/pageMath';
 import { FundsPageClient } from './FundsPageClient';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
-
-// Opening screen: every Direct-Growth fund, best 3-year return first. Adjustable in the UI.
-const DEFAULT_FILTERS: FundFilters = { plan: 'direct', sort: 'ret_3y', order: 'desc' };
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -22,12 +20,12 @@ export default async function FundsPage({ searchParams }: { searchParams: Promis
   // The URL is the source of truth once the user has touched anything, so a shared link restores the exact screen.
   const parsed = parseFundParams({ get: (key: string) => firstValue(params[key]) });
   const { limit, offset, ...urlFilters } = parsed.ok ? parsed.filters : ({} as FundFilters);
-  const filters: FundFilters = Object.keys(urlFilters).length > 0 ? { ...DEFAULT_FILTERS, ...urlFilters } : DEFAULT_FILTERS;
+  const filters = resolveFilters(urlFilters);
 
   const pageSize = limit && (PAGE_SIZES as readonly number[]).includes(limit) ? limit : DEFAULT_PAGE_SIZE;
   const pageIndex = Math.floor((offset ?? 0) / pageSize);
   const [firstTry, facets, withReturns, everyFund] = await Promise.all([
-    listFunds({ ...filters, limit: pageSize, offset: pageIndex * pageSize }),
+    listFunds(effectiveFilters({ ...filters, limit: pageSize, offset: pageIndex * pageSize })),
     getFundFacets(),
     listFunds({ plan: 'direct', min_ret_1y: -100, limit: 1 }),
     listFunds({ plan: 'direct', limit: 1 }),
@@ -35,7 +33,7 @@ export default async function FundsPage({ searchParams }: { searchParams: Promis
   // A shared link can point past the end once the data shrinks: land on the last page, not an empty one.
   const lastPageIndex = firstTry && firstTry.total > 0 ? Math.floor((firstTry.total - 1) / pageSize) : 0;
   const stale = firstTry !== null && firstTry.items.length === 0 && firstTry.total > 0 && pageIndex > lastPageIndex;
-  const page = stale ? await listFunds({ ...filters, limit: pageSize, offset: lastPageIndex * pageSize }) : firstTry;
+  const page = stale ? await listFunds(effectiveFilters({ ...filters, limit: pageSize, offset: lastPageIndex * pageSize })) : firstTry;
   const shownPageIndex = stale ? lastPageIndex : pageIndex;
 
   return (
