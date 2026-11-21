@@ -12,7 +12,12 @@ here — if two files ever disagree, **this file wins**. Keep it short: detail l
 3. Read the last 3 entries of [`docs/session-log.md`](./docs/session-log.md).
 4. Check live state, do not trust memory: `git log --oneline -10`, `gh issue list`,
    `gh pr list`, and the board https://github.com/users/AnkushGitRepo/projects/2.
-5. Next.js here is **v16 with breaking changes** — read the relevant guide in
+5. **If [`docs/POST-PAUSE-CHECKS.md`](./docs/POST-PAUSE-CHECKS.md) exists**, the project has changes that are merged but unverified in production
+   because Vercel is paused (until 12 December 2026). When the maintainer says the app is online, or you can see it is, run that list: tick each
+   item only after you ran it, report what passed, failed or was skipped, and delete the file when every item is done. Deploys, Vercel env
+   changes and production migrations in it still need the maintainer's explicit go-ahead. Add an item to it whenever you ship something you
+   cannot verify in production yet.
+6. Next.js here is **v16 with breaking changes** — read the relevant guide in
    `node_modules/next/dist/docs/` before writing Next code (see the managed block at the bottom).
 
 ## Project summary
@@ -146,6 +151,7 @@ More (deploying, production migrations, scheduled jobs, environment) in `docs/HA
 ## Docs map
 
 - [`docs/CODEMAP.md`](./docs/CODEMAP.md) — **where things live**: directory map and feature → files table (update it when you add a folder, page or workflow)
+- [`docs/POST-PAUSE-CHECKS.md`](./docs/POST-PAUSE-CHECKS.md) — *temporary:* production checks to run when Vercel is unpaused; delete when done
 - [`docs/HANDOFF.md`](./docs/HANDOFF.md) — **current state**, open work, environment, deploy, gotchas
 - `docs/architecture.md` — current system architecture (routes, components, data flow)
 - `docs/design-system.md` — colors/type/spacing/component patterns
