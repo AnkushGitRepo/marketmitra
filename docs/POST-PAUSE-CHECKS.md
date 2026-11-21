@@ -55,9 +55,9 @@
 
 ## 4b. Category-wise IPO subscription (#285, ADR 0074)
 
-- [ ] 🔒 The maintainer has run `alembic upgrade head` on production Neon (revision `f2a6c8d41b95`) and the data service is redeployed (the app does not need Vercel for these two; they can be done before the pause lifts).
-- [ ] After a `refresh-ipos` run: `GET <data service>/ipos` returns `sub_retail`, `sub_snii`, `sub_bnii`, `sub_nii`, `sub_qib` and `sub_as_of` for open and closed IPOs; spot-check one against the aggregator's subscription page for the same IPO.
-- [ ] The run's log shows "category-wise subscription read for N IPOs" with N close to the number of open and closed IPOs, and takes well under the 10-minute job limit.
+- [x] 2026-11-21: the maintainer ran `alembic upgrade head` on production Neon (`f2a6c8d41b95`, via the Secret Manager connection string) and the data service runs revision `00008-rjn`.
+- [x] 2026-11-21: after a `refresh-ipos` run, `GET /ipos` returns the category fields for the 3 open and closed IPOs; Watrana Rentals matches the aggregator's page exactly (retail 15.42x, small NII 13.23x, big NII 23.39x, as of 20 Nov 17:56 IST). Re-check one when a new IPO opens.
+- [x] 2026-11-21: the run logged "category-wise subscription read for 3 IPOs" (3 open or closed) and the whole job took about 30 s.
 - [ ] On `/ipos`, an open IPO's details show the category table (multiples, smallest application, estimated odds) with the "as of" time; an upcoming IPO shows no table.
 - [ ] The brief quotes the category demand as numbers and does **not** say which category to choose when guarded; as the admin with Unrestricted Mitra on it adds the "Best category" item.
 - [ ] Sanity-check the odds on one closed IPO against its real basis of allotment (retail applications allotted / applied) to see how far the 1 / subscription estimate is off.
