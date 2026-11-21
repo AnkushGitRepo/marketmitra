@@ -7,11 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- The IPO brief now researches the company instead of repeating the card and answering "Not available in our data": with a Gemini key it searches public sources (the prospectus, filings, news) for the business, the fresh-issue and offer-for-sale split, the use of the proceeds, valuation against listed peers and the main risks, and says plainly when a fact is not disclosed instead of inventing it. On a local install with Unrestricted Mitra on (and for a hosted admin) it also gives a Listing call and a Long-term call, kept in your own cache and never shown to other users. ([#284](https://github.com/AnkushGitRepo/marketmitra/issues/284))
-- A generated IPO brief no longer disappears when you reload the IPO page: the last brief for each IPO is shown again, and a small move in the grey-market premium or the subscription no longer makes the next viewer regenerate it. ([#284](https://github.com/AnkushGitRepo/marketmitra/issues/284))
-
 ### Added
 
 - AI Auto-Charts are now saved for each stock and timeframe (the latest 10): turning Auto-Chart on shows the newest saved one without another AI call, a new "Saved" menu next to the button lists them, lets you show or delete any of them, and **Generate new** makes a fresh one while keeping the old ones. The chart says how old the shown one is. ([#253](https://github.com/AnkushGitRepo/marketmitra/issues/253))
@@ -57,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The IPO brief now researches the company instead of repeating the card and answering "Not available in our data": with a Gemini key it searches public sources (the prospectus, filings, news) for the business, the fresh-issue and offer-for-sale split, the use of the proceeds, valuation against listed peers and the main risks, and says plainly when a fact is not disclosed instead of inventing it. On a local install with Unrestricted Mitra on (and for a hosted admin) it also gives a Listing call and a Long-term call, kept in your own cache and never shown to other users. ([#284](https://github.com/AnkushGitRepo/marketmitra/issues/284))
+- A generated IPO brief no longer disappears when you reload the IPO page: the last brief for each IPO is shown again, and a small move in the grey-market premium or the subscription no longer makes the next viewer regenerate it. ([#284](https://github.com/AnkushGitRepo/marketmitra/issues/284))
 - Sector funds (healthcare, banking, technology, PSU and the rest, filed by SEBI under "Sectoral Fund" and "Sectoral/ Thematic" as well as "Thematic Fund") now have peers of the same theme, across all three of those groups. ([#274](https://github.com/AnkushGitRepo/marketmitra/issues/274))
 - A fund's peers on its fund page no longer mix unrelated themes: a Taiwan fund is now compared with the other foreign-equity funds, not with defence, healthcare and infrastructure funds that SEBI files under the same "Thematic Fund" sub-category. ([#273](https://github.com/AnkushGitRepo/marketmitra/issues/273))
 - The chart's toolbar dropdowns (Saved, Setups, Drawings, Indicators) now move to stay fully inside the chart instead of being cut off at its right edge. ([#262](https://github.com/AnkushGitRepo/marketmitra/issues/262))
