@@ -15,8 +15,9 @@ the other aggregators paywall it or give no reuse terms.
   under `/subscription/` is the IPO's subscription page, with a server-rendered `bid-table` (one row per bidding day: QIB, NII, S-NII, B-NII,
   RII, Total). The latest row is stored. Same ToS position as the existing scrape (ADR 0017): an accepted known risk, one isolated module,
   degrade to "unknown" on any failure. Only an `investorgain.com/gmp/...` link is ever turned into a URL to fetch.
-- **Fetching:** `scripts/refresh_ipos.py` renders those pages after the dashboard, only for open and closed IPOs, 2 s apart, at most 15 per
-  run; a page that fails is skipped and the stored figures stay.
+- **Fetching:** `scripts/refresh_ipos.py` fetches those pages after the dashboard with a plain GET (the page's own server response; no
+  headless browser, #296), only for open and closed IPOs, 2 s apart, at most 15 per run; a page that fails is skipped and the stored figures
+  stay. The table is read from the DOM when present and otherwise from the page's Next.js server payload, where the live page carries it.
 - **Storage:** six nullable columns on `ipos` (`sub_qib`, `sub_nii`, `sub_snii`, `sub_bnii`, `sub_retail`, `sub_as_of`), migration
   `f2a6c8d41b95` (additive; the maintainer runs it on production). A figure that is missing is null, never zero.
 - **Odds** (`src/lib/dashboard/ipoAllotmentOdds.ts`, pure): retail and sNII are allotted by draw, so the chance of one allotment is about
@@ -31,7 +32,7 @@ the other aggregators paywall it or give no reuse terms.
 
 - The data service must be deployed and the migration run before the columns exist; until then the fields are absent and the UI shows nothing
   extra (the Next app treats them as optional).
-- It adds up to 15 page loads to each `refresh-ipos` run (about 30 to 60 s).
+- It adds up to 15 plain page requests to each `refresh-ipos` run (about 30 s, paced).
 - If the aggregator changes the page, the parser returns nothing and the card falls back to the overall figure; the fixture test is the
   place to see what changed.
 - **Gotcha (#294):** a browser "Save as" rewrites relative links to absolute ones, so a saved fixture can hide what the live DOM serves. The live row links are relative (`/gmp/<slug>/<id>/`); the first deploy fetched no pages because the check expected absolute links. `subscription_url` now accepts both and always returns the absolute page URL.

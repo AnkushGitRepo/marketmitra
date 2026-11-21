@@ -8,8 +8,8 @@ InvestorGain's "Live IPO GMP" report
 **Category-wise subscription (#285, [ADR 0074](../../../../../docs/decisions/0074-ipo-category-subscription-and-odds.md)):** each dashboard row
 links to `/gmp/<slug>/<id>/`; the same slug and id under `/subscription/` is the subscription page, whose `bid-table` has one row per bidding
 day (QIB, NII, small NII, big NII, retail, total). `subscription.py` turns that link into the page URL (only an `investorgain.com/gmp/...`
-link is accepted) and parses the latest row; `scripts/refresh_ipos.py` renders those pages after the dashboard, paced and capped, and a page
-that fails is skipped. Fixture: `tests/fixtures/investorgain_subscription_sme.html`. Same source, same ToS position as below.
+link is accepted) and parses the latest row; `scripts/refresh_ipos.py` fetches those pages after the dashboard with a plain GET, paced and capped
+(the table is in the page's server payload, read when the DOM has none, #296), and a page that fails is skipped. Fixture: `tests/fixtures/investorgain_subscription_sme.html`. Same source, same ToS position as below.
 
 See [ADR 0017](../../../../../docs/decisions/0017-ipo-tracker-gmp-scope.md)
 for scope and the ToS position.
