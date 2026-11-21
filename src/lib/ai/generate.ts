@@ -17,6 +17,9 @@ function logFailure(label: string, err: unknown): void {
   console.error(`[ai] ${label}: ${failureSummary(err)}`);
 }
 
+/** How hard a Gemini thinking model reasons before it writes; honoured for Gemini only. */
+export type ThinkingLevel = 'low' | 'medium' | 'high';
+
 export interface GenerateResult {
   ok: true;
   text: string;
@@ -45,7 +48,7 @@ export async function generateInsightText(
   config: AiConfig,
   system: string,
   prompt: string,
-  opts: { maxOutputTokens?: number; tools?: ToolSet } = {}
+  opts: { maxOutputTokens?: number; tools?: ToolSet; thinkingLevel?: ThinkingLevel } = {}
 ): Promise<GenerateResult | GenerateError> {
   try {
     const model = resolveModel(config);
@@ -56,6 +59,7 @@ export async function generateInsightText(
       temperature: 0.4,
       maxOutputTokens: opts.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
       ...(opts.tools ? { tools: opts.tools } : {}),
+      ...(opts.thinkingLevel && config.provider === 'gemini' ? { providerOptions: { google: { thinkingConfig: { thinkingLevel: opts.thinkingLevel } } } } : {}),
     });
     const clean = text.trim();
     if (!clean) {

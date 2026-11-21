@@ -1,0 +1,43 @@
+# Pre-generates the shared Mitra brief for every open and upcoming IPO (#287), so a visitor opens one that is already written
+# instead of waiting for a model. A brief that is still fresh costs nothing, so this is cheap to run often.
+#
+# Uses the deployment's own AI key (AI_PROVIDER / AI_API_KEY on the Vercel project; ADR 0018 §5). With none configured the route
+# answers 200 and says it skipped.
+#
+# ACTIVATION: GitHub only runs `schedule:` triggers from the default branch (`main`); `workflow_dispatch` works from any branch.
+# Needs the repo secret CRON_SECRET (same value as on the Vercel project). Optional repo variable IPO_BRIEFS_URL overrides the target.
+
+name: ipo-briefs
+
+on:
+  schedule:
+    # Half an hour after each refresh-ipos run (every 2 hours, 03:00-15:00 UTC), so new listings and GMP moves are already in.
+    - cron: "30 3-15/2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ipo-briefs
+  cancel-in-progress: false
+
+# Least privilege: this job calls an HTTP endpoint and never touches the repository.
+permissions: {}
+
+jobs:
+  briefs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Trigger IPO brief generation
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TARGET_URL: ${{ vars.IPO_BRIEFS_URL || 'https://marketmitra-v2.vercel.app/api/cron/ipo-briefs' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repo secret is not set — see this workflow's ACTIVATION notes."
+            exit 1
+          fi
+          echo "POST ${TARGET_URL}"
+          curl --fail-with-body --silent --show-error --max-time 290 \
+            -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${TARGET_URL}"

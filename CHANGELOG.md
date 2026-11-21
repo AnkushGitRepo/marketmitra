@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- IPO briefs come back in seconds instead of a minute or more: the model's reasoning is capped for this short summary (measured 8.6 s against 59 s for the same brief with search), and a scheduled job writes the shared brief for every open and upcoming IPO after each IPO refresh, so most visitors open one that is already there. ([#287](https://github.com/AnkushGitRepo/marketmitra/issues/287))
 - The search box, notifications, settings and hide-values buttons in the top header now show the same tip (name and a one-line hint) after a short pause when you rest the pointer on them. ([#271](https://github.com/AnkushGitRepo/marketmitra/issues/271))
 
 - When the main sidebar is collapsed, hovering an icon (or tabbing to it) now shows its name and go-to shortcut in the same tip as the chart's toolbar, at once. ([#269](https://github.com/AnkushGitRepo/marketmitra/issues/269))

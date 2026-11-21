@@ -19,6 +19,11 @@ no source the model would invent a business and a peer multiple, which AGENTS.md
   them, and the route drops them from a guarded reply even if the model wrote them.
 - **Cache.** The page now loads the last stored brief per IPO (`getCachedIpoBriefs`) so a reload shows it, and the cache key buckets GMP % and
   subscription so a small tick does not make each viewer regenerate.
+- **Speed (#287).** The wait was the model's hidden reasoning, not the search: one run each on Crystal Crop Protection took 59 s with search and
+  default thinking, 78 s without search, 8.6 s with search and `thinkingLevel: 'low'`, 7.8 s without search. IPO briefs now ask Gemini for low
+  thinking (retried without it if the provider rejects it), and the `ipo-briefs` job (`/api/cron/ipo-briefs`, bearer `CRON_SECRET`, after each
+  `refresh-ipos` run) pre-writes the shared guarded brief for open and upcoming IPOs with the deployment key (ADR 0018 §5), three at a time
+  and none started after about 200 s. Fresh briefs cost nothing. An unrestricted brief is never pre-written: it is per user and on request.
 - **Not here:** Retail / sNII / bNII allotment odds and a best-category strategy. The data holds one overall subscription figure; that needs a
   data source first (#285).
 
