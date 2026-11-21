@@ -26,6 +26,18 @@ class TestSubscriptionUrl:
         )
 
     @pytest.mark.parametrize(
+        ("href", "expected"),
+        [
+            # What the live page serves (#294): relative links. The saved fixture had absolute ones, because "Save as" rewrites them.
+            ("/gmp/watrana-rentals-ipo/1818/", "https://www.investorgain.com/subscription/watrana-rentals-ipo/1818/"),
+            ("/gmp/mahanadi-coalfields-ipo/2401", "https://www.investorgain.com/subscription/mahanadi-coalfields-ipo/2401/"),
+            ("https://investorgain.com/gmp/acme-ipo/7/", "https://www.investorgain.com/subscription/acme-ipo/7/"),
+        ],
+    )
+    def test_accepts_the_relative_link_the_live_page_serves(self, href: str, expected: str) -> None:
+        assert subscription_url(href) == expected
+
+    @pytest.mark.parametrize(
         "href",
         [
             None,
@@ -33,6 +45,12 @@ class TestSubscriptionUrl:
             "https://www.investorgain.com/report/ipo-gmp-live/331/",
             "https://evil.example/gmp/x-ipo/1/",
             "https://www.investorgain.com/gmp/x-ipo/",
+            "//evil.example/gmp/x-ipo/1/",
+            "/gmp/x-ipo/",
+            "/gmp/x-ipo/abc/",
+            "/subscription/x-ipo/1/",
+            "/gmp/../report/1/",
+            "http://www.investorgain.com/gmp/x-ipo/1/",
         ],
     )
     def test_is_none_for_anything_that_is_not_an_investorgain_gmp_page_link(self, href: str | None) -> None:

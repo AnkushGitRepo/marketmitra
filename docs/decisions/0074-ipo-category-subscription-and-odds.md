@@ -34,3 +34,4 @@ the other aggregators paywall it or give no reuse terms.
 - It adds up to 15 page loads to each `refresh-ipos` run (about 30 to 60 s).
 - If the aggregator changes the page, the parser returns nothing and the card falls back to the overall figure; the fixture test is the
   place to see what changed.
+- **Gotcha (#294):** a browser "Save as" rewrites relative links to absolute ones, so a saved fixture can hide what the live DOM serves. The live row links are relative (`/gmp/<slug>/<id>/`); the first deploy fetched no pages because the check expected absolute links. `subscription_url` now accepts both and always returns the absolute page URL.
