@@ -21,7 +21,8 @@ from .scraper import _IST, _MONTHS, _num
 
 logger = logging.getLogger("fundamentals.tier3_ipo")
 
-_GMP_LINK_RE = re.compile(r"^https://(?:www\.)?investorgain\.com/gmp/([a-z0-9-]+)/(\d+)/?$")
+# The live page links rows relatively (`/gmp/<slug>/<id>/`); a saved copy of it has them absolute. Either way it must be this site's gmp page.
+_GMP_LINK_RE = re.compile(r"^(?:https://(?:www\.)?investorgain\.com)?/gmp/([a-z0-9-]+)/(\d+)/?$")
 _AS_OF_RE = re.compile(r"(\d{1,2})(?:st|nd|rd|th)?\s+([A-Z][a-z]{2})\s+(\d{4})\s+(\d{1,2}):(\d{2})")
 
 # header text (letters only, lower-cased) -> the key it fills
@@ -36,8 +37,9 @@ _COLUMNS = {
 
 
 def subscription_url(gmp_link: str | None) -> str | None:
-    """The subscription page for a dashboard row's `/gmp/<slug>/<id>/` link; None for any other link (a different host, the report
-    page, a link without an id), so nothing but an aggregator subscription page is ever fetched."""
+    """The subscription page (always absolute) for a dashboard row's `/gmp/<slug>/<id>/` link, relative or absolute; None for any other
+    link (a different host, a protocol-relative one, the report page, a link without an id), so nothing but an aggregator subscription
+    page is ever fetched."""
     m = _GMP_LINK_RE.match(gmp_link or "")
     return f"https://www.investorgain.com/subscription/{m.group(1)}/{m.group(2)}/" if m else None
 
