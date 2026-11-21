@@ -68,15 +68,15 @@ describe('POST /api/insights/ipo', () => {
     expect(state.system).not.toMatch(/listingcall/);
   });
   it('drops verdict items a model wrote in guarded mode', async () => {
-    state.reply = [{ key: 'listing', tone: 'neutral', text: 'ok' }, { key: 'listingcall', tone: 'positive', text: 'Apply' }, { key: 'longterm', tone: 'positive', text: 'Hold' }];
+    state.reply = [{ key: 'listing', tone: 'neutral', text: 'ok' }, { key: 'listingcall', tone: 'positive', text: 'Apply' }, { key: 'longterm', tone: 'positive', text: 'Hold' }, { key: 'strategy', tone: 'neutral', text: 'Retail one lot' }];
     const keys = JSON.parse((await (await call('a-ipo')).json()).data.content).items.map((i: { key: string }) => i.key);
     expect(keys).toEqual(['listing']);
   });
   it('keeps the verdict items for an unrestricted user and caches them per user, apart from the shared brief', async () => {
     state.mode = 'unrestricted';
-    state.reply = [{ key: 'listing', tone: 'neutral', text: 'ok' }, { key: 'listingcall', tone: 'positive', text: 'Apply' }, { key: 'longterm', tone: 'neutral', text: 'Unclear' }];
+    state.reply = [{ key: 'listing', tone: 'neutral', text: 'ok' }, { key: 'listingcall', tone: 'positive', text: 'Apply' }, { key: 'longterm', tone: 'neutral', text: 'Unclear' }, { key: 'strategy', tone: 'neutral', text: 'Retail one lot' }];
     const keys = JSON.parse((await (await call('a-ipo')).json()).data.content).items.map((i: { key: string }) => i.key);
-    expect(keys).toEqual(['listing', 'listingcall', 'longterm']);
+    expect(keys).toEqual(['listing', 'listingcall', 'longterm', 'strategy']);
     expect(state.cacheArgs).toMatchObject({ key: 'a-ipo:unrestricted', userId: 'u1' });
     expect(state.system).toMatch(/listingcall/);
     expect(state.system).not.toMatch(/never tell the reader what to buy/i);

@@ -58,4 +58,8 @@ describe('allotmentOdds', () => {
   it('breaks a tie towards the smaller application (retail)', () => {
     expect(odds({ retail: 5, snii: 5, bnii: null, qib: null }).bestChance).toBe('retail');
   });
+  it('still gives the odds when the application sizes are unknown, with the sizes left null', () => {
+    const r = allotmentOdds({ retail: 4, snii: null, bnii: null, qib: null }, null);
+    expect(r.retail).toEqual({ kind: 'chance', value: 0.25, minLots: null, minInvestment: null });
+  });
 });

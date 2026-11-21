@@ -1,0 +1,52 @@
+.block {
+  margin: 0 0 14px;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--app-ink);
+}
+
+.table th,
+.table td {
+  padding: 7px 10px 7px 0;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--app-border-softer);
+}
+
+.table thead th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.table tbody th {
+  font-weight: 600;
+}
+
+.note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}

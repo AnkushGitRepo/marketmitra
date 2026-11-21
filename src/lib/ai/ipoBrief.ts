@@ -54,6 +54,8 @@ export async function getOrGenerateIpoBrief(args: IpoBriefArgs): Promise<GetOrGe
         ipo.subscription_times === null ? null : Math.floor(ipo.subscription_times),
         ipo.gmp_pct === null ? null : Math.round(ipo.gmp_pct / GMP_PCT_BUCKET),
         ipo.listing_date,
+        // Category demand, to the nearest whole multiple: a new bidding day changes it, a decimal tick does not.
+        [ipo.sub_retail, ipo.sub_snii, ipo.sub_bnii].map((n) => (n === null || n === undefined ? null : Math.round(n))),
       ],
       passages: grounding.passages.map((p) => p.text),
     }),

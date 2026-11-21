@@ -37,8 +37,9 @@ export interface CategoryOdds {
   /** `chance`: probability of one allotment (a draw). `share`: fraction of the bid allotted (proportionate). Both are 0 to 1. */
   kind: 'chance' | 'share';
   value: number;
-  minLots: number;
-  minInvestment: number;
+  /** The smallest application in this category; null when the price or lot size is unknown (the odds do not depend on it). */
+  minLots: number | null;
+  minInvestment: number | null;
 }
 
 export interface AllotmentOdds {
@@ -68,9 +69,9 @@ export function applicationSizes(ipo: { price: number | null; lotSize: number | 
 const usable = (n: number | null): n is number => n !== null && Number.isFinite(n) && n > 0;
 const oneOver = (n: number): number => Math.min(1, 1 / n);
 
-export function allotmentOdds(sub: CategorySubscription, sizes: ApplicationSizes): AllotmentOdds {
+export function allotmentOdds(sub: CategorySubscription, sizes: ApplicationSizes | null): AllotmentOdds {
   const make = (category: OddsCategory, subscription: number | null, kind: CategoryOdds['kind']): CategoryOdds | null =>
-    usable(subscription) ? { kind, value: oneOver(subscription), minLots: sizes[category].minLots, minInvestment: sizes[category].minInvestment } : null;
+    usable(subscription) ? { kind, value: oneOver(subscription), minLots: sizes?.[category].minLots ?? null, minInvestment: sizes?.[category].minInvestment ?? null } : null;
 
   const retail = make('retail', sub.retail, 'chance');
   const snii = make('snii', sub.snii, 'chance');

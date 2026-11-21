@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Alert } from '@/lib/alerts/types';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import type { Ipo } from '@/lib/dashboard/iposApi';
-import { buildDashboardBriefPrompt, buildIpoBriefPrompt, buildMarketBriefPrompt, buildNewsBriefPrompt, buildPortfolioFacts, hasEnoughIpoData, ipoFacts } from './briefPrompts';
+import { buildDashboardBriefPrompt, buildIpoBriefPrompt, ipoCategoryFacts, buildMarketBriefPrompt, buildNewsBriefPrompt, buildPortfolioFacts, hasEnoughIpoData, ipoFacts } from './briefPrompts';
 
 const h = (symbol: string, sector: string | null, quantity: number, ltp: number | null, dayChange: number | null) => ({ symbol, name: symbol + ' Ltd', sector, quantity, avgPrice: 100, ltp, dayChange });
 const alert = (over: Partial<Alert>): Alert => ({ id: 'a', userId: 'u', type: 'price_threshold', symbol: 'TCS', params: { direction: 'below', threshold: 3900 }, note: null, status: 'active', rearm: false, ...over }) as Alert;
@@ -131,5 +131,32 @@ describe('ipoFacts / buildIpoBriefPrompt', () => {
   it('includes the retrieved passages when there are some', () => {
     const p = buildIpoBriefPrompt(ipo, [{ source: 'DRHP', text: 'Acme leads the niche cable market with 30% share.' }]);
     expect(p).toContain('30% share');
+  });
+});
+
+describe('ipoCategoryFacts / category demand in the IPO prompt (#285)', () => {
+  const base = { name: 'Acme Ltd', category: 'sme', status: 'open', price: 245, ipo_size_cr: 120, lot_size: 600, subscription_times: 11.98, gmp: 65, gmp_pct: 26.5, open_date: '2026-11-19', close_date: '2026-11-23', listing_date: '2026-11-27', anchor: true } as unknown as Ipo;
+  const withCats = { ...base, sub_qib: 0, sub_nii: 20, sub_snii: 13.23, sub_bnii: 23.39, sub_retail: 15.42 } as Ipo;
+
+  it('is absent without a category figure, so the prompt says nothing instead of inventing', () => {
+    expect(ipoCategoryFacts(base)).toBeNull();
+    expect(buildIpoBriefPrompt(base, [])).not.toMatch(/CATEGORY DEMAND/);
+  });
+  it('gives the multiples, the computed odds and the smallest applications', () => {
+    const f = ipoCategoryFacts(withCats)!;
+    expect(f).toContain('retail 15.42x (about 6% chance of an allotment, smallest application ₹1,47,000)');
+    expect(f).toContain('small NII 13.23x (about 8% chance of an allotment');
+    expect(f).toContain('big NII 23.39x (about 4% of the bid allotted (proportionate)');
+    expect(f).toContain('QIB 0.00x');
+    expect(f).toMatch(/estimates from the multiples, not promises/i);
+  });
+  it('says a category is fully allotted when it is not oversubscribed', () => {
+    expect(ipoCategoryFacts({ ...withCats, sub_retail: 0.7 } as Ipo)).toContain('retail 0.70x (full allotment (not oversubscribed)');
+  });
+  it('leaves an unknown category as not available', () => {
+    expect(ipoCategoryFacts({ ...withCats, sub_snii: null, sub_bnii: null } as Ipo)).toContain('small NII not available (not available');
+  });
+  it('is in the built prompt', () => {
+    expect(buildIpoBriefPrompt(withCats, [])).toMatch(/CATEGORY DEMAND/);
   });
 });

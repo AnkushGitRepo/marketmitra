@@ -53,6 +53,15 @@
 - [ ] After the schedule has run once, a fresh IPO card opens with its brief already written.
 - [ ] Spot-check one brief's figures (fresh issue vs OFS, P/E vs peers) against the prospectus or the exchange; the search tool's facts were not verified at build time.
 
+## 4b. Category-wise IPO subscription (#285, ADR 0074)
+
+- [ ] 🔒 The maintainer has run `alembic upgrade head` on production Neon (revision `f2a6c8d41b95`) and the data service is redeployed (the app does not need Vercel for these two; they can be done before the pause lifts).
+- [ ] After a `refresh-ipos` run: `GET <data service>/ipos` returns `sub_retail`, `sub_snii`, `sub_bnii`, `sub_nii`, `sub_qib` and `sub_as_of` for open and closed IPOs; spot-check one against the aggregator's subscription page for the same IPO.
+- [ ] The run's log shows "category-wise subscription read for N IPOs" with N close to the number of open and closed IPOs, and takes well under the 10-minute job limit.
+- [ ] On `/ipos`, an open IPO's details show the category table (multiples, smallest application, estimated odds) with the "as of" time; an upcoming IPO shows no table.
+- [ ] The brief quotes the category demand as numbers and does **not** say which category to choose when guarded; as the admin with Unrestricted Mitra on it adds the "Best category" item.
+- [ ] Sanity-check the odds on one closed IPO against its real basis of allotment (retail applications allotted / applied) to see how far the 1 / subscription estimate is off.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

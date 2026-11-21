@@ -3,9 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { StructuredBriefCard } from '@/components/dashboard-charts/StructuredBriefCard';
+import { IpoCategoryOdds } from './IpoCategoryOdds';
 import { hasEnoughIpoData } from '@/lib/ai/briefPrompts';
 import type { IpoTrigger } from '@/lib/alerts/types';
 import type { Ipo } from '@/lib/dashboard/iposApi';
+import { ipoCategoryView } from '@/lib/dashboard/ipoCategoryView';
 import { fmtDay } from '@/lib/dashboard/ipoView';
 import { safeHref } from '@/lib/security/safeHref';
 import styles from './IpoDetails.module.css';
@@ -51,6 +53,8 @@ export function IpoDetails({ ipo, aiKeyAvailable, brief = null }: { readonly ipo
     }
   };
 
+  const categories = ipoCategoryView(ipo);
+
   return (
     <div className={styles.detail}>
       <dl className={styles.grid}>
@@ -84,6 +88,8 @@ export function IpoDetails({ ipo, aiKeyAvailable, brief = null }: { readonly ipo
           </>
         )}
       </p>
+
+      {categories && <IpoCategoryOdds view={categories} />}
 
       <div className={styles.insight}>
         {hasEnoughIpoData(ipo) ? (

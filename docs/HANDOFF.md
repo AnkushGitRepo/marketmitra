@@ -91,6 +91,9 @@
 - Until then nothing changes on production: ordinary users and the admin alike get guarded Mitra, no Advisor, and the AI Auto-Chart trade setup does not appear. Verify afterwards with a second, non-admin account: the setting must be refused (403) and `/advisor` must 404.
 - The code for this is in PR #244 (merge it first). The advisor cron and local scheduler stay local-only; a hosted admin runs the thesis review from the Advisor page.
 
+**Pending production steps for category-wise IPO subscription (#285, ADR 0074; added 2026-11-21)**
+- The data service and the app code are on `main` once the PR merges, but nothing is live: (1) the maintainer runs `alembic upgrade head` on production Neon (revision `f2a6c8d41b95`, six nullable columns on `ipos`, additive); (2) deploy the data service to Cloud Run with `services/fundamentals-api/deploy-cloud-run.sh` (Cloud Run is not paused); (3) run the `refresh-ipos` workflow once by hand and check `GET /ipos` for `sub_retail` on an open or closed IPO; (4) the app part ships with the next app deploy (Vercel is paused until 12 December). The app treats the new fields as optional, so deploying in any order is safe. Checks are in `docs/POST-PAUSE-CHECKS.md` section 4b.
+
 **Changelog rule (ADR 0061, 2026-11-12)**
 - `CHANGELOG.md` follows Keep a Changelog 1.1.0 (AGENTS.md rule 9, ADR 0061); the release script and a CI test enforce it (issue #183). Add your entry under `## [Unreleased]` in each PR; `npm run release` moves it into the new version.
 

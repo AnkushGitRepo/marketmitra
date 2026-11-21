@@ -25,10 +25,11 @@ _STATUS_ORDER = {"open": 0, "upcoming": 1, "closed": 2, "listed": 3}
 # scraper dict -> ORM column (identical names except this remap)
 _REMAP = {"updated_on": "gmp_updated_at"}
 _DATE_FIELDS = {"open_date", "close_date", "allotment_date", "listing_date"}
-_DATETIME_FIELDS = {"gmp_updated_at"}
+_DATETIME_FIELDS = {"gmp_updated_at", "sub_as_of"}
 _ORM_FIELDS = {
     "slug", "name", "source_url", "category", "status", "price", "ipo_size_cr",
-    "lot_size", "rating", "subscription_times", "anchor", "gmp", "gmp_pct",
+    "lot_size", "rating", "subscription_times", "sub_qib", "sub_nii", "sub_snii", "sub_bnii",
+    "sub_retail", "anchor", "gmp", "gmp_pct",
     "gmp_low", "gmp_high", *_DATETIME_FIELDS, *_DATE_FIELDS,
 }
 
@@ -145,6 +146,12 @@ def _to_dict(i: IpoORM) -> dict:
         "lot_size": i.lot_size,
         "rating": i.rating,
         "subscription_times": f(i.subscription_times),
+        "sub_qib": f(i.sub_qib),
+        "sub_nii": f(i.sub_nii),
+        "sub_snii": f(i.sub_snii),
+        "sub_bnii": f(i.sub_bnii),
+        "sub_retail": f(i.sub_retail),
+        "sub_as_of": i.sub_as_of,
         "anchor": i.anchor,
         "gmp": f(i.gmp),
         "gmp_pct": f(i.gmp_pct),

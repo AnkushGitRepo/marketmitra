@@ -226,6 +226,13 @@ class IpoORM(Base):
     lot_size: Mapped[int | None]
     rating: Mapped[int | None]  # 0-5 "fire" rating from the aggregator
     subscription_times: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    # Category-wise subscription multiples (#285), the latest bidding day on the aggregator's subscription page. Null = unknown.
+    sub_qib: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    sub_nii: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    sub_snii: Mapped[float | None] = mapped_column(Numeric(12, 2))  # small NII: above Rs 2 lakh up to Rs 10 lakh
+    sub_bnii: Mapped[float | None] = mapped_column(Numeric(12, 2))  # big NII: above Rs 10 lakh
+    sub_retail: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    sub_as_of: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     anchor: Mapped[bool | None]
 
     gmp: Mapped[float | None] = mapped_column(Numeric(12, 2))

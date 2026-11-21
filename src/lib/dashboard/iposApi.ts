@@ -18,6 +18,14 @@ export interface Ipo {
   lot_size: number | null;
   rating: number | null;
   subscription_times: number | null;
+  /** Category-wise subscription multiples from the latest bidding day (#285); absent or null when unknown. */
+  sub_qib?: number | null;
+  sub_nii?: number | null;
+  sub_snii?: number | null;
+  sub_bnii?: number | null;
+  sub_retail?: number | null;
+  /** When those figures were read (ISO). */
+  sub_as_of?: string | null;
   anchor: boolean | null;
   gmp: number | null;
   gmp_pct: number | null;

@@ -2,7 +2,7 @@
 fixture, plus the /ipos route shape (service monkeypatched). No network, no DB.
 """
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
@@ -148,6 +148,8 @@ def test_ipos_route_shape(client, monkeypatch):
                 "category": "mainboard", "status": "open", "price": 100.0,
                 "ipo_size_cr": 500.0, "lot_size": 10, "rating": 3,
                 "subscription_times": 2.5, "anchor": True,
+                "sub_qib": 1.2, "sub_nii": 3.4, "sub_snii": 2.9, "sub_bnii": 3.7,
+                "sub_retail": 2.5, "sub_as_of": datetime(2026, 9, 6, 13, 30, tzinfo=UTC),
                 "gmp": 12.0, "gmp_pct": 12.0, "gmp_low": 8.0, "gmp_high": 15.0,
                 "gmp_updated_at": datetime(2026, 9, 6, 14, 0),
                 "open_date": date(2026, 9, 5), "close_date": date(2026, 9, 8),
@@ -164,6 +166,9 @@ def test_ipos_route_shape(client, monkeypatch):
     assert body[0]["slug"] == "acme-ipo"
     assert body[0]["gmp_pct"] == 12.0
     assert body[0]["category"] == "mainboard"
+    assert body[0]["sub_retail"] == 2.5
+    assert body[0]["sub_bnii"] == 3.7
+    assert body[0]["sub_as_of"].startswith("2026-09-06T13:30")
 
 
 def test_ipos_route_rejects_bad_status(client):
@@ -232,3 +237,42 @@ class TestRowToValues:
 
         assert _row_to_values({"name": "A"}) is None
         assert _row_to_values({"slug": "a"}) is None
+
+
+def test_ipos_route_leaves_category_subscription_null_when_unknown(client, monkeypatch):
+    async def fake_get_ipos(session, status=None):
+        return [
+            {
+                "slug": "bare-ipo", "name": "Bare", "source_url": None, "category": "sme", "status": "upcoming",
+                "price": None, "ipo_size_cr": None, "lot_size": None, "rating": None, "subscription_times": None,
+                "anchor": None, "gmp": None, "gmp_pct": None, "gmp_low": None, "gmp_high": None,
+                "gmp_updated_at": None, "open_date": None, "close_date": None, "allotment_date": None,
+                "listing_date": None, "source_tier": "tier3_ipo_aggregator", "fetched_at": datetime(2026, 9, 6, 14, 5, tzinfo=UTC),
+            }
+        ]
+
+    monkeypatch.setattr("app.api.routes.ipos.svc.get_ipos", fake_get_ipos)
+    row = client.get("/ipos").json()[0]
+    assert all(row[k] is None for k in ("sub_qib", "sub_nii", "sub_snii", "sub_bnii", "sub_retail", "sub_as_of"))
+
+
+def test_ingest_row_keeps_stored_subscription_when_the_refresh_has_none():
+    from app.services.ipo_service import _row_to_values
+
+    dashboard_only = _row_to_values({"slug": "a", "name": "A", "gmp": 5.0})
+    assert dashboard_only is not None
+    assert not any(k.startswith("sub_") for k in dashboard_only)  # so the upsert leaves the stored columns alone
+
+
+def test_ingest_row_carries_category_subscription_and_reads_its_timestamp():
+    from app.services.ipo_service import _row_to_values
+
+    values = _row_to_values(
+        {"slug": "a", "name": "A", "sub_retail": 15.42, "sub_snii": 13.23, "sub_bnii": 23.39, "sub_nii": 20.0,
+         "sub_qib": 0.0, "sub_as_of": "2026-11-20T17:56:00+05:30", "sub_total": 11.98}
+    )
+    assert values is not None
+    assert values["sub_retail"] == 15.42
+    assert values["sub_qib"] == 0.0
+    assert values["sub_as_of"] == datetime.fromisoformat("2026-11-20T17:56:00+05:30")
+    assert "sub_total" not in values  # check-only, not a column

@@ -24,6 +24,13 @@ class IpoOut(BaseModel):
     lot_size: int | None
     rating: int | None
     subscription_times: float | None
+    # Category-wise subscription multiples (retail, small/big NII, QIB), null when unknown (#285).
+    sub_qib: float | None = None
+    sub_nii: float | None = None
+    sub_snii: float | None = None
+    sub_bnii: float | None = None
+    sub_retail: float | None = None
+    sub_as_of: datetime | None = None
     anchor: bool | None
     # GMP: unofficial grey-market estimate from a third-party tracker — not
     # from any exchange, not a prediction.
