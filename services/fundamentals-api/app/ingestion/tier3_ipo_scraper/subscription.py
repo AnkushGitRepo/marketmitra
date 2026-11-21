@@ -11,6 +11,7 @@ unknown (None), never zero. `sub_total` is returned for checking only: the dashb
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from datetime import datetime
@@ -60,9 +61,31 @@ def _multiple(text: str) -> float | None:
     return _num(cleaned) if cleaned and cleaned not in {"-", "--"} else None
 
 
+_PAYLOAD_CHUNK_RE = re.compile(r"self\.__next_f\.push\(\[1,(\".*?\")\]\)</script>", re.DOTALL)
+
+
+def _server_payload(html: str) -> str:
+    """The Next.js server payload of a page: its `self.__next_f.push([1,"..."])` chunks, decoded and joined. The live subscription page
+    carries the bid table here as markup; the DOM only gets it after client hydration, which a headless render in CI never reached
+    (#296). A chunk that is not valid JSON is skipped."""
+    parts: list[str] = []
+    for raw in _PAYLOAD_CHUNK_RE.findall(html):
+        try:
+            decoded = json.loads(raw)
+        except ValueError:
+            continue
+        if isinstance(decoded, str):
+            parts.append(decoded)
+    return "".join(parts)
+
+
 def parse_subscription(html: str) -> dict | None:
-    """The latest bidding day's category multiples and its timestamp, or None when the page has no bid table or no rows yet."""
+    """The latest bidding day's category multiples and its timestamp, or None when the page has no bid table or no rows yet.
+
+    Reads the table from the DOM when it is there (a rendered or saved page) and otherwise from the server payload (a plain GET)."""
     tables = Selector(html).css("table.bid-table")
+    if not tables:
+        tables = Selector(_server_payload(html)).css("table.bid-table") if "__next_f" in html else []
     if not tables:
         return None
     table = tables[0]

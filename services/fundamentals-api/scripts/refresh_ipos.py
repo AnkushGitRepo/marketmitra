@@ -41,6 +41,7 @@ _USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
+_PAGE_HEADERS = {"User-Agent": _USER_AGENT, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "en-US,en;q=0.9"}
 
 
 def render_html(url: str) -> str:
@@ -63,34 +64,31 @@ def render_html(url: str) -> str:
 
 def add_category_subscription(rows: list[dict]) -> list[dict]:
     """Rows with the category-wise subscription merged in where its page could be read. A row whose page fails or has no table is
-    returned unchanged, so the previously stored figures stay."""
+    returned unchanged, so the previously stored figures stay.
+
+    Plain GETs, not the headless browser: the page's own server response carries the table (#296)."""
     targets = [
         (i, url)
         for i, r in enumerate(rows)
         if r.get("status") in _SUBSCRIPTION_STATUSES and (url := subscription_url(r.get("source_url")))
     ][:_MAX_SUBSCRIPTION_PAGES]
-    if not targets:
-        return rows
-
-    from playwright.sync_api import sync_playwright
 
     merged = list(rows)
-    with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True)
-        page = browser.new_page(user_agent=_USER_AGENT)
+    with httpx.Client(headers=_PAGE_HEADERS, timeout=30, follow_redirects=True) as client:
         for n, (i, url) in enumerate(targets):
             if n:
                 time.sleep(_PAGE_PAUSE_SECONDS)
             try:
-                page.goto(url, wait_until="networkidle", timeout=60_000)
-                page.wait_for_selector("table.bid-table", timeout=15_000)
-                sub = parse_subscription(page.content())
+                response = client.get(url)
+                response.raise_for_status()
+                sub = parse_subscription(response.text)
             except Exception as exc:  # noqa: BLE001 - one bad page must not stop the refresh
                 print(f"  subscription skipped for {rows[i]['slug']}: {type(exc).__name__}", file=sys.stderr, flush=True)
                 continue
             if sub:
                 merged[i] = {**rows[i], **sub}
-        browser.close()
+            else:
+                print(f"  no subscription table for {rows[i]['slug']}", file=sys.stderr, flush=True)
     return merged
 
 

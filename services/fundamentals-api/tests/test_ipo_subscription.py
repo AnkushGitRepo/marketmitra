@@ -1,6 +1,7 @@
 """Offline tests: the per-IPO subscription page parser (#285) against the maintainer-saved fixture, and the
 dashboard-link -> subscription-page URL pattern. No network, no DB."""
 
+import json
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -105,3 +106,40 @@ class TestParseSubscription:
         assert got is not None
         assert got["sub_as_of"] is None
         assert got["sub_retail"] == 1.1
+
+
+class TestServerPayload:
+    """The live page serves the table inside the Next.js server payload (`self.__next_f.push([1,"..."])`); the DOM table only appears
+    after client hydration, which the CI render never reached (#296). The result must be the same from either."""
+
+    @staticmethod
+    def _as_payload(table_html: str) -> str:
+        # Chunks are JSON string literals; split the markup in two so a table spanning chunks is covered too.
+        half = len(table_html) // 2
+        chunks = [table_html[:half], table_html[half:]]
+        scripts = "".join(f"<script>self.__next_f.push([1,{json.dumps(c)}])</script>" for c in chunks)
+        return f"<html><head><title>x</title></head><body><div id='root'></div>{scripts}</body></html>"
+
+    def test_reads_the_same_figures_from_the_server_payload_as_from_the_dom(self, html: str) -> None:
+        import re
+
+        table = re.search(r'<table class="bid-table">.*?</table>', html, re.DOTALL).group(0)  # type: ignore[union-attr]
+        from_payload = parse_subscription(self._as_payload(table))
+        assert from_payload is not None
+        assert from_payload == parse_subscription(html)
+
+    def test_prefers_the_dom_table_when_both_exist(self, html: str) -> None:
+        stale = (
+            '<script>self.__next_f.push([1,"<table class=\\"bid-table\\"><thead><tr><th>Day</th><th>Date</th><th>RII</th>'
+            '</tr></thead><tbody><tr><td>Day 1</td><td>19th Nov 2026 17:56</td><td>1.00x</td></tr></tbody></table>"])</script>'
+        )
+        got = parse_subscription(html + stale)
+        assert got is not None
+        assert got["sub_retail"] == 15.42
+
+    def test_is_none_when_neither_has_a_table(self) -> None:
+        payload = '<script>self.__next_f.push([1,"{\\"hello\\":\\"world\\"}"])</script>'
+        assert parse_subscription(f"<html><body>{payload}</body></html>") is None
+
+    def test_ignores_a_payload_chunk_that_is_not_valid_json(self) -> None:
+        assert parse_subscription('<html><script>self.__next_f.push([1,"broken \\q"])</script></html>') is None
