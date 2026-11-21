@@ -13,7 +13,7 @@ export interface StructuredBrief {
   items: BriefItem[];
 }
 
-const MAX_TEXT = 320;
+const MAX_TEXT = 480;
 
 const TONE_WORDS: Record<string, Tone> = {
   positive: 'positive',
@@ -149,4 +149,10 @@ export function splitTickers(text: string): TickerSegment[] {
 /** Keeps `[TICKER]` tags only for tickers in the data (case-insensitive); other tags lose their brackets, so no link points at an invented ticker. */
 export function sanitizeTickers(text: string, allowed: ReadonlySet<string>): string {
   return text.replace(/\[([A-Za-z][A-Za-z0-9&-]{1,19})\]/g, (_m, t: string) => (allowed.has(t.toUpperCase()) ? `[${t.toUpperCase()}]` : t));
+}
+
+/** A stored brief without the given item keys (serialized again); content that is not a structured brief is returned unchanged. */
+export function dropItemKeys(content: string, keys: readonly string[], spec: BriefSpec): string {
+  const brief = readStoredBrief(content, spec);
+  return brief ? serializeBrief({ items: brief.items.filter((i) => !keys.includes(i.key)) }) : content;
 }

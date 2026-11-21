@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DASHBOARD_SPEC, NEWS_SPEC } from './briefSpecs';
 
-const state = { result: { ok: true, text: '', model: 'm', finishReason: 'stop' } as Record<string, unknown>, opts: undefined as { maxOutputTokens?: number } | undefined };
+const state = { result: { ok: true, text: '', model: 'm', finishReason: 'stop' } as Record<string, unknown>, opts: undefined as { maxOutputTokens?: number; tools?: unknown } | undefined, calls: [] as Array<{ tools?: unknown }>, groundedResult: null as Record<string, unknown> | null };
 vi.mock('./generate', () => ({
-  generateInsightText: async (_c: unknown, _s: string, _p: string, opts?: { maxOutputTokens?: number }) => {
+  generateInsightText: async (_c: unknown, _s: string, _p: string, opts?: { maxOutputTokens?: number; tools?: unknown }) => {
     state.opts = opts;
-    return state.result;
+    state.calls.push({ tools: opts?.tools });
+    return opts?.tools && state.groundedResult ? state.groundedResult : state.result;
   },
 }));
+vi.mock('./providers', () => ({ groundingTools: (c: { provider?: string }) => (c.provider === 'gemini' ? { google_search: {} } : undefined) }));
 const logEvent = vi.fn(async () => undefined);
 vi.mock('@/lib/system/eventLog', () => ({ logEvent }));
 
@@ -18,6 +20,8 @@ const run = (spec = DASHBOARD_SPEC, allowedTickers?: ReadonlySet<string>) =>
 
 beforeEach(() => {
   logEvent.mockClear();
+  state.calls = [];
+  state.groundedResult = null;
   state.result = ok([{ key: 'return', tone: 'positive', text: 'Net +₹1,200.' }]);
 });
 
@@ -53,5 +57,20 @@ describe('generateStructuredBrief', () => {
     state.result = ok([{ key: 'earnings', tone: 'positive', text: '[PNB] beat; [FAKECO] jumped.' }]);
     const r = await run(NEWS_SPEC, new Set(['PNB']));
     expect(JSON.parse((r as { content: string }).content).items[0].text).toBe('[PNB] beat; FAKECO jumped.');
+  });
+  it('searches the web only when asked and only for a provider that has a search tool', async () => {
+    const base = { system: 's', prompt: 'p', spec: DASHBOARD_SPEC };
+    await generateStructuredBrief({ ...base, aiConfig: { provider: 'gemini' } as never, grounded: true });
+    expect(state.calls).toEqual([{ tools: { google_search: {} } }]);
+    state.calls = [];
+    await generateStructuredBrief({ ...base, aiConfig: { provider: 'gemini' } as never });
+    await generateStructuredBrief({ ...base, aiConfig: { provider: 'anthropic' } as never, grounded: true });
+    expect(state.calls).toEqual([{ tools: undefined }, { tools: undefined }]);
+  });
+  it('retries without search when the grounded call fails', async () => {
+    state.groundedResult = { ok: false, error: 'search tool not supported' };
+    const r = await generateStructuredBrief({ system: 's', prompt: 'p', spec: DASHBOARD_SPEC, aiConfig: { provider: 'gemini' } as never, grounded: true });
+    expect(r).toMatchObject({ model: 'm' });
+    expect(state.calls).toEqual([{ tools: { google_search: {} } }, { tools: undefined }]);
   });
 });

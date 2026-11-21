@@ -3,6 +3,8 @@ import { getIpoWatch } from '@/lib/alerts/store';
 import { getIpos } from '@/lib/dashboard/iposApi';
 import { istToday } from '@/lib/dashboard/ipoFilters';
 import { getAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
+import { resolvePromptMode } from '@/lib/ai/promptModeStore';
+import { getCachedIpoBriefs } from '@/lib/ai/ipoBriefCache';
 import type { IpoWatchParams } from '@/lib/alerts/types';
 import { IposPageClient } from './IposPageClient';
 import styles from './page.module.css';
@@ -27,9 +29,13 @@ export default async function IposPage() {
     userId ? resolveHasAiKey(getAiConfig(userId, { allowEnv: true })) : Promise.resolve(false),
   ]);
 
+  // The last brief generated for each IPO, so a page reload shows it instead of an empty card (the server already caches them).
+  const mode = userId ? await resolvePromptMode(userId) : 'guarded';
+  const briefs = await getCachedIpoBriefs(ipos.map((i) => i.slug), mode === 'unrestricted' ? userId : null);
+
   return (
     <div className={styles.pageRoot}>
-      <IposPageClient ipos={ipos} today={istToday(new Date())} initialWatch={watch} aiKeyAvailable={aiKeyAvailable} />
+      <IposPageClient ipos={ipos} today={istToday(new Date())} initialWatch={watch} aiKeyAvailable={aiKeyAvailable} briefs={briefs} />
     </div>
   );
 }

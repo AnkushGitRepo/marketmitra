@@ -3,7 +3,7 @@
 import { logEvent } from '@/lib/system/eventLog';
 import type { BriefSpec } from './briefSpecs';
 import { generateInsightText } from './generate';
-import type { AiConfig } from './providers';
+import { groundingTools, type AiConfig } from './providers';
 import { parseStructured, sanitizeTickers, serializeBrief } from './structuredBrief';
 
 /** Thinking models spend part of the output budget on hidden reasoning; 4096 was not enough for the stock brief (#117). */
@@ -18,10 +18,15 @@ export interface StructuredRequest {
   spec: BriefSpec;
   /** When given, `[TICKER]` tags for any other ticker are unwrapped, so the UI never links an invented ticker. */
   allowedTickers?: ReadonlySet<string>;
+  /** Let the model search the web for the facts the prompt lacks (Gemini only; ignored for other providers). A failed grounded call is retried without it. */
+  grounded?: boolean;
 }
 
 export async function generateStructuredBrief(req: StructuredRequest): Promise<{ content: string; model: string } | { error: string }> {
-  const gen = await generateInsightText(req.aiConfig, req.system, req.prompt, { maxOutputTokens: MAX_OUTPUT_TOKENS });
+  const tools = req.grounded ? groundingTools(req.aiConfig) : undefined;
+  const options = { maxOutputTokens: MAX_OUTPUT_TOKENS };
+  const grounded = tools ? await generateInsightText(req.aiConfig, req.system, req.prompt, { ...options, tools }) : null;
+  const gen = grounded?.ok ? grounded : await generateInsightText(req.aiConfig, req.system, req.prompt, options);
   if (!gen.ok) return { error: gen.error };
 
   const parsed = parseStructured(gen.text, req.spec);

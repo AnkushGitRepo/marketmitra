@@ -104,12 +104,12 @@ describe('ipoFacts / buildIpoBriefPrompt', () => {
     expect(ipoFacts({ ...ipo, gmp: null } as Ipo).impliedListing).toBeNull();
     expect(ipoFacts({ ...ipo, lot_size: null } as Ipo).minInvestment).toBeNull();
   });
-  it('treats GMP as an unofficial estimate and says business and risk come only from the passages, or are not available', () => {
+  it('treats GMP as an unofficial estimate and asks for research, not a pre-filled "not available", when there are no passages', () => {
     const p = buildIpoBriefPrompt(ipo, []);
     expect(p).toMatch(/unofficial/i);
     expect(p).toContain('₹120');
-    expect(p).toMatch(/business[^\n]*not available/i);
-    expect(p).toMatch(/risk[^\n]*not available/i);
+    expect(p).toMatch(/research the company/i);
+    expect(p).not.toMatch(/business: not available/i);
   });
   it('says outright when there is no implied listing price, so a bare GMP cannot be mistaken for one', () => {
     const p = buildIpoBriefPrompt({ ...ipo, price: null } as Ipo, []);

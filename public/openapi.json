@@ -1425,7 +1425,7 @@
           "AI"
         ],
         "summary": "IPO brief",
-        "description": "Four items: `listing` (GMP, GMP % and the implied listing price from the price band, the GMP being an unofficial estimate), `offer` (size, lot, minimum investment, subscription, dates), `business` and `risk` (only from retrieved filings or news, otherwise stated as not available). Reply `content` is JSON, `{ items: [{ key, tone, text }] }` (tone: positive | neutral | warning). Uses the caller's own AI key (BYOK). Cached per user (shared for IPOs); briefs cached before v0.4.0 were prose and are regenerated. Body `{ force? }` (`{ slug, force? }` for an IPO).",
+        "description": "Four items: `listing` (GMP, GMP % and the implied listing price from the price band, the GMP being an unofficial estimate), `offer` (fresh issue versus offer for sale, use of proceeds, size, dates), `business` and `risk`. The model researches the company from retrieved filings and news and, with a Gemini key, Google Search; a fact no source gives is stated as not disclosed, never invented. For a local install with Unrestricted Mitra on, or a hosted admin, two more items, `listingcall` and `longterm`, are added; that brief is cached per user and never shared. Reply `content` is JSON, `{ items: [{ key, tone, text }] }` (tone: positive | neutral | warning). Uses the caller's own AI key (BYOK). Cached per user (shared for IPOs); briefs cached before v0.4.0 were prose and are regenerated. Body `{ force? }` (`{ slug, force? }` for an IPO).",
         "security": [
           {
             "cookieAuth": []

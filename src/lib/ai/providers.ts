@@ -1,7 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import type { LanguageModel } from 'ai';
+import type { LanguageModel, ToolSet } from 'ai';
 import type { AiProvider } from '@/lib/userSettings';
 
 // --- Model lists ---------------------------------------------------------
@@ -113,4 +113,13 @@ export function resolveModel(config: AiConfig): LanguageModel {
     case 'openrouter':
       return createOpenRouter({ apiKey: config.apiKey })(model);
   }
+}
+
+/**
+ * Web-search tools for one grounded call. Only Gemini has a provider-run search tool here (Google Search grounding, free with the user's own
+ * key); the other providers answer from the prompt and the retrieved passages, so they get none.
+ */
+export function groundingTools(config: AiConfig): ToolSet | undefined {
+  if (config.provider !== 'gemini') return undefined;
+  return { google_search: createGoogleGenerativeAI({ apiKey: config.apiKey }).tools.googleSearch({}) };
 }

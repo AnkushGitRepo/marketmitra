@@ -13,10 +13,12 @@ interface IpoCardProps {
   /** Today's date in India (YYYY-MM-DD). */
   readonly today: string;
   readonly aiKeyAvailable: boolean;
+  /** The stored brief content for this IPO, if one was generated before. */
+  readonly brief?: string | null;
 }
 
 /** One IPO with the numbers a retail investor decides on visible at once: GMP, status, price, lot, size, subscription, timeline. */
-export function IpoCard({ ipo, today, aiKeyAvailable }: IpoCardProps) {
+export function IpoCard({ ipo, today, aiKeyAvailable, brief = null }: IpoCardProps) {
   const [open, setOpen] = useState(false);
   const badge = ipoBadge(ipo, today);
   const gmp = gmpView(ipo);
@@ -70,7 +72,7 @@ export function IpoCard({ ipo, today, aiKeyAvailable }: IpoCardProps) {
         </button>
       </div>
 
-      {open && <IpoDetails ipo={ipo} aiKeyAvailable={aiKeyAvailable} />}
+      {open && <IpoDetails ipo={ipo} aiKeyAvailable={aiKeyAvailable} brief={brief} />}
     </li>
   );
 }

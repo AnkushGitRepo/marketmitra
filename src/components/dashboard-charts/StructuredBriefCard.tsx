@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { BRIEF_SPECS, type BriefSurface } from '@/lib/ai/briefSpecs';
+import { BRIEF_SPECS, IPO_VERDICT_KEYS, type BriefSurface } from '@/lib/ai/briefSpecs';
+import { UNRESTRICTED_DISCLAIMER } from '@/lib/ai/promptMode';
 import { readStoredBrief, splitTickers, toneLabel, type StructuredBrief } from '@/lib/ai/structuredBrief';
 import styles from './StructuredBriefCard.module.css';
 
@@ -23,6 +24,7 @@ interface StructuredBriefCardProps {
   readonly chatPrompt: string;
 }
 
+const SKELETON_ROWS = 4;
 const DISCLAIMER = 'AI-generated summary of public data, not investment advice.';
 
 /** Text with `[TICKER]` tags rendered as links to the stock page. The server only lets tags through for tickers present in the data. */
@@ -74,6 +76,8 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
   };
 
   const labels = new Map(spec.items.map((i) => [i.key, i.label]));
+  // Verdict items exist only in a brief the server wrote in unrestricted mode (ADR 0054, 0070).
+  const unrestricted = surface === 'ipo' && (brief?.items.some((i) => IPO_VERDICT_KEYS.includes(i.key)) ?? false);
 
   return (
     <section className={styles.card} aria-label={title}>
@@ -85,13 +89,13 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
               {loading ? 'Writing…' : 'Regenerate'}
             </button>
           )}
-          <span className={styles.badge}>Mitra</span>
+          <span className={styles.badge}>{unrestricted ? 'Mitra · Unrestricted' : 'Mitra'}</span>
         </div>
       </div>
 
       {loading && !brief ? (
         <div className={styles.skeleton} aria-label="Writing the brief">
-          {spec.items.map((i) => (
+          {spec.items.slice(0, SKELETON_ROWS).map((i) => (
             <div key={i.key} className={styles.skelRow}>
               <span className={styles.skelBar} />
               <span className={styles.skelLine} />
@@ -113,7 +117,7 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
               </li>
             ))}
           </ul>
-          <p className={styles.meta}>{DISCLAIMER}</p>
+          <p className={styles.meta}>{unrestricted ? UNRESTRICTED_DISCLAIMER : DISCLAIMER}</p>
         </>
       ) : !hasKey ? (
         <p className={styles.body}>
