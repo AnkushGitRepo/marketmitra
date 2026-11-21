@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DASHBOARD_SPEC, IPO_SPEC, MARKET_SPEC, NEWS_SPEC } from './briefSpecs';
-import { parseStructured, readStoredBrief, sanitizeTickers, serializeBrief, splitTickers, toneLabel } from './structuredBrief';
+import { dropItemKeys, parseStructured, readStoredBrief, sanitizeTickers, serializeBrief, splitTickers, toneLabel } from './structuredBrief';
 
 const item = (key: string, tone: string, text = 'Net +₹1,200 (+0.8%).') => ({ key, tone, text });
 const json = (items: unknown[]) => JSON.stringify({ items });
@@ -37,7 +37,7 @@ describe('parseStructured', () => {
   });
   it('drops unknown keys, empty text and duplicates (first wins), and trims long text', () => {
     const b = parseStructured(json([item('return', 'positive', 'first'), item('return', 'warning', 'second'), item('nonsense', 'positive'), item('risk', 'warning', '   '), item('exposure', 'neutral', 'x'.repeat(600))]), DASHBOARD_SPEC);
-    expect(b?.items.map((i) => [i.key, i.text.length])).toEqual([['return', 5], ['exposure', 320]]);
+    expect(b?.items.map((i) => [i.key, i.text.length])).toEqual([['return', 5], ['exposure', 480]]);
   });
   it('returns null when nothing usable can be recovered', () => {
     expect(parseStructured('sorry', DASHBOARD_SPEC)).toBeNull();
@@ -77,5 +77,12 @@ describe('storage and labels', () => {
   });
   it('has distinct keys within each spec', () => {
     for (const s of [DASHBOARD_SPEC, MARKET_SPEC, NEWS_SPEC, IPO_SPEC]) expect(new Set(s.items.map((i) => i.key)).size).toBe(s.items.length);
+  });
+});
+
+describe('dropItemKeys', () => {
+  it('removes the named items and keeps the rest', () => {
+    const content = JSON.stringify({ items: [item('listing', 'neutral', 'a'), item('listingcall', 'positive', 'b')] });
+    expect(JSON.parse(dropItemKeys(content, ['listingcall'], IPO_SPEC)).items.map((i: { key: string }) => i.key)).toEqual(['listing']);
   });
 });

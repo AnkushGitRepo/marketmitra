@@ -18,7 +18,7 @@ const TRIGGER_LABELS: Record<IpoTrigger, string> = {
 };
 
 /** The extra detail behind a card: GMP range, anchor, rating, the AI brief and a per-IPO alert. */
-export function IpoDetails({ ipo, aiKeyAvailable }: { readonly ipo: Ipo; readonly aiKeyAvailable: boolean }) {
+export function IpoDetails({ ipo, aiKeyAvailable, brief = null }: { readonly ipo: Ipo; readonly aiKeyAvailable: boolean; readonly brief?: string | null }) {
   const router = useRouter();
   const [trigger, setTrigger] = useState<IpoTrigger>('opens');
   const [gmpPct, setGmpPct] = useState('20');
@@ -92,7 +92,7 @@ export function IpoDetails({ ipo, aiKeyAvailable }: { readonly ipo: Ipo; readonl
             title="IPO brief"
             endpoint="/api/insights/ipo"
             body={{ slug: ipo.slug }}
-            initial={null}
+            initial={brief}
             hasKey={aiKeyAvailable}
             emptyText="No brief yet. Ask Mitra for the listing signal, offer structure, business and key risk."
             noKeyText="to get a four-point IPO scorecard. MarketMitra charges nothing for it."

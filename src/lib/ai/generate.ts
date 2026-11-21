@@ -45,7 +45,7 @@ export async function generateInsightText(
   config: AiConfig,
   system: string,
   prompt: string,
-  opts: { maxOutputTokens?: number } = {}
+  opts: { maxOutputTokens?: number; tools?: ToolSet } = {}
 ): Promise<GenerateResult | GenerateError> {
   try {
     const model = resolveModel(config);
@@ -55,6 +55,7 @@ export async function generateInsightText(
       prompt,
       temperature: 0.4,
       maxOutputTokens: opts.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
+      ...(opts.tools ? { tools: opts.tools } : {}),
     });
     const clean = text.trim();
     if (!clean) {

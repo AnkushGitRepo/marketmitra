@@ -25,6 +25,8 @@ interface IposPageClientProps {
   today: string;
   initialWatch: IpoWatchParams | null;
   aiKeyAvailable: boolean;
+  /** Latest stored brief content per IPO slug. */
+  briefs: Readonly<Record<string, string>>;
 }
 
 const DEFAULT_WATCH: IpoWatchParams = {
@@ -32,7 +34,7 @@ const DEFAULT_WATCH: IpoWatchParams = {
   ipoType: 'all',
 };
 
-export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable }: IposPageClientProps) {
+export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable, briefs }: IposPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [watchOpen, setWatchOpen] = useState(false);
@@ -169,7 +171,7 @@ export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable }: Ip
             <>
               <ul className={styles.list}>
                 {paged.items.map((ipo) => (
-                  <IpoCard key={ipo.slug} ipo={ipo} today={today} aiKeyAvailable={aiKeyAvailable} />
+                  <IpoCard key={ipo.slug} ipo={ipo} today={today} aiKeyAvailable={aiKeyAvailable} brief={briefs[ipo.slug] ?? null} />
                 ))}
               </ul>
               <IpoPagination
