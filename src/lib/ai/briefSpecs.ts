@@ -68,11 +68,12 @@ export const IPO_SPEC: BriefSpec = {
     // Only ever written in unrestricted mode (ADR 0054, 0070); the route drops them from a guarded brief.
     { key: 'listingcall', label: 'Listing call', aliases: ['listingcall', 'listinggain'] },
     { key: 'longterm', label: 'Long-term call', aliases: ['longterm', 'holdcall'] },
+    { key: 'strategy', label: 'Best category', aliases: ['strategy', 'bestcategory', 'applycategory'] },
   ],
 };
 
 /** The IPO items only an unrestricted brief may carry. */
-export const IPO_VERDICT_KEYS: readonly string[] = ['listingcall', 'longterm'];
+export const IPO_VERDICT_KEYS: readonly string[] = ['listingcall', 'longterm', 'strategy'];
 
 // The Mitra Fund X-Ray on a fund page (#274): the same three findings the page computes, written up in plain words.
 export const FUND_XRAY_SPEC: BriefSpec = {

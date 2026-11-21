@@ -89,6 +89,7 @@ and are not shown.
 - **Type:** scraper (Tier 3, last resort — Phase 7, [ADR 0017](./decisions/0017-ipo-tracker-gmp-scope.md))
 - **Used for:** IPO calendar (dates, price band, lot size, issue size), live subscription figures, and **grey-market premium (GMP)** — none of which has a free official API. NSE/BSE public IPO endpoints are the Tier 1 attempt for the non-GMP fields; GMP is Tier 3 only.
 - **Endpoint(s):** `https://www.chittorgarh.com/` IPO dashboard pages, via `scrapling`'s static parser, isolated in `services/fundamentals-api/app/ingestion/tier3_ipo_scraper/`
+- **Which site, exactly:** the scraper reads **InvestorGain** (`investorgain.com`, Chittorgarh's sister site; its images come from `chittorgarh.net`), not `chittorgarh.com`: the live report `/report/ipo-gmp-live/331/` for the calendar, GMP and the overall subscription, and, since #285, each IPO's **subscription page** (`/subscription/<slug>/<id>/`, linked from the report row as `/gmp/<slug>/<id>/`) for the latest bidding day's multiples by category (QIB, NII, small NII, big NII, retail). Same method, same ToS position ([ADR 0074](./decisions/0074-ipo-category-subscription-and-odds.md)); one extra page per open or closed IPO per refresh, paced 2 s apart and capped at 15.
 - **Auth:** none
 - **Rate limits:** none published; scraped at most every `ipo_cache_ttl_minutes` (~60) via lazy refresh-on-read, with request pacing and a browser-like User-Agent
 - **Cost:** free
