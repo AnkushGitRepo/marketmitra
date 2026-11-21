@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DASHBOARD_SPEC, NEWS_SPEC } from './briefSpecs';
 
-const state = { result: { ok: true, text: '', model: 'm', finishReason: 'stop' } as Record<string, unknown>, opts: undefined as { maxOutputTokens?: number; tools?: unknown } | undefined, calls: [] as Array<{ tools?: unknown }>, groundedResult: null as Record<string, unknown> | null };
+const state = { result: { ok: true, text: '', model: 'm', finishReason: 'stop' } as Record<string, unknown>, opts: undefined as { maxOutputTokens?: number; tools?: unknown } | undefined, calls: [] as Array<{ tools?: unknown; thinkingLevel?: string }>, groundedResult: null as Record<string, unknown> | null };
 vi.mock('./generate', () => ({
-  generateInsightText: async (_c: unknown, _s: string, _p: string, opts?: { maxOutputTokens?: number; tools?: unknown }) => {
+  generateInsightText: async (_c: unknown, _s: string, _p: string, opts?: { maxOutputTokens?: number; tools?: unknown; thinkingLevel?: string }) => {
     state.opts = opts;
-    state.calls.push({ tools: opts?.tools });
-    return opts?.tools && state.groundedResult ? state.groundedResult : state.result;
+    state.calls.push({ tools: opts?.tools, thinkingLevel: opts?.thinkingLevel });
+    return (opts?.tools || opts?.thinkingLevel) && state.groundedResult ? state.groundedResult : state.result;
   },
 }));
 vi.mock('./providers', () => ({ groundingTools: (c: { provider?: string }) => (c.provider === 'gemini' ? { google_search: {} } : undefined) }));
@@ -61,16 +61,29 @@ describe('generateStructuredBrief', () => {
   it('searches the web only when asked and only for a provider that has a search tool', async () => {
     const base = { system: 's', prompt: 'p', spec: DASHBOARD_SPEC };
     await generateStructuredBrief({ ...base, aiConfig: { provider: 'gemini' } as never, grounded: true });
-    expect(state.calls).toEqual([{ tools: { google_search: {} } }]);
+    expect(state.calls).toEqual([{ tools: { google_search: {} }, thinkingLevel: undefined }]);
     state.calls = [];
     await generateStructuredBrief({ ...base, aiConfig: { provider: 'gemini' } as never });
     await generateStructuredBrief({ ...base, aiConfig: { provider: 'anthropic' } as never, grounded: true });
-    expect(state.calls).toEqual([{ tools: undefined }, { tools: undefined }]);
+    expect(state.calls).toEqual([{ tools: undefined, thinkingLevel: undefined }, { tools: undefined, thinkingLevel: undefined }]);
   });
   it('retries without search when the grounded call fails', async () => {
     state.groundedResult = { ok: false, error: 'search tool not supported' };
     const r = await generateStructuredBrief({ system: 's', prompt: 'p', spec: DASHBOARD_SPEC, aiConfig: { provider: 'gemini' } as never, grounded: true });
     expect(r).toMatchObject({ model: 'm' });
-    expect(state.calls).toEqual([{ tools: { google_search: {} } }, { tools: undefined }]);
+    expect(state.calls).toEqual([{ tools: { google_search: {} }, thinkingLevel: undefined }, { tools: undefined, thinkingLevel: undefined }]);
+  });
+  it('caps Gemini thinking, and retries without the cap when the provider rejects it', async () => {
+    const base = { system: 's', prompt: 'p', spec: DASHBOARD_SPEC, thinkingLevel: 'low' as const };
+    await generateStructuredBrief({ ...base, aiConfig: { provider: 'gemini' } as never });
+    expect(state.calls).toEqual([{ tools: undefined, thinkingLevel: 'low' }]);
+    state.calls = [];
+    state.groundedResult = { ok: false, error: 'thinking_level not supported' };
+    const r = await generateStructuredBrief({ ...base, aiConfig: { provider: 'gemini' } as never });
+    expect(r).toMatchObject({ model: 'm' });
+    expect(state.calls).toEqual([{ tools: undefined, thinkingLevel: 'low' }, { tools: undefined, thinkingLevel: undefined }]);
+    state.calls = [];
+    await generateStructuredBrief({ ...base, aiConfig: { provider: 'anthropic' } as never });
+    expect(state.calls).toEqual([{ tools: undefined, thinkingLevel: undefined }]);
   });
 });

@@ -6856,6 +6856,31 @@
           }
         }
       }
+    },
+    "/api/cron/ipo-briefs": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Pre-generate the shared IPO briefs",
+        "description": "Machine-to-machine (#287). Bearer CRON_SECRET, required in every environment. Writes the shared guarded brief for every open and upcoming IPO with enough data, using the deployment's AI key (a self-host with no env key uses the local user's saved key). A brief that is still fresh is skipped at no cost; at most three are written at once and none is started after about 200 seconds. Returns `{ generated, alreadyFresh, failed, deferred, errors }`, or `{ skipped }` when no key is configured. GET and POST both accepted.",
+        "security": [
+          {
+            "cronBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sweep finished (or skipped for lack of a key)."
+          },
+          "401": {
+            "description": "Missing or wrong bearer token."
+          },
+          "503": {
+            "description": "CRON_SECRET is not configured."
+          }
+        }
+      }
     }
   }
 }

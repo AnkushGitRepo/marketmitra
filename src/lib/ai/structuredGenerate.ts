@@ -2,7 +2,7 @@
 
 import { logEvent } from '@/lib/system/eventLog';
 import type { BriefSpec } from './briefSpecs';
-import { generateInsightText } from './generate';
+import { generateInsightText, type ThinkingLevel } from './generate';
 import { groundingTools, type AiConfig } from './providers';
 import { parseStructured, sanitizeTickers, serializeBrief } from './structuredBrief';
 
@@ -20,13 +20,16 @@ export interface StructuredRequest {
   allowedTickers?: ReadonlySet<string>;
   /** Let the model search the web for the facts the prompt lacks (Gemini only; ignored for other providers). A failed grounded call is retried without it. */
   grounded?: boolean;
+  /** Cap a Gemini thinking model's reasoning; it is most of the wait for a short brief. A rejected setting is retried without it. */
+  thinkingLevel?: ThinkingLevel;
 }
 
 export async function generateStructuredBrief(req: StructuredRequest): Promise<{ content: string; model: string } | { error: string }> {
   const tools = req.grounded ? groundingTools(req.aiConfig) : undefined;
   const options = { maxOutputTokens: MAX_OUTPUT_TOKENS };
-  const grounded = tools ? await generateInsightText(req.aiConfig, req.system, req.prompt, { ...options, tools }) : null;
-  const gen = grounded?.ok ? grounded : await generateInsightText(req.aiConfig, req.system, req.prompt, options);
+  const tuned = tools || (req.thinkingLevel && req.aiConfig.provider === 'gemini');
+  const first = tuned ? await generateInsightText(req.aiConfig, req.system, req.prompt, { ...options, tools, thinkingLevel: req.thinkingLevel }) : null;
+  const gen = first?.ok ? first : await generateInsightText(req.aiConfig, req.system, req.prompt, options);
   if (!gen.ok) return { error: gen.error };
 
   const parsed = parseStructured(gen.text, req.spec);
