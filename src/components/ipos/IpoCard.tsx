@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Ipo } from '@/lib/dashboard/iposApi';
 import { ipoPhase } from '@/lib/dashboard/ipoFilters';
-import { gmpView, ipoBadge, issueSizeText, lotText, priceText, subscriptionView, timeline } from '@/lib/dashboard/ipoView';
+import { gmpView, ipoBadge, issueSizeText, lotText, priceText, subscriptionBreakdown, subscriptionView, timeline } from '@/lib/dashboard/ipoView';
 import { IpoDetails } from './IpoDetails';
 import { IpoTimeline } from './IpoTimeline';
 import styles from './IpoCard.module.css';
@@ -23,6 +23,7 @@ export function IpoCard({ ipo, today, aiKeyAvailable, brief = null }: IpoCardPro
   const badge = ipoBadge(ipo, today);
   const gmp = gmpView(ipo);
   const sub = subscriptionView(ipo);
+  const categories = subscriptionBreakdown(ipo);
   // The premium is a pre-listing signal: once an IPO has listed it no longer applies.
   const showGmp = ipoPhase(ipo, today) !== 'listed';
 
@@ -62,6 +63,15 @@ export function IpoCard({ ipo, today, aiKeyAvailable, brief = null }: IpoCardPro
         <div>
           <dt>Subscribed</dt>
           <dd className={sub.tone === 'over' ? styles.over : sub.tone === 'under' ? styles.under : ''}>{sub.text}</dd>
+          {categories.length > 0 && (
+            <dd className={styles.categories} title="Subscription by investor category, latest bidding day. Estimated allotment odds are in the details.">
+              {categories.map((c) => (
+                <span key={c.label} className={styles.category}>
+                  {c.label} <b>{c.text}</b>
+                </span>
+              ))}
+            </dd>
+          )}
         </div>
       </dl>
 

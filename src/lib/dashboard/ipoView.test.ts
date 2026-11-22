@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { daysBetween, fmtDay, gmpView, ipoBadge, issueSizeText, lotText, minInvestment, priceText, subscriptionView, timeline } from './ipoView';
+import { daysBetween, fmtDay, gmpView, ipoBadge, issueSizeText, lotText, minInvestment, priceText, subscriptionBreakdown, subscriptionView, timeline } from './ipoView';
 import type { Ipo } from './iposApi';
 
 const TODAY = '2026-11-10';
@@ -102,5 +102,35 @@ describe('timeline', () => {
     const t = timeline({ open_date: null, close_date: null, allotment_date: null, listing_date: null }, TODAY);
     expect(t.map((m) => m.text)).toEqual(['—', '—', '—']);
     expect(t.map((m) => m.state)).toEqual(['next', 'later', 'later']);
+  });
+});
+
+describe('subscriptionBreakdown (#302)', () => {
+  const cats = { sub_qib: 0, sub_snii: 13.23, sub_bnii: 23.39, sub_retail: 15.42 };
+
+  it('lists QIB, Retail, sNII and bNII in that order, each as a multiple', () => {
+    expect(subscriptionBreakdown(cats)).toEqual([
+      { label: 'QIB', text: '0.00x' },
+      { label: 'Retail', text: '15.42x' },
+      { label: 'sNII', text: '13.23x' },
+      { label: 'bNII', text: '23.39x' },
+    ]);
+  });
+
+  it('leaves out a category that is unknown rather than showing a dash or zero', () => {
+    expect(subscriptionBreakdown({ sub_retail: 2.5, sub_snii: null })).toEqual([{ label: 'Retail', text: '2.50x' }]);
+  });
+
+  it('is empty when no category figure is known, so the card looks as before', () => {
+    expect(subscriptionBreakdown({})).toEqual([]);
+    expect(subscriptionBreakdown({ sub_qib: null, sub_snii: undefined, sub_bnii: null, sub_retail: null })).toEqual([]);
+  });
+
+  it('ignores a figure that is not a usable number', () => {
+    expect(subscriptionBreakdown({ sub_retail: Number.NaN, sub_bnii: Infinity, sub_snii: 4 })).toEqual([{ label: 'sNII', text: '4.00x' }]);
+  });
+
+  it('formats large multiples with Indian grouping', () => {
+    expect(subscriptionBreakdown({ sub_retail: 1234.5 })).toEqual([{ label: 'Retail', text: '1,234.50x' }]);
   });
 });

@@ -100,6 +100,29 @@ export function subscriptionView(ipo: Pick<Ipo, 'subscription_times'>): { readon
   return { text: `${x.toLocaleString('en-IN', { maximumFractionDigits: 2 })}x`, tone: x >= 1 ? 'over' : 'under' };
 }
 
+export interface SubscriptionPart {
+  readonly label: 'QIB' | 'Retail' | 'sNII' | 'bNII';
+  readonly text: string;
+}
+
+const BREAKDOWN: ReadonlyArray<readonly [SubscriptionPart['label'], 'sub_qib' | 'sub_retail' | 'sub_snii' | 'sub_bnii']> = [
+  ['QIB', 'sub_qib'],
+  ['Retail', 'sub_retail'],
+  ['sNII', 'sub_snii'],
+  ['bNII', 'sub_bnii'],
+];
+
+/**
+ * The subscription multiple per investor category (#285, #302), for the card under the overall figure. Only categories we have a
+ * number for: an unknown one is left out, never shown as a dash or zero. Empty when none is known, so the card looks as before.
+ */
+export function subscriptionBreakdown(ipo: Partial<Pick<Ipo, 'sub_qib' | 'sub_retail' | 'sub_snii' | 'sub_bnii'>>): SubscriptionPart[] {
+  return BREAKDOWN.flatMap(([label, key]) => {
+    const x = ipo[key];
+    return typeof x === 'number' && Number.isFinite(x) ? [{ label, text: `${x.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}x` }] : [];
+  });
+}
+
 /** One lot at the issue price, in rupees; null unless both are known. */
 export function minInvestment(ipo: Pick<Ipo, 'price' | 'lot_size'>): number | null {
   const price = known(ipo.price);

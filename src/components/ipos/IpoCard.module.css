@@ -131,6 +131,22 @@
   overflow-wrap: anywhere;
 }
 
+/* The multiple per investor category, small, under the overall figure. */
+.stats dd.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--app-text-muted);
+}
+
+.category b {
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
 .over {
   color: var(--app-teal-strong);
   font-weight: 700;
