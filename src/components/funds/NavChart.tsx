@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react';
-import { buildChart, downsample, nearestPoint, parseNavSeries, type ChartPoint } from '@/lib/funds/chart';
+import { areaPath, buildChart, downsample, nearestPoint, parseNavSeries, type ChartPoint } from '@/lib/funds/chart';
 import { formatDate, formatNav, formatPercent } from '@/lib/funds/format';
 import { NAV_RANGES, type NavPoint, type NavRange } from '@/lib/funds/types';
+import { ChartArea, ChartReveal } from './ChartMotion';
 import styles from './NavChart.module.css';
 
 interface NavChartProps {
@@ -116,7 +117,10 @@ export function NavChart({ schemeCode, initialRange, initialSeries, leading }: N
             <text className={styles.axis} x={PAD_LEFT - 8} y={HEIGHT - PAD_BOTTOM + 4} textAnchor="end">{formatNav(chart.min)}</text>
             <text className={styles.axis} x={PAD_LEFT} y={HEIGHT - 6}>{formatDate(first.date)}</text>
             <text className={styles.axis} x={WIDTH - PAD_X} y={HEIGHT - 6} textAnchor="end">{formatDate(last.date)}</text>
-            <path className={`${styles.line} ${tone}`} d={chart.path} />
+            <ChartReveal width={WIDTH} height={HEIGHT} replayKey={`${range}:${series.length}:${first.date}`}>
+              <ChartArea d={areaPath(chart.points, HEIGHT - PAD_BOTTOM)} tone={chart.change >= 0 ? 'up' : 'down'} />
+              <path className={`${styles.line} ${tone}`} d={chart.path} />
+            </ChartReveal>
             {hover && (
               <>
                 <line className={styles.guide} x1={hover.x} x2={hover.x} y1={PAD_Y - 10} y2={HEIGHT - PAD_BOTTOM} />

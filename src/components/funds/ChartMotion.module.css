@@ -1,0 +1,39 @@
+/* The chart content grows in from the left. The clip rect scales from its own left edge. */
+.reveal {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+}
+
+@keyframes reveal {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}
+
+.up {
+  --area-color: var(--app-gain);
+}
+
+.down {
+  --area-color: var(--app-loss);
+}
+
+.top {
+  stop-color: var(--area-color);
+  stop-opacity: 0.15;
+}
+
+.bottom {
+  stop-color: var(--area-color);
+  stop-opacity: 0;
+}

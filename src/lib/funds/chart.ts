@@ -55,6 +55,18 @@ export function buildChart(series: readonly NavPoint[], width: number, height: n
   return { points, path, min, max, change: first.nav > 0 ? (last.nav / first.nav - 1) * 100 : 0 };
 }
 
+/**
+ * The closed shape under a line, down to `baselineY`, for a gradient fill (#304). Empty with fewer than two points, so a single
+ * reading draws nothing.
+ */
+export function areaPath(points: readonly { readonly x: number; readonly y: number }[], baselineY: number): string {
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (!first || !last || points.length < 2) return '';
+  const line = points.map((p) => `L${round(p.x)},${round(p.y)}`).join(' ');
+  return `M${round(first.x)},${round(baselineY)} ${line} L${round(last.x)},${round(baselineY)} Z`;
+}
+
 export function nearestPoint(points: readonly ChartPoint[], x: number): ChartPoint | null {
   if (points.length === 0) return null;
   let best = points[0] as ChartPoint;
