@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { parseNavSeries } from '@/lib/funds/chart';
 import { DASH, formatDate, formatPercent, returnTone } from '@/lib/funds/format';
 import { SIP_AMOUNTS, SIP_YEARS, simulateSip } from '@/lib/funds/sip';
@@ -16,7 +16,7 @@ const PAD_LEFT = 104;
 
 const rupees = (n: number): string => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
-export function SipSimulator({ schemeCode }: { readonly schemeCode: number }) {
+export function SipSimulator({ schemeCode, leading }: { readonly schemeCode: number; /** The chart-mode toggle, shown at the top of the card. */ readonly leading?: ReactNode }) {
   const [series, setSeries] = useState<readonly NavPoint[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [amount, setAmount] = useState<number>(10_000);
@@ -55,6 +55,7 @@ export function SipSimulator({ schemeCode }: { readonly schemeCode: number }) {
 
   return (
     <section className={styles.card} aria-label="SIP simulator">
+      {leading && <div className={styles.lead}>{leading}</div>}
       <div className={styles.controls}>
         <div className={styles.group} role="group" aria-label="Monthly amount">
           {SIP_AMOUNTS.map((a) => (

@@ -1,9 +1,16 @@
 .card {
+  display: flex;
+  flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--app-border-soft);
   border-radius: var(--radius-xl);
   box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
   padding: 18px 20px 16px;
+}
+
+/* The chart-mode toggle, at the top-left of the card. */
+.lead {
+  margin-bottom: 12px;
 }
 
 .controls {
@@ -157,7 +164,8 @@
 }
 
 .note {
-  margin: 6px 0 0;
+  margin: auto 0 0;
+  padding-top: 6px;
   font-size: 12px;
   color: var(--app-text-faint);
 }

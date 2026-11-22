@@ -56,9 +56,9 @@ describe('metricGrid: the eight headline cells', () => {
 });
 
 describe('metricGrid: further figures go in one quiet line, not more cards', () => {
-  it('holds the longer periods and Calmar, only when they exist', () => {
-    expect(labels(metricGrid(full).more)).toEqual(['5Y CAGR', '10Y CAGR', '5Y SIP', 'Calmar']);
-    expect(labels(metricGrid({ ...full, ret_10y: null, sip_xirr_5y: null }).more)).toEqual(['5Y CAGR', 'Calmar']);
+  it('holds the longer periods, only when they exist (Calmar rides on the Sortino tile instead)', () => {
+    expect(labels(metricGrid(full).more)).toEqual(['5Y CAGR', '10Y CAGR', '5Y SIP']);
+    expect(labels(metricGrid({ ...full, ret_10y: null, sip_xirr_5y: null }).more)).toEqual(['5Y CAGR']);
   });
 
   it('adds the factsheet fields only when they hold data', () => {
@@ -90,5 +90,27 @@ describe('calmarRatio', () => {
     [null, -10], [10, null], [10, 0], [10, 5], [Number.NaN, -10],
   ])('is null when it cannot be computed honestly (%s, %s)', (ret, dd) => {
     expect(calmarRatio(ret as number | null, dd as number | null)).toBeNull();
+  });
+});
+
+describe('metricGrid: Calmar sits with the other risk-adjusted ratios (#300)', () => {
+  const sortino = (fund: FundDetail) => metricGrid(fund).primary.find((t) => t.label === 'Sortino');
+
+  it('is a small second figure on the Sortino tile, not a loose line under the grid', () => {
+    expect(sortino(full)?.secondary).toMatchObject({ label: 'Calmar', value: '1.50' });
+    expect(sortino(full)?.secondary?.hint).toMatch(/worst fall/i);
+    expect(labels(metricGrid(full).more)).not.toContain('Calmar');
+    expect(metricGrid(full).primary).toHaveLength(8);
+  });
+
+  it('has no second figure when there was no fall to divide by', () => {
+    expect(sortino({ ...full, max_drawdown_3y: 0 })?.secondary).toBeUndefined();
+    expect(sortino({ ...full, ret_3y: null })?.secondary).toBeUndefined();
+  });
+
+  it('keeps Calmar in the quiet line when there is no Sortino tile to carry it', () => {
+    const grid = metricGrid({ ...full, sortino_3y: null });
+    expect(labels(grid.primary)).not.toContain('Sortino');
+    expect(labels(grid.more)).toContain('Calmar');
   });
 });

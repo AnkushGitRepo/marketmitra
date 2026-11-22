@@ -16,6 +16,11 @@ export function MetricsStrip({ fund }: { readonly fund: FundDetail }) {
             <div key={tile.label} className={styles.tile} title={tile.hint}>
               <dt className={styles.label}>{tile.label}</dt>
               <dd className={`${styles.value} ${tile.tone === 'up' ? styles.up : tile.tone === 'down' ? styles.down : ''}`}>{tile.value}</dd>
+              {tile.secondary && (
+                <dd className={styles.secondary} title={tile.secondary.hint}>
+                  {tile.secondary.label} <span>{tile.secondary.value}</span>
+                </dd>
+              )}
             </div>
           ))}
         </dl>

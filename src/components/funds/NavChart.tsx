@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { buildChart, downsample, nearestPoint, parseNavSeries, type ChartPoint } from '@/lib/funds/chart';
 import { formatDate, formatNav, formatPercent } from '@/lib/funds/format';
 import { NAV_RANGES, type NavPoint, type NavRange } from '@/lib/funds/types';
@@ -10,19 +10,23 @@ interface NavChartProps {
   readonly schemeCode: number;
   readonly initialRange: NavRange;
   readonly initialSeries: readonly NavPoint[];
+  /** The chart-mode toggle, shown in the card's header in place of the plain title. */
+  readonly leading?: ReactNode;
 }
 
 const WIDTH = 720;
-const HEIGHT = 280;
+const HEIGHT = 320;
 const PAD_X = 24;
 const PAD_Y = 24;
+/** The bottom margin holds the lowest price label above the date row, so the label never touches the line or the dates (#300). */
+const PAD_BOTTOM = 44;
 /** The left margin holds the price labels beside the line, so a label never sits on the curve. */
 const PAD_LEFT = 100;
 const MAX_POINTS = 360;
 
 const RANGE_LABEL: Record<NavRange, string> = { '1m': '1M', '6m': '6M', '1y': '1Y', '3y': '3Y', '5y': '5Y', '10y': '10Y', max: 'Max' };
 
-export function NavChart({ schemeCode, initialRange, initialSeries }: NavChartProps) {
+export function NavChart({ schemeCode, initialRange, initialSeries, leading }: NavChartProps) {
   const [range, setRange] = useState<NavRange>(initialRange);
   const [series, setSeries] = useState<readonly NavPoint[]>(initialSeries);
   const [loading, setLoading] = useState(false);
@@ -31,7 +35,7 @@ export function NavChart({ schemeCode, initialRange, initialSeries }: NavChartPr
   const requestId = useRef(0);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const chart = useMemo(() => buildChart(downsample(series, MAX_POINTS), WIDTH, HEIGHT, PAD_X, PAD_LEFT), [series]);
+  const chart = useMemo(() => buildChart(downsample(series, MAX_POINTS), WIDTH, HEIGHT, PAD_X, PAD_LEFT, PAD_BOTTOM), [series]);
 
   const selectRange = useCallback(
     async (next: NavRange) => {
@@ -74,7 +78,7 @@ export function NavChart({ schemeCode, initialRange, initialSeries }: NavChartPr
   return (
     <section className={styles.card} aria-label="NAV history">
       <div className={styles.head}>
-        <h2 className={styles.title}>NAV history</h2>
+        {leading ?? <h2 className={styles.title}>NAV history</h2>}
         <div className={styles.ranges} role="group" aria-label="Chart range">
           {NAV_RANGES.map((r) => (
             <button
@@ -109,13 +113,13 @@ export function NavChart({ schemeCode, initialRange, initialSeries }: NavChartPr
             onPointerLeave={() => setHover(null)}
           >
             <text className={styles.axis} x={PAD_LEFT - 8} y={PAD_Y + 4} textAnchor="end">{formatNav(chart.max)}</text>
-            <text className={styles.axis} x={PAD_LEFT - 8} y={HEIGHT - PAD_Y + 4} textAnchor="end">{formatNav(chart.min)}</text>
+            <text className={styles.axis} x={PAD_LEFT - 8} y={HEIGHT - PAD_BOTTOM + 4} textAnchor="end">{formatNav(chart.min)}</text>
             <text className={styles.axis} x={PAD_LEFT} y={HEIGHT - 6}>{formatDate(first.date)}</text>
             <text className={styles.axis} x={WIDTH - PAD_X} y={HEIGHT - 6} textAnchor="end">{formatDate(last.date)}</text>
             <path className={`${styles.line} ${tone}`} d={chart.path} />
             {hover && (
               <>
-                <line className={styles.guide} x1={hover.x} x2={hover.x} y1={PAD_Y - 10} y2={HEIGHT - PAD_Y} />
+                <line className={styles.guide} x1={hover.x} x2={hover.x} y1={PAD_Y - 10} y2={HEIGHT - PAD_BOTTOM} />
                 <circle className={styles.dot} cx={hover.x} cy={hover.y} r={4} />
               </>
             )}

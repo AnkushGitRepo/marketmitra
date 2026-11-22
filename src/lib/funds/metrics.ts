@@ -11,6 +11,8 @@ export interface MetricTile {
   readonly tone?: Tone;
   /** Short plain-language explanation, shown as the tile's tooltip. */
   readonly hint?: string;
+  /** A related figure shown small beneath the value (Sortino carries Calmar), so it is not a loose line under the grid. */
+  readonly secondary?: { readonly label: string; readonly value: string; readonly hint: string };
 }
 
 export interface MetricGrid {
@@ -40,6 +42,9 @@ export function metricGrid(fund: FundDetail): MetricGrid {
   const sheet = fund.factsheet;
   const expense = fund.expense_ratio ?? sheet?.expense_ratio ?? null;
   const calmar = calmarRatio(fund.ret_3y, fund.max_drawdown_3y);
+  const calmarHint = '3-year annual return divided by the size of the worst fall.';
+  // Calmar belongs with the other risk-adjusted ratios: on the Sortino tile when there is one, in the quiet line otherwise.
+  const calmarOnSortino = calmar !== null && has(fund.sortino_3y);
 
   const primary: MetricTile[] = [
     ...percent('1Y return', fund.ret_1y, 'Change in NAV over the last year.'),
@@ -47,7 +52,16 @@ export function metricGrid(fund: FundDetail): MetricGrid {
     ...percent('3Y SIP', fund.sip_xirr_3y, 'XIRR of a fixed monthly amount over three years.'),
     ...(has(expense) ? plain('Expense ratio', `${formatNumber(expense)}%`, 'Yearly cost charged by the fund, Direct plan.') : []),
     ...(has(fund.sharpe_3y) ? plain('Sharpe', formatNumber(fund.sharpe_3y), 'Return above a 6.5% risk-free rate per unit of risk, over 3 years.') : []),
-    ...(has(fund.sortino_3y) ? plain('Sortino', formatNumber(fund.sortino_3y), 'Like Sharpe, counting only downward swings.') : []),
+    ...(has(fund.sortino_3y)
+      ? [
+          {
+            label: 'Sortino',
+            value: formatNumber(fund.sortino_3y),
+            hint: 'Like Sharpe, counting only downward swings.',
+            ...(calmarOnSortino ? { secondary: { label: 'Calmar', value: formatNumber(calmar), hint: calmarHint } } : {}),
+          },
+        ]
+      : []),
     ...(has(fund.std_dev_3y) ? plain('Volatility', `${formatNumber(fund.std_dev_3y, 1)}%`, 'How much the NAV swings, annualised, over 3 years.') : []),
     ...percent('Max drawdown', fund.max_drawdown_3y, 'Largest fall from a peak in the last three years.'),
   ];
@@ -56,7 +70,7 @@ export function metricGrid(fund: FundDetail): MetricGrid {
     ...percent('5Y CAGR', fund.ret_5y, 'Compound annual rate over five years.'),
     ...percent('10Y CAGR', fund.ret_10y, 'Compound annual rate over ten years.'),
     ...percent('5Y SIP', fund.sip_xirr_5y, 'XIRR of a fixed monthly amount over five years.'),
-    ...(calmar === null ? [] : plain('Calmar', formatNumber(calmar), '3-year annual return divided by the size of the worst fall.')),
+    ...(calmar === null || calmarOnSortino ? [] : plain('Calmar', formatNumber(calmar), calmarHint)),
     ...(has(sheet?.aum_cr) ? plain('AUM', formatAum(sheet.aum_cr)) : []),
     ...(hasText(sheet?.exit_load) ? plain('Exit load', sheet.exit_load) : []),
     ...(hasText(sheet?.fund_manager) ? plain('Fund manager', sheet.fund_manager) : []),
