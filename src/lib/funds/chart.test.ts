@@ -82,3 +82,19 @@ describe('parseNavSeries', () => {
     (input) => expect(parseNavSeries(input)).toBeNull(),
   );
 });
+
+describe('buildChart: a bottom margin of its own (#300)', () => {
+  const series = [{ date: '2025-01-01', nav: 10 }, { date: '2025-01-02', nav: 20 }, { date: '2025-01-03', nav: 15 }];
+
+  it('keeps the lowest point padBottom above the bottom edge and the highest one pad below the top', () => {
+    const chart = buildChart(series, 300, 200, 10, 40, 50)!;
+    expect(Math.min(...chart.points.map((p) => p.y))).toBe(10);
+    expect(Math.max(...chart.points.map((p) => p.y))).toBe(150);
+  });
+
+  it('defaults the bottom margin to the same pad, as before', () => {
+    const chart = buildChart(series, 300, 200, 10, 40)!;
+    expect(Math.max(...chart.points.map((p) => p.y))).toBe(190);
+    expect(buildChart(series, 300, 200, 10)!.points[0]!.x).toBe(10);
+  });
+});

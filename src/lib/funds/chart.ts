@@ -29,16 +29,17 @@ export function downsample(series: readonly NavPoint[], max: number): NavPoint[]
 
 /**
  * `pad` is the margin on the other three sides; `padLeft` (default `pad`) is a wider left margin for the axis
- * labels, so a label sits beside the line and never on it.
+ * labels, so a label sits beside the line and never on it; `padBottom` (default `pad`) is a taller bottom margin that
+ * keeps the lowest label clear of the date row (#300).
  */
-export function buildChart(series: readonly NavPoint[], width: number, height: number, pad: number, padLeft: number = pad): Chart | null {
+export function buildChart(series: readonly NavPoint[], width: number, height: number, pad: number, padLeft: number = pad, padBottom: number = pad): Chart | null {
   if (series.length < 2) return null;
   const navs = series.map((p) => p.nav);
   const min = Math.min(...navs);
   const max = Math.max(...navs);
   const span = max - min;
   const innerW = width - padLeft - pad;
-  const innerH = height - pad * 2;
+  const innerH = height - pad - padBottom;
 
   const points: ChartPoint[] = series.map((p, index) => ({
     x: padLeft + (index / (series.length - 1)) * innerW,
