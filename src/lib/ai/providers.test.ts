@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_MODELS, MODEL_OPTIONS, PROVIDER_LABELS, resolveModel } from './providers';
+import { DEFAULT_MODELS, MAX_MODEL_ID_LENGTH, MODEL_OPTIONS, PROVIDER_LABELS, isValidModelId, resolveModel } from './providers';
 
 describe('providers', () => {
   it('has a default model + label for each provider', () => {
@@ -34,5 +34,24 @@ describe('providers', () => {
   it('honours an explicit model override', () => {
     const m = resolveModel({ provider: 'gemini', apiKey: 'k', model: 'gemini-2.5-pro' });
     expect((m as { modelId?: string }).modelId).toBe('gemini-2.5-pro');
+  });
+});
+
+describe('isValidModelId', () => {
+  it.each(['', 'gemini-3.8-flash', 'google/gemma-4-31b-it:free', 'anthropic/claude-haiku-5.5', 'claude_opus-5-5'])('accepts %j', (id) => {
+    expect(isValidModelId(id)).toBe(true);
+  });
+
+  it.each(['has space', 'bad?query=1', '../etc/passwd', 'a/../b', 'semi;colon', 'new\nline', 'ünïcode', '<script>'])('rejects %j', (id) => {
+    expect(isValidModelId(id)).toBe(false);
+  });
+
+  it('rejects an id longer than the limit', () => {
+    expect(isValidModelId('a'.repeat(MAX_MODEL_ID_LENGTH))).toBe(true);
+    expect(isValidModelId('a'.repeat(MAX_MODEL_ID_LENGTH + 1))).toBe(false);
+  });
+
+  it('accepts every curated model option', () => {
+    for (const options of Object.values(MODEL_OPTIONS)) for (const o of options) expect(isValidModelId(o.value)).toBe(true);
   });
 });

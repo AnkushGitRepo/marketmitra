@@ -3,20 +3,13 @@ import { z } from 'zod';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { isEncKeyConfigured } from '@/lib/crypto';
 import { validateAiKey } from '@/lib/ai/generate';
+import { MAX_MODEL_ID_LENGTH, isValidModelId } from '@/lib/ai/providers';
 import { clearAiSettings, getAiSettingsView, setAiSettings } from '@/lib/userSettings';
 
 const putSchema = z.object({
   provider: z.enum(['gemini', 'anthropic', 'openrouter']),
   apiKey: z.string().trim().min(10).max(400),
-  // Model ids end up in provider request URLs, so allow only id-like characters
-  // (letters, digits, . _ : / -) and no path traversal.
-  model: z
-    .string()
-    .trim()
-    .max(120)
-    .regex(/^[A-Za-z0-9._:/-]*$/, 'Model id contains invalid characters')
-    .refine((m) => !m.includes('..'), 'Model id contains invalid characters')
-    .optional(),
+  model: z.string().trim().max(MAX_MODEL_ID_LENGTH).refine(isValidModelId, 'Model id contains invalid characters').optional(),
 });
 
 export async function GET() {
