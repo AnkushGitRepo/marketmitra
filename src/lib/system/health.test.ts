@@ -49,6 +49,48 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const HOST = 'cluster0-shard-00-01.abc12.mongodb.net:27017';
+const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+describe('failure details are never leaked (#312)', () => {
+  beforeEach(() => errorLog.mockClear());
+
+  it('shows a generic detail for a failed Mongo ping and keeps the real error for the server log only', async () => {
+    dbPing.mockRejectedValueOnce(new Error(`getaddrinfo ENOTFOUND ${HOST}`));
+    const status = await getSystemStatus();
+    const mongo = status.components.find((c) => c.id === 'mongodb')!;
+    expect(mongo.status).toBe('down');
+    expect(mongo.detail).toBe('Not responding');
+    expect(JSON.stringify(status)).not.toContain('mongodb.net');
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining(`[status] mongodb: getaddrinfo ENOTFOUND ${HOST}`));
+  });
+
+  it('does the same for an unreachable fundamentals API', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('connect ECONNREFUSED 10.0.3.17:8420'));
+    const status = await getSystemStatus();
+    const api = status.components.find((c) => c.id === 'fundamentals-api')!;
+    expect(api.detail).toBe('Not responding');
+    expect(JSON.stringify(status)).not.toContain('10.0.3.17');
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('[status] fundamentals-api: connect ECONNREFUSED 10.0.3.17:8420'));
+  });
+
+  it('does the same for a failing Redis ping', async () => {
+    rateLimitEnabled = true;
+    pingRedis.mockRejectedValueOnce(new Error('connect ETIMEDOUT redis-12345.upstash.io:6379'));
+    const status = await getSystemStatus();
+    const limiter = status.components.find((c) => c.id === 'rate-limit')!;
+    expect(limiter.status).toBe('down');
+    expect(limiter.detail).toBe('Not responding');
+    expect(JSON.stringify(status)).not.toContain('upstash.io');
+  });
+
+  it('still reports a plain HTTP status for a non-2xx answer (not sensitive)', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 503 }));
+    const status = await getSystemStatus();
+    expect(status.components.find((c) => c.id === 'fundamentals-api')!.detail).toBe('HTTP 503');
+  });
+});
+
 describe('getSystemStatus', () => {
   it('reports every component operational in the healthy/hosted/rate-limited case', async () => {
     rateLimitEnabled = true;
@@ -80,10 +122,8 @@ describe('getSystemStatus', () => {
     const status = await getSystemStatus();
     const mongo = status.components.find((c) => c.id === 'mongodb')!;
     expect(mongo.status).toBe('down');
-    expect(mongo.detail).toContain('ECONNREFUSED');
     expect(status.overall).toBe('down');
   });
-
   it('marks fundamentals-api degraded on a non-2xx response', async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 503 }));
     const status = await getSystemStatus();

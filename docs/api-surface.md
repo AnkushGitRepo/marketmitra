@@ -424,7 +424,7 @@ All require auth. `/api/settings/*` is never reachable by Mitra's `call_platform
 
 ### `GET /api/status`  _(system status/logs feature)_
 - **Purpose:** Live health snapshot for MongoDB Atlas, the fundamentals API, the MCP tool registry, the Upstash rate limiter, and Clerk auth configuration — checked in real time on each request (no persisted history for these), plus the most recent event-log entry for each of the 3 crons. Backs both the public `/status` page and the admin `/system` page.
-- **Auth:** public.
+- **Auth:** public. `detail` on a failing component is a fixed generic phrase ("Not responding") or a bare HTTP status, never the underlying error text (#312); the real error goes to the server log.
 - **Response:** `data`: `{ checkedAt, overall: 'operational'|'degraded'|'down', components: [{ id, label, status, detail?, latencyMs? }], crons: [{ id, label, lastRun: SystemEvent|null }] }`. `overall` is the worst of MongoDB / fundamentals-api / MCP (the rate limiter and Clerk report `not_configured` in self-host without affecting `overall`).
 
 ### `GET /api/system/logs`
