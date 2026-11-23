@@ -61,6 +61,16 @@ export const PROVIDER_LABELS: Record<AiProvider, string> = {
   openrouter: 'OpenRouter',
 };
 
+export const MAX_MODEL_ID_LENGTH = 120;
+
+/**
+ * Model ids end up in provider request URLs, so only id-like characters are allowed (letters, digits, . _ : / -) and no path traversal.
+ * One rule for the server (PUT /api/settings/ai) and the forms, so they cannot drift. Empty means "use the provider's default".
+ */
+export function isValidModelId(model: string): boolean {
+  return model.length <= MAX_MODEL_ID_LENGTH && /^[A-Za-z0-9._:/-]*$/.test(model) && !model.includes('..');
+}
+
 export interface ModelOption {
   /** Empty string means "use the provider's current default". */
   value: string;
