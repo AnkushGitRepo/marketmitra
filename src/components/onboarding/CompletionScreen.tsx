@@ -72,9 +72,9 @@ export function CompletionScreen({ summary, risk, provider, symbols, onNavigate 
         )}
 
         <div className={styles.launchBar}>
-          {hasHoldings ? go('/agents', 'Open Analyst Desk', true) : go('/dashboard', 'Go to Dashboard', true)}
-          {hasHoldings && go('/dashboard', 'Go to Dashboard', false)}
+          {go('/dashboard', 'Go to Dashboard', true)}
           {go('/portfolio', 'View Portfolio', false)}
+          {hasHoldings && go('/agents', 'Open Analyst Desk', false)}
         </div>
       </section>
     </div>
