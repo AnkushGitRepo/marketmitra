@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildChart, downsample, nearestPoint, parseNavSeries } from './chart';
+import { areaPath, buildChart, downsample, nearestPoint, parseNavSeries } from './chart';
 import type { NavPoint } from './types';
 
 const series = (n: number): NavPoint[] =>
@@ -96,5 +96,20 @@ describe('buildChart: a bottom margin of its own (#300)', () => {
     const chart = buildChart(series, 300, 200, 10, 40)!;
     expect(Math.max(...chart.points.map((p) => p.y))).toBe(190);
     expect(buildChart(series, 300, 200, 10)!.points[0]!.x).toBe(10);
+  });
+});
+
+describe('areaPath (#304)', () => {
+  it('closes the line down to the baseline, so a gradient can fill the area under it', () => {
+    expect(areaPath([{ x: 10, y: 50 }, { x: 20, y: 30 }, { x: 30, y: 40 }], 100)).toBe('M10,100 L10,50 L20,30 L30,40 L30,100 Z');
+  });
+
+  it('rounds to two decimals like the line does', () => {
+    expect(areaPath([{ x: 1.23456, y: 2.34567 }, { x: 3, y: 4 }], 9)).toBe('M1.23,9 L1.23,2.35 L3,4 L3,9 Z');
+  });
+
+  it('is empty with fewer than two points, so nothing is drawn for a single reading', () => {
+    expect(areaPath([], 100)).toBe('');
+    expect(areaPath([{ x: 1, y: 1 }], 100)).toBe('');
   });
 });

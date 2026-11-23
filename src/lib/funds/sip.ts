@@ -7,6 +7,29 @@ import type { NavPoint } from './types';
 export const SIP_AMOUNTS = [5_000, 10_000, 25_000] as const;
 export const SIP_YEARS = [1, 3, 5] as const;
 
+/** The monthly amount a person may type in (#304), in whole rupees. */
+export const SIP_MIN_AMOUNT = 500;
+export const SIP_MAX_AMOUNT = 1_000_000;
+
+export type CustomAmount =
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'ok'; readonly value: number }
+  | { readonly kind: 'invalid'; readonly reason: string };
+
+const CUSTOM_AMOUNT_REASON = `Enter a whole amount from ₹${SIP_MIN_AMOUNT.toLocaleString('en-IN')} to ₹${SIP_MAX_AMOUNT.toLocaleString('en-IN')}.`;
+
+/**
+ * A typed monthly SIP amount. The rupee sign, commas and spaces are ignored; anything left must be plain digits (ASCII, no decimals,
+ * no sign, no exponent) inside the allowed range. Nothing typed is `empty`, so the presets take over again.
+ */
+export function parseCustomAmount(text: string): CustomAmount {
+  const cleaned = text.replace(/[₹,\s]/g, '');
+  if (cleaned === '') return { kind: 'empty' };
+  if (!/^[0-9]+$/.test(cleaned)) return { kind: 'invalid', reason: CUSTOM_AMOUNT_REASON };
+  const value = Number(cleaned);
+  return value >= SIP_MIN_AMOUNT && value <= SIP_MAX_AMOUNT ? { kind: 'ok', value } : { kind: 'invalid', reason: CUSTOM_AMOUNT_REASON };
+}
+
 export interface SipPoint {
   readonly date: string;
   readonly invested: number;

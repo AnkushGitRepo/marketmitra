@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adjustForUnitChanges, simulateSip, SIP_AMOUNTS, SIP_YEARS } from './sip';
+import { adjustForUnitChanges, parseCustomAmount, SIP_MAX_AMOUNT, SIP_MIN_AMOUNT, simulateSip, SIP_AMOUNTS, SIP_YEARS } from './sip';
 import type { NavPoint } from './types';
 
 const DAY_MS = 86_400_000;
@@ -119,5 +119,35 @@ describe('presets', () => {
   it('offers the three monthly amounts and three windows', () => {
     expect(SIP_AMOUNTS).toEqual([5_000, 10_000, 25_000]);
     expect(SIP_YEARS).toEqual([1, 3, 5]);
+  });
+});
+
+describe('parseCustomAmount (#304)', () => {
+  it('reads a whole-rupee amount, ignoring the rupee sign, commas and spaces', () => {
+    expect(parseCustomAmount('7500')).toEqual({ kind: 'ok', value: 7500 });
+    expect(parseCustomAmount(' ₹ 15,000 ')).toEqual({ kind: 'ok', value: 15_000 });
+    expect(parseCustomAmount('1,00,000')).toEqual({ kind: 'ok', value: 100_000 });
+  });
+
+  it('accepts exactly the limits and nothing beyond', () => {
+    expect(SIP_MIN_AMOUNT).toBe(500);
+    expect(SIP_MAX_AMOUNT).toBe(1_000_000);
+    expect(parseCustomAmount('500')).toEqual({ kind: 'ok', value: 500 });
+    expect(parseCustomAmount('1000000')).toEqual({ kind: 'ok', value: 1_000_000 });
+    expect(parseCustomAmount('499').kind).toBe('invalid');
+    expect(parseCustomAmount('1000001').kind).toBe('invalid');
+  });
+
+  it('is empty for nothing typed, so the presets take over again', () => {
+    expect(parseCustomAmount('')).toEqual({ kind: 'empty' });
+    expect(parseCustomAmount('   ')).toEqual({ kind: 'empty' });
+    expect(parseCustomAmount('₹')).toEqual({ kind: 'empty' });
+  });
+
+  it.each(['abc', '12.5', '-700', '1e4', '7 500x', '0', '٧٥٠٠'])('rejects %j with a message that names the range', (text) => {
+    const out = parseCustomAmount(text);
+    expect(out.kind).toBe('invalid');
+    expect((out as { reason: string }).reason).toMatch(/₹500/);
+    expect((out as { reason: string }).reason).toMatch(/₹10,00,000/);
   });
 });
