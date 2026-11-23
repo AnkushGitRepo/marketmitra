@@ -36,8 +36,12 @@ export interface SystemStatus {
 
 const CHECK_TIMEOUT_MS = 5000;
 
-function message(err: unknown): string {
-  return err instanceof Error ? err.message : 'unknown error';
+/** What a visitor sees for a failed check. The real error stays in the server log: driver errors can carry hostnames and addresses (#312). */
+const PUBLIC_FAILURE_DETAIL = 'Not responding';
+
+function failureDetail(componentId: string, err: unknown): string {
+  console.error(`[status] ${componentId}: ${err instanceof Error ? err.message : 'unknown error'}`);
+  return PUBLIC_FAILURE_DETAIL;
 }
 
 async function timed<T>(fn: () => Promise<T>): Promise<{ ms: number; value: T }> {
@@ -56,7 +60,7 @@ async function checkMongo(): Promise<ComponentHealth> {
     });
     return { id, label, status: 'operational', latencyMs: ms };
   } catch (err) {
-    return { id, label, status: 'down', detail: message(err) };
+    return { id, label, status: 'down', detail: failureDetail(id, err) };
   }
 }
 
@@ -71,7 +75,7 @@ async function checkFundamentalsApi(): Promise<ComponentHealth> {
     if (!res.ok) return { id, label, status: 'degraded', detail: `HTTP ${res.status}`, latencyMs: ms };
     return { id, label, status: 'operational', latencyMs: ms };
   } catch (err) {
-    return { id, label, status: 'down', detail: message(err) };
+    return { id, label, status: 'down', detail: failureDetail(id, err) };
   }
 }
 
@@ -97,7 +101,7 @@ async function checkRateLimiter(): Promise<ComponentHealth> {
     const { ms } = await timed(pingRedis);
     return { id, label, status: 'operational', latencyMs: ms };
   } catch (err) {
-    return { id, label, status: 'down', detail: message(err) };
+    return { id, label, status: 'down', detail: failureDetail(id, err) };
   }
 }
 
