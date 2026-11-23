@@ -131,6 +131,26 @@ describe('buildRiskCards', () => {
   });
 });
 
+describe('buildRiskCards with a single-stock limit', () => {
+  const spread = Array.from({ length: 12 }, (_, i) => h(`S${i}`, 1, 100, 100, `Sec ${i % 6}`));
+  const lopsided = [h('BIG', 1, 100, 100, 'Tech'), ...Array.from({ length: 9 }, (_, i) => h(`S${i}`, 1, 100, 100, `Sec ${i}`))];
+
+  it('is unchanged without a limit', () => {
+    expect(buildRiskCards(lopsided)[0].text).not.toMatch(/limit/i);
+    expect(buildRiskCards(lopsided, { maxPositionPct: null })).toEqual(buildRiskCards(lopsided));
+  });
+  it('names the stock and lifts the severity when one holding is above the limit', () => {
+    const [card] = buildRiskCards(lopsided, { maxPositionPct: 8 });
+    expect(card.text).toContain('BIG');
+    expect(card.text).toContain('10.0%');
+    expect(card.text).toContain('8%');
+    expect(card.severity).not.toBe('low');
+  });
+  it('says nothing extra when every holding is within the limit', () => {
+    expect(buildRiskCards(spread, { maxPositionPct: 15 })[0].text).not.toMatch(/limit/i);
+  });
+});
+
 describe('newsForHoldings', () => {
   const items = [
     { id: '1', symbols: ['AAA'] },

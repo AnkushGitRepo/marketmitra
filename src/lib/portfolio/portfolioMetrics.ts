@@ -165,11 +165,15 @@ export function holdingReturnPct(holding: HoldingLike): number | null {
 }
 
 /** Three scannable risk notes computed from the user's own numbers, so they work without an AI key. */
-export function buildRiskCards(holdings: readonly HoldingLike[]): RiskCard[] {
+export function buildRiskCards(holdings: readonly HoldingLike[], options: { readonly maxPositionPct?: number | null } = {}): RiskCard[] {
   const pricedHoldings = priced(holdings);
   if (pricedHoldings.length === 0) return [];
 
-  const { top3Pct } = concentration(holdings);
+  const { top3Pct, largest } = concentration(holdings);
+  // The first-run risk profile (ADR 0075) sets how big one stock may be; above it, the card names the stock.
+  const limit = options.maxPositionPct ?? null;
+  const overLimit = limit !== null && largest !== null && largest.pct > limit ? largest : null;
+  const concentrationSeverity = severityFor(top3Pct, CONCENTRATION_HIGH_PCT, CONCENTRATION_MEDIUM_PCT);
   const sectors = sectorWeights(holdings, Number.POSITIVE_INFINITY);
   const topSector = sectors[0];
   const tickersInTopSector = pricedHoldings.filter((h) => (h.sector ?? OTHER_SECTOR) === topSector.name).length;
@@ -180,8 +184,10 @@ export function buildRiskCards(holdings: readonly HoldingLike[]): RiskCard[] {
     {
       id: 'concentration',
       title: 'Concentration risk',
-      text: `${top3Pct.toFixed(1)}% of portfolio value is concentrated in your top ${TOP_N_CONCENTRATION} holdings.`,
-      severity: severityFor(top3Pct, CONCENTRATION_HIGH_PCT, CONCENTRATION_MEDIUM_PCT),
+      text:
+        `${top3Pct.toFixed(1)}% of portfolio value is concentrated in your top ${TOP_N_CONCENTRATION} holdings.` +
+        (overLimit ? ` ${overLimit.symbol} alone is ${overLimit.pct.toFixed(1)}%, above your ${limit}% single-stock limit.` : ''),
+      severity: overLimit && concentrationSeverity === 'low' ? 'medium' : concentrationSeverity,
     },
     {
       id: 'sector',

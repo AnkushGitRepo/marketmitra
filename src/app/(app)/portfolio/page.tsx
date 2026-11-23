@@ -3,6 +3,8 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
 import { getNews } from '@/lib/dashboard/newsApi';
+import { RISK_PROFILES } from '@/lib/onboarding/profiles';
+import { getPreferences } from '@/lib/preferences/store';
 import { PortfolioPageClient } from './PortfolioPageClient';
 import styles from './page.module.css';
 
@@ -24,7 +26,8 @@ export default async function PortfolioPage() {
     );
   }
 
-  const holdings = await getEnrichedHoldings(userId);
+  const [holdings, prefs] = await Promise.all([getEnrichedHoldings(userId), getPreferences(userId)]);
+  const profile = prefs.onboarding.riskProfile;
   const positions = holdings.map((h) => ({ symbol: h.symbol, quantity: h.quantity }));
 
   const historyByPeriod = await getPortfolioValueHistories(positions);
@@ -40,6 +43,7 @@ export default async function PortfolioPage() {
       holdings={holdings}
       history={historyByPeriod}
       news={news?.items ?? []}
+      maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />
   );
 }

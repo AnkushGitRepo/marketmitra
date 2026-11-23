@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RISK_PROFILE_IDS } from '@/lib/onboarding/profiles';
 
 // Per-user preferences (ADR 0038). Every field has a default, so an empty stored
 // document, a partial one, or an unknown future one all resolve to something valid.
@@ -28,6 +29,13 @@ export const preferencesSchema = z.object({
     /** Automatic stock analysts (Analyst Desk, ADR 0058): one per holding, checked daily with the user's own AI key. The master switch. */
     auto: z.boolean().default(true),
   }),
+  /** First-run wizard (ADR 0075). `dismissed` = skipped, `completed` = finished; either stops the redirect. */
+  onboarding: z.object({
+    /** null until the user picks one: new holdings then keep the original guardrail defaults. */
+    riskProfile: z.enum(RISK_PROFILE_IDS).nullable().catch(null).default(null),
+    completed: z.boolean().default(false),
+    dismissed: z.boolean().default(false),
+  }),
 });
 
 export type Preferences = z.infer<typeof preferencesSchema>;
@@ -39,13 +47,14 @@ export const preferencesPatchSchema = z
     display: preferencesSchema.shape.display.partial().strict(),
     shortcuts: preferencesSchema.shape.shortcuts.partial().strict(),
     agents: preferencesSchema.shape.agents.partial().strict(),
+    onboarding: preferencesSchema.shape.onboarding.partial().strict(),
   })
   .partial()
   .strict();
 
 export type PreferencesPatch = z.infer<typeof preferencesPatchSchema>;
 
-export const DEFAULT_PREFERENCES: Preferences = preferencesSchema.parse({ chat: {}, display: {}, shortcuts: {}, agents: {} });
+export const DEFAULT_PREFERENCES: Preferences = preferencesSchema.parse({ chat: {}, display: {}, shortcuts: {}, agents: {}, onboarding: {} });
 
 /** Resolves anything stored (or nothing) to a complete, valid Preferences object; bad values fall back to defaults. */
 export function resolvePreferences(stored: unknown): Preferences {
@@ -57,7 +66,7 @@ export function resolvePreferences(stored: unknown): Preferences {
     const r = preferencesSchema.shape[key].safeParse(obj[key] ?? {});
     return (r.success ? r.data : DEFAULT_PREFERENCES[key]) as Preferences[K];
   };
-  return { chat: group('chat'), display: group('display'), shortcuts: group('shortcuts'), agents: group('agents') };
+  return { chat: group('chat'), display: group('display'), shortcuts: group('shortcuts'), agents: group('agents'), onboarding: group('onboarding') };
 }
 
 /** Applies a validated patch to current preferences without mutating either. */
@@ -67,5 +76,6 @@ export function applyPatch(current: Preferences, patch: PreferencesPatch): Prefe
     display: { ...current.display, ...patch.display },
     shortcuts: { ...current.shortcuts, ...patch.shortcuts },
     agents: { ...current.agents, ...patch.agents },
+    onboarding: { ...current.onboarding, ...patch.onboarding },
   };
 }
