@@ -12,8 +12,15 @@ const SEVERITY_CLASS: Record<RiskSeverity, string> = {
 };
 
 /** Mitra's read on the portfolio as three scannable cards. Computed from the numbers, so it needs no AI key. */
-export function RiskCopilotCard({ holdings }: { readonly holdings: readonly HoldingLike[] }) {
-  const cards = buildRiskCards(holdings);
+interface RiskCopilotCardProps {
+  readonly holdings: readonly HoldingLike[];
+  readonly maxPositionPct?: number | null;
+  /** Off for the sample portfolio, where "chat about this portfolio" would open the user's real one. */
+  readonly showChatLink?: boolean;
+}
+
+export function RiskCopilotCard({ holdings, maxPositionPct = null, showChatLink = true }: RiskCopilotCardProps) {
+  const cards = buildRiskCards(holdings, { maxPositionPct });
 
   return (
     <section className={styles.card} aria-label="Mitra risk copilot">
@@ -41,9 +48,11 @@ export function RiskCopilotCard({ holdings }: { readonly holdings: readonly Hold
         </ul>
       )}
       <p className={styles.disclaimer}>A summary of your own numbers, not investment advice.</p>
-      <Link href="/mitra" className={styles.cta}>
-        Chat with Mitra about this portfolio →
-      </Link>
+      {showChatLink && (
+        <Link href="/mitra" className={styles.cta}>
+          Chat with Mitra about this portfolio →
+        </Link>
+      )}
     </section>
   );
 }
