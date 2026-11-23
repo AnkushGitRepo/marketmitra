@@ -93,6 +93,35 @@
   margin: 0;
 }
 
+.resultsActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+}
+
+.downloadBtn {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  padding: 7px 16px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--app-ink);
+  text-decoration: none;
+}
+
+.downloadBtn:hover {
+  border-color: var(--app-text-faint);
+}
+
+.downloadBtn:focus-visible {
+  outline: 2px solid var(--color-mint-strong);
+  outline-offset: 2px;
+}
+
 .includeToggle {
   display: inline-flex;
   flex-wrap: wrap;

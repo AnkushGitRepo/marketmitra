@@ -97,6 +97,12 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Meaning of the numbers:** returns under a year are absolute; one year and over are annualised (CAGR). Risk figures use 3 years of daily NAV (annualised by the observed number of NAVs a year) and a 6.5% risk-free rate. A single-day NAV move over 40% is treated as a unit split or consolidation and neutralised first (ADR 0067). **`null` means not enough history, or, for `expense_ratio`/`aum_cr`, not disclosed to us yet. It is never zero, and a filter on that figure leaves the fund out.**
 - **Errors:** `400` invalid filter; `503` `data_unavailable` when the data service is down.
 
+### `GET /api/funds/export`  _(Mutual funds, #310)_
+- **Purpose:** the "Download CSV" button on `/funds`, as `/api/screener/export` is for the screener. Same filters and sort as `GET /api/funds`; `limit`/`offset` are ignored and every matching fund is exported (capped at 10,000: `X-Export-Truncated: true` when the cap cuts the list, `X-Total-Count` always the full match count).
+- **Auth:** none (public, read-only; default rate-limit tier). Returns `text/csv` (UTF-8 with a BOM, CRLF rows) as an attachment named `marketmitra-funds-<date>.csv`; errors are `{ error, message }` like `/api/funds`.
+- **Columns:** scheme code, fund, fund house, category, sub-category, plan, option, NAV and date, returns 1M to 10Y, volatility, Sharpe, Sortino, worst 3Y fall, SIP XIRR 3Y and 5Y, expense ratio, AUM. Figures are raw numbers (percent without a % sign); an unavailable figure is blank, never zero. Text cells starting with `= + - @` get a leading apostrophe against spreadsheet formula injection.
+- **Errors:** `400` invalid filter; `503` `data_unavailable` if the data service fails on any page (never a partial file).
+
 ### `GET /api/funds/facets`
 - Categories with their sub-categories, fund houses and `nav_as_of`: `{ categories, sub_categories: { [category]: string[] }, fund_houses, nav_as_of }`.
 
