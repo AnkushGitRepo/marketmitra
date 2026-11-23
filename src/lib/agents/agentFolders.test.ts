@@ -1,5 +1,5 @@
-// The agent folders (.claude, .cursor, .agent) are committed so any contributor's agent works on this repo (#291). The skills are the same
-// files in all three, and none of these folders may hold a secret.
+// The agent folders (.claude, .cursor, .agent, .agents) are committed so any contributor's agent works on this repo (#291, #308). The skills are the same
+// files in all four, and none of these folders may hold a secret.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const CANONICAL = '.claude/skills';
-const MIRRORS = ['.cursor/skills', '.agent/skills'] as const;
-const AGENT_PATHS = ['.claude/settings.json', '.claude/skills', '.cursor', '.agent', '.vscode', 'CURSOR.md', 'GEMINI.md', 'CLAUDE.md', 'AGENTS.md'] as const;
+const MIRRORS = ['.cursor/skills', '.agent/skills', '.agents/skills'] as const;
+const AGENT_PATHS = ['.claude/settings.json', '.claude/skills', '.cursor', '.agent', '.agents', '.vscode', 'CURSOR.md', 'GEMINI.md', 'CLAUDE.md', 'AGENTS.md'] as const;
 
 const SECRET_PATTERNS: ReadonlyArray<RegExp> = [
   /AIza[0-9A-Za-z_-]{30,}/,
@@ -70,6 +70,10 @@ describe('agent folders', () => {
     const settings = JSON.parse(readFileSync(join(ROOT, '.claude/settings.json'), 'utf8')) as { permissions: { allow: string[]; deny: string[] } };
     expect(settings.permissions.deny).toContain('Read(./.env.local)');
     expect(settings.permissions.allow.some((rule) => /\.env/.test(rule))).toBe(false);
+  });
+
+  it('keeps AGENTS.md under Codex\'s default 32 KiB instruction limit, so nothing is cut off', () => {
+    expect(statSync(join(ROOT, 'AGENTS.md')).size).toBeLessThan(32 * 1024);
   });
 
   it('keeps Antigravity rules as a pointer, not a second rulebook', () => {

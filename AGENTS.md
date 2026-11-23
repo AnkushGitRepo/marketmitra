@@ -151,7 +151,7 @@ More (deploying, production migrations, scheduled jobs, environment) in `docs/HA
 ## Docs map
 
 - [`docs/CODEMAP.md`](./docs/CODEMAP.md) — **where things live**: directory map and feature → files table (update it when you add a folder, page or workflow)
-- [`docs/agent-setup.md`](./docs/agent-setup.md) — the agent folders (`.claude`, `.cursor`, `.agent`), their shared skills and how to keep them in sync
+- [`docs/agent-setup.md`](./docs/agent-setup.md) — the agent folders (`.claude`, `.cursor`, `.agent`, `.agents`), their shared skills and how to keep them in sync
 - [`docs/POST-PAUSE-CHECKS.md`](./docs/POST-PAUSE-CHECKS.md) — *temporary:* production checks to run when Vercel is unpaused; delete when done
 - [`docs/HANDOFF.md`](./docs/HANDOFF.md) — **current state**, open work, environment, deploy, gotchas
 - `docs/architecture.md` — current system architecture (routes, components, data flow)
