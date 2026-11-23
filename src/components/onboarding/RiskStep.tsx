@@ -1,5 +1,12 @@
 import { RISK_PROFILE_IDS, RISK_PROFILES, type RiskProfileId } from '@/lib/onboarding/profiles';
+import { ScaleIcon, ShieldCheckIcon, TrendingUpIcon } from './icons';
 import styles from './Onboarding.module.css';
+
+const ICONS: Record<RiskProfileId, () => React.JSX.Element> = {
+  conservative: () => <ShieldCheckIcon size={20} />,
+  balanced: () => <ScaleIcon size={20} />,
+  aggressive: () => <TrendingUpIcon size={20} />,
+};
 
 interface RiskStepProps {
   readonly value: RiskProfileId;
@@ -22,6 +29,9 @@ export function RiskStep({ value, onChange }: RiskStepProps) {
           return (
             <label key={id} className={styles.choice}>
               <input type="radio" name="risk-profile" className={styles.radio} checked={value === id} onChange={() => onChange(id)} />
+              <span className={`${styles.iconBadge} ${styles[`tone_${id}`]}`} aria-hidden="true">
+                {ICONS[id]()}
+              </span>
               <span className={styles.choiceTitle}>{p.label}</span>
               <span className={styles.note}>{p.summary}</span>
               <ul className={styles.choiceList}>

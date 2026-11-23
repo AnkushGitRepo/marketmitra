@@ -5,7 +5,8 @@ import { useCallback, useState } from 'react';
 import { DEFAULT_RISK_PROFILE, type RiskProfileId } from '@/lib/onboarding/profiles';
 import type { AiProvider } from '@/lib/userSettings';
 import { AiStep } from './AiStep';
-import { HoldingsStep, type HoldingRow } from './HoldingsStep';
+import type { HoldingRow } from './HoldingsList';
+import { HoldingsStep } from './HoldingsStep';
 import { RiskStep } from './RiskStep';
 import { WizardHeader } from './WizardHeader';
 import styles from './Onboarding.module.css';
@@ -60,7 +61,7 @@ export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedPro
     try {
       const res = await fetch('/api/holdings');
       const body = (await res.json().catch(() => null)) as { data?: HoldingRow[] } | null;
-      if (res.ok && body?.data) setHoldings(body.data.map(({ symbol, quantity, avgPrice }) => ({ symbol, quantity, avgPrice })));
+      if (res.ok && body?.data) setHoldings(body.data.map(({ id, symbol, quantity, avgPrice }) => ({ id, symbol, quantity, avgPrice })));
     } catch {
       /* the list stays as it was; the add itself already succeeded or failed visibly */
     }

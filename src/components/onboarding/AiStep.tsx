@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { PROVIDER_LABELS } from '@/lib/ai/providers';
 import type { AiProvider } from '@/lib/userSettings';
+import { ChevronDownIcon, KeyRoundIcon, LockIcon } from './icons';
 import styles from './Onboarding.module.css';
 
 const PROVIDERS: readonly AiProvider[] = ['gemini', 'anthropic', 'openrouter'];
@@ -56,6 +57,9 @@ export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
   return (
     <>
       <p className={styles.eyebrow}>Step 3 of 3</p>
+      <span className={`${styles.iconBadge} ${styles.tone_balanced}`} aria-hidden="true">
+        <KeyRoundIcon size={20} />
+      </span>
       <h1 className={styles.title}>Power your AI analysts</h1>
       <p className={styles.lead}>
         MarketMitra has no AI quota of its own: analysts and briefs run on your own provider key, which is stored encrypted and never shown again.
@@ -77,6 +81,9 @@ export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
               </option>
             ))}
           </select>
+          <span className={styles.selectChevron} aria-hidden="true">
+            <ChevronDownIcon size={16} />
+          </span>
         </div>
         <div className={`${styles.field} ${styles.fieldWide}`}>
           <input
@@ -93,6 +100,9 @@ export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
           {status.kind === 'running' ? 'Testing…' : 'Save and test key'}
         </button>
       </form>
+      <p className={styles.secure}>
+        <LockIcon size={14} /> Encrypted at rest (AES-256-GCM) and never sent back to your browser.
+      </p>
       <a className={styles.note} href={link.href} target="_blank" rel="noopener noreferrer">
         {link.text} ↗
       </a>

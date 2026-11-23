@@ -71,7 +71,7 @@ A new page must be added to `src/lib/routes.ts` **and** `src/proxy.ts`.
 | `mitra/*`, `mitra-activity` | Mitra chat: conversations, messages, files, context |
 | `mcp` | MCP server endpoint |
 | `notes`, `notifications`, `watchlists`, `wishlists` | user data (each has `[id]` / `symbols` children) |
-| `portfolio-import/*` | extract + confirm file import |
+| `portfolio-import/*` | extract + confirm file import (parsing in `lib/portfolio-import/extractStructured.ts` + `normalize.ts`) |
 | `research` | research page backend |
 | `screener`, `screener/export`, `screener/facets` | screener |
 | `settings/*` | ai (+ test), email-alerts, export, guardrails, notifications (+ test), preferences, tokens |
@@ -158,7 +158,7 @@ One folder per feature, each with `*.module.css`; shared pieces in `common/`.
 | Feature | Page | API | Logic | UI |
 | --- | --- | --- | --- | --- |
 | Dashboard home | `(app)/dashboard` | `markets/overview`, `news` | `lib/dashboard`, `lib/markets` | `components/dashboard-charts`, `appshell` |
-| First-run onboarding | `onboarding`, `onboarding/demo` (outside `(app)/`) | `onboarding` | `lib/onboarding` (`profiles`, `gate`, `state`, `holdingInput`, `demoPortfolio`) | `components/onboarding` |
+| First-run onboarding | `onboarding`, `onboarding/demo` (outside `(app)/`) | `onboarding` | `lib/onboarding` (`profiles`, `gate`, `state`, `holdingInput`, `holdingsSummary`, `demoPortfolio`) | `components/onboarding` |
 | Portfolio + import | `(app)/portfolio` | `holdings`, `portfolio-import/*` | `lib/holdings.ts`, `lib/portfolio*` | `components/portfolio` |
 | Stock page / brief | `(app)/stock/[ticker]` | `stock/[ticker]`, `insights/stock-brief` | `lib/stock`, `lib/ai/stockBrief.ts`, `lib/chart/aiOverlay.ts`, `lib/chart/overlayRuns*.ts`, `lib/chart/timeframes.ts`, `lib/dashboard/yahooCandles.ts` | `components/stock`, `pro-chart` |
 | Screener | `(app)/screener` | `screener/*`, cron `refresh-screener-quotes` | `lib/screener` | `components/screener` |

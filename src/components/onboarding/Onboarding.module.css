@@ -15,13 +15,6 @@
   flex-wrap: wrap;
 }
 
-.brand {
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  font-size: var(--text-md);
-  color: var(--color-text);
-}
-
 .topActions {
   display: flex;
   align-items: center;
@@ -111,8 +104,12 @@
 
 .error {
   margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-amber-bg-soft);
   font-size: var(--text-sm);
-  color: var(--color-danger);
+  line-height: 1.5;
+  color: var(--color-amber-text-soft);
 }
 
 .cards {
@@ -201,6 +198,22 @@
   color: var(--color-text);
 }
 
+.select {
+  appearance: none;
+  padding-right: calc(var(--space-4) + var(--space-6));
+  cursor: pointer;
+}
+
+.selectChevron {
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
 .input:focus-visible,
 .select:focus-visible {
   outline: 2px solid var(--color-mint-strong);
@@ -260,10 +273,12 @@
 .holdings {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--space-1) 0 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  max-height: 16rem;
+  overflow-y: auto;
 }
 
 .holding {
@@ -275,6 +290,11 @@
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
+}
+
+.holdingText {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .symbol {
@@ -401,4 +421,144 @@
 
 .fieldWide {
   flex: 2 1 14rem;
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.tone_conservative {
+  background: var(--color-mint-bg);
+  color: var(--color-mint-text);
+}
+
+.tone_balanced {
+  background: var(--color-surface-dark);
+  color: var(--color-text-on-dark);
+}
+
+.tone_aggressive {
+  background: var(--color-amber-bg-soft);
+  color: var(--color-amber-text-soft);
+}
+
+.dropIcon {
+  display: inline-flex;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.pills {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.pill {
+  border: 1px solid var(--border-hairline-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  padding: 2px var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.listWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.dangerLink {
+  border: none;
+  background: none;
+  padding: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--app-loss);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rowActions {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.iconButton:focus-visible,
+.dangerLink:focus-visible {
+  outline: 2px solid var(--color-mint-strong);
+  outline-offset: 2px;
+}
+
+.editRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.inputCompact {
+  width: 6.5rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.secure {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }

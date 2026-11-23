@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
   return (
     <OnboardingWizard
       initialRiskProfile={prefs.onboarding.riskProfile}
-      initialHoldings={holdings.map(({ symbol, quantity, avgPrice }) => ({ symbol, quantity, avgPrice }))}
+      initialHoldings={holdings.map(({ id, symbol, quantity, avgPrice }) => ({ id, symbol, quantity, avgPrice }))}
       savedProvider={ai?.provider ?? null}
       analystsActive={prefs.agents.auto}
       hosted={isHosted()}

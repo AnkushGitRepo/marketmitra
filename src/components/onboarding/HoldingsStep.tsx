@@ -6,14 +6,10 @@ import { SearchResultsDropdown } from '@/components/dashboard-charts/SearchResul
 import type { SearchResultOut } from '@/lib/dashboard/fundamentalsApi';
 import { parseHoldingInput } from '@/lib/onboarding/holdingInput';
 import type { ProposedChange } from '@/lib/portfolio-import/types';
+import { HoldingsList, type HoldingRow } from './HoldingsList';
+import { FileSpreadsheetIcon, UploadIcon } from './icons';
 import { useTickerSearch } from './useTickerSearch';
 import styles from './Onboarding.module.css';
-
-export interface HoldingRow {
-  readonly symbol: string;
-  readonly quantity: number;
-  readonly avgPrice: number;
-}
 
 interface HoldingsStepProps {
   readonly holdings: readonly HoldingRow[];
@@ -116,8 +112,18 @@ export function HoldingsStep({ holdings, onChanged, analystsActive }: HoldingsSt
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
         >
+          <span className={styles.dropIcon} aria-hidden="true">
+            <FileSpreadsheetIcon size={22} />
+            <UploadIcon size={22} />
+          </span>
           <strong>Drop a holdings file here, or choose one</strong>
-          <span>CSV or XLSX with a symbol, quantity and average price column. You review every row before anything is saved.</span>
+          <span className={styles.pills}>
+            <span className={styles.pill}>CSV</span>
+            <span className={styles.pill}>XLSX</span>
+          </span>
+          <span>
+            Columns like Instrument / Qty. / Avg. cost or Stock Name / Quantity / Buy Price work. Repeated stocks are combined, and you review every row before saving.
+          </span>
           <input ref={fileRef} type="file" accept=".csv,.xlsx" className={styles.srOnly} disabled={busy} onChange={(e) => void upload(e.target.files?.[0])} />
         </label>
       )}
@@ -178,20 +184,7 @@ export function HoldingsStep({ holdings, onChanged, analystsActive }: HoldingsSt
         </p>
       )}
 
-      {holdings.length > 0 && (
-        <ul className={styles.holdings} aria-label="Your holdings">
-          {holdings.map((h) => (
-            <li key={h.symbol} className={styles.holding}>
-              <span>
-                <span className={styles.symbol}>{h.symbol}</span> · {h.quantity} shares @ ₹{h.avgPrice.toLocaleString('en-IN')}
-              </span>
-              <span className={`${styles.badge} ${analystsActive ? '' : styles.badgeMuted}`}>
-                {analystsActive ? 'Analyst will be created' : 'Analysts are off in Settings'}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <HoldingsList holdings={holdings} analystsActive={analystsActive} onChanged={onChanged} />
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { Logo } from '@/components/landing/Logo';
 import styles from './Onboarding.module.css';
 
 export const WIZARD_STEPS = ['Risk profile', 'Holdings', 'AI key'] as const;
@@ -16,7 +17,7 @@ export function WizardHeader({ step, onSkipSetup, onDemo, busy }: WizardHeaderPr
   return (
     <header>
       <div className={styles.topbar}>
-        <span className={styles.brand}>MarketMitra</span>
+        <Logo />
         <div className={styles.topActions}>
           <button type="button" className={styles.secondary} onClick={onDemo} disabled={busy}>
             Explore demo portfolio
