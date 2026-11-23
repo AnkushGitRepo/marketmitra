@@ -117,7 +117,7 @@ export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedPro
 
   return (
     <div className={styles.wizard}>
-      <WizardHeader step={step} busy={busy} onSkipSetup={() => void skipSetup()} onDemo={() => router.push('/onboarding/demo')} />
+      <WizardHeader step={step} busy={busy} onSkipSetup={() => void skipSetup()} onDemo={() => router.push('/onboarding/demo')} onGoToStep={(n) => setStep(n)} />
       <section className={styles.card}>
         {step === 0 && <RiskStep value={risk} onChange={setRisk} />}
         {step === 1 && <HoldingsStep holdings={holdings} onChanged={refreshHoldings} analystsActive={analystsActive} />}
@@ -131,16 +131,16 @@ export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedPro
 
         <div className={styles.footer}>
           {step > 0 ? (
-            <button type="button" className={styles.secondary} onClick={() => setStep(step - 1)} disabled={busy}>
+            <button type="button" className={styles.link} onClick={() => setStep(step - 1)} disabled={busy}>
               Back
             </button>
           ) : (
             <span />
           )}
           <div className={styles.footerRight}>
-            {step < 2 && (
+            {step === 1 && (
               <button type="button" className={styles.link} onClick={() => setStep(step + 1)} disabled={busy}>
-                Skip this step
+                Skip for now
               </button>
             )}
             {step === 0 && (

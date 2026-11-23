@@ -68,7 +68,7 @@
 - [ ] Step 1 saves a profile; adding a holding afterwards creates alerts with that profile's trailing-stop and drawdown percentages (Alerts page).
 - [ ] Step 2: a Zerodha-style CSV and an XLSX preview, confirm and appear in Portfolio; the quick add (search, qty, price) saves; the Portfolio concentration card names a stock above the profile's limit.
 - [ ] Step 3: a real Gemini key saves and shows "Connected (model, latency)"; a wrong key shows the failure message; "Finish without AI" works with no key.
-- [ ] "Skip setup" and "Skip this step" never trap you; the wizard does not return after either. `/onboarding/demo` writes nothing (check no new holdings or analysts).
+- [ ] "Skip setup", "Skip for now" and "Finish without AI" never trap you; the wizard does not return after either. `/onboarding/demo` writes nothing (check no new holdings or analysts).
 - [ ] The Clerk handshake works for `/onboarding` (it is in the `proxy.ts` matcher).
 
 ## 5. Admin modes (#243, ADR 0070)
