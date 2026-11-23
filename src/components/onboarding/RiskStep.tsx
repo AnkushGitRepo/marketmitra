@@ -11,10 +11,12 @@ const ICONS: Record<RiskProfileId, () => React.JSX.Element> = {
 interface RiskStepProps {
   readonly value: RiskProfileId;
   readonly onChange: (id: RiskProfileId) => void;
+  /** The profile already saved, shown with a "Current" badge; null when none was chosen yet. */
+  readonly current: RiskProfileId | null;
 }
 
 /** Step 1. Every figure shown here is one the app really applies (alert percentages, concentration warning). */
-export function RiskStep({ value, onChange }: RiskStepProps) {
+export function RiskStep({ value, onChange, current }: RiskStepProps) {
   return (
     <>
       <p className={styles.eyebrow}>Step 1 of 3</p>
@@ -32,7 +34,10 @@ export function RiskStep({ value, onChange }: RiskStepProps) {
               <span className={`${styles.iconBadge} ${styles[`tone_${id}`]}`} aria-hidden="true">
                 {ICONS[id]()}
               </span>
-              <span className={styles.choiceTitle}>{p.label}</span>
+              <span className={styles.choiceTitle}>
+                {p.label}
+                {current === id && <span className={styles.currentBadge}>Current</span>}
+              </span>
               <span className={styles.note}>{p.summary}</span>
               <ul className={styles.choiceList}>
                 <li>{p.trailPct}% trailing stop</li>

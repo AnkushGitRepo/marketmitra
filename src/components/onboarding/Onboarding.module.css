@@ -8,6 +8,7 @@
 }
 
 .topbar {
+  margin-bottom: var(--space-5);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -604,4 +605,45 @@
   margin: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--border-hairline);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.notice > span {
+  flex: 1 1 18rem;
+}
+
+.notice .link {
+  white-space: nowrap;
+}
+
+.currentBadge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  border-radius: var(--radius-pill);
+  padding: 1px var(--space-2);
+  background: var(--color-surface-dark);
+  color: var(--color-text-on-dark);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+}
+
+.badgeNeutral {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
 }

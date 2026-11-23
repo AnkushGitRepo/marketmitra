@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
-import { DEFAULT_RISK_PROFILE, type RiskProfileId } from '@/lib/onboarding/profiles';
+import { existingSetupSummary, riskChangeNotice } from '@/lib/onboarding/existing';
+import { DEFAULT_RISK_PROFILE, RISK_PROFILES, type RiskProfileId } from '@/lib/onboarding/profiles';
 import type { AiProvider } from '@/lib/userSettings';
 import { AiStep } from './AiStep';
 import type { HoldingRow } from './HoldingsList';
@@ -51,6 +53,10 @@ export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedPro
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [risk, setRisk] = useState<RiskProfileId>(initialRiskProfile ?? DEFAULT_RISK_PROFILE);
+  const [savedRisk, setSavedRisk] = useState<RiskProfileId | null>(initialRiskProfile);
+  const [confirmingRisk, setConfirmingRisk] = useState(false);
+  // What was already saved when the page opened: shown as Active, and the basis for the returning-user notice.
+  const [activeIds] = useState<ReadonlySet<string>>(() => new Set(initialHoldings.map((h) => h.id)));
   const [holdings, setHoldings] = useState<readonly HoldingRow[]>(initialHoldings);
   const [provider, setProvider] = useState<AiProvider | null>(savedProvider);
   const [busy, setBusy] = useState(false);
@@ -88,14 +94,20 @@ export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedPro
     await post({ status: 'dismissed' });
     leave('/dashboard');
   });
-  const continueFromRisk = () => run(async () => {
+  const saveRisk = () => run(async () => {
     await post({ riskProfile: risk });
+    setSavedRisk(risk);
+    setConfirmingRisk(false);
     setStep(1);
   });
+  // Changing an already-saved profile needs a second, explicit click that spells out what changes.
+  const continueFromRisk = () => (savedRisk && savedRisk !== risk && !confirmingRisk ? setConfirmingRisk(true) : void saveRisk());
   const launch = () => run(async () => {
     const res = await post({ status: 'completed' });
     if (res.data) setSummary(res.data);
   });
+
+  const existingSummary = existingSetupSummary(initialHoldings.length, initialRiskProfile);
 
   if (summary) {
     return (
@@ -119,9 +131,25 @@ export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedPro
     <div className={styles.wizard}>
       <WizardHeader step={step} busy={busy} onSkipSetup={() => void skipSetup()} onDemo={() => router.push('/onboarding/demo')} onGoToStep={(n) => setStep(n)} />
       <section className={styles.card}>
-        {step === 0 && <RiskStep value={risk} onChange={setRisk} />}
-        {step === 1 && <HoldingsStep holdings={holdings} onChanged={refreshHoldings} analystsActive={analystsActive} />}
+        {existingSummary && (
+          <p className={styles.notice} role="status">
+            <span>
+              You already have a setup ({existingSummary}). Changes here update your live settings.
+            </span>
+            <Link href="/dashboard" className={styles.link}>
+              ← Back to dashboard
+            </Link>
+          </p>
+        )}
+        {step === 0 && <RiskStep value={risk} onChange={(id) => { setRisk(id); setConfirmingRisk(false); }} current={savedRisk} />}
+        {step === 1 && <HoldingsStep holdings={holdings} onChanged={refreshHoldings} analystsActive={analystsActive} activeIds={activeIds} />}
         {step === 2 && <AiStep savedProvider={provider} onSaved={setProvider} hosted={hosted} />}
+
+        {confirmingRisk && savedRisk && (
+          <p className={styles.notice} role="alertdialog" aria-label="Confirm risk profile change">
+            {riskChangeNotice(savedRisk, risk, holdings.length)}
+          </p>
+        )}
 
         {error && (
           <p className={styles.error} role="alert">
@@ -145,7 +173,7 @@ export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedPro
             )}
             {step === 0 && (
               <button type="button" className={styles.primary} onClick={() => void continueFromRisk()} disabled={busy}>
-                Continue
+                {confirmingRisk ? `Confirm ${RISK_PROFILES[risk].label}` : 'Continue'}
               </button>
             )}
             {step === 1 && (

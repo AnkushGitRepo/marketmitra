@@ -16,6 +16,8 @@ export interface HoldingRow {
 interface HoldingsListProps {
   readonly holdings: readonly HoldingRow[];
   readonly analystsActive: boolean;
+  /** Ids of holdings that were already saved when the wizard opened; they are labelled Active, the rest New. */
+  readonly activeIds: ReadonlySet<string>;
   /** Re-reads the saved holdings after an edit or removal. */
   readonly onChanged: () => Promise<void>;
 }
@@ -29,9 +31,10 @@ interface Draft {
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 /** The holdings saved so far. Every edit and removal is a real change to the user's portfolio (the same endpoints the Portfolio page uses). */
-export function HoldingsList({ holdings, analystsActive, onChanged }: HoldingsListProps) {
+export function HoldingsList({ holdings, analystsActive, activeIds, onChanged }: HoldingsListProps) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +65,7 @@ export function HoldingsList({ holdings, analystsActive, onChanged }: HoldingsLi
 
   const remove = (h: HoldingRow) =>
     run(async () => {
+      setConfirmRemoveId(null);
       const res = await fetch(`/api/holdings/${h.id}`, { method: 'DELETE' });
       return res.ok ? null : `Could not remove ${h.symbol}. Try again.`;
     });
@@ -126,15 +130,31 @@ export function HoldingsList({ holdings, analystsActive, onChanged }: HoldingsLi
                   <span className={styles.holdingText}>
                     <span className={styles.symbol}>{h.symbol}</span> · {h.quantity} shares @ ₹{h.avgPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className={`${styles.badge} ${analystsActive ? '' : styles.badgeMuted}`}>{analystsActive ? 'Analyst will be created' : 'Analysts are off in Settings'}</span>
+                  {activeIds.has(h.id) ? (
+                    <span className={`${styles.badge} ${styles.badgeNeutral}`}>Active</span>
+                  ) : (
+                    <span className={`${styles.badge} ${analystsActive ? '' : styles.badgeMuted}`}>{analystsActive ? 'New · Analyst will be created' : 'New · Analysts are off in Settings'}</span>
+                  )}
+                  {confirmRemoveId === h.id ? (
+                    <span className={styles.confirm}>
+                      Remove {h.symbol} from your portfolio?
+                      <button type="button" className={styles.dangerLink} onClick={() => void remove(h)} disabled={busy}>
+                        Yes, remove
+                      </button>
+                      <button type="button" className={styles.link} onClick={() => setConfirmRemoveId(null)} disabled={busy}>
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
                   <span className={styles.rowActions}>
                     <button type="button" className={styles.iconButton} aria-label={`Edit ${h.symbol}`} onClick={() => setDraft({ id: h.id, quantity: String(h.quantity), avgPrice: String(h.avgPrice) })} disabled={busy}>
                       <PencilIcon size={16} />
                     </button>
-                    <button type="button" className={styles.iconButton} aria-label={`Remove ${h.symbol}`} onClick={() => void remove(h)} disabled={busy}>
+                    <button type="button" className={styles.iconButton} aria-label={`Remove ${h.symbol}`} onClick={() => (activeIds.has(h.id) ? setConfirmRemoveId(h.id) : void remove(h))} disabled={busy}>
                       <TrashIcon size={16} />
                     </button>
                   </span>
+                  )}
                 </>
               )}
             </li>

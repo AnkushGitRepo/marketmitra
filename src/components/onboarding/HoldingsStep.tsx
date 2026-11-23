@@ -16,13 +16,14 @@ interface HoldingsStepProps {
   /** Re-reads the saved holdings from the server (after a quick add or a confirmed import). */
   readonly onChanged: () => Promise<void>;
   readonly analystsActive: boolean;
+  readonly activeIds: ReadonlySet<string>;
 }
 
 const POPULAR = ['RELIANCE', 'HDFCBANK', 'TCS', 'NIFTYBEES'] as const;
 const FILE_TYPES = /\.(csv|xlsx)$/i;
 
 /** Step 2. Saves holdings through the same endpoints the Portfolio page uses, so guardrails and analysts follow the usual rules. */
-export function HoldingsStep({ holdings, onChanged, analystsActive }: HoldingsStepProps) {
+export function HoldingsStep({ holdings, onChanged, analystsActive, activeIds }: HoldingsStepProps) {
   const [query, setQuery] = useState('');
   const [symbol, setSymbol] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -184,7 +185,7 @@ export function HoldingsStep({ holdings, onChanged, analystsActive }: HoldingsSt
         </p>
       )}
 
-      <HoldingsList holdings={holdings} analystsActive={analystsActive} onChanged={onChanged} />
+      <HoldingsList holdings={holdings} analystsActive={analystsActive} activeIds={activeIds} onChanged={onChanged} />
     </>
   );
 }
