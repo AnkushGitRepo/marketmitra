@@ -3420,6 +3420,244 @@
         }
       }
     },
+    "/api/funds/export": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Download the mutual fund list as CSV",
+        "description": "Same filter and sort parameters as GET /api/funds; `limit`/`offset` are ignored and EVERY matching fund is exported (capped at 10,000; `X-Export-Truncated: true` is sent when the cap cuts the list, and `X-Total-Count` always carries the full match count). Returns text/csv with a Content-Disposition attachment filename: one row per fund with scheme code, name, fund house, category, plan, NAV, returns, risk ratios, expense ratio and AUM. Figures are raw numbers (percent without a % sign); an unavailable figure is a blank cell, never zero. Text cells that start with = + - @ are prefixed with an apostrophe to defuse spreadsheet formula injection. `503` when the data service does not answer on any page, so a partial file is never returned. Public, read-only.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive text in the scheme name (max 80 characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "`Equity`, `Debt`, `Hybrid`, `Solution Oriented` or `Other`; see /api/funds/facets.",
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            }
+          },
+          {
+            "name": "sub_category",
+            "in": "query",
+            "required": false,
+            "description": "e.g. `Flexi Cap Fund`; see /api/funds/facets.",
+            "schema": {
+              "type": "string",
+              "maxLength": 96
+            }
+          },
+          {
+            "name": "fund_house",
+            "in": "query",
+            "required": false,
+            "description": "e.g. `Parag Parikh Mutual Fund`.",
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          {
+            "name": "plan",
+            "in": "query",
+            "required": false,
+            "description": "Default `direct`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "direct",
+                "regular"
+              ],
+              "default": "direct"
+            }
+          },
+          {
+            "name": "option",
+            "in": "query",
+            "required": false,
+            "description": "Default `growth`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "growth",
+                "idcw",
+                "other"
+              ],
+              "default": "growth"
+            }
+          },
+          {
+            "name": "min_ret_1y",
+            "in": "query",
+            "required": false,
+            "description": "Minimum 1-year return, percent.",
+            "schema": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "min_ret_3y",
+            "in": "query",
+            "required": false,
+            "description": "Minimum 3-year CAGR, percent.",
+            "schema": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "min_ret_5y",
+            "in": "query",
+            "required": false,
+            "description": "Minimum 5-year CAGR, percent.",
+            "schema": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "max_expense_ratio",
+            "in": "query",
+            "required": false,
+            "description": "Maximum total expense ratio, percent (only funds with a disclosed ratio match).",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            }
+          },
+          {
+            "name": "min_aum_cr",
+            "in": "query",
+            "required": false,
+            "description": "Minimum assets under management, ₹ crore (only funds with disclosed AUM match).",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "max_std_dev_3y",
+            "in": "query",
+            "required": false,
+            "description": "Maximum annualised 3-year standard deviation, percent.",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "max_fall_3y",
+            "in": "query",
+            "required": false,
+            "description": "Largest allowed worst 3-year fall (maximum drawdown), as a positive percent: 15 keeps funds that never fell more than 15% from a peak.",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "exclude_thematic",
+            "in": "query",
+            "required": false,
+            "description": "`true` leaves out sector and thematic funds (SEBI's \"Thematic Fund\", \"Sectoral Fund\" and \"Sectoral/ Thematic\", whatever the spelling): the diversified view. `false` or absent shows everything. The Funds page opens with `true`, and ignores it while a name or sub-category is searched.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "min_sharpe_3y",
+            "in": "query",
+            "required": false,
+            "description": "Minimum 3-year Sharpe ratio.",
+            "schema": {
+              "type": "number",
+              "minimum": -20,
+              "maximum": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Default `ret_3y`. Missing values sort last.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ret_1m",
+                "ret_3m",
+                "ret_6m",
+                "ret_1y",
+                "ret_3y",
+                "ret_5y",
+                "ret_10y",
+                "std_dev_3y",
+                "sharpe_3y",
+                "sortino_3y",
+                "max_drawdown_3y",
+                "sip_xirr_3y",
+                "sip_xirr_5y",
+                "expense_ratio",
+                "aum_cr",
+                "name",
+                "nav"
+              ],
+              "default": "ret_3y"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Default `desc`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A filter value is invalid."
+          },
+          "503": {
+            "description": "The mutual fund data service did not answer."
+          }
+        }
+      }
+    },
     "/api/funds/facets": {
       "get": {
         "tags": [

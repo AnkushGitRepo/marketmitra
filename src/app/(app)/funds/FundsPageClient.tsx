@@ -203,6 +203,9 @@ export function FundsPageClient({ initialPage, initialFilters, facets, coverage 
   // Searching by name or choosing a sub-category shows everything, so the toggle has nothing to decide while it lasts.
   const searching = isSearching(applied);
 
+  // The export ignores paging but follows the same view as the table (filters, sort, default plan), so the file is what is on screen.
+  const csvHref = `/api/funds/export?${buildFundsQuery(effectiveFilters(applied))}`;
+
   return (
     <>
       <LensBar active={activeLens(applied)} loading={loading} onSelect={handleLens} onClear={handleClear} />
@@ -227,21 +230,28 @@ export function FundsPageClient({ initialPage, initialFilters, facets, coverage 
         <p className={styles.resultsCount} aria-live="polite">
           {data.total.toLocaleString('en-IN')} {data.total === 1 ? 'fund' : 'funds'}
         </p>
-        <div className={styles.includeToggle}>
-          <label>
-            <input
-              type="checkbox"
-              checked={searching || applied.exclude_thematic !== true}
-              disabled={searching}
-              aria-describedby={searching ? 'include-thematic-hint' : undefined}
-              onChange={(e) => handleIncludeThematic(e.target.checked)}
-            />
-            Include sector &amp; thematic funds
-          </label>
-          {searching && (
-            <span id="include-thematic-hint" className={styles.includeHint}>
-              Showing everything while you search or pick a sub-category.
-            </span>
+        <div className={styles.resultsActions}>
+          <div className={styles.includeToggle}>
+            <label>
+              <input
+                type="checkbox"
+                checked={searching || applied.exclude_thematic !== true}
+                disabled={searching}
+                aria-describedby={searching ? 'include-thematic-hint' : undefined}
+                onChange={(e) => handleIncludeThematic(e.target.checked)}
+              />
+              Include sector &amp; thematic funds
+            </label>
+            {searching && (
+              <span id="include-thematic-hint" className={styles.includeHint}>
+                Showing everything while you search or pick a sub-category.
+              </span>
+            )}
+          </div>
+          {data.total > 0 && (
+            <a className={styles.downloadBtn} href={csvHref} download data-testid="funds-csv">
+              Download CSV
+            </a>
           )}
         </div>
       </div>
