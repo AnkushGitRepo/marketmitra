@@ -1,5 +1,6 @@
-import { generateText, Output, stepCountIs, streamText, type ModelMessage, type ToolSet } from 'ai';
+import { generateText, NoObjectGeneratedError, Output, stepCountIs, streamText, type ModelMessage, type ToolSet } from 'ai';
 import type { z } from 'zod';
+import { recoverObject } from './jsonRecovery';
 import { resolveModel, type AiConfig } from './providers';
 
 /**
@@ -106,6 +107,13 @@ export async function generateInsightObject<S extends z.ZodTypeAny>(
     });
     return { ok: true, object: output as z.infer<S>, model: config.model?.trim() || `${config.provider} (default)`, finishReason };
   } catch (err) {
+    // A reply that is correct JSON in a markdown fence (common with free models) is accepted, not thrown away (#314).
+    if (NoObjectGeneratedError.isInstance(err)) {
+      const recovered = recoverObject(err.text, schema);
+      if (recovered !== null) {
+        return { ok: true, object: recovered, model: config.model?.trim() || `${config.provider} (default)`, finishReason: err.finishReason };
+      }
+    }
     logFailure('structured generation failed', err);
     return { ok: false, error: normalizeAiError(err) };
   }
