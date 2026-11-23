@@ -21,6 +21,8 @@ interface PortfolioPageClientProps {
   holdings: EnrichedHolding[];
   history: Record<PricePeriod, RangeSeries>;
   news: NewsItem[];
+  /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
+  maxPositionPct: number | null;
 }
 
 function exportCsv(holdings: EnrichedHolding[]) {
@@ -40,7 +42,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, news, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -90,7 +92,7 @@ export function PortfolioPageClient({ holdings, history, news }: PortfolioPageCl
 
       <div className={styles.macroGrid}>
         <AllocationCard holdings={holdings} />
-        <RiskCopilotCard holdings={holdings} />
+        <RiskCopilotCard holdings={holdings} maxPositionPct={maxPositionPct} />
       </div>
 
       <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} />

@@ -4763,6 +4763,25 @@
                         "type": "boolean"
                       }
                     }
+                  },
+                  "onboarding": {
+                    "type": "object",
+                    "properties": {
+                      "riskProfile": {
+                        "type": "string",
+                        "enum": [
+                          "conservative",
+                          "balanced",
+                          "aggressive"
+                        ]
+                      },
+                      "completed": {
+                        "type": "boolean"
+                      },
+                      "dismissed": {
+                        "type": "boolean"
+                      }
+                    }
                   }
                 }
               }
@@ -6878,6 +6897,62 @@
           },
           "503": {
             "description": "CRON_SECRET is not configured."
+          }
+        }
+      }
+    },
+    "/api/onboarding": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Save first-run onboarding progress",
+        "description": "Saves the chosen risk profile (it sets the trailing-stop and drawdown percentages of the default alerts created for new holdings) and/or how the wizard ended. Returns the saved flags plus a summary: holdings count, whether an AI key is saved and how many analysts will do work (zero without a key or with automatic analysts off). Send at least one of the two fields.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "riskProfile": {
+                    "type": "string",
+                    "enum": [
+                      "conservative",
+                      "balanced",
+                      "aggressive"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "completed",
+                      "dismissed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Envelope with the saved onboarding flags and summary."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "422": {
+            "description": "Invalid request."
+          },
+          "500": {
+            "description": "Could not save."
           }
         }
       }

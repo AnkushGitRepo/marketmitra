@@ -65,3 +65,18 @@ describe('applyPatch', () => {
     expect(next).not.toBe(current);
   });
 });
+
+describe('onboarding preferences', () => {
+  it('defaults to no chosen profile, not completed, not dismissed', () => {
+    expect(resolvePreferences(undefined).onboarding).toEqual({ riskProfile: null, completed: false, dismissed: false });
+  });
+  it('falls back to no profile for an unknown one and keeps the rest', () => {
+    const p = resolvePreferences({ onboarding: { riskProfile: 'yolo', completed: true } });
+    expect(p.onboarding).toEqual({ riskProfile: null, completed: true, dismissed: false });
+  });
+  it('accepts a patch and rejects unknown keys', () => {
+    expect(preferencesPatchSchema.safeParse({ onboarding: { dismissed: true } }).success).toBe(true);
+    expect(preferencesPatchSchema.safeParse({ onboarding: { nope: 1 } }).success).toBe(false);
+    expect(applyPatch(DEFAULT_PREFERENCES, { onboarding: { riskProfile: 'aggressive' } }).onboarding.riskProfile).toBe('aggressive');
+  });
+});

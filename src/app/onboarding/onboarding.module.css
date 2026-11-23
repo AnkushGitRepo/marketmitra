@@ -1,0 +1,12 @@
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: var(--space-8) var(--space-4) var(--space-16);
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--color-mint-bg) 0%, transparent 55%),
+    linear-gradient(var(--border-hairline-soft) 1px, transparent 1px) 0 0 / 2.5rem 2.5rem,
+    linear-gradient(90deg, var(--border-hairline-soft) 1px, transparent 1px) 0 0 / 2.5rem 2.5rem,
+    var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}

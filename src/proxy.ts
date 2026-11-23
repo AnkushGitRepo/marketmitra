@@ -26,6 +26,8 @@ const isProtectedRoute = createRouteMatcher([
   '/stock(.*)',
   '/index(.*)',
   '/api-docs(.*)',
+  // First-run wizard (ADR 0075): lives outside (app)/ so it renders without the app shell.
+  '/onboarding(.*)',
 ]);
 
 // API routes covered by the shared `default` rate-limit tier. Excluded:
@@ -129,6 +131,7 @@ export const config = {
     '/stock/:path*',
     '/index/:path*',
     '/api-docs/:path*',
+    '/onboarding/:path*',
     '/api/:path*',
     '/trpc/:path*',
     '/__clerk/:path*',

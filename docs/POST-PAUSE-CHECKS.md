@@ -62,6 +62,16 @@
 - [ ] The brief quotes the category demand as numbers and does **not** say which category to choose when guarded; as the admin with Unrestricted Mitra on it adds the "Best category" item.
 - [ ] Sanity-check the odds on one closed IPO against its real basis of allotment (retail applications allotted / applied) to see how far the 1 / subscription estimate is off.
 
+## 4c. First-run onboarding wizard (#306, ADR 0075)
+
+- [ ] Signed in as a brand-new hosted user (no holdings): the first page load goes to `/onboarding`; a user who already has holdings is not redirected and ends up with `onboarding.completed` set.
+- [ ] Step 1 saves a profile; adding a holding afterwards creates alerts with that profile's trailing-stop and drawdown percentages (Alerts page).
+- [ ] Step 2: a Zerodha-style CSV and an XLSX preview, confirm and appear in Portfolio; the quick add (search, qty, price) saves; the Portfolio concentration card names a stock above the profile's limit.
+- [ ] Step 3: a real Gemini key saves and shows "Connected (model, latency)"; a wrong key shows the failure message; "Finish without AI" works with no key.
+- [ ] The closing screen after "Launch" shows the right recap (profile, analysts queued, provider) and its buttons go to /dashboard (the dark default), /portfolio and /agents.
+- [ ] "Skip setup", "Skip for now" and "Finish without AI" never trap you; the wizard does not return after either. `/onboarding/demo` writes nothing (check no new holdings or analysts).
+- [ ] The Clerk handshake works for `/onboarding` (it is in the `proxy.ts` matcher).
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
-import { extractFromCsv, extractFromXlsx } from '@/lib/portfolio-import/extractStructured';
+import { parseCsvText, parseXlsxBuffer } from '@/lib/portfolio-import/extractStructured';
 import { extractFromDocx, extractFromImage, extractFromPdf } from '@/lib/portfolio-import/extractUnstructured';
 import { buildProposedChanges } from '@/lib/portfolio-import/diff';
 import type { ExtractedHolding } from '@/lib/portfolio-import/types';
@@ -43,6 +43,7 @@ async function handlePOST(request: Request) {
   if (file.size === 0) return unreadable('That file is empty.');
   if (file.size > MAX_FILE_BYTES) return unreadable('That file is too large (max 10 MB).');
 
+  if (file.name.toLowerCase().endsWith('.xls')) return unreadable('Old .xls files are not supported. Save it as .xlsx or .csv and upload that.');
   const kind = detectKind(file);
   if (!kind) return unreadable('Unsupported file type. Use an image, CSV, XLSX, DOCX, or PDF.');
 
@@ -50,14 +51,14 @@ async function handlePOST(request: Request) {
   let holdings: ExtractedHolding[] | null;
 
   if (kind === 'csv') {
-    try {
-      holdings = extractFromCsv(buffer.toString('utf-8'));
-    } catch {
-      return unreadable('Could not read that CSV file.');
-    }
+    const outcome = parseCsvText(buffer.toString('utf-8'));
+    if (outcome.error) return unreadable(outcome.error);
+    holdings = outcome.holdings;
   } else if (kind === 'xlsx') {
     try {
-      holdings = await extractFromXlsx(buffer);
+      const outcome = await parseXlsxBuffer(buffer);
+      if (outcome.error) return unreadable(outcome.error);
+      holdings = outcome.holdings;
     } catch {
       return unreadable('Could not read that XLSX file — it may be corrupted.');
     }

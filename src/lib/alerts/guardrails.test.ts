@@ -10,6 +10,8 @@ const { createAlert, getAutoGuardrailsEnabled, logMitraAction, deliverNotificati
     resolveChannels: vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({})),
   }));
 
+const getPreferences = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({ onboarding: { riskProfile: null } })));
+vi.mock('@/lib/preferences/store', () => ({ getPreferences }));
 vi.mock('./store', () => ({ createAlert }));
 vi.mock('@/lib/userSettings', () => ({ getAutoGuardrailsEnabled }));
 vi.mock('@/lib/mitra/activityLog', () => ({ logMitraAction }));
@@ -95,5 +97,19 @@ describe('createGuardrailAlertsForHolding', () => {
     createAlert.mockRejectedValue(new Error('db down'));
 
     await expect(createGuardrailAlertsForHolding('u1', 'RELIANCE')).resolves.toEqual([]);
+  });
+  it('uses the chosen risk profile for the alert percentages, and the original defaults when none is chosen', async () => {
+    createAlert.mockImplementation(async (_u, input) => fakeAlert({ type: (input as { type: Alert['type'] }).type }));
+    getPreferences.mockResolvedValueOnce({ onboarding: { riskProfile: 'aggressive' } });
+    await createGuardrailAlertsForHolding('u1', 'TCS');
+    const params = createAlert.mock.calls.map((c) => (c[1] as { params: Record<string, number> }).params);
+    expect(params[0]).toEqual({ trailPct: 15 });
+    expect(params[1]).toMatchObject({ pct: 30 });
+
+    createAlert.mockClear();
+    await createGuardrailAlertsForHolding('u1', 'TCS');
+    const legacy = createAlert.mock.calls.map((c) => (c[1] as { params: Record<string, number> }).params);
+    expect(legacy[0]).toEqual({ trailPct: 10 });
+    expect(legacy[1]).toMatchObject({ pct: 15 });
   });
 });
