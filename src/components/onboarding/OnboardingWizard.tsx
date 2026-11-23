@@ -7,6 +7,7 @@ import { existingSetupSummary, riskChangeNotice } from '@/lib/onboarding/existin
 import { DEFAULT_RISK_PROFILE, RISK_PROFILES, type RiskProfileId } from '@/lib/onboarding/profiles';
 import type { AiProvider } from '@/lib/userSettings';
 import { AiStep } from './AiStep';
+import { CompletionScreen } from './CompletionScreen';
 import type { HoldingRow } from './HoldingsList';
 import { HoldingsStep } from './HoldingsStep';
 import { RiskStep } from './RiskStep';
@@ -38,15 +39,6 @@ async function post(body: { riskProfile?: RiskProfileId; status?: 'completed' | 
   const json = (await res.json().catch(() => null)) as ApiEnvelope | null;
   if (!res.ok || !json?.success) throw new Error(json?.error ?? 'Could not save. Please try again.');
   return json;
-}
-
-function doneMessage(s: Summary): string {
-  if (s.analystsQueued > 0) {
-    return `${s.analystsQueued} analyst${s.analystsQueued === 1 ? '' : 's'} will start building dossiers on the next scheduled run.`;
-  }
-  if (s.holdings > 0 && !s.hasAiKey) return 'Your holdings are saved. Add an AI key in Settings whenever you are ready, and your analysts will start.';
-  if (s.holdings > 0) return 'Your holdings are saved. Automatic analysts are switched off in Settings.';
-  return 'Add holdings from the Portfolio page whenever you are ready.';
 }
 
 export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedProvider, analystsActive, hosted }: OnboardingWizardProps) {
@@ -110,21 +102,7 @@ export function OnboardingWizard({ initialRiskProfile, initialHoldings, savedPro
   const existingSummary = existingSetupSummary(initialHoldings.length, initialRiskProfile);
 
   if (summary) {
-    return (
-      <div className={styles.wizard}>
-        <section className={styles.card} aria-live="polite">
-          <p className={styles.eyebrow}>All set</p>
-          <h1 className={styles.title}>{summary.holdings > 0 ? 'Your desk is ready' : 'Setup saved'}</h1>
-          <p className={styles.lead}>{doneMessage(summary)}</p>
-          <div className={styles.footer}>
-            <span />
-            <button type="button" className={styles.primary} onClick={() => leave(summary.holdings > 0 ? '/agents' : '/dashboard')}>
-              {summary.holdings > 0 ? 'Open the Analyst Desk' : 'Go to the dashboard'}
-            </button>
-          </div>
-        </section>
-      </div>
-    );
+    return <CompletionScreen summary={summary} risk={savedRisk} provider={provider} symbols={holdings.map((h) => h.symbol)} onNavigate={leave} />;
   }
 
   return (

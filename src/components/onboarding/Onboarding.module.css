@@ -647,3 +647,137 @@
   background: var(--color-surface-sunken);
   color: var(--color-text-secondary);
 }
+
+.doneChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-mint-bg);
+  color: var(--color-mint-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.doneCard {
+  align-items: center;
+  text-align: center;
+}
+
+.doneBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-mint-bg);
+  border: 1px solid var(--color-mint-strong);
+  color: var(--color-mint-text);
+}
+
+.recap {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  text-align: left;
+}
+
+.recapCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border-hairline-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-sunken);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.recapTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.recapLines {
+  margin: 0;
+  padding-left: var(--space-4);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.tickers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.tickerPill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--border-hairline-strong);
+  border-radius: var(--radius-pill);
+  padding: 2px var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.tickerPill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-mint-strong);
+}
+
+.tickerMore::before {
+  content: none;
+}
+
+.launchBar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+@media (max-width: 40rem) {
+  .recap {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .doneBadge {
+    animation: badgeIn 380ms var(--ease-out) both;
+  }
+
+  @keyframes badgeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
