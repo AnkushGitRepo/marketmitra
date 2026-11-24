@@ -94,6 +94,27 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
     [conversations.add]
   );
 
+  // Ids already asked for a generated title (#341); the server ignores a chat that has one, this just avoids repeat calls.
+  const titleRequested = useRef(new Set<string>());
+  const handleActivity = useCallback(
+    (id: string | null) => {
+      void conversations.refresh();
+      if (!id || titleRequested.current.has(id)) return;
+      titleRequested.current.add(id);
+      mitraApi
+        .generateTitle(id)
+        .then((updated) => {
+          // Still the automatic title: there was no answer yet, so ask again after the next reply.
+          if (updated.titleSource === 'auto') titleRequested.current.delete(id);
+          conversations.replace(updated);
+        })
+        .catch(() => titleRequested.current.delete(id));
+    },
+    // `refresh` changes with the search text; `replace` is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [conversations.refresh, conversations.replace]
+  );
+
   const activeId = view.kind === 'ready' || view.kind === 'loading' ? view.id : view.kind === 'new' ? createdId : null;
   const activeTitle = conversations.items.find((c) => c.id === activeId)?.title ?? 'New chat';
 
@@ -167,7 +188,7 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
             initialMessages={[]}
             initialDraft={initialDraft}
             onConversationCreated={handleCreated}
-            onActivity={conversations.refresh}
+            onActivity={handleActivity}
             chatPrefs={chatPrefs}
             contextState={contextState}
           />
@@ -178,7 +199,7 @@ export function MitraChatClient({ chatPrefs }: { chatPrefs: Preferences['chat'] 
             initialConversationId={view.id}
             initialMessages={view.messages}
             onConversationCreated={handleCreated}
-            onActivity={conversations.refresh}
+            onActivity={handleActivity}
             chatPrefs={chatPrefs}
             contextState={contextState}
           />

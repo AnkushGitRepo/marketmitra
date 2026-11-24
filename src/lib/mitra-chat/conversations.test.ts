@@ -125,6 +125,15 @@ describe('conversations', () => {
     expect(await repo.renameConversation('u1', c.id, '   ')).toBeNull();
     expect(await repo.renameConversation('u1', c.id, ' Gold ETF ')).toMatchObject({ title: 'Gold ETF', titleSource: 'user' });
   });
+
+  it('stores a generated title once, and never over a title the user typed (#341)', async () => {
+    const c = (await repo.createConversation('u1'))!;
+    expect(await repo.setGeneratedTitle('u1', c.id, ' JIO IPO allotment ')).toMatchObject({ title: 'JIO IPO allotment', titleSource: 'generated' });
+    expect(await repo.setGeneratedTitle('u1', c.id, 'Second try')).toMatchObject({ title: 'JIO IPO allotment' });
+    expect(await repo.renameConversation('u1', c.id, 'My name')).toMatchObject({ titleSource: 'user' });
+    expect(await repo.setGeneratedTitle('u1', c.id, 'Third try')).toMatchObject({ title: 'My name', titleSource: 'user' });
+    expect(await repo.setGeneratedTitle('u2', c.id, 'Not yours')).toBeNull();
+  });
 });
 
 describe('messages', () => {

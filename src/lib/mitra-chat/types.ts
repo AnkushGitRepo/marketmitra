@@ -3,7 +3,7 @@ import type { AttachmentKind } from './attachments';
 export interface Conversation {
   readonly id: string;
   readonly title: string;
-  readonly titleSource: 'auto' | 'user';
+  readonly titleSource: 'auto' | 'generated' | 'user';
   readonly messageCount: number;
   /** Running summary of messages older than the verbatim window. */
   readonly summary: string;

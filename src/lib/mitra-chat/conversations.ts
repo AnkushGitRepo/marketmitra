@@ -15,7 +15,7 @@ interface ConversationDoc {
   _id: ObjectId;
   userId: string;
   title: string;
-  titleSource: 'auto' | 'user';
+  titleSource: 'auto' | 'generated' | 'user';
   messageCount: number;
   summary: string;
   summarizedThrough: number;
@@ -127,6 +127,18 @@ export async function renameConversation(userId: string, id: string, title: stri
     { returnDocument: 'after' }
   );
   return doc ? toConversation(doc) : null;
+}
+
+/**
+ * Stores a model-written title, but only while the title is still the automatic one: a title the user typed, or one already
+ * generated, is never replaced. Returns the conversation as it now stands (changed or not), or null if it does not exist.
+ */
+export async function setGeneratedTitle(userId: string, id: string, title: string): Promise<Conversation | null> {
+  const clean = normaliseTitle(title);
+  if (!clean || !ObjectId.isValid(id)) return null;
+  const { conversations } = await cols();
+  await conversations.updateOne({ _id: new ObjectId(id), userId, titleSource: 'auto' }, { $set: { title: clean, titleSource: 'generated' } });
+  return getConversation(userId, id);
 }
 
 /** Deletes the conversation and its messages; the caller removes its files. */
