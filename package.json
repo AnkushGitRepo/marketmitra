@@ -25,12 +25,12 @@
   "dependencies": {
     "@a2ui/react": "0.16.1",
     "@a2ui/web_core": "0.16.1",
-    "@ai-sdk/anthropic": "^4.0.105",
-    "@ai-sdk/google": "^4.0.121",
+    "@ai-sdk/anthropic": "^4.0.107",
+    "@ai-sdk/google": "^4.0.124",
     "@ai-sdk/openai": "^4.0.122",
     "@ai-sdk/openai-compatible": "^3.0.94",
-    "@ai-sdk/react": "^4.0.177",
-    "@clerk/nextjs": "^7.9.26",
+    "@ai-sdk/react": "^4.0.183",
+    "@clerk/nextjs": "^7.10.7",
     "@modelcontextprotocol/server": "^2.0.0",
     "@openrouter/ai-sdk-provider": "^3.1.0",
     "@upstash/ratelimit": "^2.2.1",
@@ -46,13 +46,13 @@
     "lightweight-charts": "^5.3.0",
     "mammoth": "^1.13.0",
     "mcp-handler": "^2.4.0",
-    "mongodb": "^7.9.0",
+    "mongodb": "^7.9.1",
     "next": "^16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "resend": "^6.38.1",
-    "undici": "^8.12.4",
-    "unpdf": "^2.1.0",
+    "resend": "^6.39.0",
+    "undici": "^8.13.1",
+    "unpdf": "^2.2.1",
     "yahoo-finance2": "^4.0.6",
     "zod": "^4.5.4"
   },
@@ -66,7 +66,7 @@
     "prettier": "^3.10.1",
     "typescript": "^5",
     "vite": "^8.3.8",
-    "vitest": "^5.0.0"
+    "vitest": "^5.1.1"
   },
   "overrides": {
     "uuid": "^11.1.1",
