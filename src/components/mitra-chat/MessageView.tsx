@@ -4,7 +4,7 @@ import type { UIMessage } from 'ai';
 import { MarkdownLite } from '@/components/MarkdownLite';
 import { MitraCharacter } from '@/components/mitra/MitraCharacter';
 import { ASK_USER_TOOL, parseAskUserInput, visibleAnswer } from '@/lib/mitra-chat/askUser';
-import { SHOW_PORTFOLIO_SNAPSHOT_TOOL, type SnapshotToolOutput } from '@/lib/ai/a2uiToolTypes';
+import { isCardToolPart, type CardToolOutput } from '@/lib/ai/a2uiToolTypes';
 import { AskUserCard } from './AskUserCard';
 import { AttachmentView } from './AttachmentView';
 import styles from './Chat.module.css';
@@ -55,8 +55,8 @@ function PartView({ part, role, showToolActivity, onAnswer, answeredQuestion }: 
     const question = parseAskUserInput((part as { input?: unknown }).input);
     return question ? <AskUserCard question={question} onAnswer={onAnswer} /> : null;
   }
-  if (part.type === `tool-${SHOW_PORTFOLIO_SNAPSHOT_TOOL}`) {
-    const output = (part as { output?: Partial<SnapshotToolOutput> }).output;
+  if (isCardToolPart(part.type)) {
+    const output = (part as { output?: Partial<CardToolOutput> }).output;
     return output?.shown && Array.isArray(output.messages) ? <A2uiView messages={output.messages} /> : null;
   }
   if (part.type.startsWith('tool-')) {

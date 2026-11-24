@@ -121,7 +121,6 @@ async function handleMessage(request: Request, ctx?: unknown) {
     canRead: (kind) => (retry ? kind === 'text' : supportsKind(aiConfig, kind)),
   });
   const hasAttachments = all.slice(keepFrom).some((m) => m.parts.some((p) => p.type === 'file'));
-  const modelMessages = await convertToModelMessages(prepared);
 
   const prefs = await getPreferences(userId);
   const context = await buildPortfolioContext(userId).catch(() => '');
@@ -154,6 +153,8 @@ async function handleMessage(request: Request, ctx?: unknown) {
     ...(canAsk ? buildAskUserTools() : {}),
     ...(canShowCards ? buildA2uiTools(() => getEnrichedHoldings(userId)) : {}),
   };
+  // With the tools, a card from an earlier turn reaches the model as its text summary, not as the full layout.
+  const modelMessages = await convertToModelMessages(prepared, { tools: allTools });
 
   try {
     const result = streamChat(aiConfig, system, modelMessages, {
