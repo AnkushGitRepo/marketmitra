@@ -8,9 +8,13 @@ A2UI 1.0 is Google's open protocol (Apache-2.0) for generative UI: an agent send
 `updateDataModel`), and the app draws it with components from a catalogue it registered, so no code runs on the client. A portfolio overview reads
 better as a card than as a paragraph. The risk is the usual one for model-written UI: the model could write the layout and, worse, the numbers.
 
-A spike (2026-11-24) found: `@a2ui/react` 0.16.1 and `@a2ui/web_core` 0.16.1 install next to this repo's React 19 and Zod 4 because npm nests their own
-Zod 3 (no peer conflict, a second copy of Zod in the bundle); the v1.0 message format is documented; the basic catalogue (Text, Row, Column, Card,
-Divider, List, Button, …) is enough for a read-only card. The A2UI project's own skill notes that a React-only app can do without A2UI; we use it
+A spike (2026-11-24) found: `@a2ui/react` 0.16.1 and `@a2ui/web_core` 0.16.1 declare a peer dependency on Zod 3, and this repo is on Zod 4; the v1.0 message
+format is documented; the basic catalogue (Text, Row, Column, Card, Divider, List, Button, …) is enough for a read-only card. Left alone, npm nests a
+private Zod 3.25.76, which the repo's dependency-review check rejects: GHSA-mrhx-c7xc-m3w5 (high, memory use when validating oversized collections) is fixed
+only in Zod 4.6.6 and later, with no Zod 3 patch. `package.json` therefore overrides both A2UI packages to use the repo's own Zod (`"zod": "$zod"`, 4.6.7
+today). The renderer was checked on Zod 4 in a browser (a stored card renders, with no console errors) and the surface builder is validated by the real
+`MessageProcessor` in unit tests. The renderer is client-only (it needs `getServerSnapshot` to render on the server), which is why it loads with `ssr: false`.
+The A2UI project's own skill notes that a React-only app can do without A2UI; we use it
 because the maintainer asked for it and because it gives a stable, documented, validated format.
 
 ## Decision
@@ -30,7 +34,8 @@ because the maintainer asked for it and because it gives a stable, documented, v
 
 ## Consequences
 
-- One more tool and one more catalogue consumer to keep in step with A2UI releases (0.x packages, pinned exactly).
+- One more tool and one more catalogue consumer to keep in step with A2UI releases (0.x packages, pinned exactly). The Zod override is outside what the A2UI
+  project tests, so re-check the card in a browser on every A2UI upgrade, and drop the override if a release moves to Zod 4.
 - A2UI actions (buttons that talk back to the agent) are not used yet. The Phase 1 question card (ADR 0076) stays a plain component.
 - More cards (a stock snapshot, a screener result) would be new builders and tools on the same path; each gets its own review for what the model may and may not write.
 - Hosted behaviour is unverified while Vercel is paused (`docs/POST-PAUSE-CHECKS.md` 4e), including that the CSP allows the renderer.
