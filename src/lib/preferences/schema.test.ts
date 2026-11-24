@@ -40,6 +40,17 @@ describe('resolvePreferences', () => {
 });
 
 describe('preferencesPatchSchema', () => {
+  it('keeps only the fields the patch names (#335)', () => {
+    expect(preferencesPatchSchema.parse({ chat: { richReplies: true } })).toEqual({ chat: { richReplies: true } });
+    expect(preferencesPatchSchema.parse({ onboarding: { completed: true } })).toEqual({ onboarding: { completed: true } });
+  });
+
+  it('does not switch off Unrestricted Mitra when another setting changes (#335)', () => {
+    const current = { ...DEFAULT_PREFERENCES, chat: { ...DEFAULT_PREFERENCES.chat, unrestricted: true, platformAccess: false } };
+    const next = applyPatch(current, preferencesPatchSchema.parse({ chat: { richReplies: true } }));
+    expect(next.chat).toMatchObject({ richReplies: true, unrestricted: true, platformAccess: false });
+  });
+
   it('accepts a partial patch', () => {
     expect(preferencesPatchSchema.safeParse({ chat: { platformAccess: false } }).success).toBe(true);
     expect(preferencesPatchSchema.safeParse({}).success).toBe(true);

@@ -42,19 +42,35 @@ export const preferencesSchema = z.object({
 
 export type Preferences = z.infer<typeof preferencesSchema>;
 
+type Group = keyof Preferences;
+
+/** A field as a patch sees it: no default and no catch (Zod 4 applies both to a missing key, which reset every field the patch did not name, #335). */
+function patchField(field: z.ZodType): z.ZodType {
+  let inner = field;
+  if (inner instanceof z.ZodDefault) inner = inner.unwrap() as z.ZodType;
+  if (inner instanceof z.ZodCatch) inner = inner.unwrap() as z.ZodType;
+  return inner.optional();
+}
+
+function patchGroup<K extends Group>(key: K) {
+  const shape = preferencesSchema.shape[key].shape as Record<string, z.ZodType>;
+  const fields = Object.fromEntries(Object.entries(shape).map(([name, field]) => [name, patchField(field)]));
+  return z.object(fields).strict() as unknown as z.ZodType<Partial<Preferences[K]>>;
+}
+
 /** A patch may set any subset of any group; unknown keys are rejected so typos are not silently dropped. */
 export const preferencesPatchSchema = z
   .object({
-    chat: preferencesSchema.shape.chat.partial().strict(),
-    display: preferencesSchema.shape.display.partial().strict(),
-    shortcuts: preferencesSchema.shape.shortcuts.partial().strict(),
-    agents: preferencesSchema.shape.agents.partial().strict(),
-    onboarding: preferencesSchema.shape.onboarding.partial().strict(),
+    chat: patchGroup('chat'),
+    display: patchGroup('display'),
+    shortcuts: patchGroup('shortcuts'),
+    agents: patchGroup('agents'),
+    onboarding: patchGroup('onboarding'),
   })
   .partial()
   .strict();
 
-export type PreferencesPatch = z.infer<typeof preferencesPatchSchema>;
+export type PreferencesPatch = { [K in Group]?: Partial<Preferences[K]> };
 
 export const DEFAULT_PREFERENCES: Preferences = preferencesSchema.parse({ chat: {}, display: {}, shortcuts: {}, agents: {}, onboarding: {} });
 
