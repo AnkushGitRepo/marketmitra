@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Opening a Mitra chat with several replies no longer logs a duplicate-key error in the browser: saved replies had an empty id, so two of them shared one. New replies now get a unique id, and older chats get a stable one when opened. ([#349](https://github.com/AnkushGitRepo/marketmitra/issues/349))
 - Mitra's answers no longer show raw LaTeX such as "$\text{Debt} / \text{Equity}$": it is now told to write formulas in plain text, and any LaTeX that still arrives is shown as readable text ("Debt / Equity") everywhere answers are drawn. Dollar amounts such as "$5 and $10" are left alone. ([#347](https://github.com/AnkushGitRepo/marketmitra/issues/347))
 - Generated chat titles are no longer cut to one or two words ("TCS", "Understanding"): a title that the model did not finish is dropped and the first-message title stays. ([#343](https://github.com/AnkushGitRepo/marketmitra/issues/343))
 - Changing one setting no longer resets the others in its group: turning "Rich replies" on or off was switching Unrestricted Mitra back off (and could put "Let Mitra read my platform data", "Send with Enter" and the dictation language back to their defaults). ([#335](https://github.com/AnkushGitRepo/marketmitra/issues/335))
