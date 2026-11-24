@@ -1,4 +1,4 @@
-import { generateText, hasToolCall, NoObjectGeneratedError, Output, stepCountIs, streamText, type ModelMessage, type ToolSet } from 'ai';
+import { generateText, hasToolCall, NoObjectGeneratedError, Output, stepCountIs, streamText, type ModelMessage, type StopCondition, type ToolSet } from 'ai';
 import type { z } from 'zod';
 import { recoverObject } from './jsonRecovery';
 import { resolveModel, type AiConfig } from './providers';
@@ -126,6 +126,8 @@ export interface StreamChatOptions {
   maxSteps?: number;
   /** Ends the turn as soon as the model calls this tool (e.g. `ask_user`, which waits for the user's answer). */
   stopAfterTool?: string;
+  /** Further conditions that end the loop, for a tool whose result decides (e.g. a card that is now waiting for the user). */
+  stopWhen?: readonly StopCondition<ToolSet>[];
   /** Overrides the default output cap (long-form surfaces such as the Mitra workspace). */
   maxOutputTokens?: number;
   /** Called once the full assistant reply is known (after any tool
@@ -160,7 +162,7 @@ export function streamChat(
     ...(hasTools
       ? {
           tools: opts.tools,
-          stopWhen: [stepCountIs(opts.maxSteps ?? 5), ...(opts.stopAfterTool ? [hasToolCall(opts.stopAfterTool)] : [])],
+          stopWhen: [stepCountIs(opts.maxSteps ?? 5), ...(opts.stopAfterTool ? [hasToolCall(opts.stopAfterTool)] : []), ...(opts.stopWhen ?? [])],
         }
       : {}),
     ...(opts.onFinish

@@ -17,6 +17,8 @@ import { prepareAdvisorChat } from '@/lib/advisor/behaviour/chat';
 import { logEvent } from '@/lib/system/eventLog';
 import { supportsKind, unsupportedReason } from '@/lib/mitra-chat/attachments';
 import { ASK_USER_TOOL, hasReplyContent } from '@/lib/mitra-chat/askUser';
+import { stopWhenCardShown } from '@/lib/mitra-chat/holdingProposal';
+import { buildHoldingProposalTools } from '@/lib/ai/holdingProposalTool';
 import { appendMessages, getConversation, loadMessages, saveSummary } from '@/lib/mitra-chat/conversations';
 import { getFileStore } from '@/lib/mitra-chat/gridFsFileStore';
 import { isRetryOfLast, sanitizeUserMessage } from '@/lib/mitra-chat/messageInput';
@@ -151,6 +153,8 @@ async function handleMessage(request: Request, ctx?: unknown) {
   const allTools = {
     ...tools,
     ...(canAsk ? buildAskUserTools() : {}),
+    // Proposes a holding change for the user to confirm on a card; with files attached it is withheld, like the alert write tools.
+    ...(canAsk && !hasAttachments ? buildHoldingProposalTools(userId) : {}),
     ...(canShowCards ? buildA2uiTools(() => getEnrichedHoldings(userId)) : {}),
   };
   // With the tools, a card from an earlier turn reaches the model as its text summary, not as the full layout.
@@ -160,7 +164,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
     const result = streamChat(aiConfig, system, modelMessages, {
       tools: allTools,
       maxSteps: MAX_TOOL_STEPS,
-      ...(canAsk ? { stopAfterTool: ASK_USER_TOOL } : {}),
+      ...(canAsk ? { stopAfterTool: ASK_USER_TOOL, stopWhen: [stopWhenCardShown] } : {}),
       maxOutputTokens: MAX_OUTPUT_TOKENS,
     });
     // Run to completion (and persist) even if the client disconnects mid-stream.

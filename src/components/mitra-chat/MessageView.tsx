@@ -5,7 +5,9 @@ import { MarkdownLite } from '@/components/MarkdownLite';
 import { MitraCharacter } from '@/components/mitra/MitraCharacter';
 import { ASK_USER_TOOL, parseAskUserInput, visibleAnswer } from '@/lib/mitra-chat/askUser';
 import { isCardToolPart, type CardToolOutput } from '@/lib/ai/a2uiToolTypes';
+import { HOLDING_PROPOSAL_TOOL, parseProposalPart } from '@/lib/mitra-chat/holdingProposal';
 import { AskUserCard } from './AskUserCard';
+import { HoldingProposalCard } from './HoldingProposalCard';
 import { AttachmentView } from './AttachmentView';
 import styles from './Chat.module.css';
 
@@ -36,7 +38,7 @@ interface PartViewProps {
   readonly part: Part;
   readonly role: UIMessage['role'];
   readonly showToolActivity: boolean;
-  /** Set only on the newest message while idle: the question card is then answerable. Otherwise it is read-only. */
+  /** Set only on the newest message while idle: the question and holding cards are then answerable. Otherwise they are read-only. */
   readonly onAnswer?: (text: string) => void;
   /** The question on the card this user message answers, so the bubble can show just the answer. */
   readonly answeredQuestion?: string | null;
@@ -54,6 +56,10 @@ function PartView({ part, role, showToolActivity, onAnswer, answeredQuestion }: 
   if (part.type === `tool-${ASK_USER_TOOL}`) {
     const question = parseAskUserInput((part as { input?: unknown }).input);
     return question ? <AskUserCard question={question} onAnswer={onAnswer} /> : null;
+  }
+  if (part.type === `tool-${HOLDING_PROPOSAL_TOOL}`) {
+    const parsed = parseProposalPart(part as { input?: unknown; output?: unknown });
+    return parsed ? <HoldingProposalCard proposal={parsed.proposal} output={parsed.output} onDecision={onAnswer} /> : null;
   }
   if (isCardToolPart(part.type)) {
     const output = (part as { output?: Partial<CardToolOutput> }).output;

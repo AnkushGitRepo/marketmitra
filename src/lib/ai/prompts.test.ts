@@ -51,6 +51,11 @@ describe('Mitra workspace prompt', () => {
   it('keeps the no-destructive-actions boundary', () => {
     expect(MITRA_WORKSPACE_SYSTEM).toMatch(/no tool for account settings, security, billing or any destructive action/i);
   });
+
+  it('lets Mitra propose a holding change but not save one (#337)', () => {
+    expect(MITRA_WORKSPACE_SYSTEM).toMatch(/propose_holding_change/);
+    expect(MITRA_WORKSPACE_SYSTEM).toMatch(/cannot save anything yourself/i);
+  });
 });
 
 describe('Mitra workspace ask_user guidance', () => {
