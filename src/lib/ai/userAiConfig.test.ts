@@ -68,6 +68,17 @@ describe('getAiConfig', () => {
     });
   });
 
+  it('reads any of the supported providers from the env, and ignores an unknown one', async () => {
+    getAiSettings.mockResolvedValue(null);
+    process.env.AI_API_KEY = 'env-key';
+    process.env.AI_PROVIDER = 'groq';
+    process.env.AI_MODEL = 'openai/gpt-oss-120b';
+    expect(await getAiConfig('u1', { allowEnv: true })).toEqual({ provider: 'groq', apiKey: 'env-key', model: 'openai/gpt-oss-120b' });
+    process.env.AI_PROVIDER = 'not-a-provider';
+    expect(await getAiConfig('u1', { allowEnv: true })).toBeNull();
+    delete process.env.AI_MODEL;
+  });
+
   it('skips the env key when allowEnv is false', async () => {
     getAiSettings.mockResolvedValue(null);
     process.env.AI_PROVIDER = 'anthropic';

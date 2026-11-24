@@ -21,6 +21,12 @@ For each source, record: what it is, the endpoint(s) used, auth/key requirements
 - **Cost:** free (Apache-2.0 model, Apache-2.0 `fastembed` + `onnxruntime`).
 - **ToS notes:** not a scrape; a published open-weights model via its official distribution. No third-party content is fetched at request time.
 
+### AI providers (bring-your-own key)
+- **What:** the model APIs a user's own key calls, server-side only. Ten providers: Google Gemini, Anthropic, OpenRouter, OpenAI, and (OpenAI-style, fixed base URL) Groq `api.groq.com/openai/v1`, Mistral `api.mistral.ai/v1`, DeepSeek `api.deepseek.com/v1`, xAI `api.x.ai/v1`, Together AI `api.together.ai/v1`, Cerebras `api.cerebras.ai/v1`.
+- **Auth / cost:** the user's key, stored encrypted; MarketMitra pays nothing and never sees a shared quota. Gemini, Groq, Cerebras, Mistral and OpenRouter's `:free` models have free tiers; others are pay as you go.
+- **Limits:** each provider's own; a rate-limit or quota error is shown to the user.
+- **Model IDs:** change often. `src/lib/ai/providerCatalog.ts` records `MODELS_LAST_REVIEWED` and is reviewed every 8-12 weeks.
+
 ### NSE (National Stock Exchange) public endpoints
 - **Type:** public API (unofficial — no formal developer program or SLA)
 - **Used for:** quotes, corporate actions, IPO data (`nsepython`), shareholding pattern (direct call to `/api/corporates-holdings`), XBRL quarterly result filings

@@ -27,6 +27,8 @@
     "@a2ui/web_core": "0.16.1",
     "@ai-sdk/anthropic": "^4.0.105",
     "@ai-sdk/google": "^4.0.121",
+    "@ai-sdk/openai": "^4.0.122",
+    "@ai-sdk/openai-compatible": "^3.0.94",
     "@ai-sdk/react": "^4.0.177",
     "@clerk/nextjs": "^7.9.26",
     "@modelcontextprotocol/server": "^2.0.0",
