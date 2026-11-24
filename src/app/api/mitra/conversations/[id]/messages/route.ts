@@ -173,8 +173,14 @@ async function handleMessage(request: Request, ctx?: unknown) {
       originalMessages: all,
       onEnd: async ({ responseMessage, isAborted, finishReason }) => {
         // Only a completed reply is stored: a partial one would make a client retry look like a new turn.
-        if (isAborted || finishReason === 'error' || !hasReplyContent(responseMessage.parts)) return;
-        await appendMessages(userId, id, [responseMessage]).catch(() => false);
+        try {
+          if (isAborted || finishReason === 'error' || !hasReplyContent(responseMessage.parts)) return;
+          await appendMessages(userId, id, [responseMessage]).catch(() => false);
+        } catch (error) {
+          // An exception here would cut the response off mid-stream, so log it (type and message only, never chat text).
+          const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+          void logEvent({ level: 'error', source: 'api:mitra/messages', message: `Mitra chat save failed: ${detail.slice(0, 400)}` });
+        }
       },
       onError: (error) => {
         const detail = error instanceof Error ? error.message : String(error);

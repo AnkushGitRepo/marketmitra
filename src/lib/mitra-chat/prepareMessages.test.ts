@@ -113,6 +113,11 @@ describe('transcriptOf / buildSummaryPrompt', () => {
     expect(transcriptOf(convo)).toBe('User: Hold HDFC Bank?\nUser: [attached: ar.pdf]');
   });
 
+  it('leaves the follow-up block out of a Mitra reply (#339)', () => {
+    const reply = text('assistant', 'A low P/E can mislead.\n\n<follow_ups>\nCompare with peers\nCheck the debt\n</follow_ups>');
+    expect(transcriptOf([reply])).toBe('Mitra: A low P/E can mislead.');
+  });
+
   it('includes the existing summary only when there is one', () => {
     expect(buildSummaryPrompt('', convo)).not.toContain('Existing summary');
     expect(buildSummaryPrompt('Owns 10 TCS', convo)).toContain('Existing summary:\nOwns 10 TCS');
