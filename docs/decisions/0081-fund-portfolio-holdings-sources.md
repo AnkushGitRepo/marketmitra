@@ -32,9 +32,9 @@ were not checked. Disclosure to investors is free; that is not the same as permi
 
 ## Storage estimate (Neon)
 
-Not measured: this needs production credentials, which an agent does not have. The maintainer can run
-`select pg_size_pretty(pg_database_size(current_database()));` against the production database.
-Neon's free plan allows [1 GB of Postgres storage per project](https://neon.com/docs/introduction/plans); a write that grows storage fails once it is full.
+**Measured on 2026-11-24** in the Neon console (read by the maintainer's signed-in browser, no database access): the production project
+`marketmitra-postgres-db` (AWS US East 1, N. Virginia) holds **163.86 MB**, plus 0.02 GB of history, with 12.24 compute CU-hours and 0.71 GB of network transfer so far in November.
+Neon's free plan allows [1 GB of Postgres storage per project](https://neon.com/docs/introduction/plans); a write that grows storage fails once it is full. So about 16% is used today.
 
 Estimate, with the assumptions stated: about 2,400 disclosed schemes (the fund-disclosures mapping baseline), roughly 60 holdings each on average,
 so about 145,000 rows a month. A narrow row (scheme id, ISIN, weight, quantity, value, as-of date) with its index is roughly 150 bytes, so:
@@ -46,8 +46,8 @@ so about 145,000 rows a month. A narrow row (scheme id, ISIN, weight, quantity, 
 | Equity Direct-Growth schemes only (the set 0067 already keeps history for), latest month | ~40,000 | 6 MB |
 | The same, 12 months | ~480,000 | 70 MB |
 
-Equity-only, latest month plus a short history fits comfortably; all schemes with a year of history would use a quarter of the free limit before counting what
-is already stored. These are estimates, not measurements.
+On top of the 164 MB already stored, equity-only with a year of history would bring the project to about 235 MB (23%), and every scheme with a year of
+history to about 415 MB (41%). Both fit in the free 1 GB, with the second leaving much less room for everything else. The holdings figures are estimates; the 164 MB is measured.
 
 ## Decision (proposed)
 
@@ -56,7 +56,7 @@ is already stored. These are estimates, not measurements.
    One small parser per AMC behind a common row shape, run by a GitHub Actions job that posts to a token-guarded ingest route, as `refresh-funds`
    already does. An AMC whose site is behind a bot check is skipped, not worked around.
 2. **Before any code:** read each pilot AMC's terms and record them in `docs/data-sources.md`; ask AMFI for written permission if AMFI-hosted files are wanted;
-   measure the current Neon size.
+   check which tables hold the current 164 MB, so the headroom is known.
 3. **Do not depend on** the fund-disclosures API or mfdata.in. If a spike is wanted, fund-disclosures can be used to see the row shape and to
    cross-check our parsers, with the AMC terms question settled first.
 4. **Overlap itself** (matching fund ISINs to the user's holdings and the screener's companies) is a separate issue once holdings exist; it needs the ISIN-to-symbol
@@ -74,7 +74,7 @@ permission from AMFI would cover both the NAV file and any later holdings use.
 - How each AMC's site behaves from GitHub Actions (bot protection), and each AMC's terms other than the one page read.
 - Real file sizes, row counts per scheme, and how many layouts the parsers would need: no workbook was downloaded.
 - mfdata.in (unreachable) and the fund-disclosures API's reliability.
-- The production Neon size.
+- Which tables make up the 164 MB (the console shows the project total only).
 
 ## Consequences
 

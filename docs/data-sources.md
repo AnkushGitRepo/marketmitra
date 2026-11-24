@@ -32,7 +32,7 @@ For each source, record: what it is, the endpoint(s) used, auth/key requirements
 - **Status:** researched on 2026-11-24 for #275; **nothing is ingested** and no code exists. Full findings, the storage estimate and the proposed pilot are in [ADR 0081](./decisions/0081-fund-portfolio-holdings-sources.md).
 - **Where the data is:** each AMC's own website (statutory monthly disclosure, Excel, SEBI-prescribed columns, layout differs by AMC) and AMFI's hosted copies. AMFI's [terms of use](https://www.amfiindia.com/terms-of-use) limit reuse to personal, non-commercial use and forbid storing a significant portion of the site, so AMFI-hosted files need written permission. AMC terms are per AMC and not yet read.
 - **Third parties seen:** the open-source `fund-disclosures` project (MIT code, a small public API, no stated terms) and `mfdata.in` (not reachable when checked). Neither is a dependency.
-- **Cost:** free to fetch; paid vendors are ruled out. **Storage:** about 6 MB a month for equity Direct-Growth schemes, about 20 MB a month for every disclosed scheme (estimates, not measured; Neon's free plan is 1 GB).
+- **Cost:** free to fetch; paid vendors are ruled out. **Storage:** about 6 MB a month for equity Direct-Growth schemes, about 20 MB a month for every disclosed scheme (estimates). The production Neon project measured 163.86 MB on 2026-11-24 against the free plan's 1 GB.
 
 ### NSE (National Stock Exchange) public endpoints
 - **Type:** public API (unofficial — no formal developer program or SLA)
