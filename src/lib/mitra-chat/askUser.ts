@@ -2,6 +2,7 @@
 // the text a card answer is sent as, and the checks the chat route and thread share. No I/O, so they test without mocks.
 
 import { z } from 'zod';
+import { HOLDING_PROPOSAL_TOOL } from './holdingProposal';
 
 export const ASK_USER_TOOL = 'ask_user';
 export const ASK_MIN_OPTIONS = 2;
@@ -43,9 +44,9 @@ export function answerText(question: string, picked: readonly string[], other?: 
 
 type PartLike = { readonly type: string; readonly text?: string };
 
-/** True when a reply carries something worth saving: text, or a question for the user to answer. */
+/** True when a reply carries something worth saving: text, or a card for the user to answer (a question or a holding change). */
 export function hasReplyContent(parts: readonly PartLike[]): boolean {
-  return parts.some((p) => (p.type === 'text' && (p.text ?? '').trim().length > 0) || p.type === `tool-${ASK_USER_TOOL}`);
+  return parts.some((p) => (p.type === 'text' && (p.text ?? '').trim().length > 0) || p.type === `tool-${ASK_USER_TOOL}` || p.type === `tool-${HOLDING_PROPOSAL_TOOL}`);
 }
 
 /** The question of the `ask_user` card in a message, if it has one. */

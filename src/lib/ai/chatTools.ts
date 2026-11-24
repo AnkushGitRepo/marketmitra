@@ -24,8 +24,9 @@
 //
 // HARD BOUNDARY (ADR 0022, amended by ADR 0030): this is the *entire*
 // ToolSet Mitra ever receives. There is still no tool here for account
-// settings, security settings, billing, holdings, or a hard delete of
-// anything — the alert-management tools added by ADR 0030 are the single,
+// settings, security settings, billing, a tool that saves holdings
+// (`propose_holding_change`, ADR 0080, only shows a card the user confirms),
+// or a hard delete of anything — the alert-management tools added by ADR 0030 are the single,
 // explicit, narrowly-scoped exception, not a general write capability. The
 // boundary is enforced by these tools simply not existing, not by a prompt
 // instruction. If you're adding a tool, it belongs in this file; adding

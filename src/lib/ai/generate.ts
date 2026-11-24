@@ -124,8 +124,8 @@ export interface StreamChatOptions {
    *  (Phase 10 / ADR 0020). `maxSteps` bounds the loop. */
   tools?: ToolSet;
   maxSteps?: number;
-  /** Ends the turn as soon as the model calls this tool (e.g. `ask_user`, which waits for the user's answer). */
-  stopAfterTool?: string;
+  /** Ends the turn as soon as the model calls one of these tools (e.g. `ask_user`, which waits for the user's answer). */
+  stopAfterTool?: string | readonly string[];
   /** Overrides the default output cap (long-form surfaces such as the Mitra workspace). */
   maxOutputTokens?: number;
   /** Called once the full assistant reply is known (after any tool
@@ -160,7 +160,7 @@ export function streamChat(
     ...(hasTools
       ? {
           tools: opts.tools,
-          stopWhen: [stepCountIs(opts.maxSteps ?? 5), ...(opts.stopAfterTool ? [hasToolCall(opts.stopAfterTool)] : [])],
+          stopWhen: [stepCountIs(opts.maxSteps ?? 5), ...[opts.stopAfterTool ?? []].flat().map((name) => hasToolCall(name))],
         }
       : {}),
     ...(opts.onFinish
