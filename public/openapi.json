@@ -7253,7 +7253,7 @@
           "Settings"
         ],
         "summary": "List the models an AI provider key can use",
-        "description": "Fetches the model list live from the provider's own fixed listing URL with the key (a key in the request, or the saved key for the same provider; OpenRouter's public list needs none), merges it with the curated list and returns `source` (`live` or `curated`) and the models with `tier` (`latest`, `free`, `other`), `free` and `tools` (whether tool calls are known to work). Any failure answers with the curated list. The key is never returned or logged. Results are cached for 5 minutes per key.",
+        "description": "Fetches the model list live from the provider's own fixed listing URL with the key (a key in the request, or the saved key for the same provider; OpenRouter's public list needs none), merges it with the curated list and returns `source` (`live` or `curated`) and the models with `tier` (`latest`, `free`, `other`), `free` and `tools` (whether tool calls are known to work). Any failure answers with the curated list. The key is never returned or logged. Results are cached for 5 minutes per user and provider.",
         "security": [
           {
             "cookieAuth": []

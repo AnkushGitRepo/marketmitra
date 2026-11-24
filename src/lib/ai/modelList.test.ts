@@ -83,28 +83,29 @@ describe('listModels', () => {
   it('returns the live list, and caches it for the same key without calling again', async () => {
     let calls = 0;
     const fetchImpl = async () => (calls += 1, res({ data: [{ id: 'live-one', created: 1 }] }));
-    const a = await listModels('groq', 'KEY-1', { fetchImpl, now: () => 1000 });
-    const b = await listModels('groq', 'KEY-1', { fetchImpl, now: () => 2000 });
+    const a = await listModels('groq', 'KEY-1', 'u1', { fetchImpl, now: () => 1000 });
+    const b = await listModels('groq', 'KEY-1', 'u1', { fetchImpl, now: () => 2000 });
     expect(a.source).toBe('live');
     expect(b).toBe(a);
     expect(calls).toBe(1);
-    await listModels('groq', 'KEY-2', { fetchImpl, now: () => 2000 });
+    // Another user is a separate cache entry; the same user after the lifetime fetches again.
+    await listModels('groq', 'KEY-1', 'u2', { fetchImpl, now: () => 2000 });
     expect(calls).toBe(2);
-    await listModels('groq', 'KEY-1', { fetchImpl, now: () => 1000 + 6 * 60 * 1000 });
+    await listModels('groq', 'KEY-1', 'u1', { fetchImpl, now: () => 1000 + 6 * 60 * 1000 });
     expect(calls).toBe(3);
   });
 
   it('falls back to the curated list on an HTTP error, a thrown error, bad JSON and no key', async () => {
     const curated = curatedList('groq');
-    expect(await listModels('groq', 'K', { fetchImpl: async () => res({}, false) })).toEqual(curated);
-    expect(await listModels('groq', 'K', { fetchImpl: async () => { throw new Error('boom'); } })).toEqual(curated);
-    expect(await listModels('groq', 'K', { fetchImpl: async () => res('not json') })).toEqual(curated);
-    expect(await listModels('groq', null)).toEqual(curated);
+    expect(await listModels('groq', 'K', 'u1', { fetchImpl: async () => res({}, false) })).toEqual(curated);
+    expect(await listModels('groq', 'K', 'u1', { fetchImpl: async () => { throw new Error('boom'); } })).toEqual(curated);
+    expect(await listModels('groq', 'K', 'u1', { fetchImpl: async () => res('not json') })).toEqual(curated);
+    expect(await listModels('groq', null, 'u1')).toEqual(curated);
   });
 
-  it('does not need a key for OpenRouter, and never puts the key in the cache key', async () => {
+  it('does not need a key for OpenRouter', async () => {
     const fetchImpl = async () => res({ data: [{ id: 'x/free:free', created: 3, pricing: { prompt: '0', completion: '0' } }] });
-    const out = await listModels('openrouter', null, { fetchImpl });
+    const out = await listModels('openrouter', null, 'u1', { fetchImpl });
     expect(out.source).toBe('live');
     expect(out.models.find((m) => m.value === 'x/free:free')).toMatchObject({ tier: 'free', free: true });
   });

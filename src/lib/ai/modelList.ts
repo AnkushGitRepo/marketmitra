@@ -4,7 +4,6 @@
 // Security: every listing URL is fixed here (or in the catalogue), never taken from the request, and the key is only ever sent to that
 // provider. It is not logged, cached in the clear or put in an error message.
 
-import { createHmac, randomBytes } from 'node:crypto';
 import { curatedList, fromCatalog, type ModelListResult, type PickerModel } from './pickerModels';
 import { PROVIDERS, type AiProvider } from './providerCatalog';
 
@@ -129,25 +128,24 @@ type FetchLike = (url: string, init: { headers: Record<string, string>; signal: 
 
 const cache = new Map<string, { at: number; result: ModelListResult }>();
 
-// A random secret that lives only in this process, so a cache key is a keyed fingerprint of the API key: it cannot be reversed or
-// guessed, and nothing is stored that could be used as the key. (Not password storage: nothing here is ever persisted.)
-const CACHE_SECRET = randomBytes(32);
-
-/** A cache key that never holds the key itself. */
-const cacheKey = (provider: AiProvider, apiKey: string): string =>
-  provider === 'openrouter' ? 'openrouter:public' : `${provider}:${createHmac('sha256', CACHE_SECRET).update(apiKey).digest('hex').slice(0, 24)}`;
+/**
+ * Cached per user and provider, so the key is never hashed or stored: nothing derived from it is kept. The trade-off is that for the
+ * cache lifetime a different key for the same provider gets the list fetched with the previous one, which differs only in account-specific
+ * models. OpenRouter's list is public and shared.
+ */
+const cacheKey = (provider: AiProvider, scope: string): string => (provider === 'openrouter' ? 'openrouter:public' : `${provider}:${scope}`);
 
 export function clearModelCache(): void {
   cache.clear();
 }
 
-/** Live models for the key, merged with the curated list. Never throws: any failure returns the curated list. */
-export async function listModels(provider: AiProvider, apiKey: string | null, deps: { fetchImpl?: FetchLike; now?: () => number } = {}): Promise<ModelListResult> {
+/** Live models for the key, merged with the curated list. `scope` (the user id) only keys the cache. Never throws: any failure returns the curated list. */
+export async function listModels(provider: AiProvider, apiKey: string | null, scope: string, deps: { fetchImpl?: FetchLike; now?: () => number } = {}): Promise<ModelListResult> {
   const needsKey = PROVIDERS[provider].sdk !== 'openrouter';
   if (needsKey && !apiKey) return curatedList(provider);
   const key = apiKey ?? '';
   const now = (deps.now ?? Date.now)();
-  const ck = cacheKey(provider, key);
+  const ck = cacheKey(provider, scope);
   const hit = cache.get(ck);
   if (hit && now - hit.at < CACHE_TTL_MS) return hit.result;
   try {

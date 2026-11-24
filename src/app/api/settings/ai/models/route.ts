@@ -34,7 +34,7 @@ async function handlePOST(request: Request) {
     const saved = await getUserAiConfig(userId).catch(() => null);
     key = saved && saved.provider === provider ? saved.apiKey : null;
   }
-  const result = key || provider === 'openrouter' ? await listModels(provider, key) : curatedList(provider);
+  const result = key || provider === 'openrouter' ? await listModels(provider, key, userId) : curatedList(provider);
   return NextResponse.json({ success: true, data: result, error: null });
 }
 
