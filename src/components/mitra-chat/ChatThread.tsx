@@ -9,7 +9,7 @@ import { EmptyState } from './EmptyState';
 import type { ChatContextState } from './useChatContext';
 import type { StarterPrompt } from '@/lib/mitra-chat/starters';
 import { questionOfMessage } from '@/lib/mitra-chat/askUser';
-import { MessageView } from './MessageView';
+import { MessageView, PendingReply } from './MessageView';
 import type { Preferences } from '@/lib/preferences/schema';
 import { chatErrorMessage, mitraApi, type ConversationDto, type UploadedFile } from './api';
 import styles from './Chat.module.css';
@@ -173,13 +173,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
                 onAnswer={!busy && i === messages.length - 1 ? (text) => void sendMessage({ text }) : undefined}
               />
             ))}
-            {status === 'submitted' && last?.role === 'user' && (
-              <article className={`${styles.message} ${styles.messageAssistant}`} aria-label="Mitra">
-                <div className={styles.bubble}>
-                  <span className={styles.typing} aria-label="Mitra is thinking" />
-                </div>
-              </article>
-            )}
+            {status === 'submitted' && last?.role === 'user' && <PendingReply />}
           </div>
         )}
         <div ref={bottom} />
