@@ -44,10 +44,15 @@ export function useConversations() {
     setItems((all) => all.map((c) => (c.id === id ? updated : c)));
   }, []);
 
+  /** Puts a changed conversation (for example its generated title) into the list without refetching it. */
+  const replace = useCallback((conversation: ConversationDto) => {
+    setItems((all) => all.map((c) => (c.id === conversation.id ? conversation : c)));
+  }, []);
+
   const remove = useCallback(async (id: string) => {
     await mitraApi.remove(id);
     setItems((all) => all.filter((c) => c.id !== id));
   }, []);
 
-  return { items, loading, error, query, setQuery, refresh, add, rename, remove };
+  return { items, loading, error, query, setQuery, refresh, add, replace, rename, remove };
 }

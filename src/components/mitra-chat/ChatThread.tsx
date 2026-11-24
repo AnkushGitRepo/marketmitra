@@ -18,8 +18,8 @@ interface ChatThreadProps {
   readonly initialConversationId: string | null;
   readonly initialMessages: readonly UIMessage[];
   readonly onConversationCreated: (conversation: ConversationDto) => void;
-  /** Called after each completed reply so the rail can refresh titles and ordering. */
-  readonly onActivity: () => void;
+  /** Called after each completed reply, with the conversation id, so the rail can refresh ordering and ask for a title. */
+  readonly onActivity: (conversationId: string | null) => void;
   readonly chatPrefs: Preferences['chat'];
   /** Greeting context for the empty state (first name and live-priced holdings). */
   readonly contextState: ChatContextState;
@@ -65,7 +65,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
     id: initialConversationId ?? 'new-chat',
     messages: [...initialMessages],
     transport,
-    onFinish: onActivity,
+    onFinish: () => onActivity(session.id),
   });
   const busy = status === 'submitted' || status === 'streaming';
 

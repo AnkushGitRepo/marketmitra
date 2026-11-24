@@ -4,7 +4,7 @@ import type { AttachmentKind } from '@/lib/mitra-chat/attachments';
 export interface ConversationDto {
   readonly id: string;
   readonly title: string;
-  readonly titleSource: 'auto' | 'user';
+  readonly titleSource: 'auto' | 'generated' | 'user';
   readonly messageCount: number;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -52,6 +52,7 @@ export const mitraApi = {
   create: (title?: string) => request<ConversationDto>('/api/mitra/conversations', jsonInit('POST', title ? { title } : {})),
   get: (id: string) => request<{ conversation: ConversationDto; messages: UIMessage[] }>(`/api/mitra/conversations/${id}`),
   rename: (id: string, title: string) => request<ConversationDto>(`/api/mitra/conversations/${id}`, jsonInit('PATCH', { title })),
+  generateTitle: (id: string) => request<ConversationDto>(`/api/mitra/conversations/${id}/title`, { method: 'POST' }),
   remove: (id: string) => request<{ removed: boolean }>(`/api/mitra/conversations/${id}`, { method: 'DELETE' }),
   upload: (conversationId: string, file: File) => {
     const form = new FormData();

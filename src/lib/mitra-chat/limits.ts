@@ -11,6 +11,8 @@ export const MAX_MESSAGES_PER_CONVERSATION = 2000;
 export const MAX_MESSAGE_CHARS = 8000;
 export const TITLE_MAX = 80;
 export const DEFAULT_TITLE = 'New chat';
+/** A title is generated only while a chat is this short, so a long older chat keeps the title it has. */
+export const TITLE_GENERATION_MAX_MESSAGES = 8;
 
 // Context window sent to the model: the newest messages that fit both caps;
 // anything older is folded into a stored running summary.

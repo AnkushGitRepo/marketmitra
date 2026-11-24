@@ -7205,6 +7205,47 @@
           }
         }
       }
+    },
+    "/api/mitra/conversations/{id}/title": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate a short title for a conversation",
+        "description": "Writes a 3 to 7 word title from the first question and answer, using the caller's own AI key, and stores it. Does nothing (and returns the conversation unchanged) if the title was typed by the user or already generated, if there is no answer yet, or if the model call fails. `titleSource` is `auto`, `generated` or `user`.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope with the conversation."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found / not owned."
+          },
+          "429": {
+            "description": "Rate limited."
+          }
+        }
+      }
     }
   }
 }
