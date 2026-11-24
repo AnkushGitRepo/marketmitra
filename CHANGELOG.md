@@ -69,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Generated chat titles are no longer cut to one or two words ("TCS", "Understanding"): a title that the model did not finish is dropped and the first-message title stays. ([#343](https://github.com/AnkushGitRepo/marketmitra/issues/343))
 - Changing one setting no longer resets the others in its group: turning "Rich replies" on or off was switching Unrestricted Mitra back off (and could put "Let Mitra read my platform data", "Send with Enter" and the dictation language back to their defaults). ([#335](https://github.com/AnkushGitRepo/marketmitra/issues/335))
 - Analysts, dossiers and portfolio import no longer reject a correct reply just because the model wrapped its JSON in a markdown code fence or a sentence of prose (common with free and smaller models); a reply that does not match the expected shape still fails as before. ([#314](https://github.com/AnkushGitRepo/marketmitra/issues/314))
 - On a fund page the NAV history card and the Mitra Fund X-Ray now start and end on the same edges, with the NAV history / SIP simulator switch inside the card's header; Calmar sits under Sortino instead of on a line of its own below the figures; and the lowest NAV label on the chart no longer crowds the line and the date row. ([#300](https://github.com/AnkushGitRepo/marketmitra/issues/300))

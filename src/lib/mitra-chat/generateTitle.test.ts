@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { UIMessage } from 'ai';
-import { buildTitlePrompt, cleanTitle, hasAnswerText } from './generateTitle';
+const generateInsightText = vi.fn();
+vi.mock('@/lib/ai/generate', () => ({ generateInsightText: (...a: unknown[]) => generateInsightText(...a) }));
+
+import type { AiConfig } from '@/lib/ai/providers';
+import { buildTitlePrompt, cleanTitle, generateChatTitle, hasAnswerText } from './generateTitle';
+
+const config = { provider: 'gemini', apiKey: 'k' } as AiConfig;
 
 const msg = (role: 'user' | 'assistant', text: string): UIMessage => ({ id: role + text.length, role, parts: [{ type: 'text', text }] });
 
@@ -39,5 +45,21 @@ describe('hasAnswerText', () => {
     expect(hasAnswerText([msg('user', 'add JIO')])).toBe(false);
     expect(hasAnswerText([msg('user', 'add JIO'), { id: 'a', role: 'assistant', parts: [{ type: 'tool-ask_user', toolCallId: 'c', state: 'input-available', input: {} } as never] }])).toBe(false);
     expect(hasAnswerText([msg('user', 'add JIO'), msg('assistant', 'JIO lists on...')])).toBe(true);
+  });
+});
+
+describe('generateChatTitle', () => {
+  const chat = [msg('user', 'TCS news?'), msg('assistant', 'TCS reported...')];
+
+  it('returns the cleaned title of a complete reply', async () => {
+    generateInsightText.mockResolvedValue({ ok: true, text: 'TCS news and valuation', model: 'm', finishReason: 'stop' });
+    expect(await generateChatTitle(config, chat)).toBe('TCS news and valuation');
+  });
+
+  it('drops a reply that stopped on the length limit, and a failed call (#341)', async () => {
+    generateInsightText.mockResolvedValue({ ok: true, text: 'TCS latest', model: 'm', finishReason: 'length' });
+    expect(await generateChatTitle(config, chat)).toBeNull();
+    generateInsightText.mockResolvedValue({ ok: false, error: 'x' });
+    expect(await generateChatTitle(config, chat)).toBeNull();
   });
 });
