@@ -52,6 +52,11 @@ describe('Mitra workspace prompt', () => {
     expect(MITRA_WORKSPACE_SYSTEM).toMatch(/no tool for account settings, security, billing or any destructive action/i);
   });
 
+  it('tells the model to write formulas in plain text, not LaTeX (#347)', () => {
+    expect(MITRA_WORKSPACE_SYSTEM).toMatch(/never LaTeX/);
+    expect(CHAT_SYSTEM_AGENTIC).toMatch(/never LaTeX/);
+  });
+
   it('has Mitra offer follow-up questions, never trade suggestions (#339)', () => {
     expect(MITRA_WORKSPACE_SYSTEM).toMatch(/<follow_ups>/);
     expect(MITRA_WORKSPACE_SYSTEM).toMatch(/never a suggestion to buy, sell or hold/i);
