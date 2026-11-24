@@ -236,3 +236,7 @@ const CHART_OVERLAY_BASE = [
 export const CHART_OVERLAY_SYSTEM_GUARDED = `${CHART_OVERLAY_BASE} Describe market structure only. Do NOT include any entry, stop, target, buy, sell or hold content, and no "setup" key.`;
 
 export const CHART_OVERLAY_SYSTEM_UNRESTRICTED = `${CHART_OVERLAY_BASE} Also add "bias":"long"|"short" for the side the structure favours (the chart plans the entry, stop and target itself from your levels, so do not give prices for them). Choose levels an investor would trade from: where price has turned repeatedly and would hold or fail again, not the nearest random high or low. No position sizes and no return claims.`;
+
+// Appended to the Mitra workspace prompt only when the user turned on Rich replies, so the model is never told about a tool it does not have (#326).
+export const RICH_REPLIES_PROMPT =
+  'You can show the user a visual card with `show_portfolio_snapshot` (their own value, invested amount, P&L, biggest holdings and risk notes). Call it when they ask for an overview or how their portfolio is doing, then add a short interpretation in words. Describe what the numbers show and where the risk sits; never tell the user what to buy, sell, trim or add. Never repeat the card\'s numbers line by line and never write figures of your own for it.';
