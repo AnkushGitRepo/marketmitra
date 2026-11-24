@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
+import { logEvent } from '@/lib/system/eventLog';
 import { getConversation, loadMessages, setGeneratedTitle } from '@/lib/mitra-chat/conversations';
 import { generateChatTitle, hasAnswerText } from '@/lib/mitra-chat/generateTitle';
 import { TITLE_GENERATION_MAX_MESSAGES } from '@/lib/mitra-chat/limits';
@@ -34,4 +35,15 @@ async function handlePOST(_request: Request, ctx?: unknown) {
   return NextResponse.json({ success: true, data: updated ?? conversation, error: null });
 }
 
-export const POST = withRateLimit(handlePOST, 'ai');
+async function guardedPOST(request: Request, ctx?: unknown) {
+  try {
+    return await handlePOST(request, ctx);
+  } catch (error) {
+    // A title is a nicety: log it (type only, no chat text) and let the client keep the current one.
+    const detail = error instanceof Error ? error.name : 'Error';
+    void logEvent({ level: 'error', source: 'api:mitra/title', message: `Mitra chat title failed: ${detail}` });
+    return err('Could not generate a title.', 500);
+  }
+}
+
+export const POST = withRateLimit(guardedPOST, 'ai');

@@ -8,11 +8,12 @@ import { TITLE_MAX } from './limits';
 import { transcriptOf } from './prepareMessages';
 
 const EXCERPT_MESSAGES = 4;
-const EXCERPT_CHARS = 1200;
+const EXCERPT_CHARS = 900;
 const TITLE_WORDS_MAX = 8;
 const TITLE_WORDS_MIN = 2;
-// A thinking model can spend a small budget on hidden reasoning and leave one word of visible text, so leave room (#341).
-const TITLE_MAX_OUTPUT_TOKENS = 400;
+// Hidden reasoning counts against the output limit, and a long, tool-heavy chat can use a lot of it: with a small limit the visible
+// title was cut to its first word ("Understanding", "TCS"). The title itself is a few tokens, so a large limit costs nothing (#341).
+const TITLE_MAX_OUTPUT_TOKENS = 2000;
 
 export const TITLE_SYSTEM = [
   'You write the title of a chat between an investor and their markets assistant, so the investor can find the chat later in a long list.',
@@ -50,5 +51,6 @@ export function cleanTitle(raw: string): string | null {
 /** Null when the model call fails or returns nothing usable; the caller then keeps the current title. */
 export async function generateChatTitle(config: AiConfig, messages: readonly UIMessage[]): Promise<string | null> {
   const result = await generateInsightText(config, TITLE_SYSTEM, buildTitlePrompt(messages), { maxOutputTokens: TITLE_MAX_OUTPUT_TOKENS, thinkingLevel: 'low' });
-  return result.ok ? cleanTitle(result.text) : null;
+  // A reply that stopped on the length limit is a cut-off title; the first-message title is better than half of one.
+  return result.ok && result.finishReason !== 'length' ? cleanTitle(result.text) : null;
 }
