@@ -52,7 +52,8 @@ describe('project skills', () => {
       const text = readFileSync(join(ROOT, CANONICAL, name, 'SKILL.md'), 'utf8');
       const front = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? '';
       expect(front, name).toMatch(new RegExp(`^name: ${name}$`, 'm'));
-      expect(front, name).toMatch(/^description: .{20,}$/m);
+      // One line, or a YAML block scalar (`>-` / `|`) as third-party skills such as a2ui write it.
+      expect(front, name).toMatch(/^description: (?:.{20,}|[>|][+-]?\n[ \t]+\S.{19,})/m);
     }
   });
 });
