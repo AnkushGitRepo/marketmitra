@@ -1,0 +1,92 @@
+.card {
+  margin: 4px 0 2px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.current {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--app-text-muted);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--text-xs);
+  color: var(--app-text-muted);
+}
+
+.input {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.input:disabled {
+  opacity: 0.7;
+}
+
+.error {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--app-loss);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.confirm,
+.cancel {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.confirm {
+  border: 0;
+  background: var(--color-surface-dark);
+  color: var(--color-text-on-dark);
+}
+
+.danger {
+  background: var(--app-loss);
+  color: #fff;
+}
+
+.cancel {
+  border: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.confirm:disabled,
+.cancel:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
