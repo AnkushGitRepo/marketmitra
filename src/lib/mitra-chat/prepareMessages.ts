@@ -1,3 +1,4 @@
+import { splitFollowUps } from './followUps';
 import type { UIMessage } from 'ai';
 import {
   FILE_URL_PREFIX,
@@ -110,7 +111,7 @@ export function transcriptOf(messages: readonly UIMessage[]): string {
   return messages
     .map((m) => {
       const text = m.parts
-        .map((p) => (p.type === 'text' ? p.text : p.type === 'file' ? `[attached: ${p.filename ?? p.mediaType}]` : ''))
+        .map((p) => (p.type === 'text' ? (m.role === 'assistant' ? splitFollowUps(p.text).body : p.text) : p.type === 'file' ? `[attached: ${p.filename ?? p.mediaType}]` : ''))
         .filter(Boolean)
         .join(' ');
       return text ? `${m.role === 'user' ? 'User' : 'Mitra'}: ${text}` : '';

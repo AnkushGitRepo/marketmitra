@@ -1,0 +1,36 @@
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--app-border);
+}
+
+.chip {
+  max-width: 100%;
+  padding: 6px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease;
+}
+
+.chip:hover,
+.chip:focus-visible {
+  border-color: var(--color-mint-strong);
+  background: var(--color-mint-bg);
+}
+
+@media (max-width: 640px) {
+  /* A comfortable touch target on a phone. */
+  .chip {
+    min-height: 40px;
+  }
+}

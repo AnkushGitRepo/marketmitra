@@ -5,7 +5,9 @@ import { MitraCharacter } from '@/components/mitra/MitraCharacter';
 import { ASK_USER_TOOL, parseAskUserInput, visibleAnswer } from '@/lib/mitra-chat/askUser';
 import { isCardToolPart, type CardToolOutput } from '@/lib/ai/a2uiToolTypes';
 import { HOLDING_PROPOSAL_TOOL, parseProposalPart } from '@/lib/mitra-chat/holdingProposal';
+import { splitFollowUps } from '@/lib/mitra-chat/followUps';
 import { AskUserCard } from './AskUserCard';
+import { FollowUpChips } from './FollowUpChips';
 import { HoldingProposalCard } from './HoldingProposalCard';
 import { AttachmentView } from './AttachmentView';
 import { StageLine, ToolActivity } from './ToolActivity';
@@ -40,7 +42,11 @@ function PartView({ part, role, cursor, onAnswer, answeredQuestion }: PartViewPr
     return role === 'user' ? (
       <p className={styles.userText}>{visibleAnswer(part.text, answeredQuestion ?? null)}</p>
     ) : (
-      <MarkdownLite text={part.text} className={cursor ? `${styles.markdown} ${styles.cursor}` : styles.markdown} />
+      <>
+        <MarkdownLite text={splitFollowUps(part.text).body} className={cursor ? `${styles.markdown} ${styles.cursor}` : styles.markdown} />
+        {/* Only the newest reply, once it is done, offers its chips; an older one would be a stale suggestion. */}
+        {onAnswer && <FollowUpChips suggestions={splitFollowUps(part.text).suggestions} onPick={onAnswer} />}
+      </>
     );
   }
   if (part.type === 'file') return <AttachmentView url={part.url} mediaType={part.mediaType} filename={part.filename} />;
