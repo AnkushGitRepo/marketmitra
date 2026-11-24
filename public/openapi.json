@@ -7246,6 +7246,70 @@
           }
         }
       }
+    },
+    "/api/settings/ai/models": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "List the models an AI provider key can use",
+        "description": "Fetches the model list live from the provider's own fixed listing URL with the key (a key in the request, or the saved key for the same provider; OpenRouter's public list needs none), merges it with the curated list and returns `source` (`live` or `curated`) and the models with `tier` (`latest`, `free`, `other`), `free` and `tools` (whether tool calls are known to work). Any failure answers with the curated list. The key is never returned or logged. Results are cached for 5 minutes per user and provider.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "gemini",
+                      "anthropic",
+                      "openrouter",
+                      "openai",
+                      "groq",
+                      "mistral",
+                      "deepseek",
+                      "xai",
+                      "together",
+                      "cerebras",
+                      "sarvam"
+                    ]
+                  },
+                  "apiKey": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "A key not saved yet. Without it the saved key for the same provider is used."
+                  }
+                },
+                "required": [
+                  "provider"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Envelope with { source, models }."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "422": {
+            "description": "Invalid body."
+          },
+          "429": {
+            "description": "Rate limited."
+          }
+        }
+      }
     }
   }
 }
