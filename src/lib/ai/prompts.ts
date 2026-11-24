@@ -11,8 +11,11 @@ export const GUARDRAIL = [
   'End every response with exactly: "This is a synthesis of public data, not investment advice."',
 ].join(' ');
 
+// The chat draws a small markdown subset with no math, so LaTeX would show as typed (#347).
+const PLAIN_FORMULAS = 'Write any formula in plain text, such as "Debt / Equity" or "(Price - Cost) / Cost", never LaTeX or dollar-sign math.';
+
 function withGuardrail(role: string): string {
-  return `${role}\n\n${GUARDRAIL}`;
+  return `${role} ${PLAIN_FORMULAS}\n\n${GUARDRAIL}`;
 }
 
 export const STOCK_SYSTEM = withGuardrail(

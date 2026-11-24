@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { parseInline, parseMarkdownLite } from './markdownLiteParse';
 
 describe('parseInline', () => {
+  it('shows LaTeX math as plain text, and keeps dollar amounts (#347)', () => {
+    expect(parseInline('Net D/E ($[\\text{Debt} - \\text{Cash}] / \\text{Equity}$) is clearer.')).toEqual([{ t: 'text', v: 'Net D/E ([Debt - Cash] / Equity) is clearer.' }]);
+    expect(parseInline('It costs $5 and $10.')).toEqual([{ t: 'text', v: 'It costs $5 and $10.' }]);
+  });
+
   it('splits **bold** and *italic* out of surrounding text', () => {
     expect(parseInline('a **b** and *c* here')).toEqual([
       { t: 'text', v: 'a ' },

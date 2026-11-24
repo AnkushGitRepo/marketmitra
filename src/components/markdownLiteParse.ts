@@ -4,6 +4,8 @@
 // raw HTML, so model output can never inject markup. The JSX renderer lives in
 // MarkdownLite.tsx; this is the part worth unit-testing.
 
+import { delatex } from '@/lib/text/delatex';
+
 export type InlineToken =
   | { t: 'text'; v: string }
   | { t: 'strong'; v: string }
@@ -18,7 +20,9 @@ export type Block =
   | { kind: 'pre'; text: string }
   | { kind: 'hr' };
 
-export function parseInline(text: string): InlineToken[] {
+export function parseInline(raw: string): InlineToken[] {
+  // A model sometimes writes LaTeX; this renderer has no math, so show it as plain text instead of as typed (#347).
+  const text = delatex(raw);
   const out: InlineToken[] = [];
   const re = /(`([^`]+)`|\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
   let last = 0;
