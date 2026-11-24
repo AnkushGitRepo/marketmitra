@@ -1,20 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { AI_PROVIDER_IDS, PROVIDERS, groupedModels } from '@/lib/ai/providerCatalog';
 import { MODEL_OPTIONS, PROVIDER_LABELS, isValidModelId } from '@/lib/ai/providers';
 import type { AiProvider } from '@/lib/userSettings';
 import { ChevronDownIcon, KeyRoundIcon, LockIcon } from './icons';
 import styles from './Onboarding.module.css';
 
 const CUSTOM_MODEL = '__custom__';
-const PROVIDERS: readonly AiProvider[] = ['gemini', 'anthropic', 'openrouter'];
-
-const GET_KEY: Record<AiProvider, { href: string; text: string }> = {
-  gemini: { href: 'https://aistudio.google.com/apikey', text: 'Get a Gemini key (free tier available)' },
-  anthropic: { href: 'https://console.anthropic.com/settings/keys', text: 'Get an Anthropic key' },
-  openrouter: { href: 'https://openrouter.ai/keys', text: 'Get an OpenRouter key' },
-};
-
 type Status =
   | { readonly kind: 'idle' }
   | { readonly kind: 'running' }
@@ -59,7 +52,7 @@ export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
     }
   };
 
-  const link = GET_KEY[provider];
+  const link = { href: PROVIDERS[provider].keyUrl, text: `Get a ${PROVIDER_LABELS[provider]} key` };
   return (
     <>
       <p className={styles.eyebrow}>Step 3 of 3</p>
@@ -86,7 +79,7 @@ export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
               setModelChoice('');
               setCustomModel('');
             }}>
-            {PROVIDERS.map((p) => (
+            {AI_PROVIDER_IDS.map((p) => (
               <option key={p} value={p}>
                 {PROVIDER_LABELS[p]}
               </option>
@@ -114,10 +107,15 @@ export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
       <div className={styles.row}>
         <div className={styles.field}>
           <select className={styles.select} aria-label="AI model" value={modelChoice} onChange={(e) => setModelChoice(e.target.value)}>
-            {MODEL_OPTIONS[provider].map((opt) => (
-              <option key={opt.value || 'default'} value={opt.value}>
-                {opt.label}
-              </option>
+            <option value="">{MODEL_OPTIONS[provider][0].label}</option>
+            {groupedModels(provider).map((g) => (
+              <optgroup key={g.tier} label={g.label}>
+                {g.models.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
             <option value={CUSTOM_MODEL}>Other (type a model ID)</option>
           </select>

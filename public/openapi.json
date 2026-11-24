@@ -1263,7 +1263,15 @@
                     "enum": [
                       "gemini",
                       "anthropic",
-                      "openrouter"
+                      "openrouter",
+                      "openai",
+                      "groq",
+                      "mistral",
+                      "deepseek",
+                      "xai",
+                      "together",
+                      "cerebras",
+                      "sarvam"
                     ]
                   },
                   "apiKey": {
