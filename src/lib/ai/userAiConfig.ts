@@ -1,4 +1,5 @@
-import { getAiSettings, type AiProvider, type AiSettings } from '@/lib/userSettings';
+import { getAiSettings, type AiSettings } from '@/lib/userSettings';
+import { isAiProvider } from './providerCatalog';
 import { isHosted } from '@/lib/deployment-mode';
 import type { AiConfig } from './providers';
 
@@ -55,9 +56,9 @@ export async function getAiConfig(
   }
 
   if (opts.allowEnv !== false) {
-    const provider = process.env.AI_PROVIDER as AiProvider | undefined;
+    const provider = process.env.AI_PROVIDER;
     const apiKey = process.env.AI_API_KEY;
-    if (provider && apiKey && ['gemini', 'anthropic', 'openrouter'].includes(provider)) {
+    if (isAiProvider(provider) && apiKey) {
       return { provider, apiKey, model: process.env.AI_MODEL || null };
     }
   }

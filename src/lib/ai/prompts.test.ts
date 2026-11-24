@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAT_SYSTEM_AGENTIC, GUARDRAIL, MITRA_WORKSPACE_SYSTEM, SCREENER_PLAYBOOK } from './prompts';
+import { CHAT_SYSTEM_AGENTIC, GUARDRAIL, MITRA_WORKSPACE_SYSTEM, RICH_REPLIES_PROMPT, SCREENER_PLAYBOOK } from './prompts';
 import { SCREENER_RANGE_FIELDS } from '@/lib/dashboard/screenerSchema';
 
 describe('Mitra screening prompt', () => {
@@ -50,5 +50,22 @@ describe('Mitra workspace prompt', () => {
 
   it('keeps the no-destructive-actions boundary', () => {
     expect(MITRA_WORKSPACE_SYSTEM).toMatch(/no tool for account settings, security, billing or any destructive action/i);
+  });
+});
+
+describe('Mitra workspace ask_user guidance', () => {
+  it('tells the model to ask sparingly, once, and to stop after asking', () => {
+    expect(MITRA_WORKSPACE_SYSTEM).toContain('ask_user');
+    expect(MITRA_WORKSPACE_SYSTEM).toMatch(/at most once per turn/i);
+    expect(MITRA_WORKSPACE_SYSTEM).toMatch(/write nothing else/i);
+  });
+});
+
+describe('Rich replies prompt', () => {
+  it('names the tool, forbids buy/sell calls and invented figures, and is not in the base prompt', () => {
+    expect(RICH_REPLIES_PROMPT).toContain('show_portfolio_snapshot');
+    expect(RICH_REPLIES_PROMPT).toMatch(/never tell the user what to buy, sell, trim or add/i);
+    expect(RICH_REPLIES_PROMPT).toMatch(/never write figures of your own/i);
+    expect(MITRA_WORKSPACE_SYSTEM).not.toContain('show_portfolio_snapshot');
   });
 });

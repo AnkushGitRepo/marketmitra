@@ -16,7 +16,7 @@ describe('resolvePreferences', () => {
 
   it('gives sensible defaults for nothing stored', () => {
     expect(resolvePreferences(undefined)).toEqual(DEFAULT_PREFERENCES);
-    expect(DEFAULT_PREFERENCES.chat).toEqual({ platformAccess: true, sendOnEnter: true, showToolActivity: true, dictationLanguage: 'auto', unrestricted: false });
+    expect(DEFAULT_PREFERENCES.chat).toEqual({ platformAccess: true, sendOnEnter: true, showToolActivity: true, dictationLanguage: 'auto', richReplies: false, unrestricted: false });
     expect(DEFAULT_PREFERENCES.display.hideValuesByDefault).toBe(false);
     expect(DEFAULT_PREFERENCES.shortcuts.enabled).toBe(true);
   });

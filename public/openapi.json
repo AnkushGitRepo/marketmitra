@@ -1263,7 +1263,15 @@
                     "enum": [
                       "gemini",
                       "anthropic",
-                      "openrouter"
+                      "openrouter",
+                      "openai",
+                      "groq",
+                      "mistral",
+                      "deepseek",
+                      "xai",
+                      "together",
+                      "cerebras",
+                      "sarvam"
                     ]
                   },
                   "apiKey": {
@@ -4972,6 +4980,9 @@
                         "type": "boolean"
                       },
                       "showToolActivity": {
+                        "type": "boolean"
+                      },
+                      "richReplies": {
                         "type": "boolean"
                       },
                       "dictationLanguage": {

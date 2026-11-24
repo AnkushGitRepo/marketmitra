@@ -3,19 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { AI_PROVIDER_IDS, PROVIDERS, groupedModels } from '@/lib/ai/providerCatalog';
 import { MODEL_OPTIONS, PROVIDER_LABELS } from '@/lib/ai/providers';
 import type { Preferences, PreferencesPatch } from '@/lib/preferences/schema';
 import type { AiProvider, AiSettingsView } from '@/lib/userSettings';
 import rowStyles from '@/app/(app)/settings/Settings.module.css';
 import styles from './AiPanel.module.css';
-
-const PROVIDERS: AiProvider[] = ['gemini', 'anthropic', 'openrouter'];
-
-const KEY_HINTS: Record<AiProvider, string> = {
-  gemini: 'From aistudio.google.com/apikey, with a generous free tier.',
-  anthropic: 'From console.anthropic.com. Starts "sk-ant-".',
-  openrouter: 'From openrouter.ai/keys. Routes to many models.',
-};
 
 type Test = { readonly state: 'idle' | 'running' } | { readonly state: 'ok'; readonly latencyMs: number } | { readonly state: 'fail'; readonly text: string };
 
@@ -178,13 +171,13 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
                   setModel('');
                 }}
               >
-                {PROVIDERS.map((p) => (
+                {AI_PROVIDER_IDS.map((p) => (
                   <option key={p} value={p}>
                     {PROVIDER_LABELS[p]}
                   </option>
                 ))}
               </select>
-              <span className={styles.hint}>{KEY_HINTS[provider]}</span>
+              <span className={styles.hint}>{PROVIDERS[provider].keyHint}</span>
             </label>
 
             <label className={styles.field}>
@@ -203,10 +196,15 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
                   setModel(next === '__custom__' ? model : next);
                 }}
               >
-                {MODEL_OPTIONS[provider].map((opt) => (
-                  <option key={opt.value || 'default'} value={opt.value}>
-                    {opt.label}
-                  </option>
+                <option value="">{MODEL_OPTIONS[provider][0].label}</option>
+                {groupedModels(provider).map((g) => (
+                  <optgroup key={g.tier} label={g.label}>
+                    {g.models.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
                 <option value="__custom__">Other (enter a model ID manually)</option>
               </select>
@@ -248,6 +246,13 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
               <p className={rowStyles.rowHint}>Small chips like &ldquo;Ran the screener&rdquo; under a reply, showing what Mitra looked up.</p>
             </div>
             <Switch label="Show tool activity" checked={prefs.chat.showToolActivity} onChange={(v) => onPrefs({ chat: { showToolActivity: v } })} />
+          </div>
+          <div className={rowStyles.row}>
+            <div className={rowStyles.rowText}>
+              <p className={rowStyles.rowLabel}>Rich replies</p>
+              <p className={rowStyles.rowHint}>Lets Mitra and the Analyst Desk chat show a visual card, such as a portfolio snapshot or an analyst&apos;s status, built from your own data. The model only chooses to show it; it never writes the numbers.</p>
+            </div>
+            <Switch label="Rich replies" checked={prefs.chat.richReplies} onChange={(v) => onPrefs({ chat: { richReplies: v } })} />
           </div>
           {canUnrestricted && (
             <div className={rowStyles.row}>

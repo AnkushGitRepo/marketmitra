@@ -72,6 +72,28 @@
 - [ ] "Skip setup", "Skip for now" and "Finish without AI" never trap you; the wizard does not return after either. `/onboarding/demo` writes nothing (check no new holdings or analysts).
 - [ ] The Clerk handshake works for `/onboarding` (it is in the `proxy.ts` matcher).
 
+## 4d. Mitra clarifying questions (#322, ADR 0076)
+
+- [ ] In /mitra, with a real key on each provider you support (Gemini, Anthropic, OpenRouter), ask something that depends on the user ("should I add to my position?"). Mitra shows a question card instead of guessing; clicking an option (or typing your own) continues the reply.
+- [ ] The card is read-only once answered and reappears after a reload. Mitra does not ask twice in a row, and does not ask when the portfolio already answers it.
+
+## 4e. Mitra rich replies (#326, ADR 0077)
+
+- [ ] Settings > AI & Models: "Rich replies" is off by default. Off: asking for a portfolio overview gives text only. On: Mitra shows the snapshot card with live figures that match the Portfolio page, then a short written interpretation with no buy/sell suggestions.
+- [ ] Reload the chat: the card is still there. A holding with no live price shows "n/a" and is left out of value and P&L.
+- [ ] On the hosted site the card renders (the A2UI renderer loads on demand) and the CSP does not block it.
+
+## 4f. Analyst Desk chat cards (#329, ADR 0078)
+
+- [ ] With "Rich replies" on, in an analyst's chat (/agents) ask "summarise where this stands": a card shows status, summary, strengths, open risks and latest notes that match the Dossier and Journal; the Root Agent shows the desk overview. With it off, plain text only.
+- [ ] After a card, send a follow-up question: it is answered from the card's content, and nothing odd (layout JSON) appears in the reply.
+
+## 4g. IPO brief scorecard (#328)
+
+- [ ] On /ipos, open an IPO with a brief: the tiles (price, lot and minimum investment, size, listing, grey market, subscribed), the category bars with the 1x mark, the tone summary and the colour-coded points show; the figures match the IPO card. An IPO with no category data shows no bars; one with no GMP shows no GMP tile.
+- [ ] Regenerate works and keeps the scorecard; an unrestricted brief (admin or local) shows its verdict items in a separate strip.
+- [ ] It reads well on a phone width and nothing animates with reduced motion.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

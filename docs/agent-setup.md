@@ -21,12 +21,16 @@ that points there, plus its own folder of project skills. Contributors can use C
 
 ## Shared skills
 
-Five skills, the same in all four folders (each tool reads only its own): `marketmitra-session-start`, `marketmitra-new-issue`,
-`marketmitra-pr-checks`, `marketmitra-end-of-session`, `marketmitra-gotchas`.
+Seven skills, the same in all four folders (each tool reads only its own): five of ours (`marketmitra-session-start`, `marketmitra-new-issue`,
+`marketmitra-pr-checks`, `marketmitra-end-of-session`, `marketmitra-gotchas`) and two from Google's A2UI project (`a2ui`, `a2ui-migration`, installed with
+`npx skills add a2ui-project/a2ui`; `skills-lock.json` records the source and commit).
 
 - The canonical copy is **`.claude/skills/`**. Edit there, then run `npm run agents:sync` to mirror into `.cursor/skills/`, `.agent/skills/` and `.agents/skills/`.
 - A test (`src/lib/agents/agentFolders.test.ts`) fails when the copies differ or a skill has no valid `name` and `description`.
 - A skill is a procedure that defers to `AGENTS.md`; do not restate rules in it.
+- **Adding a third-party skill:** `npx skills add` writes real files to `.agents/skills` and *symlinks* in `.claude/skills`, and skips `.cursor` and `.agent`.
+  Read the skill first, replace the symlinks in `.claude/skills` with real copies (`rm .claude/skills/<name> && cp -R .agents/skills/<name> .claude/skills/<name>`),
+  then run `npm run agents:sync` and commit `skills-lock.json` with it.
 
 ## What must never be committed
 
