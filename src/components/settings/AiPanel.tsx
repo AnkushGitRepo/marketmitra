@@ -252,7 +252,7 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
           <div className={rowStyles.row}>
             <div className={rowStyles.rowText}>
               <p className={rowStyles.rowLabel}>Rich replies</p>
-              <p className={rowStyles.rowHint}>Lets Mitra and the Analyst Desk chat show a visual card, such as a portfolio snapshot or an analyst's status, built from your own data. The model only chooses to show it; it never writes the numbers.</p>
+              <p className={rowStyles.rowHint}>Lets Mitra and the Analyst Desk chat show a visual card, such as a portfolio snapshot or an analyst&apos;s status, built from your own data. The model only chooses to show it; it never writes the numbers.</p>
             </div>
             <Switch label="Rich replies" checked={prefs.chat.richReplies} onChange={(v) => onPrefs({ chat: { richReplies: v } })} />
           </div>
