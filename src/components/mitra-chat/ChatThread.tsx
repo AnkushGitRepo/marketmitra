@@ -8,6 +8,7 @@ import { Composer, type ComposerHandle } from './Composer';
 import { EmptyState } from './EmptyState';
 import type { ChatContextState } from './useChatContext';
 import type { StarterPrompt } from '@/lib/mitra-chat/starters';
+import { questionOfMessage } from '@/lib/mitra-chat/askUser';
 import { MessageView } from './MessageView';
 import type { Preferences } from '@/lib/preferences/schema';
 import { chatErrorMessage, mitraApi, type ConversationDto, type UploadedFile } from './api';
@@ -168,6 +169,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
                 message={m}
                 showToolActivity={chatPrefs.showToolActivity}
                 streaming={busy && i === messages.length - 1 && m.role === 'assistant'}
+                answeredQuestion={m.role === 'user' && i > 0 ? questionOfMessage(messages[i - 1].parts as { type: string; input?: unknown }[]) : null}
                 onAnswer={!busy && i === messages.length - 1 ? (text) => void sendMessage({ text }) : undefined}
               />
             ))}

@@ -47,3 +47,19 @@ type PartLike = { readonly type: string; readonly text?: string };
 export function hasReplyContent(parts: readonly PartLike[]): boolean {
   return parts.some((p) => (p.type === 'text' && (p.text ?? '').trim().length > 0) || p.type === `tool-${ASK_USER_TOOL}`);
 }
+
+/** The question of the `ask_user` card in a message, if it has one. */
+export function questionOfMessage(parts: readonly { readonly type: string; readonly input?: unknown }[]): string | null {
+  const part = parts.find((p) => p.type === `tool-${ASK_USER_TOOL}`);
+  return part ? (parseAskUserInput(part.input)?.question ?? null) : null;
+}
+
+/**
+ * What to show in the user's bubble for a card answer: the answer alone, because the question is on the card just above.
+ * Text that is not an answer to that question is returned unchanged.
+ */
+export function visibleAnswer(text: string, question: string | null): string {
+  if (!question) return text;
+  const prefix = `${question.trim()}\n`;
+  return text.startsWith(prefix) && text.length > prefix.length ? text.slice(prefix.length) : text;
+}

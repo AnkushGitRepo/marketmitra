@@ -19,6 +19,7 @@ separate decision, not part of this one.
 - **The answer is an ordinary user message** ("question, newline, answer"), sent from the card. This keeps the server-authoritative history intact
   (the client still sends only a new user message; `sanitizeUserMessage` is unchanged), and because older turns lose their tool calls
   (`prepareModelMessages`), repeating the question makes the answer stand alone.
+- **Display:** the user's bubble for a card answer shows only the answer (`visibleAnswer`), because the question is on the card just above; the stored text keeps both.
 - **Saving:** a reply is stored if it has text or an `ask_user` call (`hasReplyContent`); before, a reply without text was dropped, which would have lost the card.
 - **Card state is derived, not stored:** only the newest message, while the chat is idle, is answerable; any earlier card is read-only.
 - **Prompt:** `MITRA_WORKSPACE_SYSTEM` says to ask only when the answer would change the reply and only the user can supply it, at most once per turn,
