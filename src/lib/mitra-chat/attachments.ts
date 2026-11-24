@@ -1,4 +1,4 @@
-import type { AiProvider } from '@/lib/userSettings';
+import { PROVIDERS, type AiProvider } from '@/lib/ai/providerCatalog';
 
 export type AttachmentKind = 'image' | 'pdf' | 'audio' | 'text';
 
@@ -71,7 +71,9 @@ export interface ModelRef {
 
 /** Whether the configured model can natively read this kind of attachment. */
 export function supportsKind(ref: ModelRef, kind: AttachmentKind): boolean {
-  if (kind === 'text' || kind === 'image' || kind === 'pdf') return true;
+  if (kind === 'text') return true;
+  // Images and PDFs only where the provider's models are known to read them (providerCatalog `files`).
+  if (kind === 'image' || kind === 'pdf') return PROVIDERS[ref.provider].files;
   // Audio: Gemini reads it; Claude does not; OpenRouter only for Gemini routes.
   if (ref.provider === 'gemini') return true;
   if (ref.provider === 'openrouter') return /gemini/i.test(ref.model ?? 'google/gemini');
@@ -80,8 +82,12 @@ export function supportsKind(ref: ModelRef, kind: AttachmentKind): boolean {
 
 /** A user-facing reason when any attached kind is unreadable, else null. */
 export function unsupportedReason(ref: ModelRef, kinds: readonly AttachmentKind[]): string | null {
-  if (kinds.some((k) => !supportsKind(ref, k))) {
+  const blocked = kinds.filter((k) => !supportsKind(ref, k));
+  if (blocked.includes('audio')) {
     return 'The model on your key cannot listen to audio. Switch to a Gemini model in Settings, or attach a transcript instead.';
+  }
+  if (blocked.length > 0) {
+    return 'The model on your key cannot read images or PDFs. Pick a model that can see images in Settings, or paste the text instead.';
   }
   return null;
 }

@@ -209,3 +209,96 @@
     opacity: 0.45;
   }
 }
+
+/* Scorecard layout (#328): tone summary, tone-coloured cards, and a strip for the unrestricted verdict items. */
+.toneSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.toneBar {
+  display: flex;
+  flex: 0 0 120px;
+  height: 8px;
+  gap: 2px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--app-pill-bg);
+}
+
+.seg_positive {
+  flex-basis: 0;
+  background: var(--app-teal);
+}
+
+.seg_neutral {
+  flex-basis: 0;
+  background: var(--color-amber-bg-soft);
+}
+
+.seg_warning {
+  flex-basis: 0;
+  background: var(--color-danger-soft);
+}
+
+.toneText {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border-soft);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.cell_positive {
+  border-left-color: var(--app-teal);
+}
+
+.cell_neutral {
+  border-left-color: var(--color-amber-text-soft);
+}
+
+.cell_warning {
+  border-left-color: var(--color-danger);
+  background: var(--app-loss-bg);
+}
+
+.cellWide {
+  grid-column: 1 / -1;
+}
+
+.verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--app-teal-tint);
+  border: 1px dashed var(--app-teal-bg-strong);
+}
+
+.verdictItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

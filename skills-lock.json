@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "skills": {
+    "a2ui": {
+      "source": "a2ui-project/a2ui",
+      "commit": "c26be2dd087b541c46e0296c164ae13bf35f7836",
+      "sourceType": "github",
+      "skillPath": "skills/a2ui/SKILL.md",
+      "computedHash": "d29de8b9d6daddb3191ad1e011adb3881bd46454c90be7fb63d67c701b4f767d"
+    },
+    "a2ui-migration": {
+      "source": "a2ui-project/a2ui",
+      "commit": "c26be2dd087b541c46e0296c164ae13bf35f7836",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/a2ui-migration/SKILL.md",
+      "computedHash": "3cf891edc57fdb58a3b0337265db64c42fa0b063c0c1e16e3ce76fc08f7a1d3b"
+    }
+  }
+}

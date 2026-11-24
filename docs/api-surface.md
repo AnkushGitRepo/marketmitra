@@ -290,7 +290,7 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Purpose:** Manage the signed-in user's BYO AI provider key (ADR 0018 §2). Key is stored **AES-256-GCM-encrypted** in the `userSettings` Mongo collection, keyed on `SETTINGS_ENC_KEY`; it is decrypted only server-side per request and never returned to the browser.
 - **Auth:** required (Clerk session in hosted mode; the fixed `local` user in self-host).
 - **GET:** `data` = `{ provider, model, keyHint }` (last 4 chars of the key only) or `null` if none stored. `meta.encConfigured` reflects whether `SETTINGS_ENC_KEY` is set.
-- **PUT:** body `{ provider: 'gemini'|'anthropic'|'openrouter', apiKey: string(10–400), model?: string }`. Runs a live `validateAiKey` round-trip before storing — a rejected key is never saved. `503` when `SETTINGS_ENC_KEY` is unset, `400` on a provider-rejected key, `422` on a bad body.
+- **PUT:** body `{ provider: one of the eleven ids in `src/lib/ai/providerCatalog.ts` (`gemini`, `anthropic`, `openrouter`, `openai`, `groq`, `mistral`, `deepseek`, `xai`, `together`, `cerebras`, `sarvam`), apiKey: string(10–400), model?: string }`. Runs a live `validateAiKey` round-trip before storing — a rejected key is never saved. `503` when `SETTINGS_ENC_KEY` is unset, `400` on a provider-rejected key, `422` on a bad body.
 - **DELETE:** clears the stored key.
 
 ### `GET|PUT /api/settings/notifications`
@@ -356,7 +356,7 @@ All routes: auth required, envelope `{ success, data, error }` except the stream
 ### Settings: preferences, export, bulk chat delete  _(ADR 0038, #37)_
 All require auth. `/api/settings/*` is never reachable by Mitra's `call_platform_api` tool.
 
-- **`GET /api/settings/preferences`** — `{ chat: { platformAccess, sendOnEnter, showToolActivity, dictationLanguage }, display: { hideValuesByDefault }, shortcuts: { enabled } }`, always complete (defaults fill anything unset).
+- **`GET /api/settings/preferences`** — `{ chat: { platformAccess, sendOnEnter, showToolActivity, dictationLanguage, richReplies }, display: { hideValuesByDefault }, shortcuts: { enabled } }`, always complete (defaults fill anything unset).
 - **`PATCH /api/settings/preferences`** — send any subset; unknown groups/fields or wrong types → `422`. The `onboarding` group (`riskProfile`, `completed`, `dismissed`) is part of it.
 - **`POST /api/onboarding`** _(ADR 0075, #306)_ — body `{ riskProfile?: 'conservative'|'balanced'|'aggressive', status?: 'completed'|'dismissed' }` (at least one; extra keys → `422`). Saves it and answers `{ riskProfile, completed, dismissed, holdings, hasAiKey, analystsQueued }`; `analystsQueued` is 0 without a saved AI key or with automatic analysts off.
 - **`GET /api/settings/export`** — a JSON attachment of your holdings, notes, alerts, wishlists, Mitra conversations (attachments by reference) and preferences. Never includes API keys or notification secrets.

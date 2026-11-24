@@ -1,7 +1,9 @@
 import { getDb } from '@/lib/mongodb';
 import { decrypt, encrypt } from '@/lib/crypto';
 
-export type AiProvider = 'gemini' | 'anthropic' | 'openrouter';
+import type { AiProvider } from '@/lib/ai/providerCatalog';
+
+export type { AiProvider };
 
 export interface AiSettings {
   provider: AiProvider;

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { AI_PROVIDER_IDS, PROVIDERS } from '@/lib/ai/providerCatalog';
 import { sniffAttachment, supportsKind, unsupportedReason } from './attachments';
 
 const bytes = (...n: number[]) => new Uint8Array(n);
@@ -53,10 +54,13 @@ describe('sniffAttachment', () => {
 });
 
 describe('supportsKind / unsupportedReason', () => {
-  it('lets every provider read images, PDFs and text', () => {
-    for (const provider of ['gemini', 'anthropic', 'openrouter'] as const) {
-      for (const kind of ['image', 'pdf', 'text'] as const) expect(supportsKind({ provider }, kind)).toBe(true);
+  it('lets every provider read text, and images and PDFs where the models are known to', () => {
+    for (const provider of AI_PROVIDER_IDS) {
+      expect(supportsKind({ provider }, 'text')).toBe(true);
+      for (const kind of ['image', 'pdf'] as const) expect(supportsKind({ provider }, kind)).toBe(PROVIDERS[provider].files);
     }
+    expect(supportsKind({ provider: 'openai' }, 'image')).toBe(true);
+    expect(supportsKind({ provider: 'deepseek' }, 'image')).toBe(false);
   });
 
   it('allows audio on Gemini, blocks it on Claude, and checks the OpenRouter route', () => {
@@ -69,5 +73,6 @@ describe('supportsKind / unsupportedReason', () => {
   it('explains an unsupported attachment, otherwise returns null', () => {
     expect(unsupportedReason({ provider: 'anthropic' }, ['image', 'audio'])).toMatch(/audio/);
     expect(unsupportedReason({ provider: 'anthropic' }, ['image'])).toBeNull();
+    expect(unsupportedReason({ provider: 'groq' }, ['pdf'])).toMatch(/images or PDFs/);
   });
 });

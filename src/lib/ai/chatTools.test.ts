@@ -35,7 +35,7 @@ vi.mock('@/lib/screener/mitra', async (importOriginal) => ({
   screenForModel: (filters: unknown) => screenForModel(filters),
 }));
 
-const { buildChatTools } = await import('./chatTools');
+const { buildAskUserTools, buildChatTools } = await import('./chatTools');
 
 type ExecTool = { execute: (args: unknown) => Promise<unknown> };
 
@@ -371,5 +371,15 @@ describe('buildChatTools', () => {
       const set = buildChatTools('u1');
       expect(Object.keys(set).some((n) => /delete|remove/i.test(n))).toBe(false);
     });
+  });
+});
+
+describe('buildAskUserTools', () => {
+  it('offers only ask_user, which changes nothing and is not part of the base tool set', async () => {
+    const set = buildAskUserTools();
+    expect(Object.keys(set)).toEqual(['ask_user']);
+    expect(Object.keys(buildChatTools('u1'))).not.toContain('ask_user');
+    const out = await (set.ask_user as unknown as { execute: (a: unknown) => Promise<unknown> }).execute({});
+    expect(out).toEqual({ status: 'waiting_for_user' });
   });
 });

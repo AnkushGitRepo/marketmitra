@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { isEncKeyConfigured } from '@/lib/crypto';
 import { validateAiKey } from '@/lib/ai/generate';
+import { AI_PROVIDER_IDS } from '@/lib/ai/providerCatalog';
 import { MAX_MODEL_ID_LENGTH, isValidModelId } from '@/lib/ai/providers';
 import { clearAiSettings, getAiSettingsView, setAiSettings } from '@/lib/userSettings';
 
 const putSchema = z.object({
-  provider: z.enum(['gemini', 'anthropic', 'openrouter']),
+  provider: z.enum(AI_PROVIDER_IDS),
   apiKey: z.string().trim().min(10).max(400),
   model: z.string().trim().max(MAX_MODEL_ID_LENGTH).refine(isValidModelId, 'Model id contains invalid characters').optional(),
 });
