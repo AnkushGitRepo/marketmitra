@@ -158,7 +158,8 @@ export async function loadMessages(userId: string, conversationId: string): Prom
     .sort({ seq: 1 })
     .limit(MAX_MESSAGES_PER_CONVERSATION)
     .toArray();
-  return docs.map((d) => d.message);
+  // A reply saved before #349 has an empty id, and the chat keys its list by id: give it one that is stable across loads.
+  return docs.map((d) => (d.message.id ? d.message : { ...d.message, id: `${conversationId}-${d.seq}` }));
 }
 
 function firstUserText(messages: readonly UIMessage[]): string {
@@ -193,7 +194,8 @@ export async function appendMessages(
       userId,
       conversationId,
       seq: before.messageCount + i,
-      message,
+      // The streamed reply can arrive without an id (#349); every stored message needs a unique one.
+      message: message.id ? message : { ...message, id: new ObjectId().toString() },
       createdAt: new Date(now + i),
     }))
   );

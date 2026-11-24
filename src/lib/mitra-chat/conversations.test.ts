@@ -137,6 +137,26 @@ describe('conversations', () => {
 });
 
 describe('messages', () => {
+  it('gives a reply with no id a unique one when saving, and repairs an old stored one when loading (#349)', async () => {
+    const c = (await repo.createConversation('u1'))!;
+    const bare = (text: string): UIMessage => ({ id: '', role: 'assistant', parts: [{ type: 'text', text }] });
+    await repo.appendMessages('u1', c.id, [bare('first'), bare('second')]);
+    const saved = await repo.loadMessages('u1', c.id);
+    expect(saved.every((m) => m.id.length > 0)).toBe(true);
+    expect(new Set(saved.map((m) => m.id)).size).toBe(2);
+  });
+
+  it('keeps an id that is set, and gives an old row stored with an empty id a stable one on load', async () => {
+    const c = (await repo.createConversation('u1'))!;
+    await repo.appendMessages('u1', c.id, [{ id: 'keep', role: 'user', parts: [{ type: 'text', text: 'hi' }] }]);
+    // A row saved before the fix: written straight into the store with an empty id.
+    stores.mitraMessages.rows.push({ userId: 'u1', conversationId: c.id, seq: 1, message: { id: '', role: 'assistant', parts: [{ type: 'text', text: 'old' }] }, createdAt: new Date() });
+    const first = await repo.loadMessages('u1', c.id);
+    expect(first[0].id).toBe('keep');
+    expect(first[1].id).toBe(`${c.id}-1`);
+    expect((await repo.loadMessages('u1', c.id))[1].id).toBe(first[1].id);
+  });
+
   it('appends in order with increasing seq and loads them back', async () => {
     const c = (await repo.createConversation('u1'))!;
     await repo.appendMessages('u1', c.id, [userMsg('hi'), botMsg('hello')]);
