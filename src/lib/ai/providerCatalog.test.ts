@@ -4,8 +4,8 @@ import { AI_PROVIDER_IDS, PROVIDERS, groupedModels, isAiProvider } from './provi
 import { MODEL_OPTIONS, isValidModelId, resolveModel } from './providers';
 
 describe('provider catalog', () => {
-  it('offers ten providers, each keyed by its own id', () => {
-    expect(AI_PROVIDER_IDS).toHaveLength(10);
+  it('offers eleven providers, each keyed by its own id', () => {
+    expect(AI_PROVIDER_IDS).toHaveLength(11);
     for (const id of AI_PROVIDER_IDS) expect(PROVIDERS[id].id).toBe(id);
   });
 

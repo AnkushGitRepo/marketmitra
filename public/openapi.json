@@ -1270,7 +1270,8 @@
                       "deepseek",
                       "xai",
                       "together",
-                      "cerebras"
+                      "cerebras",
+                      "sarvam"
                     ]
                   },
                   "apiKey": {

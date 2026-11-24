@@ -1,6 +1,6 @@
-# 0079 — Ten AI providers behind one catalogue
+# 0079 — Eleven AI providers behind one catalogue
 
-Status: accepted (2026-11-24, issue #332; the maintainer asked for the ten most used providers and Latest / Free / Other model groups).
+Status: accepted (2026-11-24, issue #332; the maintainer asked for the ten most used providers, then added Sarvam AI and Latest / Free / Other model groups).
 
 ## Context
 
@@ -13,7 +13,7 @@ bundle. Model IDs also change faster than the file did: several in the old list 
 - **One catalogue**, `src/lib/ai/providerCatalog.ts`: plain data (no SDK imports) holding each provider's label, SDK kind, fixed base URL, default model,
   key link and hint, whether its models read images and PDFs, and its models tagged `latest`, `free` or `other`. The type, the route's Zod enum, the env
   fallback, both forms, `resolveModel` and the attachment check all read it; a test compares `public/openapi.json` with it.
-- **Seven new providers**: OpenAI (`@ai-sdk/openai`), and Groq, Mistral, DeepSeek, xAI, Together AI and Cerebras through one `@ai-sdk/openai-compatible`
+- **Eight new providers**: OpenAI (`@ai-sdk/openai`), and Groq, Mistral, DeepSeek, xAI, Together AI, Cerebras and Sarvam AI through one `@ai-sdk/openai-compatible`
   dependency, each with a base URL fixed in the catalogue (never user-supplied, so a key cannot be sent to an arbitrary host).
 - **Model groups** in both dropdowns: Latest, Free (a $0 model or a free tier), Other, then "Other (type an ID)". Existing saved keys and model IDs are
   unchanged.
@@ -29,3 +29,8 @@ bundle. Model IDs also change faster than the file did: several in the old list 
 - Adding a provider is one catalogue entry plus an openapi enum line; the tests fail if the two disagree.
 - Providers' structured-output and tool-call support varies; briefs already recover malformed JSON and Mitra's tools degrade to plain text, but weaker models
   will answer worse.
+
+## Not added
+
+AI Fiesta (aifiesta.ai) was also requested. It is a consumer subscription app that bundles other companies' models; its site shows no public API, API keys
+or OpenAI-style endpoint, so there is nothing for a user to bring a key to. If it publishes one, it is a single catalogue entry.

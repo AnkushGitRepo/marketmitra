@@ -297,9 +297,9 @@ Full detail: [archive/ai-insights.md](./archive/ai-insights.md); rationale in
 [ADR 0018](./decisions/0018-ai-insights-scope.md).
 
 Neutral AI synthesis on four surfaces (stock read, portfolio insight, IPO brief, Mitra
-chat), all **BYO-key** — no MarketMitra-supplied model access. **AI SDK v7** with ten
-providers ([ADR 0079](./decisions/0079-ten-ai-providers.md); `lib/ai/providerCatalog.ts` is the one list) through direct adapters
-(`@ai-sdk/google`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `@openrouter/ai-sdk-provider`, and `@ai-sdk/openai-compatible` with a fixed base URL for Groq, Mistral, DeepSeek, xAI, Together and Cerebras — not
+chat), all **BYO-key** — no MarketMitra-supplied model access. **AI SDK v7** with eleven
+providers ([ADR 0079](./decisions/0079-eleven-ai-providers.md); `lib/ai/providerCatalog.ts` is the one list) through direct adapters
+(`@ai-sdk/google`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `@openrouter/ai-sdk-provider`, and `@ai-sdk/openai-compatible` with a fixed base URL for Groq, Mistral, DeepSeek, xAI, Together, Cerebras and Sarvam — not
 the shared-key AI Gateway). Key stored **AES-256-GCM encrypted** in the `userSettings`
 collection (`src/lib/crypto.ts`, `SETTINGS_ENC_KEY`), decrypted only server-side.
 `getAiConfig(userId, {allowEnv})` resolves: stored key ▸ `AI_*` env **only when

@@ -16,6 +16,7 @@ export const AI_PROVIDER_IDS = [
   'xai',
   'together',
   'cerebras',
+  'sarvam',
 ] as const;
 
 export type AiProvider = (typeof AI_PROVIDER_IDS)[number];
@@ -206,6 +207,20 @@ export const PROVIDERS: Readonly<Record<AiProvider, ProviderInfo>> = {
       { value: 'Qwen/Qwen3.8-Flash', label: 'Qwen 3.8 Flash', tier: 'other' },
       { value: 'moonshotai/Kimi-K3', label: 'Kimi K3', tier: 'other' },
       { value: 'MiniMaxAI/MiniMax-M3.1-Flash', label: 'MiniMax M3.1 Flash', tier: 'other' },
+    ],
+  },
+  sarvam: {
+    id: 'sarvam',
+    label: 'Sarvam AI',
+    sdk: 'compatible',
+    baseUrl: 'https://api.sarvam.ai/v1',
+    defaultModel: 'sarvam-105b',
+    keyHint: 'From indus.sarvam.ai (API Keys). Made in India, strong on Indian languages.',
+    keyUrl: 'https://indus.sarvam.ai/key-management',
+    files: false,
+    models: [
+      { value: 'sarvam-105b', label: 'Sarvam 105B — flagship, reasoning and coding (128K)', tier: 'latest' },
+      { value: 'sarvam-105b-conversations', label: 'Sarvam 105B Conversations — fast replies (32K)', tier: 'other' },
     ],
   },
   cerebras: {
