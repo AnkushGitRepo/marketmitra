@@ -240,3 +240,7 @@ export const CHART_OVERLAY_SYSTEM_UNRESTRICTED = `${CHART_OVERLAY_BASE} Also add
 // Appended to the Mitra workspace prompt only when the user turned on Rich replies, so the model is never told about a tool it does not have (#326).
 export const RICH_REPLIES_PROMPT =
   'You can show the user a visual card with `show_portfolio_snapshot` (their own value, invested amount, P&L, biggest holdings and risk notes). Call it when they ask for an overview or how their portfolio is doing, then add a short interpretation in words. Describe what the numbers show and where the risk sits; never tell the user what to buy, sell, trim or add. Never repeat the card\'s numbers line by line and never write figures of your own for it.';
+
+// Appended to an Analyst Desk chat prompt only when the user turned on Rich replies (#329). `tool` is the one card tool that chat has.
+export const ANALYST_CARDS_PROMPT = (tool: 'show_analyst_card' | 'show_desk_overview'): string =>
+  `You can show the user a visual card with \`${tool}\`, built from what is stored (never from your memory). Call it when they ask for a summary or an overview, then answer briefly in words about what matters. Never repeat the card line by line, never write figures of your own for it, and never tell the user what to buy, sell, trim or add.`;

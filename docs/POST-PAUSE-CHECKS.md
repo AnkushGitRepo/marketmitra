@@ -83,6 +83,11 @@
 - [ ] Reload the chat: the card is still there. A holding with no live price shows "n/a" and is left out of value and P&L.
 - [ ] On the hosted site the card renders (the A2UI renderer loads on demand) and the CSP does not block it.
 
+## 4f. Analyst Desk chat cards (#329, ADR 0078)
+
+- [ ] With "Rich replies" on, in an analyst's chat (/agents) ask "summarise where this stands": a card shows status, summary, strengths, open risks and latest notes that match the Dossier and Journal; the Root Agent shows the desk overview. With it off, plain text only.
+- [ ] After a card, send a follow-up question: it is answered from the card's content, and nothing odd (layout JSON) appears in the reply.
+
 ## 4g. IPO brief scorecard (#328)
 
 - [ ] On /ipos, open an IPO with a brief: the tiles (price, lot and minimum investment, size, listing, grey market, subscribed), the category bars with the 1x mark, the tone summary and the colour-coded points show; the figures match the IPO card. An IPO with no category data shows no bars; one with no GMP shows no GMP tile.
