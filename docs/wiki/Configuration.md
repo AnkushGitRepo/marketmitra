@@ -41,7 +41,7 @@ Per-user Slack, Telegram, WhatsApp and webhook channels are configured in the ap
 | Variable | Purpose |
 | --- | --- |
 | `SETTINGS_ENC_KEY` | 32 bytes, base64. Encrypts users' AI keys at rest (AES-256-GCM). `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
-| `AI_PROVIDER` | `gemini` \| `anthropic` \| `openrouter`. Self-host fallback key. |
+| `AI_PROVIDER` | `gemini` \| `anthropic` \| `openrouter` \| `openai` \| `groq` \| `mistral` \| `deepseek` \| `xai` \| `together` \| `cerebras` \| `sarvam`. Self-host fallback key. |
 | `AI_API_KEY` | Fallback key used only when a self-hosted user hasn't saved their own. |
 | `AI_MODEL` | Optional model override. |
 

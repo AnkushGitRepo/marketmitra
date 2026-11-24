@@ -6,6 +6,9 @@ const state = {
   analyst: { symbol: 'ACC', dossier: null } as { symbol: string; dossier: null } | null,
   systems: [] as string[],
   budgets: [] as number[],
+  rich: false,
+  toolNames: [] as string[][],
+  steps: [] as Array<number | undefined>,
 };
 
 vi.mock('@/lib/rateLimit', () => ({ withRateLimit: (h: unknown) => h }));
@@ -21,8 +24,15 @@ vi.mock('@/lib/analysts/store', () => ({
   listAnalysts: async () => [{ symbol: 'ACC', status: 'active', dossier: { summary: 'Low debt.', vulnerabilities: [{ title: 'Profit drop' }] } }],
   latestEntries: async () => ({}),
 }));
+vi.mock('@/lib/preferences/store', () => ({ getPreferences: async () => ({ chat: { richReplies: state.rich } }) }));
 vi.mock('@/lib/ai/generate', () => ({
-  streamChat: (_c: unknown, system: string, _m: unknown, opts: { maxOutputTokens?: number }) => (state.systems.push(system), state.budgets.push(opts?.maxOutputTokens ?? 0), { toUIMessageStreamResponse: () => new Response('stream', { status: 200 }) }),
+  streamChat: (_c: unknown, system: string, _m: unknown, opts: { maxOutputTokens?: number; tools?: object; maxSteps?: number }) => (
+    state.systems.push(system),
+    state.budgets.push(opts?.maxOutputTokens ?? 0),
+    state.toolNames.push(Object.keys(opts?.tools ?? {})),
+    state.steps.push(opts?.maxSteps),
+    { toUIMessageStreamResponse: () => new Response('stream', { status: 200 }) }
+  ),
 }));
 
 const { POST } = await import('./route');
@@ -35,6 +45,9 @@ beforeEach(() => {
   state.analyst = { symbol: 'ACC', dossier: null };
   state.systems = [];
   state.budgets = [];
+  state.rich = false;
+  state.toolNames = [];
+  state.steps = [];
 });
 
 describe('POST /api/analysts/chat', () => {
@@ -70,5 +83,31 @@ describe('POST /api/analysts/chat', () => {
     expect(state.systems[0]).toContain('DESK CONTEXT');
     expect(state.systems[0]).toContain('ACC (active) | thesis: Low debt.');
     expect(state.systems[0]).toContain('PORTFOLIO-BLOCK');
+  });
+
+  describe('rich replies (#329)', () => {
+    it('offers no tools and does not mention cards while the setting is off', async () => {
+      await call({ symbol: 'ACC', messages: [msg] });
+      await call({ messages: [msg] });
+      expect(state.toolNames).toEqual([[], []]);
+      expect(state.systems.join(' ')).not.toContain('show_analyst_card');
+      expect(state.systems.join(' ')).not.toContain('show_desk_overview');
+    });
+
+    it("gives a stock's analyst the analyst card tool, for at most two steps", async () => {
+      state.rich = true;
+      await call({ symbol: 'ACC', messages: [msg] });
+      expect(state.toolNames[0]).toEqual(['show_analyst_card']);
+      expect(state.steps[0]).toBe(2);
+      expect(state.systems[0]).toContain('show_analyst_card');
+      expect(state.systems[0]).toMatch(/never tell the user what to buy, sell, trim or add/i);
+    });
+
+    it('gives the Root Agent the desk overview tool', async () => {
+      state.rich = true;
+      await call({ messages: [msg] });
+      expect(state.toolNames[0]).toEqual(['show_desk_overview']);
+      expect(state.systems[0]).toContain('show_desk_overview');
+    });
   });
 });

@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { BRIEF_SPECS, IPO_VERDICT_KEYS, type BriefSurface } from '@/lib/ai/briefSpecs';
 import { UNRESTRICTED_DISCLAIMER } from '@/lib/ai/promptMode';
-import { readStoredBrief, splitTickers, toneLabel, type StructuredBrief } from '@/lib/ai/structuredBrief';
+import { readStoredBrief, splitTickers, toneLabel, type BriefItem, type StructuredBrief } from '@/lib/ai/structuredBrief';
+import { toneCounts } from '@/lib/dashboard/ipoBriefFacts';
 import styles from './StructuredBriefCard.module.css';
 
 interface StructuredBriefCardProps {
@@ -22,6 +23,10 @@ interface StructuredBriefCardProps {
   readonly noKeyText: string;
   /** Pre-filled into Mitra chat by the footer link. */
   readonly chatPrompt: string;
+  /** Figures drawn above the points once a brief exists (the IPO scorecard, #328). */
+  readonly visual?: ReactNode;
+  /** Lay the points out as tone-coloured cards with a tone summary, instead of a plain list. */
+  readonly scorecard?: boolean;
 }
 
 const SKELETON_ROWS = 4;
@@ -44,8 +49,82 @@ function RichText({ text }: { text: string }) {
   );
 }
 
+interface ItemsProps {
+  readonly items: readonly BriefItem[];
+  readonly labels: ReadonlyMap<string, string>;
+  readonly spec: (typeof BRIEF_SPECS)[BriefSurface];
+}
+
+function ItemPill({ item, labels, spec }: { item: BriefItem; labels: ReadonlyMap<string, string>; spec: ItemsProps['spec'] }) {
+  return (
+    <span className={`${styles.pill} ${styles[`pill_${item.tone}`]}`}>
+      {labels.get(item.key) ?? item.key}
+      <span className={styles.tone}> · {toneLabel(item.tone, spec)}</span>
+    </span>
+  );
+}
+
+function ItemList({ items, labels, spec }: ItemsProps) {
+  return (
+    <ul className={styles.list}>
+      {items.map((item) => (
+        <li key={item.key} className={styles.item}>
+          <ItemPill item={item} labels={labels} spec={spec} />
+          <p className={styles.text}>
+            <RichText text={item.text} />
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The points as tone-coloured cards under a one-line tone summary. The verdict items (unrestricted mode only) get their own strip. */
+function Scorecard({ items, labels, spec }: ItemsProps) {
+  const regular = items.filter((i) => !IPO_VERDICT_KEYS.includes(i.key));
+  const verdict = items.filter((i) => IPO_VERDICT_KEYS.includes(i.key));
+  const counts = toneCounts(regular);
+  const total = Math.max(regular.length, 1);
+  return (
+    <>
+      {regular.length > 0 && (
+        <div className={styles.toneSummary} role="group" aria-label={`Brief summary: ${counts.text}`}>
+          <span className={styles.toneBar} aria-hidden="true">
+            <span className={styles.seg_positive} style={{ flexGrow: counts.positive / total }} />
+            <span className={styles.seg_neutral} style={{ flexGrow: counts.neutral / total }} />
+            <span className={styles.seg_warning} style={{ flexGrow: counts.warning / total }} />
+          </span>
+          <span className={styles.toneText}>{counts.text}</span>
+        </div>
+      )}
+      <ul className={styles.grid}>
+        {regular.map((item) => (
+          <li key={item.key} className={`${styles.cell} ${styles[`cell_${item.tone}`]} ${item.key === 'risk' ? styles.cellWide : ''}`}>
+            <ItemPill item={item} labels={labels} spec={spec} />
+            <p className={styles.text}>
+              <RichText text={item.text} />
+            </p>
+          </li>
+        ))}
+      </ul>
+      {verdict.length > 0 && (
+        <div className={styles.verdict}>
+          {verdict.map((item) => (
+            <div key={item.key} className={styles.verdictItem}>
+              <ItemPill item={item} labels={labels} spec={spec} />
+              <p className={styles.text}>
+                <RichText text={item.text} />
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 /** A few labelled, toned points instead of a paragraph: used by the dashboard, Markets, News and IPO widgets. */
-export function StructuredBriefCard({ surface, title, endpoint, body, initial, hasKey, emptyText, noKeyText, chatPrompt }: StructuredBriefCardProps) {
+export function StructuredBriefCard({ surface, title, endpoint, body, initial, hasKey, emptyText, noKeyText, chatPrompt, visual, scorecard = false }: StructuredBriefCardProps) {
   const spec = BRIEF_SPECS[surface];
   const [brief, setBrief] = useState<StructuredBrief | null>(() => readStoredBrief(initial, spec));
   const [loading, setLoading] = useState(false);
@@ -104,19 +183,8 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
         </div>
       ) : brief ? (
         <>
-          <ul className={styles.list}>
-            {brief.items.map((item) => (
-              <li key={item.key} className={styles.item}>
-                <span className={`${styles.pill} ${styles[`pill_${item.tone}`]}`}>
-                  {labels.get(item.key) ?? item.key}
-                  <span className={styles.tone}> · {toneLabel(item.tone, spec)}</span>
-                </span>
-                <p className={styles.text}>
-                  <RichText text={item.text} />
-                </p>
-              </li>
-            ))}
-          </ul>
+          {visual}
+          {scorecard ? <Scorecard items={brief.items} labels={labels} spec={spec} /> : <ItemList items={brief.items} labels={labels} spec={spec} />}
           <p className={styles.meta}>{unrestricted ? UNRESTRICTED_DISCLAIMER : DISCLAIMER}</p>
         </>
       ) : !hasKey ? (

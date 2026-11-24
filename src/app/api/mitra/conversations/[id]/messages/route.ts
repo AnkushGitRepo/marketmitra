@@ -4,16 +4,19 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
-import { MITRA_WORKSPACE_SYSTEM } from '@/lib/ai/prompts';
+import { MITRA_WORKSPACE_SYSTEM, RICH_REPLIES_PROMPT } from '@/lib/ai/prompts';
 import { promptForMode, selectPromptMode } from '@/lib/ai/promptMode';
 import { canUsePrivilegedModes } from '@/lib/auth/privilegedModes';
-import { buildChatTools } from '@/lib/ai/chatTools';
+import { buildA2uiTools } from '@/lib/ai/a2uiTools';
+import { buildAskUserTools, buildChatTools } from '@/lib/ai/chatTools';
+import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { PLATFORM_CATALOG_TEXT, buildPlatformApiTools } from '@/lib/ai/platformApiTools';
 import { getPreferences } from '@/lib/preferences/store';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
 import { prepareAdvisorChat } from '@/lib/advisor/behaviour/chat';
 import { logEvent } from '@/lib/system/eventLog';
 import { supportsKind, unsupportedReason } from '@/lib/mitra-chat/attachments';
+import { ASK_USER_TOOL, hasReplyContent } from '@/lib/mitra-chat/askUser';
 import { appendMessages, getConversation, loadMessages, saveSummary } from '@/lib/mitra-chat/conversations';
 import { getFileStore } from '@/lib/mitra-chat/gridFsFileStore';
 import { isRetryOfLast, sanitizeUserMessage } from '@/lib/mitra-chat/messageInput';
@@ -118,13 +121,13 @@ async function handleMessage(request: Request, ctx?: unknown) {
     canRead: (kind) => (retry ? kind === 'text' : supportsKind(aiConfig, kind)),
   });
   const hasAttachments = all.slice(keepFrom).some((m) => m.parts.some((p) => p.type === 'file'));
-  const modelMessages = await convertToModelMessages(prepared);
 
   const prefs = await getPreferences(userId);
   const context = await buildPortfolioContext(userId).catch(() => '');
   const system = [
     // Guarded unless a local user or a hosted admin opted in (ADR 0054, 0070).
     promptForMode(MITRA_WORKSPACE_SYSTEM, selectPromptMode({ hosted: !canUsePrivilegedModes(userId), unrestricted: prefs.chat.unrestricted })),
+    prefs.chat.richReplies && !advisor?.advisorToolsOnly ? RICH_REPLIES_PROMPT : '',
     prefs.chat.platformAccess ? `--- PLATFORM API (call_platform_api, read-only GET) ---\n${PLATFORM_CATALOG_TEXT}` : '',
     `--- PORTFOLIO CONTEXT ---\n${context}`,
     summary ? `--- EARLIER IN THIS CONVERSATION (summary) ---\n${summary}` : '',
@@ -142,11 +145,22 @@ async function handleMessage(request: Request, ctx?: unknown) {
       ? advisor.tools
       : { ...baseTools, ...platformTools, ...advisor.tools }
     : { ...baseTools, ...platformTools };
+  // The question card is offered everywhere except the advisor-only mode, whose tool set is fixed on purpose.
+  const canAsk = !advisor?.advisorToolsOnly;
+  const canShowCards = prefs.chat.richReplies && !advisor?.advisorToolsOnly;
+  const allTools = {
+    ...tools,
+    ...(canAsk ? buildAskUserTools() : {}),
+    ...(canShowCards ? buildA2uiTools(() => getEnrichedHoldings(userId)) : {}),
+  };
+  // With the tools, a card from an earlier turn reaches the model as its text summary, not as the full layout.
+  const modelMessages = await convertToModelMessages(prepared, { tools: allTools });
 
   try {
     const result = streamChat(aiConfig, system, modelMessages, {
-      tools,
+      tools: allTools,
       maxSteps: MAX_TOOL_STEPS,
+      ...(canAsk ? { stopAfterTool: ASK_USER_TOOL } : {}),
       maxOutputTokens: MAX_OUTPUT_TOKENS,
     });
     // Run to completion (and persist) even if the client disconnects mid-stream.
@@ -155,7 +169,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
       originalMessages: all,
       onEnd: async ({ responseMessage, isAborted, finishReason }) => {
         // Only a completed reply is stored: a partial one would make a client retry look like a new turn.
-        if (isAborted || finishReason === 'error' || !textOf(responseMessage)) return;
+        if (isAborted || finishReason === 'error' || !hasReplyContent(responseMessage.parts)) return;
         await appendMessages(userId, id, [responseMessage]).catch(() => false);
       },
       onError: (error) => {
