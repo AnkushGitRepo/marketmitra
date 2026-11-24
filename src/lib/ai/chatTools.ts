@@ -44,6 +44,8 @@ import { screenerUrl, screenForModel } from '@/lib/screener/mitra';
 import { logMitraAction } from '@/lib/mitra/activityLog';
 import type { AlertParams } from '@/lib/alerts/types';
 
+export { buildAskUserTools } from './askUserTool';
+
 const SEARCH_CONTEXT_LIMIT = 6;
 
 export function buildChatTools(userId: string | null): ToolSet {

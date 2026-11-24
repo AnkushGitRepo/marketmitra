@@ -163,7 +163,13 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
         ) : (
           <div className={styles.messages}>
             {messages.map((m, i) => (
-              <MessageView key={m.id} message={m} showToolActivity={chatPrefs.showToolActivity} streaming={busy && i === messages.length - 1 && m.role === 'assistant'} />
+              <MessageView
+                key={m.id}
+                message={m}
+                showToolActivity={chatPrefs.showToolActivity}
+                streaming={busy && i === messages.length - 1 && m.role === 'assistant'}
+                onAnswer={!busy && i === messages.length - 1 ? (text) => void sendMessage({ text }) : undefined}
+              />
             ))}
             {status === 'submitted' && last?.role === 'user' && (
               <article className={`${styles.message} ${styles.messageAssistant}`} aria-label="Mitra">
