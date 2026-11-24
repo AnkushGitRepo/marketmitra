@@ -1,11 +1,16 @@
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import type { UIMessage } from 'ai';
 import { MarkdownLite } from '@/components/MarkdownLite';
 import { MitraCharacter } from '@/components/mitra/MitraCharacter';
 import { ASK_USER_TOOL, parseAskUserInput, visibleAnswer } from '@/lib/mitra-chat/askUser';
+import { SHOW_PORTFOLIO_SNAPSHOT_TOOL, type SnapshotToolOutput } from '@/lib/ai/a2uiToolTypes';
 import { AskUserCard } from './AskUserCard';
 import { AttachmentView } from './AttachmentView';
 import styles from './Chat.module.css';
+
+// Loaded on demand: only a reply that carries a card pays for the A2UI renderer.
+const A2uiView = dynamic(() => import('./A2uiView'), { ssr: false });
 
 type Part = UIMessage['parts'][number];
 
@@ -49,6 +54,10 @@ function PartView({ part, role, showToolActivity, onAnswer, answeredQuestion }: 
   if (part.type === `tool-${ASK_USER_TOOL}`) {
     const question = parseAskUserInput((part as { input?: unknown }).input);
     return question ? <AskUserCard question={question} onAnswer={onAnswer} /> : null;
+  }
+  if (part.type === `tool-${SHOW_PORTFOLIO_SNAPSHOT_TOOL}`) {
+    const output = (part as { output?: Partial<SnapshotToolOutput> }).output;
+    return output?.shown && Array.isArray(output.messages) ? <A2uiView messages={output.messages} /> : null;
   }
   if (part.type.startsWith('tool-')) {
     if (!showToolActivity) return null;

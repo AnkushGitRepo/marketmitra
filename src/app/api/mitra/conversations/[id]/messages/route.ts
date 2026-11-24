@@ -4,10 +4,12 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
-import { MITRA_WORKSPACE_SYSTEM } from '@/lib/ai/prompts';
+import { MITRA_WORKSPACE_SYSTEM, RICH_REPLIES_PROMPT } from '@/lib/ai/prompts';
 import { promptForMode, selectPromptMode } from '@/lib/ai/promptMode';
 import { canUsePrivilegedModes } from '@/lib/auth/privilegedModes';
+import { buildA2uiTools } from '@/lib/ai/a2uiTools';
 import { buildAskUserTools, buildChatTools } from '@/lib/ai/chatTools';
+import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { PLATFORM_CATALOG_TEXT, buildPlatformApiTools } from '@/lib/ai/platformApiTools';
 import { getPreferences } from '@/lib/preferences/store';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
@@ -126,6 +128,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
   const system = [
     // Guarded unless a local user or a hosted admin opted in (ADR 0054, 0070).
     promptForMode(MITRA_WORKSPACE_SYSTEM, selectPromptMode({ hosted: !canUsePrivilegedModes(userId), unrestricted: prefs.chat.unrestricted })),
+    prefs.chat.richReplies && !advisor?.advisorToolsOnly ? RICH_REPLIES_PROMPT : '',
     prefs.chat.platformAccess ? `--- PLATFORM API (call_platform_api, read-only GET) ---\n${PLATFORM_CATALOG_TEXT}` : '',
     `--- PORTFOLIO CONTEXT ---\n${context}`,
     summary ? `--- EARLIER IN THIS CONVERSATION (summary) ---\n${summary}` : '',
@@ -145,7 +148,12 @@ async function handleMessage(request: Request, ctx?: unknown) {
     : { ...baseTools, ...platformTools };
   // The question card is offered everywhere except the advisor-only mode, whose tool set is fixed on purpose.
   const canAsk = !advisor?.advisorToolsOnly;
-  const allTools = canAsk ? { ...tools, ...buildAskUserTools() } : tools;
+  const canShowCards = prefs.chat.richReplies && !advisor?.advisorToolsOnly;
+  const allTools = {
+    ...tools,
+    ...(canAsk ? buildAskUserTools() : {}),
+    ...(canShowCards ? buildA2uiTools(() => getEnrichedHoldings(userId)) : {}),
+  };
 
   try {
     const result = streamChat(aiConfig, system, modelMessages, {

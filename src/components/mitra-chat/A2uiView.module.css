@@ -1,0 +1,59 @@
+/* Themes the A2UI basic catalog with the app's tokens (docs/design-system.md); the renderer's own styles only give structure. */
+.surface {
+  margin: 4px 0 6px;
+  font-family: var(--font-sans);
+}
+
+.surface :global(.a2ui-card) {
+  padding: var(--space-4);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.surface :global(a2ui-basic-column) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.surface :global(a2ui-basic-row) {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.surface :global(a2ui-basic-row) > :global(a2ui-basic-column) {
+  flex: 1 1 0;
+  gap: 2px;
+}
+
+.surface :global(.a2ui-text) {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.surface :global(.a2ui-text-caption) {
+  color: var(--app-text-muted);
+  font-size: var(--text-xs);
+}
+
+.surface :global(.a2ui-text-caption) em {
+  font-style: normal;
+}
+
+.surface :global(a2ui-basic-row) > :global(a2ui-basic-text):not(:first-child) :global(.a2ui-text) {
+  font-variant-numeric: tabular-nums;
+}
+
+.surface :global(hr.a2ui-divider) {
+  width: 100%;
+  margin: var(--space-2) 0;
+  border: 0;
+  border-top: 1px solid var(--app-border);
+  background: none;
+}

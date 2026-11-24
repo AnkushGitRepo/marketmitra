@@ -90,7 +90,7 @@ ADR 0010) · `currentUserId.ts` (`'local'` in self-host; Clerk or PAT when hoste
 | --- | --- |
 | `advisor/` | Local-only Mitra Advisor (ADR 0035/0064). Sub-folders: `allocation`, `behaviour` (dip + trade checks), `diagnostics` (fit, stress, drawdown, deployment), `journal` (+ kill monitor, review job), `memo`, `performance` (paper), `policy`, `screen`; plus `guard.ts`, `flag.ts`, `pageGuard.ts`, `disclaimer.ts`, `chatTools.ts`. |
 | `agents/` | Multi-agent analysis: `orchestrator`, `runner`, `prompts`, `context`, `indicators`, `lessons`, `reflect`, `tradeActionCheck`, `store`, `types`. |
-| `ai/` | AI SDK layer: `providers`, `client`, `userAiConfig` (bring-your-own key), `prompts` (holds `GUARDRAIL`), `generate`/`structuredGenerate`, `stockBrief`/`structuredBrief`, `brief*`, `chatTools` (+ `askUserTool`), `platformApi*`, `untrusted.ts` (prompt-injection fencing). |
+| `ai/` | AI SDK layer: `providers`, `client`, `userAiConfig` (bring-your-own key), `prompts` (holds `GUARDRAIL`), `generate`/`structuredGenerate`, `stockBrief`/`structuredBrief`, `brief*`, `chatTools` (+ `askUserTool`, `a2uiTools`: tools that answer with an A2UI card), `platformApi*`, `untrusted.ts` (prompt-injection fencing). |
 | `alerts/` | Alert evaluation: `evaluate`, `evaluators`, `guardrails`, `ipoAlerts`, `marketHours`, `mitraBounds`, `portfolioMetrics`. |
 | `analysts/` | Per-stock analyst desk: `engine`, `dispatch*`, `sweep*`, `caps*`, `criteria`, `memo`, `retry`, `store`, `desk*`, chat prompts/context. |
 | `api-docs/` | Data behind the `/api-docs` page: categories, checks, MCP clients/tools. |
@@ -166,7 +166,7 @@ One folder per feature, each with `*.module.css`; shared pieces in `common/`.
 | IPO tracker | `(app)/ipos` | data service `ipos` | `lib/dashboard/ipo*` | `components/ipos` |
 | News + sentiment | `(app)/news` | `news`, `insights/news` | `lib/news` | `components/news` |
 | Alerts + notifications | `(app)/alerts` | `alerts`, `notifications`, cron `evaluate-alerts` | `lib/alerts`, `lib/notifications`, `lib/email` | `components/alerts`, `emails/` |
-| Mitra chat | `(app)/mitra` | `mitra/*`, `ai/chat` | `lib/mitra-chat` (`askUser.ts`: clarifying-question tool helpers), `lib/ai`, `lib/rag` | `components/mitra-chat` (`AskUserCard`) |
+| Mitra chat | `(app)/mitra` | `mitra/*`, `ai/chat` | `lib/mitra-chat` (`askUser.ts`: clarifying-question tool helpers; `a2ui/portfolioSnapshot.ts`: the A2UI card builder), `lib/ai`, `lib/rag` | `components/mitra-chat` (`AskUserCard`, `A2uiView`) |
 | Analyst desk | `(app)/research`, `agents` | `analysts/*`, `agents/*`, crons | `lib/analysts`, `lib/agents` | `components/analysts` |
 | Mitra Advisor (local) | `(app)/advisor/*` | `advisor/*`, cron `advisor-review` | `lib/advisor` | `components/advisor` |
 | Settings / tokens / AI key | `(app)/settings` | `settings/*` | `lib/settings`, `lib/tokens`, `lib/preferences`, `lib/ai/userAiConfig.ts` | `components/settings` |

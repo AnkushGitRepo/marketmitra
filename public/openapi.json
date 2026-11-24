@@ -4974,6 +4974,9 @@
                       "showToolActivity": {
                         "type": "boolean"
                       },
+                      "richReplies": {
+                        "type": "boolean"
+                      },
                       "dictationLanguage": {
                         "type": "string",
                         "enum": [
