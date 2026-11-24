@@ -28,6 +28,12 @@ For each source, record: what it is, the endpoint(s) used, auth/key requirements
 - **Model IDs:** change often. `src/lib/ai/providerCatalog.ts` records `MODELS_LAST_REVIEWED` and is reviewed every 8-12 weeks; the live list below covers the gap in between.
 - **Model listing (#333):** `POST /api/settings/ai/models` asks each provider for the models the key can use: Gemini `generativelanguage.googleapis.com/v1beta/models` (key in `x-goog-api-key`), Anthropic `api.anthropic.com/v1/models` (`x-api-key`), OpenAI `api.openai.com/v1/models` and each compatible provider's `<base>/models` (Bearer key), and OpenRouter's public `openrouter.ai/api/v1/models` (no key; carries pricing, so `$0` and `:free` models are marked Free, and `supported_parameters`, so a model without `tools` gets a warning). URLs are fixed in code, the key is sent only to its own provider, results are cached 5 minutes per user and provider (the key is never hashed or stored), and any failure falls back to the curated list. A few extra requests per settings visit; no cost.
 
+### Mutual fund portfolio holdings (candidates, not ingested)
+- **Status:** researched on 2026-11-24 for #275; **nothing is ingested** and no code exists. Full findings, the storage estimate and the proposed pilot are in [ADR 0081](./decisions/0081-fund-portfolio-holdings-sources.md).
+- **Where the data is:** each AMC's own website (statutory monthly disclosure, Excel, SEBI-prescribed columns, layout differs by AMC) and AMFI's hosted copies. AMFI's [terms of use](https://www.amfiindia.com/terms-of-use) limit reuse to personal, non-commercial use and forbid storing a significant portion of the site, so AMFI-hosted files need written permission. AMC terms are per AMC and not yet read.
+- **Third parties seen:** the open-source `fund-disclosures` project (MIT code, a small public API, no stated terms) and `mfdata.in` (not reachable when checked). Neither is a dependency.
+- **Cost:** free to fetch; paid vendors are ruled out. **Storage:** about 6 MB a month for equity Direct-Growth schemes, about 20 MB a month for every disclosed scheme (estimates, not measured; Neon's free plan is 1 GB).
+
 ### NSE (National Stock Exchange) public endpoints
 - **Type:** public API (unofficial — no formal developer program or SLA)
 - **Used for:** quotes, corporate actions, IPO data (`nsepython`), shareholding pattern (direct call to `/api/corporates-holdings`), XBRL quarterly result filings
