@@ -166,7 +166,7 @@ One folder per feature, each with `*.module.css`; shared pieces in `common/`.
 | IPO tracker | `(app)/ipos` | data service `ipos` | `lib/dashboard/ipo*` | `components/ipos` |
 | News + sentiment | `(app)/news` | `news`, `insights/news` | `lib/news` | `components/news` |
 | Alerts + notifications | `(app)/alerts` | `alerts`, `notifications`, cron `evaluate-alerts` | `lib/alerts`, `lib/notifications`, `lib/email` | `components/alerts`, `emails/` |
-| Mitra chat | `(app)/mitra` | `mitra/*`, `ai/chat` | `lib/mitra-chat` (`askUser.ts`: clarifying-question tool helpers; `holdingProposal.ts`: add/update/remove-holding proposal card helpers (ADR 0080); `a2ui/`: A2UI card builders, `portfolioSnapshot.ts`, `analystCards.ts`, shared `kit.ts`), `lib/ai`, `lib/rag` | `components/mitra-chat` (`AskUserCard`, `A2uiView`) |
+| Mitra chat | `(app)/mitra` | `mitra/*`, `ai/chat` | `lib/mitra-chat` (`askUser.ts`: clarifying-question tool helpers; `holdingProposal.ts`: add/update/remove-holding proposal card helpers (ADR 0080); `toolActivity.ts`: the stage Mitra is in and the "Used N tools" grouping; `a2ui/`: A2UI card builders, `portfolioSnapshot.ts`, `analystCards.ts`, shared `kit.ts`), `lib/ai`, `lib/rag` | `components/mitra-chat` (`AskUserCard`, `A2uiView`) |
 | Analyst desk | `(app)/research`, `agents` | `analysts/*`, `agents/*`, crons | `lib/analysts`, `lib/agents` | `components/analysts` |
 | Mitra Advisor (local) | `(app)/advisor/*` | `advisor/*`, cron `advisor-review` | `lib/advisor` | `components/advisor` |
 | Settings / tokens / AI key | `(app)/settings` | `settings/*` | `lib/settings`, `lib/tokens`, `lib/preferences`, `lib/ai/userAiConfig.ts` | `components/settings` |

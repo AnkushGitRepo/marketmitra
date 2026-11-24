@@ -1,0 +1,165 @@
+.live {
+  margin: 2px 0 8px;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.orb {
+  position: relative;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-mint-strong);
+}
+
+.shimmer {
+  color: var(--app-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+}
+
+.count {
+  color: var(--app-text-faint);
+}
+
+.spinner {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--app-border);
+  border-top-color: var(--color-mint-strong);
+  border-radius: 50%;
+}
+
+.done,
+.failed {
+  flex: none;
+  width: 11px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.done {
+  color: var(--color-mint-text);
+}
+
+.failed {
+  color: var(--app-loss);
+}
+
+.tally {
+  margin: 2px 0 6px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.summary {
+  margin: 2px 0 6px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.summary > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--app-pill-bg);
+  cursor: pointer;
+  list-style: none;
+}
+
+.summary > summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary > summary::after {
+  content: '▾';
+  font-size: 10px;
+}
+
+.summary[open] > summary::after {
+  content: '▴';
+}
+
+.summary > .list {
+  margin: 8px 0 0 4px;
+}
+
+.open {
+  margin-left: 4px;
+  color: var(--color-mint-text);
+}
+
+/* Motion only for people who have not asked for less of it; the same information stays without it. */
+@media (prefers-reduced-motion: no-preference) {
+  .orb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--color-mint-strong);
+    animation: ripple 1.6s ease-out infinite;
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, var(--app-text-muted) 35%, var(--app-text-faint) 50%, var(--app-text-muted) 65%) 0 0 / 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 2.2s linear infinite;
+  }
+
+  .spinner {
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

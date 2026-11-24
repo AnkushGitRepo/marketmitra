@@ -1,5 +1,4 @@
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import type { UIMessage } from 'ai';
 import { MarkdownLite } from '@/components/MarkdownLite';
 import { MitraCharacter } from '@/components/mitra/MitraCharacter';
@@ -9,23 +8,14 @@ import { HOLDING_PROPOSAL_TOOL, parseProposalPart } from '@/lib/mitra-chat/holdi
 import { AskUserCard } from './AskUserCard';
 import { HoldingProposalCard } from './HoldingProposalCard';
 import { AttachmentView } from './AttachmentView';
+import { StageLine, ToolActivity } from './ToolActivity';
+import { isActivityPart, stageOf, stageText, toolName } from '@/lib/mitra-chat/toolActivity';
 import styles from './Chat.module.css';
 
 // Loaded on demand: only a reply that carries a card pays for the A2UI renderer.
 const A2uiView = dynamic(() => import('./A2uiView'), { ssr: false });
 
 type Part = UIMessage['parts'][number];
-
-const TOOL_LABELS: Record<string, string> = {
-  search_context: 'Searched your knowledge base',
-  run_screener: 'Ran the screener',
-  get_screener_options: 'Checked screener options',
-};
-
-function toolLabel(type: string): string {
-  const name = type.replace(/^tool-/, '');
-  return TOOL_LABELS[name] ?? name.replace(/_/g, ' ');
-}
 
 /** Navigation tools return `{ to: '/dashboard/...' }`; surface it as a link, never auto-navigate mid-conversation. */
 function navTarget(part: Part): string | null {
@@ -37,19 +27,20 @@ function navTarget(part: Part): string | null {
 interface PartViewProps {
   readonly part: Part;
   readonly role: UIMessage['role'];
-  readonly showToolActivity: boolean;
+  /** True on the last text part of a reply that is still streaming: it ends in a blinking cursor. */
+  readonly cursor?: boolean;
   /** Set only on the newest message while idle: the question and holding cards are then answerable. Otherwise they are read-only. */
   readonly onAnswer?: (text: string) => void;
   /** The question on the card this user message answers, so the bubble can show just the answer. */
   readonly answeredQuestion?: string | null;
 }
 
-function PartView({ part, role, showToolActivity, onAnswer, answeredQuestion }: PartViewProps) {
+function PartView({ part, role, cursor, onAnswer, answeredQuestion }: PartViewProps) {
   if (part.type === 'text') {
     return role === 'user' ? (
       <p className={styles.userText}>{visibleAnswer(part.text, answeredQuestion ?? null)}</p>
     ) : (
-      <MarkdownLite text={part.text} className={styles.markdown} />
+      <MarkdownLite text={part.text} className={cursor ? `${styles.markdown} ${styles.cursor}` : styles.markdown} />
     );
   }
   if (part.type === 'file') return <AttachmentView url={part.url} mediaType={part.mediaType} filename={part.filename} />;
@@ -65,29 +56,22 @@ function PartView({ part, role, showToolActivity, onAnswer, answeredQuestion }: 
     const output = (part as { output?: Partial<CardToolOutput> }).output;
     return output?.shown && Array.isArray(output.messages) ? <A2uiView messages={output.messages} /> : null;
   }
-  if (part.type.startsWith('tool-')) {
-    if (!showToolActivity) return null;
-    const target = navTarget(part);
-    return (
-      <span className={styles.toolChip}>
-        {toolLabel(part.type)}
-        {target && (
-          <>
-            {' · '}
-            <Link href={target}>Open</Link>
-          </>
-        )}
-      </span>
-    );
-  }
   return null;
 }
 
 export function MessageView({ message, streaming, showToolActivity = true, onAnswer, answeredQuestion }: { message: UIMessage; streaming: boolean; showToolActivity?: boolean; onAnswer?: (text: string) => void; answeredQuestion?: string | null }) {
   const isUser = message.role === 'user';
   const files = message.parts.filter((p) => p.type === 'file');
-  const rest = message.parts.filter((p) => p.type !== 'file');
-  const hasText = message.parts.some((p) => p.type === 'text' && p.text.length > 0);
+  const rest = message.parts.filter((p) => p.type !== 'file' && !(!isUser && isActivityPart(p.type, isCardToolPart)));
+  const hasActivity = !isUser && message.parts.some((p) => isActivityPart(p.type, isCardToolPart));
+  const lastTextIndex = rest.findLastIndex((p) => p.type === 'text' && p.text.length > 0);
+  // A navigation tool's page is linked from the opened list, never followed on its own.
+  const targets: Record<string, string> = {};
+  for (const p of message.parts) {
+    const to = p.type.startsWith('tool-') ? navTarget(p) : null;
+    if (to) targets[toolName(p.type)] = to;
+  }
+  const showStage = !isUser && streaming && stageOf(message.parts, isCardToolPart) !== 'writing';
 
   return (
     <article className={`${styles.message} ${isUser ? styles.messageUser : styles.messageAssistant}`} aria-label={isUser ? 'You' : 'Mitra'}>
@@ -100,14 +84,28 @@ export function MessageView({ message, streaming, showToolActivity = true, onAns
         {files.length > 0 && (
           <div className={styles.attachments}>
             {files.map((p, i) => (
-              <PartView key={i} part={p} role={message.role} showToolActivity={showToolActivity} />
+              <PartView key={i} part={p} role={message.role} />
             ))}
           </div>
         )}
+        {(hasActivity || showStage) && <ToolActivity parts={message.parts} streaming={streaming} showTools={showToolActivity} targets={targets} />}
         {rest.map((p, i) => (
-          <PartView key={i} part={p} role={message.role} showToolActivity={showToolActivity} onAnswer={onAnswer} answeredQuestion={answeredQuestion} />
+          <PartView key={i} part={p} role={message.role} cursor={streaming && i === lastTextIndex} onAnswer={onAnswer} answeredQuestion={answeredQuestion} />
         ))}
-        {!isUser && streaming && !hasText && <span className={styles.typing} aria-label="Mitra is thinking" />}
+      </div>
+    </article>
+  );
+}
+
+/** The placeholder reply shown between sending and the first part arriving. */
+export function PendingReply() {
+  return (
+    <article className={`${styles.message} ${styles.messageAssistant}`} aria-label="Mitra">
+      <span className={styles.avatar} aria-hidden="true">
+        <MitraCharacter phase="thinking" size={28} />
+      </span>
+      <div className={styles.bubble}>
+        <StageLine text={stageText('thinking', [], isCardToolPart)} />
       </div>
     </article>
   );
