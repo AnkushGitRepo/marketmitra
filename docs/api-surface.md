@@ -271,6 +271,11 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Response:** `{ success, data: { enabled, deliverable, blockedBy, blockedText, maskedTo, last } }`. `blockedBy` is `disabled`, `provider_missing` or `no_address`; `blockedText` is the reason with the fix for this deployment; `maskedTo` is the masked address; `last` is `{ at, status: sent|failed|skipped, detail }` or null.
 - `POST /api/settings/notifications/test` also accepts `channel: "email"`: a real test email through the same route (409 with the reason when it cannot be sent).
 
+### `POST /api/settings/ai/models`
+
+- **Auth:** session; `ai` rate tier. **Purpose:** the models an AI provider key can use (#333). Body `{ provider, apiKey? }`; without `apiKey` the saved key for the *same* provider is used (never another provider's). The server asks the provider's own fixed listing URL (Gemini, Anthropic, OpenAI, and each OpenAI-compatible provider's `/models`; OpenRouter's public list, which carries pricing and tool support and needs no key), merges the answer with the curated list in `src/lib/ai/providerCatalog.ts` and drops embedding, speech, image and moderation models.
+- **Response:** `{ success, data: { source: "live" | "curated", models: [{ value, label, tier: latest|free|other, free, tools }] } }`. Any failure (network, timeout, rejected key, bad JSON) answers `200` with the curated list and `source: "curated"`. Cached 5 minutes per provider and key (the cache key holds a hash, never the key). The key is never returned, logged or put in an error. `401` signed out, `422` bad body.
+
 ### `GET /api/mitra/context`
 
 - **Auth:** session. **Purpose:** the signed-in user's first name (hosted accounts) and holdings with live prices, to personalise the Mitra chat greeting and starter prompts. Own data only; unpriced holdings have `ltp: null`. Returns `{ success, data: { firstName, holdings[] }, error }`.

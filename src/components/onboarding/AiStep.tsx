@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { AI_PROVIDER_IDS, PROVIDERS, groupedModels } from '@/lib/ai/providerCatalog';
-import { MODEL_OPTIONS, PROVIDER_LABELS, isValidModelId } from '@/lib/ai/providers';
+import { AI_PROVIDER_IDS, PROVIDERS } from '@/lib/ai/providerCatalog';
+import { PROVIDER_LABELS, isValidModelId } from '@/lib/ai/providers';
+import { ModelPicker } from '@/components/settings/ModelPicker';
 import type { AiProvider } from '@/lib/userSettings';
 import { ChevronDownIcon, KeyRoundIcon, LockIcon } from './icons';
 import styles from './Onboarding.module.css';
 
-const CUSTOM_MODEL = '__custom__';
 type Status =
   | { readonly kind: 'idle' }
   | { readonly kind: 'running' }
@@ -25,18 +25,15 @@ interface AiStepProps {
 export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
   const [provider, setProvider] = useState<AiProvider>(savedProvider ?? 'gemini');
   const [apiKey, setApiKey] = useState('');
-  const [modelChoice, setModelChoice] = useState('');
-  const [customModel, setCustomModel] = useState('');
+  const [model, setModel] = useState('');
   const [status, setStatus] = useState<Status>(savedProvider ? { kind: 'ok', provider: savedProvider, model: null, latencyMs: 0 } : { kind: 'idle' });
 
   const saveAndTest = async () => {
     if (apiKey.trim().length < 10) return setStatus({ kind: 'fail', text: 'Paste your provider API key first.' });
-    const model = (modelChoice === CUSTOM_MODEL ? customModel : modelChoice).trim();
-    if (!isValidModelId(model)) return setStatus({ kind: 'fail', text: 'That model ID has characters a model name cannot have. Use letters, digits and . _ : / - only.' });
-    if (modelChoice === CUSTOM_MODEL && !model) return setStatus({ kind: 'fail', text: 'Enter a model ID, or pick one from the list.' });
+    if (!isValidModelId(model.trim())) return setStatus({ kind: 'fail', text: 'That model ID has characters a model name cannot have. Use letters, digits and . _ : / - only.' });
     setStatus({ kind: 'running' });
     try {
-      const put = await fetch('/api/settings/ai', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider, apiKey: apiKey.trim(), model: model || undefined }) });
+      const put = await fetch('/api/settings/ai', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider, apiKey: apiKey.trim(), model: model.trim() || undefined }) });
       if (!put.ok) {
         const body = (await put.json().catch(() => null)) as { error?: string } | null;
         return setStatus({ kind: 'fail', text: body?.error ?? 'Could not save the key.' });
@@ -76,8 +73,7 @@ export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
           <select className={styles.select} aria-label="AI provider" value={provider} onChange={(e) => {
               // A model id from one provider means nothing to another, so the choice resets with the provider.
               setProvider(e.target.value as AiProvider);
-              setModelChoice('');
-              setCustomModel('');
+              setModel('');
             }}>
             {AI_PROVIDER_IDS.map((p) => (
               <option key={p} value={p}>
@@ -105,29 +101,9 @@ export function AiStep({ savedProvider, onSaved, hosted }: AiStepProps) {
         </button>
       </form>
       <div className={styles.row}>
-        <div className={styles.field}>
-          <select className={styles.select} aria-label="AI model" value={modelChoice} onChange={(e) => setModelChoice(e.target.value)}>
-            <option value="">{MODEL_OPTIONS[provider][0].label}</option>
-            {groupedModels(provider).map((g) => (
-              <optgroup key={g.tier} label={g.label}>
-                {g.models.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-            <option value={CUSTOM_MODEL}>Other (type a model ID)</option>
-          </select>
-          <span className={styles.selectChevron} aria-hidden="true">
-            <ChevronDownIcon size={16} />
-          </span>
+        <div className={`${styles.field} ${styles.fieldWide}`}>
+          <ModelPicker provider={provider} apiKey={apiKey} value={model} onChange={setModel} />
         </div>
-        {modelChoice === CUSTOM_MODEL && (
-          <div className={`${styles.field} ${styles.fieldWide}`}>
-            <input className={styles.input} aria-label="Model ID" autoComplete="off" spellCheck={false} placeholder={`e.g. ${MODEL_OPTIONS[provider][1]?.value ?? 'a model ID'}`} value={customModel} onChange={(e) => setCustomModel(e.target.value)} />
-          </div>
-        )}
       </div>
       <p className={styles.secure}>
         <LockIcon size={14} /> Encrypted at rest (AES-256-GCM) and never sent back to your browser.

@@ -3,8 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { AI_PROVIDER_IDS, PROVIDERS, groupedModels } from '@/lib/ai/providerCatalog';
-import { MODEL_OPTIONS, PROVIDER_LABELS } from '@/lib/ai/providers';
+import { AI_PROVIDER_IDS, PROVIDERS } from '@/lib/ai/providerCatalog';
+import { PROVIDER_LABELS } from '@/lib/ai/providers';
+import { ModelPicker } from './ModelPicker';
 import type { Preferences, PreferencesPatch } from '@/lib/preferences/schema';
 import type { AiProvider, AiSettingsView } from '@/lib/userSettings';
 import rowStyles from '@/app/(app)/settings/Settings.module.css';
@@ -34,8 +35,6 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
   const [provider, setProvider] = useState<AiProvider>(initialView?.provider ?? 'gemini');
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState(initialView?.model ?? '');
-  const known = MODEL_OPTIONS[provider].some((o) => o.value === (initialView?.model ?? ''));
-  const [modelChoice, setModelChoice] = useState(initialView?.model ? (known ? initialView.model : '__custom__') : '');
   const [busy, setBusy] = useState<'save' | 'delete' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [test, setTest] = useState<Test>({ state: 'idle' });
@@ -84,7 +83,6 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
       setChanging(true);
       setApiKey('');
       setModel('');
-      setModelChoice('');
       setTest({ state: 'idle' });
       router.refresh();
     } catch {
@@ -167,7 +165,6 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
                 onChange={(e) => {
                   // A model ID from one provider is meaningless for another: reset rather than submit a mismatch.
                   setProvider(e.target.value as AiProvider);
-                  setModelChoice('');
                   setModel('');
                 }}
               >
@@ -185,31 +182,10 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
               <input className={styles.input} type="password" autoComplete="off" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={view ? 'Paste the new key' : 'Paste your key'} />
             </label>
 
-            <label className={styles.field}>
+            <div className={styles.field}>
               <span className={styles.label}>Model</span>
-              <select
-                className={styles.input}
-                value={modelChoice}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setModelChoice(next);
-                  setModel(next === '__custom__' ? model : next);
-                }}
-              >
-                <option value="">{MODEL_OPTIONS[provider][0].label}</option>
-                {groupedModels(provider).map((g) => (
-                  <optgroup key={g.tier} label={g.label}>
-                    {g.models.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-                <option value="__custom__">Other (enter a model ID manually)</option>
-              </select>
-              {modelChoice === '__custom__' && <input className={styles.input} value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. gemini-3.8-flash" />}
-            </label>
+              <ModelPicker provider={provider} apiKey={apiKey} value={model} onChange={setModel} />
+            </div>
 
             {error && (
               <p className={styles.bad} role="alert">
