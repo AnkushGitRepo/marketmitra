@@ -2,6 +2,8 @@ import Link from 'next/link';
 import type { UIMessage } from 'ai';
 import { MarkdownLite } from '@/components/MarkdownLite';
 import { MitraCharacter } from '@/components/mitra/MitraCharacter';
+import { ASK_USER_TOOL, parseAskUserInput, visibleAnswer } from '@/lib/mitra-chat/askUser';
+import { AskUserCard } from './AskUserCard';
 import { AttachmentView } from './AttachmentView';
 import styles from './Chat.module.css';
 
@@ -25,15 +27,29 @@ function navTarget(part: Part): string | null {
   return typeof to === 'string' && to.startsWith('/dashboard') ? to : null;
 }
 
-function PartView({ part, role, showToolActivity }: { part: Part; role: UIMessage['role']; showToolActivity: boolean }) {
+interface PartViewProps {
+  readonly part: Part;
+  readonly role: UIMessage['role'];
+  readonly showToolActivity: boolean;
+  /** Set only on the newest message while idle: the question card is then answerable. Otherwise it is read-only. */
+  readonly onAnswer?: (text: string) => void;
+  /** The question on the card this user message answers, so the bubble can show just the answer. */
+  readonly answeredQuestion?: string | null;
+}
+
+function PartView({ part, role, showToolActivity, onAnswer, answeredQuestion }: PartViewProps) {
   if (part.type === 'text') {
     return role === 'user' ? (
-      <p className={styles.userText}>{part.text}</p>
+      <p className={styles.userText}>{visibleAnswer(part.text, answeredQuestion ?? null)}</p>
     ) : (
       <MarkdownLite text={part.text} className={styles.markdown} />
     );
   }
   if (part.type === 'file') return <AttachmentView url={part.url} mediaType={part.mediaType} filename={part.filename} />;
+  if (part.type === `tool-${ASK_USER_TOOL}`) {
+    const question = parseAskUserInput((part as { input?: unknown }).input);
+    return question ? <AskUserCard question={question} onAnswer={onAnswer} /> : null;
+  }
   if (part.type.startsWith('tool-')) {
     if (!showToolActivity) return null;
     const target = navTarget(part);
@@ -52,7 +68,7 @@ function PartView({ part, role, showToolActivity }: { part: Part; role: UIMessag
   return null;
 }
 
-export function MessageView({ message, streaming, showToolActivity = true }: { message: UIMessage; streaming: boolean; showToolActivity?: boolean }) {
+export function MessageView({ message, streaming, showToolActivity = true, onAnswer, answeredQuestion }: { message: UIMessage; streaming: boolean; showToolActivity?: boolean; onAnswer?: (text: string) => void; answeredQuestion?: string | null }) {
   const isUser = message.role === 'user';
   const files = message.parts.filter((p) => p.type === 'file');
   const rest = message.parts.filter((p) => p.type !== 'file');
@@ -74,7 +90,7 @@ export function MessageView({ message, streaming, showToolActivity = true }: { m
           </div>
         )}
         {rest.map((p, i) => (
-          <PartView key={i} part={p} role={message.role} showToolActivity={showToolActivity} />
+          <PartView key={i} part={p} role={message.role} showToolActivity={showToolActivity} onAnswer={onAnswer} answeredQuestion={answeredQuestion} />
         ))}
         {!isUser && streaming && !hasText && <span className={styles.typing} aria-label="Mitra is thinking" />}
       </div>

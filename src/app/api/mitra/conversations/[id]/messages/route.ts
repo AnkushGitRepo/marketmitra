@@ -7,13 +7,14 @@ import { streamChat } from '@/lib/ai/generate';
 import { MITRA_WORKSPACE_SYSTEM } from '@/lib/ai/prompts';
 import { promptForMode, selectPromptMode } from '@/lib/ai/promptMode';
 import { canUsePrivilegedModes } from '@/lib/auth/privilegedModes';
-import { buildChatTools } from '@/lib/ai/chatTools';
+import { buildAskUserTools, buildChatTools } from '@/lib/ai/chatTools';
 import { PLATFORM_CATALOG_TEXT, buildPlatformApiTools } from '@/lib/ai/platformApiTools';
 import { getPreferences } from '@/lib/preferences/store';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
 import { prepareAdvisorChat } from '@/lib/advisor/behaviour/chat';
 import { logEvent } from '@/lib/system/eventLog';
 import { supportsKind, unsupportedReason } from '@/lib/mitra-chat/attachments';
+import { ASK_USER_TOOL, hasReplyContent } from '@/lib/mitra-chat/askUser';
 import { appendMessages, getConversation, loadMessages, saveSummary } from '@/lib/mitra-chat/conversations';
 import { getFileStore } from '@/lib/mitra-chat/gridFsFileStore';
 import { isRetryOfLast, sanitizeUserMessage } from '@/lib/mitra-chat/messageInput';
@@ -142,11 +143,15 @@ async function handleMessage(request: Request, ctx?: unknown) {
       ? advisor.tools
       : { ...baseTools, ...platformTools, ...advisor.tools }
     : { ...baseTools, ...platformTools };
+  // The question card is offered everywhere except the advisor-only mode, whose tool set is fixed on purpose.
+  const canAsk = !advisor?.advisorToolsOnly;
+  const allTools = canAsk ? { ...tools, ...buildAskUserTools() } : tools;
 
   try {
     const result = streamChat(aiConfig, system, modelMessages, {
-      tools,
+      tools: allTools,
       maxSteps: MAX_TOOL_STEPS,
+      ...(canAsk ? { stopAfterTool: ASK_USER_TOOL } : {}),
       maxOutputTokens: MAX_OUTPUT_TOKENS,
     });
     // Run to completion (and persist) even if the client disconnects mid-stream.
@@ -155,7 +160,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
       originalMessages: all,
       onEnd: async ({ responseMessage, isAborted, finishReason }) => {
         // Only a completed reply is stored: a partial one would make a client retry look like a new turn.
-        if (isAborted || finishReason === 'error' || !textOf(responseMessage)) return;
+        if (isAborted || finishReason === 'error' || !hasReplyContent(responseMessage.parts)) return;
         await appendMessages(userId, id, [responseMessage]).catch(() => false);
       },
       onError: (error) => {

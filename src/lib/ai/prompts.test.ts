@@ -52,3 +52,11 @@ describe('Mitra workspace prompt', () => {
     expect(MITRA_WORKSPACE_SYSTEM).toMatch(/no tool for account settings, security, billing or any destructive action/i);
   });
 });
+
+describe('Mitra workspace ask_user guidance', () => {
+  it('tells the model to ask sparingly, once, and to stop after asking', () => {
+    expect(MITRA_WORKSPACE_SYSTEM).toContain('ask_user');
+    expect(MITRA_WORKSPACE_SYSTEM).toMatch(/at most once per turn/i);
+    expect(MITRA_WORKSPACE_SYSTEM).toMatch(/write nothing else/i);
+  });
+});

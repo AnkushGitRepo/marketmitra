@@ -72,6 +72,11 @@
 - [ ] "Skip setup", "Skip for now" and "Finish without AI" never trap you; the wizard does not return after either. `/onboarding/demo` writes nothing (check no new holdings or analysts).
 - [ ] The Clerk handshake works for `/onboarding` (it is in the `proxy.ts` matcher).
 
+## 4d. Mitra clarifying questions (#322, ADR 0076)
+
+- [ ] In /mitra, with a real key on each provider you support (Gemini, Anthropic, OpenRouter), ask something that depends on the user ("should I add to my position?"). Mitra shows a question card instead of guessing; clicking an option (or typing your own) continues the reply.
+- [ ] The card is read-only once answered and reappears after a reload. Mitra does not ask twice in a row, and does not ask when the portfolio already answers it.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.
