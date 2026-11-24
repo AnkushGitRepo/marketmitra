@@ -83,6 +83,11 @@
 - [ ] Reload the chat: the card is still there. A holding with no live price shows "n/a" and is left out of value and P&L.
 - [ ] On the hosted site the card renders (the A2UI renderer loads on demand) and the CSP does not block it.
 
+## 4f. Analyst Desk chat cards (#329, ADR 0078)
+
+- [ ] With "Rich replies" on, in an analyst's chat (/agents) ask "summarise where this stands": a card shows status, summary, strengths, open risks and latest notes that match the Dossier and Journal; the Root Agent shows the desk overview. With it off, plain text only.
+- [ ] After a card, send a follow-up question: it is answered from the card's content, and nothing odd (layout JSON) appears in the reply.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

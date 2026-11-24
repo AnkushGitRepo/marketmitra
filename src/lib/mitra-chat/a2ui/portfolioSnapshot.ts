@@ -9,14 +9,12 @@ import {
   type HoldingLike,
 } from '@/lib/portfolio/portfolioMetrics';
 
-/** The basic catalog's id (A2UI v1.0); a test checks it against `@a2ui/web_core`. */
-export const BASIC_CATALOG_ID = 'https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json';
+import { BASIC_CATALOG_ID, UNAVAILABLE, column, divider, row, surfaceMessages, text, type A2uiMessage, type Component } from './kit';
+
+export { BASIC_CATALOG_ID };
+export type { A2uiMessage };
 export const SNAPSHOT_SURFACE_ID = 'portfolio-snapshot';
 const MAX_ROWS = 5;
-const UNAVAILABLE = 'n/a';
-
-export type A2uiMessage = Readonly<Record<string, unknown>>;
-type Component = Readonly<Record<string, unknown>>;
 
 export interface PortfolioSnapshot {
   /** What the chat renders. */
@@ -24,16 +22,6 @@ export interface PortfolioSnapshot {
   /** What the model reads instead of the layout: the same figures as text. */
   readonly summary: string;
 }
-
-const text = (id: string, value: string, variant: 'body' | 'caption' = 'body', weight?: number): Component => ({
-  id,
-  component: 'Text',
-  text: value,
-  variant,
-  ...(weight ? { weight } : {}),
-});
-const column = (id: string, children: readonly string[]): Component => ({ id, component: 'Column', children });
-const row = (id: string, children: readonly string[]): Component => ({ id, component: 'Row', children });
 
 const signedInr = (n: number): string => `${n >= 0 ? '+' : ''}${formatInr(n, 0)}`;
 const signedPct = (n: number): string => `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
@@ -95,17 +83,14 @@ export function buildPortfolioSnapshot(holdings: readonly HoldingLike[]): Portfo
     ...stat('s_invested', 'Invested', formatInr(holdings.reduce((sum, h) => sum + h.quantity * h.avgPrice, 0), 0)),
     ...stat('s_pl', 'Unrealised P&L', plText),
     ...stat('s_today', 'Today', todayText),
-    { id: 'd1', component: 'Divider' },
+    divider('d1'),
     text('hold_t', 'Biggest holdings · weight · return on cost', 'caption'),
     ...shown.flatMap(rowFor),
     ...(hiddenCount > 0 ? [text('more', `+ ${hiddenCount} more holding${hiddenCount === 1 ? '' : 's'}`, 'caption')] : []),
-    ...(risks.length > 0 ? [{ id: 'd2', component: 'Divider' }, text('risk_t', 'Risk notes from your own numbers', 'caption'), ...riskRows] : []),
+    ...(risks.length > 0 ? [divider('d2'), text('risk_t', 'Risk notes from your own numbers', 'caption'), ...riskRows] : []),
   ];
 
-  const messages: A2uiMessage[] = [
-    { version: '1.0', createSurface: { surfaceId: SNAPSHOT_SURFACE_ID, catalogId: BASIC_CATALOG_ID } },
-    { version: '1.0', updateComponents: { surfaceId: SNAPSHOT_SURFACE_ID, components } },
-  ];
+  const messages = surfaceMessages(SNAPSHOT_SURFACE_ID, components);
 
   const unpriced = holdings.length - priced.length;
   const summary = [

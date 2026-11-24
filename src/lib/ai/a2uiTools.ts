@@ -1,29 +1,58 @@
-import { tool, type ToolSet } from 'ai';
+import { tool, type Tool, type ToolSet } from 'ai';
 import { z } from 'zod';
+import { buildAnalystCard, buildDeskOverview, type AnalystCardInput, type CardResult, type DeskView } from '@/lib/mitra-chat/a2ui/analystCards';
 import { buildPortfolioSnapshot } from '@/lib/mitra-chat/a2ui/portfolioSnapshot';
-import { SHOW_PORTFOLIO_SNAPSHOT_TOOL, type SnapshotToolOutput } from './a2uiToolTypes';
 import type { HoldingLike } from '@/lib/portfolio/portfolioMetrics';
+import { SHOW_ANALYST_CARD_TOOL, SHOW_DESK_OVERVIEW_TOOL, SHOW_PORTFOLIO_SNAPSHOT_TOOL, type CardToolOutput } from './a2uiToolTypes';
 
 /**
- * Tools that answer with an A2UI surface (#326, ADR 0077). Read-only and built from the user's own data on the server:
- * the model decides to call one, but never writes a component or a figure. Offered only when the user turned on
- * "Rich replies" in Settings, and only in the Mitra workspace (the one place with a renderer).
+ * One card tool (#326, #329, ADR 0077, 0078). Read-only and built from the user's own data on the server: the model decides to call
+ * it, but never writes a component or a figure. The card goes to the chat in full; the model only gets the figures as text.
  */
+function cardTool(description: string, load: () => Promise<CardResult | null>, whenEmpty: string): Tool {
+  return tool({
+    description,
+    inputSchema: z.object({}),
+    execute: async (): Promise<CardToolOutput> => {
+      const card = await load().catch(() => null);
+      return card ? { shown: true, messages: card.messages, summary: card.summary } : { shown: false, messages: [], summary: whenEmpty };
+    },
+    toModelOutput: ({ output }) => ({ type: 'text', value: (output as CardToolOutput).summary }),
+  });
+}
+
+/** Mitra chat: the portfolio snapshot. Offered only when the user turned on "Rich replies". */
 export function buildA2uiTools(loadHoldings: () => Promise<readonly HoldingLike[]>): ToolSet {
   return {
-    [SHOW_PORTFOLIO_SNAPSHOT_TOOL]: tool({
-      description:
-        "Show the user a visual card of their own portfolio: value, invested amount, unrealised P&L, today's move, the biggest holdings and risk notes, all computed from their real holdings and live prices. Use it when they ask for an overview or how their portfolio is doing. Afterwards write a short interpretation; do not repeat the card's numbers line by line.",
-      inputSchema: z.object({}),
-      execute: async (): Promise<SnapshotToolOutput> => {
-        const holdings = await loadHoldings().catch(() => []);
-        const snapshot = buildPortfolioSnapshot(holdings);
-        return snapshot
-          ? { shown: true, messages: snapshot.messages, summary: snapshot.summary }
-          : { shown: false, messages: [], summary: 'The user has no holdings with data yet, so no card was shown. Say so briefly and suggest adding holdings.' };
+    [SHOW_PORTFOLIO_SNAPSHOT_TOOL]: cardTool(
+      "Show the user a visual card of their own portfolio: value, invested amount, unrealised P&L, today's move, the biggest holdings and risk notes, all computed from their real holdings and live prices. Use it when they ask for an overview or how their portfolio is doing. Afterwards write a short interpretation; do not repeat the card's numbers line by line.",
+      async () => buildPortfolioSnapshot(await loadHoldings()),
+      'The user has no holdings with data yet, so no card was shown. Say so briefly and suggest adding holdings.'
+    ),
+  };
+}
+
+/** Analyst Desk chat with one stock's analyst: that analyst's card. */
+export function buildAnalystCardTools(loadAnalyst: () => Promise<AnalystCardInput | null>): ToolSet {
+  return {
+    [SHOW_ANALYST_CARD_TOOL]: cardTool(
+      "Show the user a visual card of this analyst's status, dossier summary, strengths, open risks and latest journal notes, taken from what is stored. Use it when they ask for a summary or where things stand. Afterwards answer briefly in words; do not repeat the card line by line.",
+      async () => {
+        const input = await loadAnalyst();
+        return input ? buildAnalystCard(input) : null;
       },
-      // The card goes to the chat in full; the model only gets the figures as text, not the layout.
-      toModelOutput: ({ output }) => ({ type: 'text', value: (output as SnapshotToolOutput).summary }),
-    }),
+      'There is nothing stored for this analyst yet, so no card was shown. Say so briefly.'
+    ),
+  };
+}
+
+/** Analyst Desk chat with the Root Agent: the whole desk. */
+export function buildDeskOverviewTools(loadDesk: () => Promise<readonly DeskView[]>): ToolSet {
+  return {
+    [SHOW_DESK_OVERVIEW_TOOL]: cardTool(
+      'Show the user a visual overview of every analyst on their desk: status and latest note for each. Use it when they ask for an overview of the desk or which analysts have flagged something. Afterwards answer briefly in words; do not repeat the card line by line.',
+      async () => buildDeskOverview(await loadDesk()),
+      'The desk has no analysts yet, so no card was shown. Say so briefly.'
+    ),
   };
 }
