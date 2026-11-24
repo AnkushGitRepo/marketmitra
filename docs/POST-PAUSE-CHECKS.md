@@ -88,6 +88,12 @@
 - [ ] With "Rich replies" on, in an analyst's chat (/agents) ask "summarise where this stands": a card shows status, summary, strengths, open risks and latest notes that match the Dossier and Journal; the Root Agent shows the desk overview. With it off, plain text only.
 - [ ] After a card, send a follow-up question: it is answered from the card's content, and nothing odd (layout JSON) appears in the reply.
 
+## 4g. IPO brief scorecard (#328)
+
+- [ ] On /ipos, open an IPO with a brief: the tiles (price, lot and minimum investment, size, listing, grey market, subscribed), the category bars with the 1x mark, the tone summary and the colour-coded points show; the figures match the IPO card. An IPO with no category data shows no bars; one with no GMP shows no GMP tile.
+- [ ] Regenerate works and keeps the scorecard; an unrestricted brief (admin or local) shows its verdict items in a separate strip.
+- [ ] It reads well on a phone width and nothing animates with reduced motion.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

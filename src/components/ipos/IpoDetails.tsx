@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { StructuredBriefCard } from '@/components/dashboard-charts/StructuredBriefCard';
+import { IpoBriefVisual } from './IpoBriefVisual';
+import { ipoBriefFacts } from '@/lib/dashboard/ipoBriefFacts';
 import { IpoCategoryOdds } from './IpoCategoryOdds';
 import { hasEnoughIpoData } from '@/lib/ai/briefPrompts';
 import type { IpoTrigger } from '@/lib/alerts/types';
@@ -103,6 +105,8 @@ export function IpoDetails({ ipo, aiKeyAvailable, brief = null }: { readonly ipo
             emptyText="No brief yet. Ask Mitra for the listing signal, offer structure, business and key risk."
             noKeyText="to get a four-point IPO scorecard. MarketMitra charges nothing for it."
             chatPrompt={`What should I understand about the ${ipo.name} IPO: the offer structure, the grey-market signal and the main risks?`}
+            scorecard
+            visual={<IpoBriefVisual facts={ipoBriefFacts(ipo)} />}
           />
         ) : (
           <p className={styles.note}>No AI brief yet: there is not enough data on this issue (no price or size listed).</p>
