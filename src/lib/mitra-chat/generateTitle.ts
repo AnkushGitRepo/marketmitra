@@ -10,6 +10,9 @@ import { transcriptOf } from './prepareMessages';
 const EXCERPT_MESSAGES = 4;
 const EXCERPT_CHARS = 1200;
 const TITLE_WORDS_MAX = 8;
+const TITLE_WORDS_MIN = 2;
+// A thinking model can spend a small budget on hidden reasoning and leave one word of visible text, so leave room (#341).
+const TITLE_MAX_OUTPUT_TOKENS = 400;
 
 export const TITLE_SYSTEM = [
   'You write the title of a chat between an investor and their markets assistant, so the investor can find the chat later in a long list.',
@@ -27,7 +30,7 @@ export function hasAnswerText(messages: readonly UIMessage[]): boolean {
   return messages.some((m) => m.role === 'assistant' && m.parts.some((p) => p.type === 'text' && p.text.trim().length > 0));
 }
 
-/** A model reply as a title: first line only, no label, quotes, markdown or end punctuation, a handful of words. Null if nothing usable is left. */
+/** A model reply as a title: first line only, no label, quotes, markdown or end punctuation, 2 to 8 words. Null if nothing usable is left. */
 export function cleanTitle(raw: string): string | null {
   const line = raw.split('\n').find((l) => l.trim()) ?? '';
   const stripped = line
@@ -38,12 +41,14 @@ export function cleanTitle(raw: string): string | null {
     .trim();
   if (!stripped) return null;
   const words = stripped.split(' ');
+  // One word is almost always a cut-off reply ("Understanding"), so the first-message title is better.
+  if (words.length < TITLE_WORDS_MIN) return null;
   const clipped = words.length > TITLE_WORDS_MAX ? `${words.slice(0, TITLE_WORDS_MAX).join(' ')}…` : stripped;
   return clipped.length > TITLE_MAX ? `${clipped.slice(0, TITLE_MAX - 1).trimEnd()}…` : clipped;
 }
 
 /** Null when the model call fails or returns nothing usable; the caller then keeps the current title. */
 export async function generateChatTitle(config: AiConfig, messages: readonly UIMessage[]): Promise<string | null> {
-  const result = await generateInsightText(config, TITLE_SYSTEM, buildTitlePrompt(messages), { maxOutputTokens: 60 });
+  const result = await generateInsightText(config, TITLE_SYSTEM, buildTitlePrompt(messages), { maxOutputTokens: TITLE_MAX_OUTPUT_TOKENS, thinkingLevel: 'low' });
   return result.ok ? cleanTitle(result.text) : null;
 }

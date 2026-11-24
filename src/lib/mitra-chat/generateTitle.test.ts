@@ -19,6 +19,8 @@ describe('cleanTitle', () => {
   it('returns null when nothing usable is left', () => {
     expect(cleanTitle('')).toBeNull();
     expect(cleanTitle('"" **')).toBeNull();
+    // A single word is a cut-off reply, not a title.
+    expect(cleanTitle('Understanding')).toBeNull();
   });
 });
 
