@@ -36,7 +36,10 @@ describe('hasReplyContent', () => {
   it('is true for text or a pending question', () => {
     expect(hasReplyContent([{ type: 'text', text: 'Hi' }])).toBe(true);
     expect(hasReplyContent([{ type: 'tool-ask_user' }])).toBe(true);
-    expect(hasReplyContent([{ type: 'tool-propose_holding_change' }])).toBe(true);
+    expect(hasReplyContent([{ type: 'tool-propose_holding_change', output: { status: 'awaiting_confirmation' } }])).toBe(true);
+    // A rejected or invalid proposal shows no card, so on its own it is not a reply (#337).
+    expect(hasReplyContent([{ type: 'tool-propose_holding_change', output: { status: 'rejected' } }])).toBe(false);
+    expect(hasReplyContent([{ type: 'tool-propose_holding_change' }])).toBe(false);
   });
   it('is false for empty text and other tool calls', () => {
     expect(hasReplyContent([{ type: 'text', text: '  ' }, { type: 'tool-run_screener' }])).toBe(false);

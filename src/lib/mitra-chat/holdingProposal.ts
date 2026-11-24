@@ -1,6 +1,7 @@
 // `propose_holding_change` (#337, ADR 0080): Mitra proposes adding, updating or removing a holding, and the user confirms it on a
 // card. The model never writes: the card calls the same holdings API as the Portfolio page. Pure helpers, so they test without mocks.
 
+import type { StopCondition, ToolSet } from 'ai';
 import { z } from 'zod';
 
 export const HOLDING_PROPOSAL_TOOL = 'propose_holding_change';
@@ -107,9 +108,16 @@ export function outcomeText(action: HoldingAction, symbol: string, outcome: 'con
   return `Confirmed: ${VERB[action].done.toLowerCase()} ${symbol} as ${quantity} shares at an average of ₹${avgPrice}.`;
 }
 
-type PartLike = { readonly type: string };
+const awaiting = (output: unknown): boolean => (output as { status?: unknown } | null | undefined)?.status === 'awaiting_confirmation';
 
-/** True when a reply carries a holding card that is waiting for the user. */
-export function hasProposal(parts: readonly PartLike[]): boolean {
-  return parts.some((p) => p.type === `tool-${HOLDING_PROPOSAL_TOOL}`);
+/**
+ * True when a reply carries a holding card that is waiting for the user. A rejected or invalid proposal shows no card, so it does not count:
+ * the model carries on and explains in text (#337).
+ */
+export function hasProposal(parts: readonly { readonly type: string; readonly output?: unknown }[]): boolean {
+  return parts.some((p) => p.type === `tool-${HOLDING_PROPOSAL_TOOL}` && awaiting(p.output));
 }
+
+/** Ends the tool loop once a card is on screen for the user, and not before: a rejected or invalid proposal lets the model answer. */
+export const stopWhenCardShown: StopCondition<ToolSet> = ({ steps }) =>
+  (steps.at(-1)?.toolResults ?? []).some((r) => r.toolName === HOLDING_PROPOSAL_TOOL && awaiting(r.output));

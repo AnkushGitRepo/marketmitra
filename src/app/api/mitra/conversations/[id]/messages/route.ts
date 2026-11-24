@@ -17,7 +17,7 @@ import { prepareAdvisorChat } from '@/lib/advisor/behaviour/chat';
 import { logEvent } from '@/lib/system/eventLog';
 import { supportsKind, unsupportedReason } from '@/lib/mitra-chat/attachments';
 import { ASK_USER_TOOL, hasReplyContent } from '@/lib/mitra-chat/askUser';
-import { HOLDING_PROPOSAL_TOOL } from '@/lib/mitra-chat/holdingProposal';
+import { stopWhenCardShown } from '@/lib/mitra-chat/holdingProposal';
 import { buildHoldingProposalTools } from '@/lib/ai/holdingProposalTool';
 import { appendMessages, getConversation, loadMessages, saveSummary } from '@/lib/mitra-chat/conversations';
 import { getFileStore } from '@/lib/mitra-chat/gridFsFileStore';
@@ -164,7 +164,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
     const result = streamChat(aiConfig, system, modelMessages, {
       tools: allTools,
       maxSteps: MAX_TOOL_STEPS,
-      ...(canAsk ? { stopAfterTool: [ASK_USER_TOOL, HOLDING_PROPOSAL_TOOL] } : {}),
+      ...(canAsk ? { stopAfterTool: ASK_USER_TOOL, stopWhen: [stopWhenCardShown] } : {}),
       maxOutputTokens: MAX_OUTPUT_TOKENS,
     });
     // Run to completion (and persist) even if the client disconnects mid-stream.

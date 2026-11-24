@@ -64,7 +64,8 @@ describe('card helpers', () => {
   });
 
   it('spots a reply that carries a holding card', () => {
-    expect(hasProposal([{ type: 'text' }, { type: 'tool-propose_holding_change' }])).toBe(true);
+    expect(hasProposal([{ type: 'text' }, { type: 'tool-propose_holding_change', output: { status: 'awaiting_confirmation' } }])).toBe(true);
+    expect(hasProposal([{ type: 'tool-propose_holding_change', output: { status: 'rejected' } }])).toBe(false);
     expect(hasProposal([{ type: 'text' }])).toBe(false);
   });
 });
