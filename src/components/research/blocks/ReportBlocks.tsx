@@ -2,6 +2,7 @@ import type { ResearchBlock } from '@/lib/research/blocks';
 import { BarChart } from './BarChart';
 import { DataTable } from './DataTable';
 import { DonutChart } from './DonutChart';
+import { FinancialChart } from './FinancialChart';
 import { KpiGrid } from './KpiGrid';
 import { ThesisBento } from './ThesisBento';
 import styles from './blocks.module.css';
@@ -14,6 +15,8 @@ function BlockView({ block }: { readonly block: ResearchBlock }) {
       return <BarChart block={block} />;
     case 'donut_chart':
       return <DonutChart block={block} />;
+    case 'financial_chart':
+      return <FinancialChart block={block} />;
     case 'data_table':
       return <DataTable block={block} />;
     case 'thesis_bento':

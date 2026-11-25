@@ -1,6 +1,8 @@
 // The visual blocks of a research report (#354). Built on the server from stored figures, never written by
 // the model, so a number on a card, chart or table always comes from the data and never from a generation.
 
+import type { FinancialPeriod } from './financialSeries';
+
 export type CellFormat = 'text' | 'crore' | 'number' | 'percent' | 'rupee';
 export type Tone = 'positive' | 'negative' | 'neutral';
 
@@ -64,7 +66,15 @@ export interface ThesisBentoBlock {
   readonly columns: readonly ThesisColumn[];
 }
 
-export type ResearchBlock = KpiGridBlock | BarChartBlock | DonutChartBlock | DataTableBlock | ThesisBentoBlock;
+/** Sales, operating profit and margin by fiscal year, drawn as one combined chart with a table view. */
+export interface FinancialChartBlock {
+  readonly type: 'financial_chart';
+  readonly title: string;
+  readonly unit: string;
+  readonly periods: readonly FinancialPeriod[];
+}
+
+export type ResearchBlock = KpiGridBlock | BarChartBlock | DonutChartBlock | DataTableBlock | ThesisBentoBlock | FinancialChartBlock;
 
 /** The blocks that exist, in order: a builder returns null for a block it has no data for. */
 export function compactBlocks(blocks: readonly (ResearchBlock | null)[]): ResearchBlock[] {

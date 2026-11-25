@@ -1,0 +1,247 @@
+.figure {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.unit {
+  font-weight: 400;
+  color: var(--app-text-faint);
+}
+
+.toggle {
+  display: inline-flex;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.toggleButton {
+  border: none;
+  background: var(--color-surface);
+  padding: 5px 14px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.toggleButton[aria-pressed='true'] {
+  background: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.frame {
+  position: relative;
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.grid {
+  stroke: var(--app-border-softer);
+  stroke-width: 1;
+}
+
+.baseline {
+  stroke: var(--app-border);
+  stroke-width: 1;
+}
+
+.axisText,
+.axisTextMargin,
+.periodLabel,
+.growthLabel,
+.valueLabel,
+.marginLabel {
+  font-family: var(--font-mono);
+}
+
+/* A halo in the card colour keeps a label readable where the margin line or a bar passes behind it. */
+.valueLabel,
+.marginLabel {
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+
+.axisText {
+  font-size: 11px;
+  fill: var(--app-text-faint);
+}
+
+.axisTextMargin {
+  font-size: 11px;
+  fill: var(--app-warn-text);
+}
+
+.periodLabel {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--app-ink);
+}
+
+.growthLabel {
+  font-size: 11px;
+  fill: var(--app-text-faint);
+}
+
+.growthLabel[data-sign='up'] {
+  fill: var(--app-gain);
+}
+
+.growthLabel[data-sign='down'] {
+  fill: var(--app-loss);
+}
+
+.valueLabel {
+  font-size: 10.5px;
+  fill: var(--app-text-muted);
+}
+
+.marginLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  fill: var(--app-warn-text);
+}
+
+.noData {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-style: italic;
+  fill: var(--app-text-faint);
+}
+
+.marginLine {
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.group[data-active='true'] rect {
+  filter: brightness(1.08);
+}
+
+.hit {
+  fill: transparent;
+  cursor: default;
+  outline: none;
+}
+
+.hit:focus-visible {
+  stroke: var(--app-teal-strong);
+  stroke-width: 2;
+  rx: 6;
+}
+
+.tooltip {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--app-ink);
+  color: var(--app-cream);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(22, 25, 28, 0.25);
+  z-index: 2;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+}
+
+.swatchLine {
+  display: inline-block;
+  width: 16px;
+  height: 3px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-md);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  padding: 9px 12px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--app-border-softer);
+}
+
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+}
+
+.table th {
+  background: var(--app-cream);
+  font-weight: 500;
+  color: var(--app-text-muted);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+/* On a phone the bar labels would be too small to read; the table view carries the exact figures. */
+@media (max-width: 640px) {
+  .valueLabel,
+  .growthLabel,
+  .marginLabel {
+    display: none;
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barRange, bestRows, donutArcs, fraction, sortRows } from './chartMath';
+import { barRange, bestRows, donutArcs, fraction, linePaths, sortRows } from './chartMath';
 
 describe('barRange', () => {
   it('includes zero and handles negatives and gaps', () => {
@@ -44,5 +44,18 @@ describe('sortRows', () => {
   it('sorts text, and does not change the input', () => {
     expect(sortRows(rows, 'n', 'asc').map((r) => r.n)).toEqual(['a', 'b', 'c']);
     expect(rows[0].n).toBe('b');
+  });
+});
+
+describe('linePaths', () => {
+  it('joins consecutive points into one path', () => {
+    expect(linePaths([[0, 1], [10, 2], [20, 3]])).toEqual(['M0,1 L10,2 L20,3']);
+  });
+  it('breaks the line at a gap and drops a lone point', () => {
+    expect(linePaths([[0, 1], [10, 2], null, [30, 4], null, [50, 5], [60, 6]])).toEqual(['M0,1 L10,2', 'M50,5 L60,6']);
+  });
+  it('is empty with no usable points', () => {
+    expect(linePaths([null, [1, 1], null])).toEqual([]);
+    expect(linePaths([])).toEqual([]);
   });
 });
