@@ -4,7 +4,7 @@ import { withRateLimit } from '@/lib/rateLimit';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { generateInsightText } from '@/lib/ai/generate';
-import { RESEARCH_SYSTEM } from '@/lib/ai/prompts';
+import { RESEARCH_STRUCTURED_SYSTEM } from '@/lib/ai/prompts';
 import {
   buildResearchPrompt,
   type FactBlock,
@@ -17,17 +17,26 @@ import {
   getPrices,
   getRatios,
   getShareholding,
+  getPeers,
   searchSymbols,
 } from '@/lib/dashboard/fundamentalsApi';
 import { resolveSymbol } from '@/lib/research/resolveSymbol';
 import { summariseRatios } from '@/lib/research/ratioSummary';
 import { themeFacts } from '@/lib/research/themeFacts';
+import type { ResearchBlock } from '@/lib/research/blocks';
+import { blocksToMarkdown } from '@/lib/research/blocksMarkdown';
+import { buildCompanyData, type CompanyData } from '@/lib/research/companyData';
+import { companyBlocks } from '@/lib/research/companyBlocks';
+import { comparisonBlocks } from '@/lib/research/comparisonBlocks';
+import { portfolioBlocks } from '@/lib/research/portfolioBlocks';
+import { parseThesis, salvageSummary, thesisBlock } from '@/lib/research/thesis';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-const RESEARCH_MAX_TOKENS = 3500;
+/** Thinking models spend part of the output budget on hidden reasoning, and a cut-off JSON reply loses the thesis (same limit as the other structured briefs). */
+const RESEARCH_MAX_TOKENS = 12000;
 const MAX_RATIO_HOLDINGS = 15;
 
 const SYMBOL = z.string().trim().min(1).max(40);
@@ -58,7 +67,7 @@ function pivotFinancials(pl: { label: string; period_end: string; value: string 
 
 /** Gather the structured facts for one company. Shared by `company` and
  *  each member of a `comparison`. */
-async function companyFacts(symbol: string): Promise<{ name: string; blocks: FactBlock[] } | null> {
+async function companyFacts(symbol: string): Promise<{ name: string; blocks: FactBlock[]; data: CompanyData } | null> {
   const [company, ratios, pl, shareholding, prices] = await Promise.all([
     getCompany(symbol),
     getRatios(symbol),
@@ -104,16 +113,31 @@ async function companyFacts(symbol: string): Promise<{ name: string; blocks: Fac
     blocks.push({ heading: 'Price', body: `Last close ₹${closes.at(-1)}; ~1-month history available.` });
   }
 
-  return { name: company.name, blocks };
+  const data = buildCompanyData({
+    symbol,
+    name: company.name,
+    ratios,
+    profitAndLoss: pl,
+    shareholding,
+  });
+  return { name: company.name, blocks, data };
+}
+
+interface Assembled {
+  factBlocks: FactBlock[];
+  grounding: Awaited<ReturnType<typeof retrieveInsightGrounding>>;
+  names?: Record<string, string>;
+  /** Cards, charts and tables the page draws from the stored figures. */
+  reportBlocks: ResearchBlock[];
 }
 
 async function assemble(
   subject: ResearchSubject,
   userId: string
-): Promise<{ factBlocks: FactBlock[]; grounding: Awaited<ReturnType<typeof retrieveInsightGrounding>>; names?: Record<string, string> }> {
+): Promise<Assembled> {
   switch (subject.type) {
     case 'company': {
-      const facts = await companyFacts(subject.symbol);
+      const [facts, peers] = await Promise.all([companyFacts(subject.symbol), getPeers(subject.symbol).catch(() => null)]);
       const grounding = await retrieveInsightGrounding({
         query: `${facts?.name ?? subject.symbol} ${subject.symbol} results valuation risks recent developments`,
         userId,
@@ -125,6 +149,7 @@ async function assemble(
         factBlocks: facts?.blocks ?? [],
         grounding,
         names: facts ? { [subject.symbol]: facts.name } : undefined,
+        reportBlocks: facts ? companyBlocks(facts.data, peers) : [],
       };
     }
     case 'theme': {
@@ -134,7 +159,8 @@ async function assemble(
         docTypes: ['news', 'filing', 'note'],
         limit: 12,
       });
-      return { factBlocks: await themeFacts(subject.text).catch(() => []), grounding };
+      const theme = await themeFacts(subject.text).catch(() => ({ factBlocks: [], blocks: [] }));
+      return { factBlocks: theme.factBlocks, grounding, reportBlocks: theme.blocks };
     }
     case 'portfolio': {
       const holdings = await getEnrichedHoldings(userId).catch(() => []);
@@ -159,7 +185,7 @@ async function assemble(
         docTypes: ['news', 'note'],
         limit: 12,
       });
-      return { factBlocks, grounding };
+      return { factBlocks, grounding, reportBlocks: portfolioBlocks(holdings) };
     }
     case 'comparison': {
       const gathered = await Promise.all(subject.symbols.map((s) => companyFacts(s)));
@@ -180,7 +206,8 @@ async function assemble(
         docTypes: ['news', 'filing'],
         limit: 12,
       });
-      return { factBlocks, grounding, names };
+      const compared = gathered.filter((g): g is NonNullable<typeof g> => g !== null).map((g) => g.data);
+      return { factBlocks, grounding, names, reportBlocks: comparisonBlocks(compared) };
     }
   }
 }
@@ -234,7 +261,7 @@ async function handlePOST(request: Request) {
     }
   }
 
-  const { factBlocks, grounding, names } = await assemble(subject, userId);
+  const { factBlocks, grounding, names, reportBlocks } = await assemble(subject, userId);
   const promptSubject: ResearchSubject =
     subject.type === 'company'
       ? { type: 'company', symbol: subject.symbol, name: names?.[subject.symbol] }
@@ -243,17 +270,25 @@ async function handlePOST(request: Request) {
         : subject;
 
   const prompt = buildResearchPrompt({ subject: promptSubject, factBlocks, grounding: grounding.passages });
-  const gen = await generateInsightText(aiConfig, RESEARCH_SYSTEM, prompt, {
+  const gen = await generateInsightText(aiConfig, RESEARCH_STRUCTURED_SYSTEM, prompt, {
     maxOutputTokens: RESEARCH_MAX_TOKENS,
   });
   if (!gen.ok) {
     return NextResponse.json({ success: false, error: gen.error }, { status: 502 });
   }
 
+  // The model returns the prose and the three thesis lists as JSON; a reply that is not that JSON is shown as plain
+  // markdown under the cards, so a model that ignores the format still produces a readable report.
+  const thesis = parseThesis(gen.text);
+  const thesisCard = thesis ? thesisBlock(thesis) : null;
+  const summary = thesis ? thesis.summary : (salvageSummary(gen.text) ?? gen.text);
+  const blocks = thesisCard ? [...reportBlocks, thesisCard] : reportBlocks;
+  const content = [summary, blocksToMarkdown(blocks)].filter(Boolean).join('\n\n');
+
   return NextResponse.json({
     success: true,
-    data: { content: gen.text, model: gen.model, generatedAt: new Date().toISOString() },
-    meta: { grounded: grounding.passages.length > 0, facts: factBlocks.length },
+    data: { content, summary, blocks, model: gen.model, generatedAt: new Date().toISOString() },
+    meta: { grounded: grounding.passages.length > 0, facts: factBlocks.length, structured: thesis !== null },
   });
 }
 

@@ -1,6 +1,8 @@
 import { getScreenerFacets, runScreenerPage } from '@/lib/dashboard/screener';
 import type { ScreenerResultRow } from '@/lib/dashboard/screenerSchema';
 import type { FactBlock } from '@/lib/ai/researchPrompts';
+import type { ResearchBlock } from './blocks';
+import { themeBlocks } from './themeBlocks';
 import { matchThemeToSectors } from './themes';
 
 const LEADERS_PER_SECTOR = 8;
@@ -39,8 +41,13 @@ export function buildThemeFactBlocks(
   ];
 }
 
+export interface ThemeReport {
+  readonly factBlocks: FactBlock[];
+  readonly blocks: ResearchBlock[];
+}
+
 /** The listed companies behind a theme: matches it to the data service's sectors, then takes the biggest by market cap. */
-export async function themeFacts(theme: string): Promise<FactBlock[]> {
+export async function themeFacts(theme: string): Promise<ThemeReport> {
   const facets = await getScreenerFacets();
   const sectors = matchThemeToSectors(theme, facets.sectors).slice(0, MAX_SECTORS);
   const pages = await Promise.all(
@@ -49,10 +56,9 @@ export async function themeFacts(theme: string): Promise<FactBlock[]> {
   const leaders = pages
     .flatMap((p) => p.rows)
     .sort((a, b) => (b.market_cap ?? 0) - (a.market_cap ?? 0));
-  return buildThemeFactBlocks(
-    theme,
-    sectors,
-    leaders,
-    pages.reduce((n, p) => n + p.total, 0)
-  );
+  const total = pages.reduce((n, p) => n + p.total, 0);
+  return {
+    factBlocks: buildThemeFactBlocks(theme, sectors, leaders, total),
+    blocks: themeBlocks(sectors, leaders, total),
+  };
 }
