@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { getCurrentUserId } from '@/lib/currentUserId';
-import { createNote, listNotes, MAX_BODY, MAX_TITLE } from '@/lib/notes/userNotes';
+import { createNote, listNotes } from '@/lib/notes/userNotes';
+import { createNoteSchema } from '@/lib/notes/schema';
 import { syncUserNote } from '@/lib/rag/userSync';
-
-const noteSchema = z.object({
-  title: z.string().trim().min(1).max(MAX_TITLE),
-  body: z.string().trim().min(1).max(MAX_BODY),
-  symbol: z.string().trim().max(30).optional().nullable(),
-});
 
 export async function GET() {
   const userId = await getCurrentUserId();
@@ -20,7 +14,7 @@ export async function POST(request: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
 
-  const parsed = noteSchema.safeParse(await request.json().catch(() => null));
+  const parsed = createNoteSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ success: false, error: parsed.error.message }, { status: 422 });
   }

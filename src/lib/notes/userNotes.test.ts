@@ -6,6 +6,8 @@ type Doc = {
   title: string;
   body: string;
   symbol: string | null;
+  tickers?: string[];
+  source?: 'manual' | 'research';
   createdAt: Date;
   updatedAt: Date;
 };
@@ -23,13 +25,16 @@ const fakeCol = {
     store.push(doc);
     return { insertedId: doc._id };
   }),
-  findOneAndUpdate: vi.fn(async () => store[0] ?? null),
+  findOneAndUpdate: vi.fn(async (...args: unknown[]): Promise<Doc | null> => {
+    void args;
+    return store[0] ?? null;
+  }),
   deleteOne: vi.fn(async () => ({ deletedCount: 1 })),
 };
 
 vi.mock('@/lib/mongodb', () => ({ getDb: async () => ({ collection: () => fakeCol }) }));
 
-const { createNote, updateNote, deleteNote, MAX_TITLE, MAX_BODY } = await import('./userNotes');
+const { createNote, updateNote, deleteNote, MAX_TITLE, MAX_BODY, MAX_RESEARCH_BODY } = await import('./userNotes');
 
 beforeEach(() => {
   store = [];
@@ -65,6 +70,43 @@ describe('createNote', () => {
   it('caps the body length', async () => {
     const note = await createNote('u1', { title: 't', body: 'y'.repeat(MAX_BODY + 100) });
     expect(note!.body).toHaveLength(MAX_BODY);
+  });
+});
+
+describe('saved research notes', () => {
+  it('defaults to a manual note with no tickers', async () => {
+    const note = await createNote('u1', { title: 't', body: 'b' });
+    expect(note).toMatchObject({ source: 'manual', tickers: [] });
+  });
+
+  it('keeps the source and cleans the tickers', async () => {
+    const note = await createNote('u1', { title: 't', body: 'b', source: 'research', tickers: [' idea ', 'JPL', 'IDEA', ''] });
+    expect(note).toMatchObject({ source: 'research', tickers: ['IDEA', 'JPL'] });
+  });
+
+  it('gives a research note room for its tables, and a manual note not', async () => {
+    const research = await createNote('u1', { title: 't', body: 'z'.repeat(MAX_RESEARCH_BODY + 10), source: 'research' });
+    expect(research!.body).toHaveLength(MAX_RESEARCH_BODY);
+    const manual = await createNote('u1', { title: 't', body: 'z'.repeat(MAX_RESEARCH_BODY), source: 'manual' });
+    expect(manual!.body).toHaveLength(MAX_BODY);
+  });
+
+  it('reads a note stored before these fields existed as manual with no tickers', async () => {
+    store.push({ _id: { toString: () => '000000000000000000000001' }, userId: 'u1', title: 'old', body: 'b', symbol: null, createdAt: new Date(), updatedAt: new Date() });
+    const [first] = await (await import('./userNotes')).listNotes('u1');
+    expect(first).toMatchObject({ source: 'manual', tickers: [] });
+  });
+
+  it('applies the size limit of the stored source when a note is edited', async () => {
+    store.push({ _id: { toString: () => '000000000000000000000001' }, userId: 'u1', title: 'r', body: 'b', symbol: null, source: 'research', createdAt: new Date(), updatedAt: new Date() });
+    fakeCol.findOneAndUpdate.mockImplementationOnce(async (_filter: unknown, update: unknown) => ({ ...store[0], ...(update as { $set: Partial<Doc> }).$set }));
+    const note = await updateNote('u1', '000000000000000000000001', { title: 'r', body: 'q'.repeat(MAX_BODY + 500) });
+    expect(note!.body).toHaveLength(MAX_BODY + 500);
+  });
+
+  it('returns null when the note to edit does not exist', async () => {
+    expect(await updateNote('u1', '000000000000000000000001', { title: 't', body: 'b' })).toBeNull();
+    expect(fakeCol.findOneAndUpdate).not.toHaveBeenCalled();
   });
 });
 

@@ -75,180 +75,64 @@
   cursor: not-allowed;
 }
 
-.btnGhost {
-  border: 1px solid var(--app-border);
-  background: var(--color-surface);
-  border-radius: var(--radius-pill);
-  padding: 8px 16px;
-  font-size: 12.5px;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  color: var(--app-ink);
-}
 
-.btnGhost:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-xl);
-  padding: 24px;
-  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-}
-
-.formCard {
-  margin-bottom: 18px;
-}
-
-.form {
+.toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.fieldLabel {
-  font-size: 12px;
-  color: var(--app-text-muted);
-}
-
-.input,
-.textarea {
-  border: 1px solid var(--app-border);
-  border-radius: var(--radius-lg);
-  padding: 10px 14px;
-  font-size: 13.5px;
-  font-family: var(--font-sans);
-  color: var(--app-ink);
-  background: var(--color-surface);
-  width: 100%;
-}
-
-.input {
-  border-radius: var(--radius-pill);
-}
-
-.textarea {
-  min-height: 120px;
-  resize: vertical;
-  line-height: 1.55;
-}
-
-.input:focus,
-.textarea:focus {
-  outline: none;
-  border-color: var(--app-teal-bg-strong);
-  box-shadow: 0 4px 14px rgba(12, 138, 108, 0.1);
-}
-
-.formRow {
-  display: flex;
-  gap: 10px;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.pills {
+  display: flex;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
-.symbolInput {
-  max-width: 160px;
-}
-
-.formActions {
-  display: flex;
-  gap: 10px;
-}
-
-.error {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--app-danger, #b4413c);
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 18px;
-}
-
-.noteItem {
+.pill {
+  border: 1px solid var(--app-border);
   background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-lg);
-  padding: 18px 20px;
-}
-
-.noteHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.noteTitle {
-  margin: 0;
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  font-size: 12.5px;
   font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--app-ink);
+  color: var(--app-text-muted);
+  cursor: pointer;
 }
 
-.noteSymbol {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--app-teal-strong, #0c8a6c);
+.pill[data-active='true'] {
+  background: var(--app-ink);
+  color: var(--app-cream);
+  border-color: var(--app-ink);
+}
+
+.pillCount {
+  margin-left: 4px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.search {
   border: 1px solid var(--app-border);
   border-radius: var(--radius-pill);
-  padding: 2px 8px;
-}
-
-.noteBody {
-  margin: 8px 0 0;
+  padding: 8px 16px;
   font-size: 13px;
-  line-height: 1.6;
-  color: var(--app-text-muted);
-  white-space: pre-wrap;
-}
-
-.noteMeta {
-  margin: 12px 0 0;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-size: 11.5px;
-  color: var(--app-text-faint);
-}
-
-.spacer {
-  flex: 1;
-}
-
-.emptyCard {
+  font-family: var(--font-sans);
+  color: var(--app-ink);
   background: var(--color-surface);
-  border: 1px solid var(--app-border-soft);
-  border-radius: var(--radius-xl);
-  padding: 40px;
-  text-align: center;
+  min-width: 240px;
 }
 
-.emptyText {
-  margin: 0 auto;
-  max-width: 44ch;
-  font-size: 13px;
-  color: var(--app-text-muted);
+.search:focus {
+  outline: none;
+  border-color: var(--app-teal-bg-strong);
+  box-shadow: 0 4px 14px rgba(12, 138, 108, 0.1);
 }
 
 .titleRow {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 18px;
 }

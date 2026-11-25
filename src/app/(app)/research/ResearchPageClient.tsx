@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { MarkdownLite } from '@/components/MarkdownLite';
 import { InfoPopover } from '@/components/common/InfoPopover';
 import { SymbolCombobox } from '@/components/research/SymbolCombobox';
+import { ReportActions } from '@/components/research/ReportActions';
 import { ReportBlocks } from '@/components/research/blocks/ReportBlocks';
 import type { ResearchBlock } from '@/lib/research/blocks';
+import type { SuggestedNote } from '@/lib/research/saveNote';
 import { THEME_PRESETS } from '@/lib/research/themes';
 import styles from './page.module.css';
 
@@ -24,6 +26,8 @@ interface Report {
   /** The model's prose (markdown); the figures are in `blocks`. */
   summary?: string;
   blocks?: ResearchBlock[];
+  /** How "Save to Notes" files this report. */
+  note?: SuggestedNote;
   model: string;
   generatedAt: string;
 }
@@ -52,6 +56,7 @@ export function ResearchPageClient() {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [noKey, setNoKey] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const subjectFor = (): Record<string, unknown> | null => {
     if (tab === 'company') return symbol.trim() ? { type: 'company', symbol: symbol.trim().toUpperCase() } : null;
@@ -221,7 +226,8 @@ export function ResearchPageClient() {
       {busy && <p className={styles.loading}>Gathering data and writing the brief — this can take a minute.</p>}
 
       {report && !busy && (
-        <div className={`${styles.card} ${styles.reportCard}`}>
+        <div className={`${styles.card} ${styles.reportCard}`} ref={reportRef}>
+          <ReportActions report={report} printRef={reportRef} />
           <ReportBody report={report} />
           <p className={styles.reportMeta}>
             AI-generated ({report.model}) · {new Date(report.generatedAt).toLocaleString()} · not

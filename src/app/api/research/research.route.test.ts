@@ -123,6 +123,8 @@ describe('POST /api/research', () => {
     expect(body.data.content).toContain('## What it is');
     expect(body.data.content).toContain('New energy build-out');
     expect(body.meta.structured).toBe(true);
+    expect(body.data.note).toMatchObject({ symbol: 'RELIANCE', tickers: ['RELIANCE'] });
+    expect(body.data.note.title).toContain('Reliance Industries (RELIANCE): research brief');
     expect(body.data.blocks.map((b: { type: string }) => b.type)).toEqual(['kpi_grid', 'thesis_bento']);
 
     const [, system, prompt, opts] = h.generateInsightText.mock.calls[0];

@@ -23,7 +23,7 @@ function blockMarkdown(block: ResearchBlock): string | null {
         `### ${block.title} (${block.unit})`,
         pipeTable(
           ['', ...block.series.map((s) => s.name)],
-          block.categories.map((cat, i) => [cat, ...block.series.map((s) => (s.values[i] == null ? '—' : formatNumber(s.values[i], 1)))])
+          block.categories.map((cat, i) => [cat, ...block.series.map((s) => (s.values[i] == null ? '—' : formatNumber(s.values[i], Number.isInteger(s.values[i]) ? 0 : 1)))])
         ),
       ].join('\n\n');
     case 'donut_chart': {
