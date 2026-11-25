@@ -300,3 +300,57 @@ def test_parsers_return_nothing_for_a_page_without_those_sections():
     assert _parse_announcements(empty) == []
     assert _parse_insights(empty) == []
     assert _parse_financial_statement(empty, StatementType.RATIOS) == []
+
+
+# --- #365: promoter pledge, from the one place Screener states it (the generated Cons text) ---
+
+_PLEDGE_PAGE = (
+    '<html><body><section id="analysis"><div class="pros"><ul><li>Company has reduced debt.</li></ul></div>'
+    '<div class="cons"><ul><li>Company has a low return on equity of 7.56% over last 3 years.</li>'
+    "<li>Promoters have pledged 73.0% of their holding.</li></ul></div></section></body></html>"
+)
+
+
+def test_parse_pledge_reads_the_percentage_from_the_cons_text():
+    from app.ingestion.tier3_screener_scrapling.scraper import _parse_pledge
+
+    assert _parse_pledge(Selector(_PLEDGE_PAGE)) == Decimal("73.0")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Promoters have pledged 0.5% of their holding.",
+        "Promoters have pledged 100% of their holding.",
+        "Promoters have pledged 12.75% of their holding",
+    ],
+)
+def test_parse_pledge_handles_the_range_of_wordings(text):
+    from app.ingestion.tier3_screener_scrapling.scraper import _parse_pledge
+
+    page = Selector(f'<section id="analysis"><div class="cons"><ul><li>{text}</li></ul></div></section>')
+    assert _parse_pledge(page) is not None
+
+
+def test_no_pledge_flag_means_none_not_zero(newgen_page):
+    from app.ingestion.tier3_screener_scrapling.scraper import _parse_pledge
+
+    # Newgen's page has cons, but none about a pledge: Screener flagging nothing is not the same as a confirmed zero.
+    assert _parse_pledge(newgen_page) is None
+    assert _parse_pledge(Selector("<html><body></body></html>")) is None
+
+
+def test_a_pledge_in_the_pros_is_not_read_as_a_pledge():
+    from app.ingestion.tier3_screener_scrapling.scraper import _parse_pledge
+
+    page = Selector('<section id="analysis"><div class="pros"><ul><li>Promoters have pledged 5.0% of their holding.</li></ul></div></section>')
+    assert _parse_pledge(page) is None
+
+
+def test_ratios_gain_a_promoter_pledge_row_only_when_screener_flags_one(newgen_page):
+    plain = {r["name"] for r in _parse_ratios(newgen_page)}
+    assert "Promoter Pledge %" not in plain
+
+    flagged = _parse_ratios(Selector(_PLEDGE_PAGE))
+    pledge = next(r for r in flagged if r["name"] == "Promoter Pledge %")
+    assert pledge == {"name": "Promoter Pledge %", "value": Decimal("73.0"), "unit": "%"}
