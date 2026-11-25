@@ -17,15 +17,20 @@ import {
   getPrices,
   getRatios,
   getShareholding,
+  searchSymbols,
 } from '@/lib/dashboard/fundamentalsApi';
+import { resolveSymbol } from '@/lib/research/resolveSymbol';
+import { summariseRatios } from '@/lib/research/ratioSummary';
+import { themeFacts } from '@/lib/research/themeFacts';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
 const RESEARCH_MAX_TOKENS = 3500;
+const MAX_RATIO_HOLDINGS = 15;
 
-const SYMBOL = z.string().trim().min(1).max(20);
+const SYMBOL = z.string().trim().min(1).max(40);
 const bodySchema = z.object({
   subject: z.discriminatedUnion('type', [
     z.object({ type: z.literal('company'), symbol: SYMBOL }),
@@ -129,16 +134,21 @@ async function assemble(
         docTypes: ['news', 'filing', 'note'],
         limit: 12,
       });
-      return { factBlocks: [], grounding };
+      return { factBlocks: await themeFacts(subject.text).catch(() => []), grounding };
     }
     case 'portfolio': {
       const holdings = await getEnrichedHoldings(userId).catch(() => []);
-      const rows = holdings.map((h) => {
+      const ratioLines = await Promise.all(
+        holdings.slice(0, MAX_RATIO_HOLDINGS).map((h) => getRatios(h.symbol).then(summariseRatios, () => ''))
+      );
+      const rows = holdings.map((h, i) => {
         const value = h.ltp != null ? h.ltp * h.quantity : null;
         const pl = value != null ? value - h.avgPrice * h.quantity : null;
         return `- ${h.name} (${h.symbol})${h.sector ? `, ${h.sector}` : ''}: qty ${h.quantity}, avg ₹${h.avgPrice}${
           h.ltp != null ? `, LTP ₹${h.ltp}` : ''
-        }${pl != null ? `, unrealised P&L ₹${Math.round(pl)}` : ''}`;
+        }${pl != null ? `, unrealised P&L ₹${Math.round(pl)}` : ''}${
+          ratioLines[i] ? ` | ${ratioLines[i]}` : ''
+        }`;
       });
       const factBlocks: FactBlock[] = holdings.length
         ? [{ heading: `Holdings (${holdings.length})`, body: rows.join('\n') }]
@@ -175,6 +185,21 @@ async function assemble(
   }
 }
 
+type Subject = z.infer<typeof bodySchema>['subject'];
+
+/** Turns typed aliases and names into NSE symbols; reports the ones that match no listed company. */
+async function resolveSubject(subject: Subject): Promise<{ subject: Subject } | { missing: string[] }> {
+  if (subject.type !== 'company' && subject.type !== 'comparison') return { subject };
+  const typed = subject.type === 'company' ? [subject.symbol] : subject.symbols;
+  const resolved = await Promise.all(typed.map((t) => resolveSymbol(t, { getCompany, searchSymbols })));
+  const missing = typed.filter((_, i) => resolved[i] === null);
+  if (missing.length > 0) return { missing };
+  const symbols = resolved.map((r) => r!.symbol);
+  return {
+    subject: subject.type === 'company' ? { type: 'company', symbol: symbols[0] } : { type: 'comparison', symbols },
+  };
+}
+
 async function handlePOST(request: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
@@ -183,8 +208,6 @@ async function handlePOST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ success: false, error: parsed.error.message }, { status: 422 });
   }
-  const subject = parsed.data.subject;
-
   const aiConfig = await getUserAiConfig(userId);
   if (!aiConfig) {
     return NextResponse.json(
@@ -193,16 +216,17 @@ async function handlePOST(request: Request) {
     );
   }
 
-  if (subject.type === 'company' || subject.type === 'comparison') {
-    // Confirm at least one symbol resolves before spending a generation.
-    const first = subject.type === 'company' ? subject.symbol : subject.symbols[0];
-    if (!(await getCompany(first))) {
-      return NextResponse.json(
-        { success: false, error: 'Could not load data for that symbol.' },
-        { status: 502 }
-      );
-    }
+  const resolution = await resolveSubject(parsed.data.subject);
+  if ('missing' in resolution) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `No listed company matches ${resolution.missing.map((m) => `"${m}"`).join(', ')}. Try the NSE symbol, e.g. BHARTIARTL.`,
+      },
+      { status: 404 }
+    );
   }
+  const subject = resolution.subject;
   if (subject.type === 'portfolio') {
     const holdings = await getEnrichedHoldings(userId).catch(() => []);
     if (holdings.length === 0) {

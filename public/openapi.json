@@ -1488,7 +1488,7 @@
           "AI"
         ],
         "summary": "Generate a research brief (Phase 10b)",
-        "description": "A longer structured brief (markdown sections: what it is / recent developments / the numbers / risks / open questions), retrieval + synthesis. Subject is one of company | theme | portfolio | comparison. Requires the user's own AI key. Not cached (ephemeral). Rate limited (ai tier).",
+        "description": "A longer structured brief (markdown sections: what it is / recent developments / the numbers / risks / open questions), retrieval + synthesis. Subject is one of company | theme | portfolio | comparison. A company symbol may also be a brand or company name (AIRTEL resolves to BHARTIARTL); a theme is matched to the screener's sectors and their largest companies are added as facts. Requires the user's own AI key. Not cached (ephemeral). Rate limited (ai tier).",
         "security": [
           {
             "cookieAuth": []
@@ -1559,8 +1559,11 @@
           "422": {
             "description": "Invalid subject."
           },
+          "404": {
+            "description": "A symbol or name matches no listed company (the message names it)."
+          },
           "502": {
-            "description": "Bad symbol / generation failed."
+            "description": "Generation failed."
           },
           "429": {
             "description": "Rate limited."

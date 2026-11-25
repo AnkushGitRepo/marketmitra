@@ -1,0 +1,65 @@
+.wrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.input {
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  padding: 10px 16px;
+  font-size: 13.5px;
+  font-family: var(--font-sans);
+  color: var(--app-ink);
+  background: var(--color-surface);
+  width: 100%;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--app-teal-bg-strong);
+  box-shadow: 0 4px 14px rgba(12, 138, 108, 0.1);
+}
+
+.list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 14px;
+  box-shadow: 0 14px 36px rgba(22, 25, 28, 0.16);
+}
+
+.option {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.option[data-active='true'],
+.option:hover {
+  background: var(--app-cream);
+}
+
+.symbol {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--app-ink);
+}
+
+.name {
+  color: var(--app-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
