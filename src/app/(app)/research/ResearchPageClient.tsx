@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { MarkdownLite } from '@/components/MarkdownLite';
 import { InfoPopover } from '@/components/common/InfoPopover';
 import { SymbolCombobox } from '@/components/research/SymbolCombobox';
+import { ThemeCombobox } from '@/components/research/ThemeCombobox';
 import { ReportActions } from '@/components/research/ReportActions';
 import { ReportBlocks } from '@/components/research/blocks/ReportBlocks';
 import { CompanyReportView } from '@/components/research/report/CompanyReportView';
@@ -12,7 +13,6 @@ import { ExportMenu } from '@/components/research/report/ExportMenu';
 import { useCompanyReport } from '@/components/research/report/useCompanyReport';
 import type { ResearchBlock } from '@/lib/research/blocks';
 import type { SuggestedNote } from '@/lib/research/saveNote';
-import { THEME_PRESETS } from '@/lib/research/themes';
 import styles from './page.module.css';
 
 type Tab = 'company' | 'theme' | 'portfolio' | 'comparison';
@@ -63,16 +63,16 @@ export function ResearchPageClient() {
   const company = useCompanyReport();
   const companyRunning = company.phase === 'running';
 
-  const subjectFor = (): Record<string, unknown> | null => {
+  const subjectFor = (themeText: string = theme): Record<string, unknown> | null => {
     if (tab === 'company') return symbol.trim() ? { type: 'company', symbol: symbol.trim().toUpperCase() } : null;
-    if (tab === 'theme') return theme.trim().length >= 2 ? { type: 'theme', text: theme.trim() } : null;
+    if (tab === 'theme') return themeText.trim().length >= 2 ? { type: 'theme', text: themeText.trim() } : null;
     if (tab === 'portfolio') return { type: 'portfolio' };
     const syms = compare.map((s) => s.trim().toUpperCase()).filter(Boolean);
     return syms.length >= 2 ? { type: 'comparison', symbols: syms } : null;
   };
 
-  const run = async () => {
-    const subject = subjectFor();
+  const run = async (themeText?: string) => {
+    const subject = subjectFor(themeText);
     if (!subject || busy || companyRunning) {
       if (!subject) setError('Fill in the field(s) above first.');
       return;
@@ -153,7 +153,7 @@ export function ResearchPageClient() {
                 label="NSE symbol or company name"
                 value={symbol}
                 onChange={setSymbol}
-                onSubmit={run}
+                onSubmit={() => run()}
                 placeholder="RELIANCE, or a company name"
               />
             </div>
@@ -164,27 +164,7 @@ export function ResearchPageClient() {
               <label className={styles.fieldLabel} htmlFor="r-theme">
                 Theme or sector
               </label>
-              <div className={styles.pills}>
-                {THEME_PRESETS.map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    className={styles.tab}
-                    data-active={theme === p.label}
-                    onClick={() => setTheme(p.label)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-              <input
-                id="r-theme"
-                className={styles.input}
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                placeholder="Pick one above, or describe a sector or theme"
-                onKeyDown={(e) => e.key === 'Enter' && run()}
-              />
+              <ThemeCombobox id="r-theme" value={theme} onChange={setTheme} onSubmit={run} />
             </div>
           )}
 
@@ -229,7 +209,7 @@ export function ResearchPageClient() {
           {tab === 'company' && company.failure && !company.failure.noKey && <p className={styles.error}>{company.failure.message}</p>}
 
           <div className={styles.formActions}>
-            <button type="button" className={styles.btnPrimary} onClick={run} disabled={busy || companyRunning}>
+            <button type="button" className={styles.btnPrimary} onClick={() => run()} disabled={busy || companyRunning}>
               {busy || companyRunning ? 'Researching…' : tab === 'company' ? (company.state.name ? 'Regenerate report' : 'Generate report') : report ? 'Regenerate' : 'Generate brief'}
             </button>
           </div>
