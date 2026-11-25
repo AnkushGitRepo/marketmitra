@@ -6,7 +6,7 @@ vi.mock('./yahooQuote', () => ({
   fetchYahooQuotes: fetchYahooQuotesMock,
 }));
 
-const { getQuotes } = await import('./fundamentalsApi');
+const { getQuotes, getAnnouncements, getInsights } = await import('./fundamentalsApi');
 
 const okJson = (body: unknown) => ({ ok: true, json: async () => body }) as Response;
 
@@ -70,5 +70,32 @@ describe('getQuotes', () => {
     expect(out).toEqual([]);
     expect(fetchYahooQuotesMock).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('announcements and insights (#365)', () => {
+  it('asks the data service for one category and returns the rows', async () => {
+    const rows = [{ announced_on: '2026-09-03', title: 'Credit Rating', summary: null, category: 'credit_rating', url: 'https://x.test', source_tier: 'tier3_screener' }];
+    vi.mocked(fetch).mockResolvedValue(okJson(rows));
+    expect(await getAnnouncements('NEWGEN', 'litigation')).toEqual(rows);
+    expect(String(vi.mocked(fetch).mock.calls[0][0])).toMatch(/\/companies\/NEWGEN\/announcements\?category=litigation$/);
+  });
+
+  it('asks for every announcement when no category is given', async () => {
+    vi.mocked(fetch).mockResolvedValue(okJson([]));
+    await getAnnouncements('NEWGEN');
+    expect(String(vi.mocked(fetch).mock.calls[0][0])).toMatch(/\/companies\/NEWGEN\/announcements$/);
+  });
+
+  it('is null, not an error, when the data service is down', async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error('offline'));
+    expect(await getAnnouncements('NEWGEN')).toBeNull();
+    expect(await getInsights('NEWGEN')).toBeNull();
+  });
+
+  it('reads the pros and cons', async () => {
+    const rows = [{ kind: 'con', text: 'Company has high debtors of 164 days.', source_tier: 'tier3_screener' }];
+    vi.mocked(fetch).mockResolvedValue(okJson(rows));
+    expect(await getInsights('NEWGEN')).toEqual(rows);
   });
 });
