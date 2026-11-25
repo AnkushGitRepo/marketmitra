@@ -1657,6 +1657,75 @@
         }
       }
     },
+    "/api/research/themes": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Theme and sector suggestions for the Research Theme picker",
+        "description": "Themes (a curated taxonomy of Indian market themes resolved to the screener's real industries), sectors and industries that match `q`, each with its number of listed companies and its largest tickers by market cap. With no `q` it lists the biggest themes. Public, read-only.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "What was typed, for example `def` or `rail` (up to 80 characters).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to six suggestions, best match first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "theme",
+                              "sector",
+                              "industry"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          },
+                          "topTickers": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The data service could not be reached."
+          }
+        }
+      }
+    },
     "/api/agents/run": {
       "post": {
         "tags": [
