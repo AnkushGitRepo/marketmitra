@@ -45,3 +45,11 @@ describe('activeNav', () => {
     expect(activeNav(navItems(['overview']), 'risks')).toBeNull();
   });
 });
+
+describe('navItems for a sector report', () => {
+  it('gives the six links of the sector jump bar, pairing chapters that share a label', () => {
+    const all = ['sx_overview', 'sx_scorecard', 'sx_leaders', 'sx_unlisted', 'sx_global', 'sx_outlook', 'sx_policy', 'sx_risks', 'sx_checklist'] as const;
+    expect(navItems(all).map((i) => i.label)).toEqual(['Overview', 'Indian leaders', 'Unlisted & global', 'Future & policy', 'Legal & risks', 'Investor checklist']);
+    expect(navItems(all)[0].ids).toEqual(['sx_overview', 'sx_scorecard']);
+  });
+});

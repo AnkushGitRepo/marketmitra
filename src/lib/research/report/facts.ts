@@ -6,7 +6,7 @@ import { untrusted, wrapUntrusted } from '@/lib/ai/untrusted';
 import type { FactBlock } from '@/lib/ai/researchPrompts';
 import { blocksToMarkdown } from '../blocksMarkdown';
 import { toNumber } from '../formatters';
-import type { ChapterId } from './chapters';
+import type { CompanyChapterId } from './chapters';
 import type { ComputedReport } from './computed';
 import type { ReportInputs } from './inputs';
 import { riskSeeds } from './riskSeeds';
@@ -43,7 +43,7 @@ export function announcementFacts(inputs: ReportInputs): FactBlock[] {
 }
 
 /** The computed tables of the given chapters as facts, in markdown. */
-export function chapterTables(computed: ComputedReport, ids: readonly ChapterId[]): FactBlock[] {
+export function chapterTables(computed: ComputedReport, ids: readonly CompanyChapterId[]): FactBlock[] {
   return ids.flatMap((id) => {
     const markdown = blocksToMarkdown(computed.blocks[id]);
     return markdown ? [{ heading: `Computed figures for the ${id} chapter`, body: markdown }] : [];

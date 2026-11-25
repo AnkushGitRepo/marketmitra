@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { CHAPTERS, chapterMeta, chaptersToMarkdown, pendingChapter, type ReportChapter } from './chapters';
+import { CHAPTERS, COMPANY_CHAPTERS, SECTOR_CHAPTERS, chapterMeta, chaptersToMarkdown, pendingChapter, type ReportChapter } from './chapters';
 
 const ready = (id: ReportChapter['id'], over: Partial<ReportChapter> = {}): ReportChapter => ({ ...pendingChapter(id), status: 'ready', prose: `Prose of ${id}.`, ...over });
 
 describe('CHAPTERS', () => {
+  it('has the sector report’s nine chapters in reading order, sharing jump labels in pairs', () => {
+    expect(SECTOR_CHAPTERS.map((c) => c.id)).toEqual(['sx_overview', 'sx_scorecard', 'sx_leaders', 'sx_unlisted', 'sx_global', 'sx_outlook', 'sx_policy', 'sx_risks', 'sx_checklist']);
+    expect([...new Set(SECTOR_CHAPTERS.map((c) => c.nav))]).toEqual(['Overview', 'Indian leaders', 'Unlisted & global', 'Future & policy', 'Legal & risks', 'Investor checklist']);
+  });
   it('has the nine chapters in reading order, with regulatory and legal sharing a jump label', () => {
-    expect(CHAPTERS.map((c) => c.id)).toEqual(['overview', 'financials', 'peers', 'sector', 'regulatory', 'legal', 'management', 'valuation', 'risks']);
+    expect(COMPANY_CHAPTERS.map((c) => c.id)).toEqual(['overview', 'financials', 'peers', 'sector', 'regulatory', 'legal', 'management', 'valuation', 'risks']);
     expect(chapterMeta('regulatory').nav).toBe(chapterMeta('legal').nav);
-    expect(new Set(CHAPTERS.map((c) => c.id)).size).toBe(9);
+    expect(new Set(CHAPTERS.map((c) => c.id)).size).toBe(18); // no id is shared between the two reports
   });
 });
 

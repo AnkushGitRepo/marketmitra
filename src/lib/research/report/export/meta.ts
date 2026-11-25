@@ -4,6 +4,8 @@ import type { ResearchBlock } from '../../blocks';
 import type { ReportChapter } from '../chapters';
 
 export interface ExportMeta {
+  /** A company report (the default) or a sector report, which words the cover and the Word title for a group of companies. */
+  readonly kind?: 'company' | 'sector';
   readonly symbol: string;
   readonly name: string;
   /** ISO timestamp of when the report was generated. */
@@ -34,6 +36,16 @@ export const reportFileBase = (meta: ExportMeta): string => `MarketMitra-${safe(
 /** A reference for the report: MM-20261125-POLICYBZR. It is a label for filing, not a registry number. */
 export const reportRef = (meta: ExportMeta): string => `MM-${reportDate(meta.generatedAt).replace(/-/g, '')}-${safe(meta.symbol)}`;
 
+/**
+ * The chapters without the summary cards the cover or front matter already shows (the first card grid of the overview or
+ * scorecard chapter, the one `headlineFigures` reads), so the same figures are not printed twice.
+ */
+export function withoutHeadline(chapters: readonly ReportChapter[]): ReportChapter[] {
+  const source = chapters.find((c) => c.id === 'overview' || c.id === 'sx_scorecard');
+  const grid = source?.blocks.find((b) => b.type === 'kpi_grid');
+  return chapters.map((c) => (c === source && grid ? { ...c, blocks: c.blocks.filter((b) => b !== grid) } : c));
+}
+
 export interface Headline {
   readonly label: string;
   readonly value: string;
@@ -42,6 +54,14 @@ export interface Headline {
 
 /** The overview chapter's summary cards (market cap, P/E, ROCE, foreign holding), for the cover and the front matter. */
 export function headlineFigures(chapters: readonly ReportChapter[]): Headline[] {
-  const grid = chapters.find((c) => c.id === 'overview')?.blocks.find((b): b is Extract<ResearchBlock, { type: 'kpi_grid' }> => b.type === 'kpi_grid');
+  const grid = chapters.find((c) => c.id === 'overview' || c.id === 'sx_scorecard')?.blocks.find((b): b is Extract<ResearchBlock, { type: 'kpi_grid' }> => b.type === 'kpi_grid');
   return (grid?.items ?? []).map(({ label, value, note }) => ({ label, value, note }));
 }
+
+const isSector = (meta: ExportMeta): boolean => meta.kind === 'sector';
+
+/** How the cover and the Word file name what the report is about: a listed company has an NSE symbol, a sector does not. */
+export const subjectTag = (meta: ExportMeta): string => (isSector(meta) ? 'Sector report' : `NSE: ${meta.symbol}`);
+export const subjectInline = (meta: ExportMeta): string => (isSector(meta) ? meta.name : `${meta.name} (${meta.symbol})`);
+export const kindLabel = (meta: ExportMeta): string => (isSector(meta) ? 'SECTOR RESEARCH REPORT' : 'COMPANY RESEARCH REPORT');
+export const kindTagline = (meta: ExportMeta): string => `Independent ${isSector(meta) ? 'sector' : 'company'} research from public data`;

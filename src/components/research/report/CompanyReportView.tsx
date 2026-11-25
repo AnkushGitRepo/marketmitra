@@ -18,7 +18,8 @@ export function CompanyReportView({ state, running }: CompanyReportViewProps) {
       {state.name && (
         <header className={styles.reportHead}>
           <h2 className={styles.company}>
-            {state.name} <span className={styles.symbol}>{state.symbol}</span>
+            {state.name}
+            {state.symbol !== state.name && <span className={styles.symbol}> {state.symbol}</span>}
           </h2>
           {running && total > 0 && (
             <p className={styles.progress} role="status" aria-live="polite">

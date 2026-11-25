@@ -5,8 +5,14 @@ import type { ToolCallRecord } from '@/lib/ai/research/webTools';
 import type { ResearchBlock } from '../blocks';
 import { blocksToMarkdown } from '../blocksMarkdown';
 import type { SuggestedNote } from '../saveNote';
+import { topSources } from './sources';
 
-export type ChapterId = 'overview' | 'financials' | 'peers' | 'sector' | 'regulatory' | 'legal' | 'management' | 'valuation' | 'risks';
+export type CompanyChapterId = 'overview' | 'financials' | 'peers' | 'sector' | 'regulatory' | 'legal' | 'management' | 'valuation' | 'risks';
+
+/** The sector (theme) report's chapters; the `sx_` prefix keeps them apart from a company report's. */
+export type SectorChapterId = 'sx_overview' | 'sx_scorecard' | 'sx_leaders' | 'sx_unlisted' | 'sx_global' | 'sx_outlook' | 'sx_policy' | 'sx_risks' | 'sx_checklist';
+
+export type ChapterId = CompanyChapterId | SectorChapterId;
 
 export interface ChapterMeta {
   readonly id: ChapterId;
@@ -15,7 +21,7 @@ export interface ChapterMeta {
   readonly nav: string;
 }
 
-export const CHAPTERS: readonly ChapterMeta[] = [
+export const COMPANY_CHAPTERS: readonly (ChapterMeta & { readonly id: CompanyChapterId })[] = [
   { id: 'overview', title: 'Business and thesis', nav: 'Overview' },
   { id: 'financials', title: 'Financials and cash flow', nav: 'Financials' },
   { id: 'peers', title: 'Peer benchmarking', nav: 'Peers' },
@@ -26,6 +32,24 @@ export const CHAPTERS: readonly ChapterMeta[] = [
   { id: 'valuation', title: 'Valuation and scenarios', nav: 'Valuation' },
   { id: 'risks', title: 'Risks and watch-items', nav: 'Risks' },
 ];
+
+export const SECTOR_CHAPTERS: readonly (ChapterMeta & { readonly id: SectorChapterId })[] = [
+  { id: 'sx_overview', title: 'Sector overview, value chain and economics', nav: 'Overview' },
+  { id: 'sx_scorecard', title: 'Financial scorecard and growth', nav: 'Overview' },
+  { id: 'sx_leaders', title: 'Top listed Indian companies', nav: 'Indian leaders' },
+  { id: 'sx_unlisted', title: 'Unlisted innovators and the IPO pipeline', nav: 'Unlisted & global' },
+  { id: 'sx_global', title: 'Global benchmarks', nav: 'Unlisted & global' },
+  { id: 'sx_outlook', title: 'Outlook, capex cycle and catalysts', nav: 'Future & policy' },
+  { id: 'sx_policy', title: 'Policy, regulation and government initiatives', nav: 'Future & policy' },
+  { id: 'sx_risks', title: 'Litigation, governance red flags and bottlenecks', nav: 'Legal & risks' },
+  { id: 'sx_checklist', title: 'Investor due-diligence checklist', nav: 'Investor checklist' },
+];
+
+/**
+ * Every chapter either report can have, in reading order. A report only ever holds one kind, and everything that walks this
+ * list (the jump bar, the exports, the page) keeps just the chapters that are present.
+ */
+export const CHAPTERS: readonly ChapterMeta[] = [...COMPANY_CHAPTERS, ...SECTOR_CHAPTERS];
 
 export const chapterMeta = (id: ChapterId): ChapterMeta => CHAPTERS.find((c) => c.id === id) as ChapterMeta;
 
@@ -88,7 +112,7 @@ export function chaptersToMarkdown(chapters: readonly ReportChapter[]): string {
     const body = [
       blocksToMarkdown(chapter.blocks),
       chapter.prose ?? (chapter.status === 'failed' ? `*This chapter could not be written${chapter.note ? `: ${chapter.note}` : '.'}*` : ''),
-      sourcesMarkdown(chapter.sources),
+      sourcesMarkdown(topSources(chapter.sources)),
     ].filter(Boolean);
     return body.length === 0 ? [] : [`## ${title}\n\n${body.join('\n\n')}`];
   }).join('\n\n');

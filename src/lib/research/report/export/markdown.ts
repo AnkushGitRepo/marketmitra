@@ -2,7 +2,7 @@
 // pipe tables, and the disclaimer. Pure.
 
 import { CHAPTERS, chaptersToMarkdown, type ReportChapter } from '../chapters';
-import { headlineFigures, reportDate, reportRef, type ExportMeta } from './meta';
+import { headlineFigures, reportDate, reportRef, subjectInline, type ExportMeta } from './meta';
 
 export const DISCLAIMER_TEXT =
   'This is neutral analysis of public data for information. It is not investment advice, a recommendation or a price target. The figures in tables are computed from stored data; the written analysis is an AI model’s synthesis and can contain errors.';
@@ -25,10 +25,8 @@ export function reportMarkdown(chapters: readonly ReportChapter[], meta: ExportM
   });
   const front = [
     '---',
-    `title: ${yaml(`${meta.name} (${meta.symbol}): company research report`)}`,
-    `company: ${yaml(meta.name)}`,
-    `ticker: ${yaml(meta.symbol)}`,
-    `exchange: "NSE"`,
+    `title: ${yaml(`${subjectInline(meta)}: ${meta.kind === 'sector' ? 'sector' : 'company'} research report`)}`,
+    ...(meta.kind === 'sector' ? [`sector: ${yaml(meta.name)}`] : [`company: ${yaml(meta.name)}`, `ticker: ${yaml(meta.symbol)}`, `exchange: "NSE"`]),
     `date: ${reportDate(meta.generatedAt)}`,
     `generated_at: ${yaml(meta.generatedAt)}`,
     `model: ${yaml(meta.model)}`,
@@ -37,5 +35,5 @@ export function reportMarkdown(chapters: readonly ReportChapter[], meta: ExportM
     `chapters: ${CHAPTERS.filter((c) => chapters.some((r) => r.id === c.id && (r.prose || r.blocks.length > 0))).length}`,
     '---',
   ].join('\n');
-  return [front, `# ${meta.name} (NSE: ${meta.symbol})`, `*${DISCLAIMER_TEXT}*`, chaptersToMarkdown(chapters)].filter(Boolean).join('\n\n') + '\n';
+  return [front, `# ${meta.kind === 'sector' ? meta.name : `${meta.name} (NSE: ${meta.symbol})`}`, `*${DISCLAIMER_TEXT}*`, chaptersToMarkdown(chapters)].filter(Boolean).join('\n\n') + '\n';
 }

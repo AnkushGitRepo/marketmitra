@@ -23,10 +23,11 @@ import {
 import { parseMarkdownLite, type InlineToken } from '@/components/markdownLiteParse';
 import type { DataTableBlock, ResearchBlock } from '../../blocks';
 import { formatCell } from '../../formatters';
+import { topSources } from '../sources';
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { chartAsTable, type PlainTable } from './chartTables';
 import { DISCLAIMER_TEXT } from './markdown';
-import { headlineFigures, reportDateLong, reportRef, type ExportMeta } from './meta';
+import { headlineFigures, reportDateLong, reportRef, withoutHeadline, subjectInline, subjectTag, type ExportMeta } from './meta';
 import { columnWidths } from './printBlocks';
 
 const FONT = 'Calibri';
@@ -144,11 +145,11 @@ function proseChildren(markdown: string): FileChild[] {
 }
 
 export function buildReportDocx(chapters: readonly ReportChapter[], meta: ExportMeta): Document {
-  const shown = CHAPTERS.flatMap(({ id }) => chapters.filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
+  const shown = CHAPTERS.flatMap(({ id }) => withoutHeadline(chapters).filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
   const figures = headlineFigures(chapters);
   const front: FileChild[] = [
     new Paragraph({ heading: HeadingLevel.TITLE, spacing: { after: 60 }, children: [new TextRun({ text: meta.name, bold: true, size: 44, color: INK })] }),
-    para(`NSE: ${meta.symbol}   |   ${reportRef(meta)}   |   ${reportDateLong(meta.generatedAt)}   |   written by ${meta.model}`, { color: MUTED, size: 18, after: 160 }),
+    para(`${subjectTag(meta)}   |   ${reportRef(meta)}   |   ${reportDateLong(meta.generatedAt)}   |   written by ${meta.model}`, { color: MUTED, size: 18, after: 160 }),
     ...(figures.length > 0 ? [table(['Measure', 'Value'], figures.map((f) => [f.label, f.note ? `${f.value}  (${f.note})` : f.value]), [30, 70], 1), para('', { after: 120 })] : []),
     para('Contents', { bold: true, after: 60 }),
     ...shown.map((c, i) => para(`${String(i + 1).padStart(2, '0')}   ${c.title}`, { after: 30 })),
@@ -161,12 +162,12 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
     ...c.blocks.flatMap(blockChildren),
     ...(c.prose ? proseChildren(c.prose) : []),
     ...(c.status === 'failed' ? [para(`This chapter could not be written${c.note ? `: ${c.note}` : '.'}`, { italics: true, color: 'B4413C' })] : []),
-    ...(c.sources.length > 0 ? [para(`Sources: ${c.sources.map((s) => s.title).join('; ')}`, { size: 17, color: MUTED })] : []),
+    ...(c.sources.length > 0 ? [para(`Sources: ${topSources(c.sources).map((s) => s.title).join('; ')}`, { size: 17, color: MUTED })] : []),
   ]);
 
   return new Document({
     creator: 'MarketMitra Research',
-    title: `${meta.name} (${meta.symbol}): company research report`,
+    title: `${subjectInline(meta)}: ${meta.kind === 'sector' ? 'sector' : 'company'} research report`,
     description: DISCLAIMER_TEXT,
     styles: {
       default: { document: { run: { font: FONT, size: BODY_SIZE, color: INK } } },
@@ -180,7 +181,7 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
     sections: [
       {
         properties: { page: { size: { width: PAGE.width, height: PAGE.height }, margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } } },
-        headers: { default: new Header({ children: [new Paragraph({ border: { bottom: thin }, children: [new TextRun({ text: `MarketMitra Research   |   ${meta.name} (${meta.symbol})`, size: 16, color: MUTED })] })] }) },
+        headers: { default: new Header({ children: [new Paragraph({ border: { bottom: thin }, children: [new TextRun({ text: `MarketMitra Research   |   ${subjectInline(meta)}`, size: 16, color: MUTED })] })] }) },
         footers: {
           default: new Footer({
             children: [

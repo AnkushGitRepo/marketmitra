@@ -95,7 +95,7 @@ describe('buildReportPrintHtml', () => {
   });
   it('says plainly that a chapter failed, keeps the rest, and lists sources by name', () => {
     expect(html).toContain('This chapter could not be written: The provider is overloaded');
-    expect(html).toContain('Sources: sci.gov.in');
+    expect(html).toContain('<b>Sources</b><span>sci.gov.in</span>');
     expect(html).toContain('Prose of overview.');
   });
   it('does not carry anything from the web page: no status line, buttons or app styles', () => {

@@ -2,6 +2,7 @@
 
 import type { DataTableBlock, ResearchBlock } from '../../blocks';
 import { formatCell, formatNumber, formatPercent } from '../../formatters';
+import { topSources } from '../sources';
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { parseMarkdownLite, type InlineToken } from '@/components/markdownLiteParse';
 import { DISCLAIMER_TEXT } from './markdown';
@@ -108,7 +109,7 @@ export function blockText(block: ResearchBlock): string {
 
 export function reportText(chapters: readonly ReportChapter[], meta: ExportMeta): string {
   const shown = CHAPTERS.flatMap(({ id }) => chapters.filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
-  const head = [RULE, 'MARKETMITRA RESEARCH', `${meta.name} (NSE: ${meta.symbol})`, `${reportRef(meta)} | ${reportDateLong(meta.generatedAt)} | written by ${meta.model}`, RULE, '', 'CONTENTS', ...shown.map((c, i) => `  ${String(i + 1).padStart(2, '0')}  ${c.title}`), '', wrap(DISCLAIMER_TEXT)].join('\n');
+  const head = [RULE, 'MARKETMITRA RESEARCH', meta.kind === 'sector' ? meta.name : `${meta.name} (NSE: ${meta.symbol})`, `${reportRef(meta)} | ${reportDateLong(meta.generatedAt)} | written by ${meta.model}`, RULE, '', 'CONTENTS', ...shown.map((c, i) => `  ${String(i + 1).padStart(2, '0')}  ${c.title}`), '', wrap(DISCLAIMER_TEXT)].join('\n');
   const body = shown.map((c, i) => {
     const parts = [
       `${String(i + 1).padStart(2, '0')}. ${c.title.toUpperCase()}`,
@@ -116,7 +117,7 @@ export function reportText(chapters: readonly ReportChapter[], meta: ExportMeta)
       ...c.blocks.map(blockText),
       c.prose ? proseText(c.prose) : '',
       c.status === 'failed' ? wrap(`This chapter could not be written${c.note ? `: ${c.note}` : '.'}`) : '',
-      c.sources.length > 0 ? wrap(`Sources: ${c.sources.map((s) => s.title).join('; ')}`) : '',
+      c.sources.length > 0 ? wrap(`Sources: ${topSources(c.sources).map((s) => s.title).join('; ')}`) : '',
     ].filter(Boolean);
     return parts.join('\n\n').replace(`${THIN}\n\n`, `${THIN}\n\n`);
   });
