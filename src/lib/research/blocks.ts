@@ -60,12 +60,28 @@ export interface DataTableBlock {
 
 export interface ThesisColumn {
   readonly title: string;
-  readonly tone: 'positive' | 'risk' | 'question';
+  /** `positive` green, `risk` red, `watch` and `question` amber. */
+  readonly tone: 'positive' | 'risk' | 'question' | 'watch';
   readonly items: readonly string[];
 }
 export interface ThesisBentoBlock {
   readonly type: 'thesis_bento';
   readonly columns: readonly ThesisColumn[];
+}
+
+export interface CardGridCard {
+  readonly heading: string;
+  readonly text: string;
+  /** A short label on the card, such as "Margin: High". */
+  readonly tag?: string;
+}
+/** Cards in a grid: a numbered checklist (two columns) or a row of stages such as a value chain (four). */
+export interface CardGridBlock {
+  readonly type: 'card_grid';
+  readonly title: string;
+  readonly columns: 2 | 4;
+  readonly numbered: boolean;
+  readonly cards: readonly CardGridCard[];
 }
 
 /** Sales, operating profit and margin by fiscal year, drawn as one combined chart with a table view. */
@@ -76,7 +92,7 @@ export interface FinancialChartBlock {
   readonly periods: readonly FinancialPeriod[];
 }
 
-export type ResearchBlock = KpiGridBlock | BarChartBlock | DonutChartBlock | DataTableBlock | ThesisBentoBlock | FinancialChartBlock;
+export type ResearchBlock = KpiGridBlock | BarChartBlock | DonutChartBlock | DataTableBlock | ThesisBentoBlock | CardGridBlock | FinancialChartBlock;
 
 /** The blocks that exist, in order: a builder returns null for a block it has no data for. */
 export function compactBlocks(blocks: readonly (ResearchBlock | null)[]): ResearchBlock[] {

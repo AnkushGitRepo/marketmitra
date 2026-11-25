@@ -9,6 +9,7 @@ import { DISCLAIMER, type TaskOutcome } from '../report/run';
 import { suggestNote } from '../saveNote';
 import { leadersBlocks, scorecardBlocks } from './blocks';
 import type { SectorInputs } from './inputs';
+import { buildStructureTask, checklistCards, parseStructure, structureBlocks } from './structure';
 import { buildChecklistTask, buildSectorTasks, type SectorTask } from './tasks';
 
 export interface SectorRunDeps {
@@ -88,6 +89,22 @@ export async function* runSectorReport(inputs: SectorInputs, deps: SectorRunDeps
   for (const chapter of settle(checklist, await deps.generate(checklist))) {
     chapters.set(chapter.id as SectorChapterId, chapter);
     yield { type: 'chapter', chapter };
+  }
+
+  // Structured extras (value chain, comparison table, callouts) are read from the chapters just written. They are a bonus: if the
+  // call or its reply fails, every chapter keeps its text and nothing is lost.
+  const extras = await deps.generate(buildStructureTask(inputs, prose));
+  const parsed = extras.ok ? parseStructure(extras.text) : null;
+  const extraBlocks = parsed ? structureBlocks(parsed) : {};
+  const cards = prose.sx_checklist ? checklistCards(prose.sx_checklist) : null;
+  if (cards) extraBlocks.sx_checklist = [cards];
+  for (const [id, added] of Object.entries(extraBlocks) as [SectorChapterId, NonNullable<(typeof extraBlocks)[SectorChapterId]>][]) {
+    const base = chapters.get(id);
+    if (!base || base.status !== 'ready') continue;
+    // The checklist cards replace the checklist's text (they hold the same questions); the others sit above the chapter's text.
+    const next = written(base, id === 'sx_checklist' ? { blocks: [...base.blocks, ...added], prose: null } : { blocks: [...base.blocks, ...added] });
+    chapters.set(id, next);
+    yield { type: 'chapter', chapter: next };
   }
 
   const generatedAt = deps.now().toISOString();

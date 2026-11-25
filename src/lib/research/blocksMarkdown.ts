@@ -39,6 +39,8 @@ function blockMarkdown(block: ResearchBlock): string | null {
       const total = block.slices.reduce((a, s) => a + s.value, 0);
       return [`### ${block.title}`, block.slices.map((s) => `- ${s.label}: ${formatNumber(total === 0 ? 0 : (s.value / total) * 100)}%`).join('\n')].join('\n\n');
     }
+    case 'card_grid':
+      return [`### ${block.title}`, block.cards.map((c, i) => `${block.numbered ? `${i + 1}.` : '-'} **${c.heading}**${c.tag ? ` (${c.tag})` : ''}${c.text ? ` ${c.text}` : ''}`).join('\n')].join('\n\n');
     case 'thesis_bento':
       return block.columns.map((c) => `### ${c.title}\n\n${c.items.map((i) => `- ${i}`).join('\n')}`).join('\n\n');
   }

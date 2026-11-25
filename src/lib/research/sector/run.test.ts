@@ -40,10 +40,11 @@ describe('runSectorReport', () => {
   it('writes the checklist last, from the other chapters, without searching', async () => {
     const calls: SectorTask[] = [];
     await collect(deps(async (t) => (calls.push(t), reply(t))));
-    expect(calls.at(-1)?.id).toBe('checklist');
-    expect(calls.at(-1)?.search).toBeNull();
-    expect(calls.at(-1)?.prompt).toContain('Text for sx_overview.');
-    expect(calls.filter((c) => c.id !== 'checklist').every((c) => c.search !== null)).toBe(true);
+    const checklist = calls.find((c) => c.id === 'checklist')!;
+    expect(calls.indexOf(checklist)).toBe(calls.length - 2); // the extras call comes after it
+    expect(checklist.search).toBeNull();
+    expect(checklist.prompt).toContain('Text for sx_overview.');
+    expect(calls.filter((c) => c.id !== 'checklist' && c.id !== 'structure').every((c) => c.search !== null)).toBe(true);
   });
 
   it('puts every chapter, its text and the disclaimer once in the markdown', async () => {
@@ -81,5 +82,44 @@ describe('runSectorReport', () => {
     });
     await collect(deps(generate));
     expect(peak).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('structured extras', () => {
+  const list = Array.from({ length: 10 }, (_, i) => `${i + 1}. **Question ${i + 1}?** - Look for ${i + 1}.`).join('\n');
+  const withExtras = (structure: string): SectorRunDeps['generate'] => async (t) =>
+    t.id === 'structure'
+      ? { ok: true, model: 'test-model', searched: [], sources: [], text: structure }
+      : t.id === 'checklist'
+        ? { ok: true, model: 'test-model', searched: [], sources: [], text: `## CHAPTER: sx_checklist\n${list}` }
+        : reply(t);
+
+  it('adds callouts to the outlook chapter and numbered cards to the checklist, and re-sends those chapters', async () => {
+    const events = await collect(deps(withExtras('{"catalysts":["5G rollout"]}')));
+    const last = new Map(events.flatMap((e) => (e.type === 'chapter' ? [[e.chapter.id, e.chapter] as const] : [])));
+    expect(last.get('sx_outlook')?.blocks.map((b) => b.type)).toEqual(['thesis_bento']);
+    expect(last.get('sx_outlook')?.prose).toContain('Text for sx_outlook.');
+    expect(last.get('sx_checklist')?.blocks.map((b) => b.type)).toEqual(['card_grid']);
+    expect(last.get('sx_checklist')?.prose).toBeNull();
+  });
+  it('keeps every chapter’s text when the extras reply is not JSON, still making the checklist cards', async () => {
+    const events = await collect(deps(withExtras('not json')));
+    const last = new Map(events.flatMap((e) => (e.type === 'chapter' ? [[e.chapter.id, e.chapter] as const] : [])));
+    expect(last.get('sx_outlook')?.blocks).toEqual([]);
+    expect(last.get('sx_outlook')?.prose).toContain('Text for sx_outlook.');
+    expect(last.get('sx_checklist')?.blocks.map((b) => b.type)).toEqual(['card_grid']);
+    expect(events.at(-1)?.type).toBe('done');
+  });
+  it('puts the cards, as a numbered list, in the markdown', async () => {
+    const done = (await collect(deps(withExtras('{}')))).find((e) => e.type === 'done');
+    const content = done?.type === 'done' ? done.content : '';
+    expect(content).toContain('1. **Question 1?**');
+    expect(content).toContain('10. **Question 10?**');
+  });
+  it('leaves a chapter whose call failed alone', async () => {
+    const events = await collect(deps(async (t) => (t.id === 'outlook' ? { ok: false, error: 'quota' } : withExtras('{"catalysts":["x"]}')(t))));
+    const last = new Map(events.flatMap((e) => (e.type === 'chapter' ? [[e.chapter.id, e.chapter] as const] : [])));
+    expect(last.get('sx_outlook')?.status).toBe('failed');
+    expect(last.get('sx_outlook')?.blocks).toEqual([]);
   });
 });

@@ -342,7 +342,8 @@
   border-color: var(--app-loss-border);
 }
 
-.bentoCard[data-tone='question'] {
+.bentoCard[data-tone='question'],
+.bentoCard[data-tone='watch'] {
   background: var(--app-warn-bg);
   border-color: var(--app-warn-border);
 }
@@ -370,4 +371,66 @@
   .hbar {
     transition: width 0.3s ease, left 0.3s ease;
   }
+}
+
+/* Card grid: the checklist (two columns) and a value chain (four) */
+.cardGridWrap {
+  margin: 0;
+}
+
+.cardGrid {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cardGrid[data-cols='4'] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .cardGrid,
+  .cardGrid[data-cols='4'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.gridCard {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--app-border-soft);
+  background: var(--color-surface);
+}
+
+.cardNumber {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--app-teal-text, var(--app-gain));
+}
+
+.cardHeading {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.cardTag {
+  justify-self: start;
+  padding: 1px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--app-teal-tint);
+  font-size: 11px;
+  color: var(--app-ink);
+}
+
+.cardText {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
 }

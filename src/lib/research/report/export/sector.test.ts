@@ -59,3 +59,24 @@ describe('headline figures are printed once', () => {
     expect(withGrid[0].blocks).toHaveLength(2);
   });
 });
+
+describe('the card grid and the callouts in every format', () => {
+  const grid = { type: 'card_grid' as const, title: 'Checklist', columns: 2 as const, numbered: true, cards: [{ heading: 'Is the order book funded?', text: 'Check the sanction letters.' }, { heading: 'How long are receivables?', text: 'Government days.', tag: 'Margin: High' }] };
+  const callout = { type: 'thesis_bento' as const, columns: [{ title: 'Policy watch', tone: 'watch' as const, items: ['Satcom rules'] }] };
+  const doc = [{ ...chapter('sx_checklist', ''), prose: null, blocks: [grid, callout] }];
+  it('prints numbered cards and an amber callout in the PDF', () => {
+    const html = buildReportPrintHtml(doc, meta);
+    expect(html).toContain('<span class="cn">01</span><b>Is the order book funded?</b>');
+    expect(html).toContain('<span class="ct">Margin: High</span>');
+    expect(html).toContain('data-tone="watch"');
+  });
+  it('keeps the numbers in Markdown and text, so the checklist reads as 1, 2', () => {
+    const md = reportMarkdown(doc, meta);
+    expect(md).toContain('1. **Is the order book funded?** Check the sanction letters.');
+    expect(md).toContain('2. **How long are receivables?** (Margin: High) Government days.');
+    expect(reportText(doc, meta)).toMatch(/1\. Is the order book funded\?: Check the sanction letters\./);
+  });
+  it('puts the cards in the Word file', async () => {
+    expect((await reportDocxBlob(doc, meta)).size).toBeGreaterThan(2000);
+  });
+});
