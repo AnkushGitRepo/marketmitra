@@ -11,6 +11,8 @@ const h = vi.hoisted(() => ({
   getShareholding: vi.fn(),
   getPrices: vi.fn(),
   getEnrichedHoldings: vi.fn(),
+  searchSymbols: vi.fn(),
+  themeFacts: vi.fn(),
 }));
 
 vi.mock('@/lib/currentUserId', () => ({ getCurrentUserId: h.getCurrentUserId }));
@@ -23,7 +25,9 @@ vi.mock('@/lib/dashboard/fundamentalsApi', () => ({
   getFinancials: h.getFinancials,
   getShareholding: h.getShareholding,
   getPrices: h.getPrices,
+  searchSymbols: h.searchSymbols,
 }));
+vi.mock('@/lib/research/themeFacts', () => ({ themeFacts: h.themeFacts }));
 vi.mock('@/lib/dashboard/enrichedHoldings', () => ({ getEnrichedHoldings: h.getEnrichedHoldings }));
 
 import { POST } from './route';
@@ -42,6 +46,8 @@ beforeEach(() => {
   h.getFinancials.mockResolvedValue([]);
   h.getShareholding.mockResolvedValue([]);
   h.getPrices.mockResolvedValue([]);
+  h.searchSymbols.mockResolvedValue([]);
+  h.themeFacts.mockResolvedValue([{ heading: 'Telecommunications — largest listed companies', body: '- BHARTIARTL' }]);
   h.getEnrichedHoldings.mockResolvedValue([
     { symbol: 'TCS', name: 'TCS', sector: 'IT', quantity: 5, avgPrice: 3000, ltp: 3200 },
   ]);
@@ -70,9 +76,30 @@ describe('POST /api/research', () => {
     expect((await call({ subject: { type: 'portfolio' } })).status).toBe(400);
   });
 
-  it('502s a company brief when the symbol does not resolve', async () => {
+  it('404s a company brief when the symbol matches nothing, naming it', async () => {
     h.getCompany.mockResolvedValue(null);
-    expect((await call({ subject: { type: 'company', symbol: 'NOPE' } })).status).toBe(502);
+    const res = await call({ subject: { type: 'company', symbol: 'NOPE' } });
+    expect(res.status).toBe(404);
+    expect((await res.json()).error).toContain('"NOPE"');
+  });
+
+  it('resolves an alias to the NSE symbol before researching', async () => {
+    await call({ subject: { type: 'company', symbol: 'airtel' } });
+    expect(h.getCompany).toHaveBeenCalledWith('BHARTIARTL');
+    expect(h.generateInsightText.mock.calls[0][2]).toContain('(BHARTIARTL)');
+  });
+
+  it('404s a comparison when any symbol is unresolved', async () => {
+    h.getCompany.mockImplementation(async (s: string) => (s === 'TCS' ? { name: 'TCS', sector: null, industry: null, about: null } : null));
+    const res = await call({ subject: { type: 'comparison', symbols: ['TCS', 'NOPE'] } });
+    expect(res.status).toBe(404);
+    expect(h.generateInsightText).not.toHaveBeenCalled();
+  });
+
+  it('puts the theme sector facts in the prompt', async () => {
+    await call({ subject: { type: 'theme', text: 'Indian Telecom' } });
+    expect(h.themeFacts).toHaveBeenCalledWith('Indian Telecom');
+    expect(h.generateInsightText.mock.calls[0][2]).toContain('BHARTIARTL');
   });
 
   it('generates a company brief and passes RESEARCH_SYSTEM + a company subject line', async () => {

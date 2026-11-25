@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { InfoPopover } from '@/components/common/InfoPopover';
 import { useState } from 'react';
 import type { UserNote } from '@/lib/notes/userNotes';
 import styles from './page.module.css';
@@ -82,7 +83,16 @@ export function NotesPageClient({ notes }: Props) {
       <div className={styles.headRow}>
         <div>
           <p className={styles.eyebrow}>Notes</p>
-          <h1 className={styles.h1}>Research notes</h1>
+          <div className={styles.titleRow}>
+            <h1 className={styles.h1}>Research notes</h1>
+            <InfoPopover label="About research notes">
+              <p>
+                Private notes on your holdings, sectors, or ideas. Mitra and the AI insight cards search
+                these alongside indexed news and filings, so a note on why you hold a stock informs what
+                they tell you about it.
+              </p>
+            </InfoPopover>
+          </div>
         </div>
         {!draft && (
           <button type="button" className={styles.btnPrimary} onClick={startNew}>
@@ -90,12 +100,6 @@ export function NotesPageClient({ notes }: Props) {
           </button>
         )}
       </div>
-
-      <p className={styles.introNote}>
-        Private notes on your holdings, sectors, or ideas. Mitra and the AI insight
-        cards search these alongside indexed news and filings — so a note on why you
-        hold a stock informs what they tell you about it.
-      </p>
 
       {draft && (
         <div className={`${styles.card} ${styles.formCard}`}>

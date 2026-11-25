@@ -43,6 +43,20 @@
   }
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 6px 0 10px;
+}
+
 .introNote {
   margin: 8px 0 22px;
   font-size: 13px;

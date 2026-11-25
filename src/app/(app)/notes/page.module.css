@@ -245,3 +245,10 @@
   font-size: 13px;
   color: var(--app-text-muted);
 }
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}

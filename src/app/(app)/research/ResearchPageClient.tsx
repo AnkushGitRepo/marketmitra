@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { MarkdownLite } from '@/components/MarkdownLite';
+import { InfoPopover } from '@/components/common/InfoPopover';
+import { SymbolCombobox } from '@/components/research/SymbolCombobox';
+import { THEME_PRESETS } from '@/lib/research/themes';
 import styles from './page.module.css';
 
 type Tab = 'company' | 'theme' | 'portfolio' | 'comparison';
@@ -73,14 +76,17 @@ export function ResearchPageClient() {
   return (
     <div className={styles.pageRoot}>
       <p className={styles.eyebrow}>Research</p>
-      <h1 className={styles.h1}>Research brief</h1>
-      <p className={styles.introNote}>
-        A longer, structured read on a company, a theme, your whole portfolio, or a
-        head-to-head — synthesised from fundamentals, filings, and indexed news. Neutral,
-        never a buy/sell call. Not saved: generate a fresh one whenever, or paste it into a{' '}
-        <Link href="/notes">note</Link> to keep it.
-      </p>
-
+      <div className={styles.titleRow}>
+        <h1 className={styles.h1}>Research brief</h1>
+        <InfoPopover label="About the research brief">
+          <p>
+            A longer, structured read on a company, a theme, your whole portfolio, or a head-to-head,
+            synthesised from fundamentals, filings, and indexed news. Neutral, never a buy/sell call.
+            Not saved: generate a fresh one whenever, or paste it into a <Link href="/notes">note</Link> to
+            keep it.
+          </p>
+        </InfoPopover>
+      </div>
       <div className={styles.card}>
         <div className={styles.tabs}>
           {TABS.map((t) => (
@@ -103,15 +109,15 @@ export function ResearchPageClient() {
           {tab === 'company' && (
             <div>
               <label className={styles.fieldLabel} htmlFor="r-symbol">
-                NSE symbol
+                Company (NSE symbol or name)
               </label>
-              <input
+              <SymbolCombobox
                 id="r-symbol"
-                className={styles.input}
+                label="NSE symbol or company name"
                 value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                placeholder="RELIANCE"
-                onKeyDown={(e) => e.key === 'Enter' && run()}
+                onChange={setSymbol}
+                onSubmit={run}
+                placeholder="RELIANCE, or a company name"
               />
             </div>
           )}
@@ -121,12 +127,25 @@ export function ResearchPageClient() {
               <label className={styles.fieldLabel} htmlFor="r-theme">
                 Theme or sector
               </label>
+              <div className={styles.pills}>
+                {THEME_PRESETS.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    className={styles.tab}
+                    data-active={theme === p.label}
+                    onClick={() => setTheme(p.label)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
               <input
                 id="r-theme"
                 className={styles.input}
                 value={theme}
                 onChange={(e) => setTheme(e.target.value)}
-                placeholder="Indian IT sector outlook"
+                placeholder="Pick one above, or describe a sector or theme"
                 onKeyDown={(e) => e.key === 'Enter' && run()}
               />
             </div>
@@ -141,15 +160,12 @@ export function ResearchPageClient() {
               <label className={styles.fieldLabel}>Symbols to compare (2–4)</label>
               <div className={styles.compareRow}>
                 {compare.map((val, i) => (
-                  <input
+                  <SymbolCombobox
                     key={i}
-                    className={styles.input}
+                    id={`r-compare-${i}`}
+                    label={`Company ${i + 1} to compare`}
                     value={val}
-                    onChange={(e) => {
-                      const next = compare.slice();
-                      next[i] = e.target.value.toUpperCase();
-                      setCompare(next);
-                    }}
+                    onChange={(next) => setCompare(compare.map((c, j) => (j === i ? next : c)))}
                     placeholder={i === 0 ? 'TCS' : i === 1 ? 'INFY' : 'WIPRO'}
                   />
                 ))}
