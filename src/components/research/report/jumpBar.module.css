@@ -1,0 +1,60 @@
+.bar {
+  position: sticky;
+  top: 76px;
+  z-index: 20;
+  margin: 0 -4px 4px;
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--app-border-soft);
+}
+
+.bar ol {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.bar ol::-webkit-scrollbar {
+  display: none;
+}
+
+.bar a {
+  display: block;
+  padding: 6px 13px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  white-space: nowrap;
+  color: var(--app-text-muted);
+  text-decoration: none;
+}
+
+.bar a:hover {
+  color: var(--app-ink);
+  border-color: var(--app-ink);
+}
+
+.bar a:focus-visible {
+  outline: 2px solid var(--app-teal-strong);
+  outline-offset: 2px;
+}
+
+.bar a[aria-current='true'] {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
+
+/* The phone header is shorter than the desktop one (63px against about 70px), so the bar sits closer to the top. */
+@media (max-width: 760px) {
+  .bar {
+    top: 62px;
+  }
+}

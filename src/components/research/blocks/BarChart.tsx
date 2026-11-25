@@ -9,7 +9,7 @@ import styles from './blocks.module.css';
 
 const W = 900;
 const H = 240;
-const PAD = { top: 12, right: 8, bottom: 28, left: 8 };
+const PAD = { top: 24, right: 8, bottom: 28, left: 8 };
 
 function Legend({ block }: { readonly block: BarChartBlock }) {
   if (block.series.length < 2) return null;

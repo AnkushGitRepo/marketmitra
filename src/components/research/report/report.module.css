@@ -37,7 +37,15 @@
   gap: 16px;
   padding: 24px 0;
   border-top: 1px solid var(--app-border-soft);
-  scroll-margin-top: 80px;
+  /* Room for the app header and the sticky jump bar when a chapter is jumped to. */
+  scroll-margin-top: 140px;
+  outline: none;
+}
+
+@media (max-width: 760px) {
+  .chapter {
+    scroll-margin-top: 128px;
+  }
 }
 
 .chapterHead {
