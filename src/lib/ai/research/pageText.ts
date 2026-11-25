@@ -16,7 +16,7 @@ const BLOCK_BREAKS = /<\/?(p|div|section|article|main|li|ul|ol|h[1-6]|tr|table|b
 function mainContent(html: string): string {
   for (const name of ['article', 'main']) {
     const m = new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, 'i').exec(html);
-    if (m && m[1].replace(/<[^>]*>/g, '').trim().length > 400) return m[1];
+    if (m && replaceUntilStable(m[1], /<[^>]*>/g, '').trim().length > 400) return m[1];
   }
   const body = /<body\b[^>]*>([\s\S]*)<\/body>/i.exec(html);
   return body ? body[1] : html;

@@ -72,7 +72,6 @@ describe('replaceUntilStable', () => {
   it('removes nested constructs a single pass would rebuild', () => {
     // One pass over this leaves a new, complete comment behind; the second removes it.
     expect(replaceUntilStable('<!<!-- -->--  c -->x', /<!--[\s\S]*?-->/g, '')).toBe('x');
-    expect('<!<!-- -->--  c -->x'.replace(/<!--[\s\S]*?-->/g, '')).toBe('<!--  c -->x');
   });
   it('stops on text that no longer changes', () => {
     expect(replaceUntilStable('plain', /<[^>]*>/g, '')).toBe('plain');
