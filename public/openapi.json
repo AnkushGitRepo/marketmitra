@@ -775,11 +775,28 @@
                   },
                   "body": {
                     "type": "string",
-                    "maxLength": 4000
+                    "maxLength": 20000,
+                    "description": "Up to 4,000 characters for a note you write; up to 20,000 when source is research."
                   },
                   "symbol": {
                     "type": "string",
                     "nullable": true
+                  },
+                  "tickers": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 8,
+                    "description": "Other symbols the note covers (a saved comparison lists each company)."
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "research"
+                    ],
+                    "description": "research marks a report saved from the Research page. Default manual."
                   }
                 }
               },

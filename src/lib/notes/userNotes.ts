@@ -4,6 +4,9 @@
 
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
+import { MAX_NOTES_PER_USER, MAX_TICKERS, MAX_TITLE, bodyLimit, type NoteSource } from './limits';
+
+export { MAX_BODY, MAX_NOTES_PER_USER, MAX_RESEARCH_BODY, MAX_TITLE } from './limits';
 
 export interface UserNote {
   id: string;
@@ -12,6 +15,10 @@ export interface UserNote {
   body: string;
   /** Optional uppercase NSE symbol the note is about. */
   symbol: string | null;
+  /** Other symbols the note covers (a saved comparison lists each company). */
+  tickers: string[];
+  /** `research` for a report saved from the Research page, else `manual`. */
+  source: NoteSource;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,13 +29,12 @@ interface UserNoteDoc {
   title: string;
   body: string;
   symbol: string | null;
+  /** Absent on notes written before saved research existed. */
+  tickers?: string[];
+  source?: NoteSource;
   createdAt: Date;
   updatedAt: Date;
 }
-
-export const MAX_TITLE = 140;
-export const MAX_BODY = 4000;
-export const MAX_NOTES_PER_USER = 200;
 
 function toNote(doc: UserNoteDoc): UserNote {
   return {
@@ -37,6 +43,8 @@ function toNote(doc: UserNoteDoc): UserNote {
     title: doc.title,
     body: doc.body,
     symbol: doc.symbol,
+    tickers: doc.tickers ?? [],
+    source: doc.source ?? 'manual',
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -64,13 +72,19 @@ export interface NoteInput {
   title: string;
   body: string;
   symbol?: string | null;
+  tickers?: readonly string[];
+  source?: NoteSource;
 }
 
-function normalize(input: NoteInput): Pick<UserNoteDoc, 'title' | 'body' | 'symbol'> {
+const cleanSymbol = (symbol: string): string => symbol.trim().toUpperCase().slice(0, 30);
+
+function normalize(input: NoteInput, source: NoteSource): Pick<UserNoteDoc, 'title' | 'body' | 'symbol' | 'tickers'> {
+  const tickers = [...new Set((input.tickers ?? []).map(cleanSymbol).filter(Boolean))].slice(0, MAX_TICKERS);
   return {
     title: input.title.trim().slice(0, MAX_TITLE),
-    body: input.body.trim().slice(0, MAX_BODY),
-    symbol: input.symbol ? input.symbol.trim().toUpperCase().slice(0, 30) || null : null,
+    body: input.body.trim().slice(0, bodyLimit(source)),
+    symbol: input.symbol ? cleanSymbol(input.symbol) || null : null,
+    tickers,
   };
 }
 
@@ -78,10 +92,12 @@ export async function createNote(userId: string, input: NoteInput): Promise<User
   const col = await collection();
   if ((await col.countDocuments({ userId })) >= MAX_NOTES_PER_USER) return null;
   const now = new Date();
+  const source = input.source ?? 'manual';
   const doc: UserNoteDoc = {
     _id: new ObjectId(),
     userId,
-    ...normalize(input),
+    ...normalize(input, source),
+    source,
     createdAt: now,
     updatedAt: now,
   };
@@ -96,9 +112,12 @@ export async function updateNote(
 ): Promise<UserNote | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await collection();
+  // The size limit follows the note's source, and the source itself never changes.
+  const existing = await col.findOne({ _id: new ObjectId(id), userId });
+  if (!existing) return null;
   const res = await col.findOneAndUpdate(
     { _id: new ObjectId(id), userId },
-    { $set: { ...normalize(input), updatedAt: new Date() } },
+    { $set: { ...normalize(input, existing.source ?? 'manual'), updatedAt: new Date() } },
     { returnDocument: 'after' }
   );
   return res ? toNote(res) : null;

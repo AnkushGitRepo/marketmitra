@@ -25,6 +25,8 @@ const note: UserNote = {
   title: 'Why I hold TCS',
   body: 'Steady dividend, strong order book.',
   symbol: 'TCS',
+  tickers: [],
+  source: 'manual',
   createdAt: new Date('2026-08-01'),
   updatedAt: new Date('2026-09-01'),
 };

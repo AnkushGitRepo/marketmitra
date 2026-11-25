@@ -30,6 +30,7 @@ import { companyBlocks } from '@/lib/research/companyBlocks';
 import { comparisonBlocks } from '@/lib/research/comparisonBlocks';
 import { portfolioBlocks } from '@/lib/research/portfolioBlocks';
 import { parseThesis, salvageSummary, thesisBlock } from '@/lib/research/thesis';
+import { suggestNote } from '@/lib/research/saveNote';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 
 export const dynamic = 'force-dynamic';
@@ -285,9 +286,18 @@ async function handlePOST(request: Request) {
   const blocks = thesisCard ? [...reportBlocks, thesisCard] : reportBlocks;
   const content = [summary, blocksToMarkdown(blocks)].filter(Boolean).join('\n\n');
 
+  const generatedAt = new Date().toISOString();
   return NextResponse.json({
     success: true,
-    data: { content, summary, blocks, model: gen.model, generatedAt: new Date().toISOString() },
+    data: {
+      content,
+      summary,
+      blocks,
+      model: gen.model,
+      generatedAt,
+      /** What "Save to Notes" files this report as; built here so the symbols are the resolved NSE ones. */
+      note: suggestNote(promptSubject, generatedAt),
+    },
     meta: { grounded: grounding.passages.length > 0, facts: factBlocks.length, structured: thesis !== null },
   });
 }
