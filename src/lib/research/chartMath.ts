@@ -55,3 +55,19 @@ export function sortRows<T extends Readonly<Record<string, TableCell>>>(rows: re
     return String(x).localeCompare(String(y)) * sign;
   });
 }
+
+export type Point = readonly [number, number];
+
+/** SVG path strings for a line through points, broken wherever a point is missing, so a gap is a gap and not a join. */
+export function linePaths(points: readonly (Point | null)[]): string[] {
+  const runs: Point[][] = [];
+  for (const point of points) {
+    if (point === null) {
+      runs.push([]);
+      continue;
+    }
+    if (runs.length === 0) runs.push([]);
+    runs[runs.length - 1].push(point);
+  }
+  return runs.filter((run) => run.length > 1).map((run) => run.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' '));
+}

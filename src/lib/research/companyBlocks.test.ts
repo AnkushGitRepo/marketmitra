@@ -79,12 +79,19 @@ describe('companyBlocks', () => {
   it('builds KPI cards with the peer median, the sales chart and the peer table', () => {
     const peers = [peer('A', '10', true), peer('B', '20'), peer('C', '30'), peer('D', '40')];
     const blocks = companyBlocks(data, peers);
-    expect(blocks.map((b) => b.type)).toEqual(['kpi_grid', 'bar_chart', 'data_table']);
+    expect(blocks.map((b) => b.type)).toEqual(['kpi_grid', 'financial_chart', 'data_table']);
     const kpi = blocks[0];
     if (kpi.type !== 'kpi_grid') throw new Error('expected kpi_grid');
     expect(kpi.items[0].value).toBe('₹18.55L Cr');
     expect(kpi.items[1]).toMatchObject({ value: '22.6x', note: 'Peer median 30.0x' });
     expect(kpi.items[3]).toMatchObject({ value: '25.4%', tone: 'positive' });
+  });
+  it('builds the financial chart with fiscal-year labels, margin and growth', () => {
+    const chart = companyBlocks(data, [])[1];
+    if (chart.type !== 'financial_chart') throw new Error('expected financial_chart');
+    expect(chart.periods.map((p) => p.label)).toEqual(['FY25', 'FY26']);
+    expect(chart.periods[1].opm).toBeCloseTo(16.96, 1);
+    expect(chart.periods[1].salesGrowth).toBeCloseTo(9.66, 1);
   });
   it('leaves the peer median out when there are too few peers', () => {
     const kpi = companyBlocks(data, [peer('A', '10', true), peer('B', '20')])[0];

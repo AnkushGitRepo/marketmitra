@@ -1,7 +1,8 @@
 import type { PeerOut } from '@/lib/dashboard/fundamentalsApi';
-import { compactBlocks, type BarChartBlock, type DataTableBlock, type KpiGridBlock, type ResearchBlock, type TableColumn } from './blocks';
+import { compactBlocks, type DataTableBlock, type FinancialChartBlock, type KpiGridBlock, type ResearchBlock, type TableColumn } from './blocks';
 import type { CompanyData } from './companyData';
-import { formatCrore, formatNumber, formatPercent, median, periodLabel, toNumber } from './formatters';
+import { buildFinancialPeriods } from './financialSeries';
+import { formatCrore, formatNumber, formatPercent, median, toNumber } from './formatters';
 
 const MIN_PEERS = 3;
 
@@ -40,19 +41,9 @@ function kpis(data: CompanyData, peers: readonly PeerOut[]): KpiGridBlock {
   };
 }
 
-function salesChart(data: CompanyData): BarChartBlock | null {
+function salesChart(data: CompanyData): FinancialChartBlock | null {
   if (data.annual.length === 0) return null;
-  return {
-    type: 'bar_chart',
-    title: 'Sales and operating profit',
-    unit: '₹ Cr',
-    orientation: 'vertical',
-    categories: data.annual.map((a) => periodLabel(a.periodEnd)),
-    series: [
-      { name: 'Sales', values: data.annual.map((a) => a.sales) },
-      { name: 'Operating profit', values: data.annual.map((a) => a.operatingProfit) },
-    ],
-  };
+  return { type: 'financial_chart', title: 'Sales and operating profit', unit: '₹ Cr', periods: buildFinancialPeriods(data.annual) };
 }
 
 export function peerTable(peers: readonly PeerOut[]): DataTableBlock | null {

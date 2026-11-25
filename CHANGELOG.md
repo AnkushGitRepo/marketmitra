@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The "Sales and operating profit" chart on a company's research report is now readable: fiscal years (FY22 to FY26) under each pair of bars, a ₹ scale on the left, the value above every bar (₹1.47L Cr, ₹73.4K Cr), the year-on-year sales growth under each year, and an operating margin (OPM %) line on a scale at the right. Hover or tab to a year for sales, operating profit, margin and growth, or switch to the Table view for the exact figures. A year missing from the stored data stays on the axis as "no data", and the year after it shows no growth rather than a misleading two-year figure. ([#359](https://github.com/AnkushGitRepo/marketmitra/issues/359))
 - IPO briefs come back in seconds instead of a minute or more: the model's reasoning is capped for this short summary (measured 8.6 s against 59 s for the same brief with search), and a scheduled job writes the shared brief for every open and upcoming IPO after each IPO refresh, so most visitors open one that is already there. ([#287](https://github.com/AnkushGitRepo/marketmitra/issues/287))
 - The search box, notifications, settings and hide-values buttons in the top header now show the same tip (name and a one-line hint) after a short pause when you rest the pointer on them. ([#271](https://github.com/AnkushGitRepo/marketmitra/issues/271))
 

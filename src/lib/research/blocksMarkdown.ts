@@ -1,5 +1,5 @@
 import type { ResearchBlock } from './blocks';
-import { formatCell, formatNumber } from './formatters';
+import { formatCell, formatNumber, formatPercent } from './formatters';
 
 const cell = (text: string): string => text.replace(/\|/g, '/').replace(/\s+/g, ' ');
 const pipeRow = (cells: readonly string[]): string => `| ${cells.map(cell).join(' | ')} |`;
@@ -24,6 +24,14 @@ function blockMarkdown(block: ResearchBlock): string | null {
         pipeTable(
           ['', ...block.series.map((s) => s.name)],
           block.categories.map((cat, i) => [cat, ...block.series.map((s) => (s.values[i] == null ? '—' : formatNumber(s.values[i], Number.isInteger(s.values[i]) ? 0 : 1)))])
+        ),
+      ].join('\n\n');
+    case 'financial_chart':
+      return [
+        `### ${block.title} (${block.unit})`,
+        pipeTable(
+          ['Period', 'Sales', 'Operating profit', 'OPM %', 'Sales growth'],
+          block.periods.map((p) => [p.label, formatNumber(p.sales, 0), formatNumber(p.operatingProfit, 0), formatPercent(p.opm), formatPercent(p.salesGrowth)])
         ),
       ].join('\n\n');
     case 'donut_chart': {
