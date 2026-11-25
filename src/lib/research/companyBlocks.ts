@@ -15,13 +15,13 @@ const PEER_COLUMNS: readonly TableColumn[] = [
   { key: 'sales_var', label: 'Sales growth (qtr YoY)', format: 'percent', best: 'high' },
 ];
 
-function peerMedianPe(peers: readonly PeerOut[]): number | null {
+export function peerMedianPe(peers: readonly PeerOut[]): number | null {
   const others = peers.filter((p) => !p.is_target).map((p) => toNumber(p.pe));
   const values = others.filter((v): v is number => v !== null && v > 0);
   return values.length >= MIN_PEERS ? median(values) : null;
 }
 
-function kpis(data: CompanyData, peers: readonly PeerOut[]): KpiGridBlock {
+export function companyKpis(data: CompanyData, peers: readonly PeerOut[]): KpiGridBlock {
   const pe = data.ratios['Stock P/E'] ?? null;
   const peerPe = peerMedianPe(peers);
   const change = data.fii.change;
@@ -66,6 +66,6 @@ export function peerTable(peers: readonly PeerOut[]): DataTableBlock | null {
 /** KPI cards, the sales chart and the peer table of one company. A missing series just leaves its block out. */
 export function companyBlocks(data: CompanyData, peers: readonly PeerOut[] | null): ResearchBlock[] {
   const list = peers ?? [];
-  return compactBlocks([kpis(data, list), salesChart(data), peerTable(list)]);
+  return compactBlocks([companyKpis(data, list), salesChart(data), peerTable(list)]);
 }
 

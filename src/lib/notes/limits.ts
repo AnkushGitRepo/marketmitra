@@ -3,8 +3,8 @@
 export const MAX_TITLE = 140;
 /** A note you write yourself. */
 export const MAX_BODY = 4000;
-/** A research report saved as a note carries its tables, so it gets more room. */
-export const MAX_RESEARCH_BODY = 20000;
+/** A research report saved as a note carries its tables, and the full company report (eight chapters, ~50,000 characters) is the largest. */
+export const MAX_RESEARCH_BODY = 100_000;
 export const MAX_NOTES_PER_USER = 200;
 export const MAX_TICKERS = 8;
 

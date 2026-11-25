@@ -775,8 +775,8 @@
                   },
                   "body": {
                     "type": "string",
-                    "maxLength": 20000,
-                    "description": "Up to 4,000 characters for a note you write; up to 20,000 when source is research."
+                    "maxLength": 100000,
+                    "description": "Up to 4,000 characters for a note you write; up to 100,000 when source is research (a full company report is about 50,000)."
                   },
                   "symbol": {
                     "type": "string",
@@ -1584,6 +1584,75 @@
           },
           "429": {
             "description": "Rate limited."
+          }
+        }
+      }
+    },
+    "/api/research/report": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate a company research report, chapter by chapter (streamed)",
+        "description": "The multi-chapter company report (ADR 0081): business and thesis, financials and cash flow, peer benchmarking, sector, regulatory and policy, litigation and governance, management, valuation and scenarios, risks. Cards, charts and tables are computed from stored data; the model writes the prose and the risk register, searching the web where a chapter needs current facts (the provider's own search tool where the key has one, else the app's keyless search). The response is newline-delimited JSON (`application/x-ndjson`), one event per line: `start` (company and chapter list), `chapter` (a chapter, sent first with its figures and `status: pending`, then again when its text is written, `ready` or `failed`), then `done` (model, generatedAt, `content` as markdown, and a suggested note) or `error`. A report takes one to three minutes. Requires the user's own AI key. Rate limited (ai tier).",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "An NSE symbol, a brand name (AIRTEL) or a company name."
+                  }
+                }
+              },
+              "example": {
+                "symbol": "BHARTIARTL"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A stream of events, one JSON object per line.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No listed company matches the symbol or name (the message names it)."
+          },
+          "422": {
+            "description": "Invalid body."
+          },
+          "429": {
+            "description": "Rate limited."
+          },
+          "502": {
+            "description": "The company's data could not be loaded."
           }
         }
       }
