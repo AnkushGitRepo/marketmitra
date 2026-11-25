@@ -103,6 +103,7 @@ Data service only so far: nothing in the app reads these yet. **Order matters (a
 - [ ] `GET /companies/NEWGEN/announcements` returns announcements newest first with a `category` each (the first call scrapes Screener; a second within 6 hours does not); `?category=litigation` narrows them; `GET /companies/NEWGEN/insights` returns pros and cons; `GET /companies/NEWGEN/financials/ratios` returns Debtor Days, Working Capital Days and Cash Conversion Cycle by year.
 - [ ] Spot-check three real companies (one large, one with a known court case or rating action, one SME): the categories look right, and a company whose Screener page has no pros/cons or no announcements returns an empty list, not an error.
 - [ ] Screener is still being scraped at its existing cadence: the new sections come from the page the service already fetches, so the request count should not have risen.
+- [ ] Yahoo cash, debt and EV (no migration needed; deploy the data service): `GET /companies/RELIANCE/ratios` includes `Enterprise Value`, `Net Debt` and `EV/EBITDA` (about 12x); `GET /companies/RELIANCE/financials/balance_sheet` includes `Total Debt` and `Cash and Short-Term Investments` rows; `NEWGEN` shows negative `Net Debt` (net cash); a bank such as `HDFCBANK` has none of them. Watch Yahoo for rate limiting after the deploy (one `info` and one `balance_sheet` call per company per day).
 
 ## 5. Admin modes (#243, ADR 0070)
 

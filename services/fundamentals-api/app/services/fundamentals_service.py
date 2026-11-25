@@ -49,7 +49,7 @@ from app.db.models import (
     RatioORM,
     ShareholdingEntryORM,
 )
-from app.ingestion import filing_discovery, tier1_nse_bse, tier2_yfinance
+from app.ingestion import filing_discovery, tier1_nse_bse, tier2_yfinance, yahoo_enterprise
 from app.ingestion.orchestrator import TieredResolver, resolve_with_fallback
 from app.ingestion.tier3_screener_scrapling import scraper as tier3
 from app.schemas import DocumentType, SourceTier, StatementType
@@ -168,6 +168,24 @@ async def _latest_snapshot(session: AsyncSession, model: type, company_id: int, 
     return list((await session.execute(stmt)).scalars())
 
 
+# One Yahoo fetch serves both the enterprise ratios and the balance-sheet cash/debt rows. Kept in memory per company so a
+# failure (or a company Yahoo does not know) is not retried on every request: a hit lasts the ratios TTL, a miss an hour.
+_ENTERPRISE_MISS_RETRY = timedelta(hours=1)
+_enterprise_cache: dict[int, tuple[datetime, dict | None]] = {}
+
+
+async def _enterprise_data(company: CompanyORM) -> dict | None:
+    cached = _enterprise_cache.get(company.id)
+    if cached is not None:
+        fetched, data = cached
+        ttl = timedelta(hours=_settings.ratios_cache_ttl_hours) if data is not None else _ENTERPRISE_MISS_RETRY
+        if datetime.now(UTC) - fetched < ttl:
+            return data
+    data = await tier2_yfinance.get_enterprise_data(company.nse_symbol, company.bse_code)
+    _enterprise_cache[company.id] = (datetime.now(UTC), data)
+    return data
+
+
 async def get_ratios(session: AsyncSession, company: CompanyORM) -> list[RatioORM]:
     existing = await _latest_snapshot(session, RatioORM, company.id, RatioORM.name)
     most_recent_fetch = existing[0].fetched_at if existing else None
@@ -197,6 +215,25 @@ async def get_ratios(session: AsyncSession, company: CompanyORM) -> list[RatioOR
             )
         )
         await session.execute(stmt)
+
+    # Enterprise value, cash, debt, net debt and EV/EBITDA (#365), best-effort from Yahoo: a miss leaves the Screener ratios as they are.
+    enterprise = await _enterprise_data(company)
+    for item in yahoo_enterprise.enterprise_ratios(enterprise["info"], company.sector) if enterprise else []:
+        await session.execute(
+            insert(RatioORM)
+            .values(
+                company_id=company.id,
+                name=item["name"],
+                value=item["value"],
+                unit=item["unit"],
+                as_of=today,
+                source_tier=SourceTier.TIER2_YFINANCE.value,
+            )
+            .on_conflict_do_update(
+                index_elements=["company_id", "name", "as_of"],
+                set_={"value": item["value"], "unit": item["unit"], "fetched_at": func.now()},
+            )
+        )
     await session.commit()
 
     return await _latest_snapshot(session, RatioORM, company.id, RatioORM.name)
@@ -310,6 +347,56 @@ async def _upsert_financial_items(
 
 
 async def get_financial_statement(
+    session: AsyncSession, company: CompanyORM, statement_type: StatementType
+) -> list[FinancialLineItemORM]:
+    items = await _get_financial_statement_base(session, company, statement_type)
+    if statement_type is not StatementType.BALANCE_SHEET or not company.nse_symbol:
+        return items
+    return await _with_yahoo_cash_and_debt(session, company, items)
+
+
+def _yahoo_rows_are_fresh(items: list[FinancialLineItemORM]) -> bool:
+    ours = [
+        i
+        for i in items
+        if i.source_tier == SourceTier.TIER2_YFINANCE.value
+        and i.label in (yahoo_enterprise.DEBT_LABEL, yahoo_enterprise.CASH_LABEL)
+    ]
+    return bool(ours) and not _is_stale(max(i.fetched_at for i in ours), _settings.financials_cache_ttl_hours)
+
+
+async def _with_yahoo_cash_and_debt(
+    session: AsyncSession, company: CompanyORM, items: list[FinancialLineItemORM]
+) -> list[FinancialLineItemORM]:
+    """The balance sheet with Yahoo's annual ``Total Debt`` and ``Cash and Short-Term Investments`` added (#365), which
+    Screener's balance sheet has no cash line for. Best-effort: when Yahoo has nothing, the statement is returned as it was.
+    Lenders get none (their debt and cash are the business, so net debt would mislead)."""
+    if yahoo_enterprise.is_lender(company.sector) or _yahoo_rows_are_fresh(items):
+        return items
+    enterprise = await _enterprise_data(company)
+    rows = yahoo_enterprise.balance_sheet_items(enterprise["balance_sheet"]) if enterprise else []
+    if not rows:
+        return items
+    await _upsert_financial_items(session, company, StatementType.BALANCE_SHEET, rows, SourceTier.TIER2_YFINANCE)
+    await session.commit()
+    return await _read_statement(session, company, StatementType.BALANCE_SHEET)
+
+
+async def _read_statement(
+    session: AsyncSession, company: CompanyORM, statement_type: StatementType
+) -> list[FinancialLineItemORM]:
+    stmt = (
+        select(FinancialLineItemORM)
+        .where(
+            FinancialLineItemORM.company_id == company.id,
+            FinancialLineItemORM.statement_type == statement_type.value,
+        )
+        .order_by(FinancialLineItemORM.period_end.desc())
+    )
+    return list((await session.execute(stmt)).scalars())
+
+
+async def _get_financial_statement_base(
     session: AsyncSession, company: CompanyORM, statement_type: StatementType
 ) -> list[FinancialLineItemORM]:
     stmt = (

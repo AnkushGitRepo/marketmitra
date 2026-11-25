@@ -1,6 +1,6 @@
 import { compactBlocks, type BarChartBlock, type DataTableBlock, type KpiGridBlock, type KpiItem, type ResearchBlock } from '../blocks';
 import { formatCrore, formatNumber, formatPercent } from '../formatters';
-import { debtToEquity, interestCover, isEmptyYear, type YearFigures } from './statements';
+import { debtToEquity, interestCover, isEmptyYear, netDebt, type YearFigures } from './statements';
 
 const sum = (values: readonly number[]): number => values.reduce((a, b) => a + b, 0);
 
@@ -13,6 +13,7 @@ function kpis(years: readonly YearFigures[]): KpiGridBlock | null {
   const withFcf = live.filter((y) => y.fcf !== null);
   const dte = debtToEquity(latest);
   const cover = interestCover(latest);
+  const net = netDebt(latest);
 
   const items: (KpiItem | null)[] = [
     both.length > 0 && profit > 0
@@ -27,6 +28,13 @@ function kpis(years: readonly YearFigures[]): KpiGridBlock | null {
       : null,
     latest.borrowings !== null
       ? { label: `Borrowings, ${latest.label}`, value: formatCrore(latest.borrowings), note: dte === null ? undefined : `Debt to equity ${formatNumber(dte, 2)}x` }
+      : null,
+    net !== null
+      ? {
+          label: `${net < 0 ? 'Net cash' : 'Net debt'}, ${latest.label}`,
+          value: formatCrore(Math.abs(net)),
+          note: net < 0 ? 'Cash and investments exceed debt' : 'Debt less cash and investments',
+        }
       : null,
     cover !== null ? { label: `Interest cover, ${latest.label}`, value: `${formatNumber(cover, 1)}x`, note: 'Operating profit over interest' } : null,
   ];
@@ -63,6 +71,7 @@ function leverageTable(years: readonly YearFigures[]): DataTableBlock | null {
       { key: 'fcf', label: 'Free cash flow', format: 'crore' },
       { key: 'cfoToEbitda', label: 'CFO / EBITDA', format: 'percent' },
       { key: 'borrowings', label: 'Borrowings', format: 'crore' },
+      { key: 'net', label: 'Net debt', format: 'crore' },
       { key: 'dte', label: 'Debt / equity', format: 'multiple' },
       { key: 'cover', label: 'Interest cover', format: 'multiple' },
     ],
@@ -73,6 +82,7 @@ function leverageTable(years: readonly YearFigures[]): DataTableBlock | null {
       fcf: y.fcf,
       cfoToEbitda: y.cfoToEbitda,
       borrowings: y.borrowings,
+      net: netDebt(y),
       dte: debtToEquity(y),
       cover: interestCover(y),
     })),

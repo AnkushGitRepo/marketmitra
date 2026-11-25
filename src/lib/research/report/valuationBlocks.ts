@@ -1,5 +1,5 @@
 import { compactBlocks, type BarChartBlock, type DataTableBlock, type KpiGridBlock, type KpiItem, type ResearchBlock } from '../blocks';
-import { formatNumber } from '../formatters';
+import { formatCrore, formatNumber } from '../formatters';
 import { ownMedianPe, peAtYearEnds, scenariosFromHistory, type PeAtYearEnd, type ScenarioSet } from './valuation';
 import type { YearFigures } from './statements';
 import type { PricePointOut } from '@/lib/dashboard/fundamentalsApi';
@@ -16,7 +16,7 @@ export interface ValuationInput {
 const x = (v: number): string => `${formatNumber(v, 1)}x`;
 const signedPercent = (v: number): string => `${v >= 0 ? '+' : '−'}${formatNumber(Math.abs(v), 0)}%`;
 
-function kpis(current: number | null, own: ReturnType<typeof ownMedianPe>, peer: number | null, pb: number | null): KpiGridBlock | null {
+function kpis(current: number | null, own: ReturnType<typeof ownMedianPe>, peer: number | null, pb: number | null, evToEbitda: number | null, net: number | null): KpiGridBlock | null {
   const premium = current !== null && own !== null ? (current / own.value - 1) * 100 : null;
   const items: (KpiItem | null)[] = [
     current === null ? null : { label: 'P/E now', value: x(current) },
@@ -24,6 +24,8 @@ function kpis(current: number | null, own: ReturnType<typeof ownMedianPe>, peer:
     premium === null ? null : { label: 'Against its own median', value: signedPercent(premium), note: premium >= 0 ? 'Premium' : 'Discount' },
     peer === null ? null : { label: 'Peer median P/E', value: x(peer) },
     pb === null ? null : { label: 'Price to book', value: x(pb) },
+    evToEbitda === null ? null : { label: 'EV / EBITDA', value: x(evToEbitda), note: 'Enterprise value over trailing EBITDA' },
+    net === null ? null : { label: net < 0 ? 'Net cash' : 'Net debt', value: formatCrore(Math.abs(net)), note: net < 0 ? 'Cash exceeds debt' : 'Debt less cash' },
   ];
   const shown = items.filter((i): i is KpiItem => i !== null);
   return shown.length === 0 ? null : { type: 'kpi_grid', items: shown };
@@ -66,7 +68,7 @@ export function valuationBlocks(input: ValuationInput): ResearchBlock[] {
   const book = input.ratios['Book Value'] ?? null;
   const pb = price !== null && book !== null && book > 0 ? price / book : null;
   return compactBlocks([
-    kpis(current, ownMedianPe(history), input.peerMedianPe, pb),
+    kpis(current, ownMedianPe(history), input.peerMedianPe, pb, input.ratios['EV/EBITDA'] ?? null, input.ratios['Net Debt'] ?? null),
     peChart(history, current),
     scenarioTable(scenariosFromHistory(input.years)),
   ]);

@@ -16,6 +16,9 @@ export interface YearFigures {
   /** Earnings per share in rupees. */
   readonly eps: number | null;
   readonly borrowings: number | null;
+  /** Total debt including lease obligations, and cash with short-term investments, both from Yahoo (#365). */
+  readonly totalDebt: number | null;
+  readonly cash: number | null;
   /** Equity capital plus reserves. */
   readonly equity: number | null;
   readonly totalAssets: number | null;
@@ -60,6 +63,8 @@ export function buildYearFigures(input: StatementInput): YearFigures[] {
   const capital = get(input.balanceSheet, 'Equity Capital');
   const reserves = get(input.balanceSheet, 'Reserves');
   const assets = get(input.balanceSheet, 'Total Assets');
+  const totalDebt = get(input.balanceSheet, 'Total Debt');
+  const cash = get(input.balanceSheet, 'Cash and Short-Term Investments');
   const cfo = get(input.cashFlow, 'Cash from Operating Activity');
   const fcf = get(input.cashFlow, 'Free Cash Flow');
   const cfoRatio = get(input.cashFlow, 'CFO/EBITDA');
@@ -74,6 +79,8 @@ export function buildYearFigures(input: StatementInput): YearFigures[] {
     interest: at(interest, end),
     eps: at(eps, end),
     borrowings: at(borrowings, end),
+    totalDebt: at(totalDebt, end),
+    cash: at(cash, end),
     equity: sumOrNull(at(capital, end), at(reserves, end)),
     totalAssets: at(assets, end),
     cfo: at(cfo, end),
@@ -85,6 +92,10 @@ export function buildYearFigures(input: StatementInput): YearFigures[] {
 /** Borrowings over equity, or null when either is missing or equity is not positive. */
 export const debtToEquity = (y: Pick<YearFigures, 'borrowings' | 'equity'>): number | null =>
   y.borrowings === null || y.equity === null || y.equity <= 0 ? null : y.borrowings / y.equity;
+
+/** Debt less cash, from Yahoo's two lines so both are measured the same way. Negative means more cash than debt. */
+export const netDebt = (y: Pick<YearFigures, 'totalDebt' | 'cash'>): number | null =>
+  y.totalDebt === null || y.cash === null ? null : y.totalDebt - y.cash;
 
 /** Operating profit over interest, or null when interest is missing or zero. */
 export const interestCover = (y: Pick<YearFigures, 'operatingProfit' | 'interest'>): number | null =>

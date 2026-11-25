@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
@@ -142,3 +143,40 @@ def _safe_decimal(value: object) -> Decimal | None:
     except Exception:  # noqa: BLE001
         return None
     return None if decimal_value.is_nan() else decimal_value
+
+
+def frame_to_rows(frame: object) -> dict[str, dict[date, float | None]]:
+    """A Yahoo statement DataFrame (rows are line items, columns are period-end timestamps) as plain dicts, so the
+    conversion to stored rows (`app.ingestion.yahoo_enterprise`) needs no pandas."""
+    if frame is None or getattr(frame, "empty", True):
+        return {}
+    rows: dict[str, dict[date, float | None]] = {}
+    for label in frame.index:
+        series: dict[date, float | None] = {}
+        for column in frame.columns:
+            raw = frame.at[label, column]
+            try:
+                number = float(raw)
+            except (TypeError, ValueError):
+                number = None
+            series[column.date() if hasattr(column, "date") else column] = (
+                None if number is None or math.isnan(number) else number
+            )
+        rows[str(label)] = series
+    return rows
+
+
+async def get_enterprise_data(nse_symbol: str | None, bse_code: str | None) -> dict | None:
+    """Yahoo's quote summary (``info``) and annual balance sheet for the cash, debt and enterprise-value figures
+    (#365). None when Yahoo has no symbol for the company or the request fails; the caller treats that as "no data"."""
+    symbol = _yahoo_symbol(nse_symbol, bse_code)
+    if symbol is None:
+        return None
+    try:
+        ticker = yf.Ticker(symbol)
+        info = await asyncio.to_thread(lambda: dict(ticker.info))
+        balance_sheet = await asyncio.to_thread(lambda: ticker.balance_sheet)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("yfinance enterprise data(%s) failed: %s", symbol, exc)
+        return None
+    return {"info": info, "balance_sheet": frame_to_rows(balance_sheet)}

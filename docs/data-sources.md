@@ -55,6 +55,14 @@ For each source, record: what it is, the endpoint(s) used, auth/key requirements
 - **Cost:** free
 - **ToS notes:** unofficial API with no SLA — accepted trade-off per ADR 0011. Verified working live during development.
 
+#### Yahoo Finance: cash, debt and enterprise value (research report, #365, ADR 0081)
+
+- **Used for:** the figures the report needs for net debt and EV/EBITDA, which neither Screener's balance sheet nor the stored filings give a cash line for. `Ticker.balance_sheet` gives annual **Total Debt** and **Cash Cash Equivalents And Short Term Investments** (stored as balance-sheet rows `Total Debt` and `Cash and Short-Term Investments`, tier `tier2_yfinance`, ₹ crore); `Ticker.info` gives the current **enterpriseValue, totalCash, totalDebt and ebitda**, stored with the ratios as `Enterprise Value`, `Total Cash`, `Total Debt (latest)`, `Net Debt`, `EBITDA (TTM)` and `EV/EBITDA`.
+- **Cadence:** fetched lazily with the ratios and balance sheet, one `info` plus one `balance_sheet` call per company, cached in memory for the ratios TTL (a failure or a company Yahoo does not know is remembered for an hour, so a Yahoo outage is not retried on every request).
+- **Units:** Yahoo reports in rupees; stored in ₹ crore to the paisa. A report in any other currency is refused, not relabelled.
+- **Lenders are excluded:** banks, NBFCs and insurers (sector `Financial Services`) get no enterprise figures and no Yahoo balance-sheet rows, because debt and cash are their business and EV/EBITDA would mislead.
+- **Checked live 2026-11-25** on Reliance (EV/EBITDA 12.1x, net debt ₹2.42L Cr), Newgen (net cash ₹1,075 Cr), TCS (net cash ₹39,216 Cr) and HDFC Bank (none, as intended). Yahoo's FY26 total debt for Reliance (₹3.98L Cr) is close to Screener's borrowings (₹4.03L Cr); the definitions differ slightly (Yahoo includes lease obligations), which is why the report computes net debt from Yahoo's two lines only. `Total Debt (latest)` is the latest quarter and can differ from the last fiscal year's row.
+
 #### Yahoo Finance: sector indices and NIFTY 50 breadth (Markets page, ADR 0044)
 
 Read from the Next app via `yahoo-finance2` (not the fundamentals service). Sector performance uses the NSE sectoral indices
