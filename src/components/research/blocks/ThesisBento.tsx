@@ -8,8 +8,8 @@ export function ThesisBento({ block }: { readonly block: ThesisBentoBlock }) {
         <section key={col.title} className={styles.bentoCard} data-tone={col.tone}>
           <h3 className={styles.bentoTitle}>{col.title}</h3>
           <ul>
-            {col.items.map((item) => (
-              <li key={item}>{item}</li>
+            {col.items.map((item, i) => (
+              <li key={`${i}-${item}`}>{item}</li>
             ))}
           </ul>
         </section>

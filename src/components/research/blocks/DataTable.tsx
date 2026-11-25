@@ -43,7 +43,7 @@ export function DataTable({ block }: { readonly block: DataTableBlock }) {
           </thead>
           <tbody>
             {rows.map((row, ri) => (
-              <tr key={String(row[block.columns[0].key] ?? ri)}>
+              <tr key={ri}>
                 {block.columns.map((c) => (
                   <td key={c.key} data-align={c.format === 'text' ? 'left' : 'right'} data-best={best.get(c.key)?.has(ri) ?? false}>
                     {formatCell(row[c.key] ?? null, c.format)}

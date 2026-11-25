@@ -194,6 +194,8 @@ export const RESEARCH_CHAPTER_SYSTEM = withGuardrail(
     'Write each requested chapter under a line that reads exactly "## CHAPTER: <id>" (the ids are given), in the order requested, and nothing else outside the chapters. Inside a chapter use short markdown paragraphs and bullet lists; do not repeat the tables (the page shows them), interpret them.',
     'Depth over brevity: each chapter is about 250 to 450 words, specific, and built on numbers and dated events. Quote a figure when it supports a point. Where something is a judgement, say so.',
     'Never invent a figure, a case, a date or a name. If a fact is missing from the data and a search did not find it, say what you looked for and that you could not find it. Do not write generic company history.',
+    'Promoter pledge: the data says "none flagged" when the source flags no pledge, which is not proof of zero. Write "no pledge was flagged" unless a source you found states the figure, and never use it to rule a risk out.',
+    'Use flat bullet lists only, never nested bullets, and put a bullet\u2019s heading and its text on the same line.',
     'Neutral analysis only: no buy, sell or hold view, no price target, no "attractive" or "cheap" verdict. Scenarios and ranges are illustrations drawn from the company\u2019s own history, never forecasts.',
     'Put the disclaimer line once, at the very end of your whole reply, not after each chapter.',
   ].join('\n'),

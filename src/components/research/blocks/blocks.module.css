@@ -115,6 +115,22 @@
   stroke-width: 1;
 }
 
+.barValue {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--app-text-muted);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 640px) {
+  .barValue {
+    display: none;
+  }
+}
+
 .tick {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -253,6 +269,23 @@
 
 .table [data-align='left'] {
   text-align: left;
+}
+
+/* Long text (a risk, an announcement) wraps in a readable column instead of pushing the other columns off the page. */
+.table td[data-align='left'] {
+  white-space: normal;
+  min-width: 9rem;
+  max-width: 44ch;
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.table td[data-align='left']:first-child {
+  white-space: nowrap;
+}
+
+.table td[data-align='right'] {
+  vertical-align: top;
 }
 
 .table [data-align='right'] {

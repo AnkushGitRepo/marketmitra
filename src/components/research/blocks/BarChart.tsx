@@ -32,7 +32,7 @@ function HorizontalBars({ block }: { readonly block: BarChartBlock }) {
   return (
     <ul className={styles.hbars}>
       {block.categories.map((cat, row) => (
-        <li key={cat} className={styles.hrow}>
+        <li key={`${row}-${cat}`} className={styles.hrow}>
           <span className={styles.hlabel}>{cat}</span>
           <span className={styles.htrack}>
             <span className={styles.hzero} style={{ left: `${zero}%` }} />
@@ -71,15 +71,20 @@ function VerticalBars({ block }: { readonly block: BarChartBlock }) {
         const groupW = barW * block.series.length;
         const x0 = PAD.left + band * ci + (band - groupW) / 2;
         return (
-          <g key={cat}>
+          <g key={`${ci}-${cat}`}>
             {block.series.map((s, si) => {
               const v = s.values[ci] ?? null;
               if (v === null) return null;
               const top = Math.min(y(v), y(0));
               return (
-                <rect key={s.name} x={x0 + si * barW} y={top} width={barW - 2} height={Math.max(Math.abs(y(v) - y(0)), 1)} rx={3} fill={seriesColor(si === 0 && block.series.length === 1 ? 1 : si)}>
-                  <title>{`${cat} ${s.name}: ${label(v)} ${block.unit}`}</title>
-                </rect>
+                <g key={s.name}>
+                  <rect x={x0 + si * barW} y={top} width={barW - 2} height={Math.max(Math.abs(y(v) - y(0)), 1)} rx={3} fill={seriesColor(si === 0 && block.series.length === 1 ? 1 : si)}>
+                    <title>{`${cat} ${s.name}: ${label(v)} ${block.unit}`}</title>
+                  </rect>
+                  <text x={x0 + si * barW + (barW - 2) / 2} y={v < 0 ? y(v) + 12 : top - 5} textAnchor="middle" className={styles.barValue}>
+                    {label(v)}
+                  </text>
+                </g>
               );
             })}
             <text x={PAD.left + band * ci + band / 2} y={H - 8} textAnchor="middle" className={styles.tick}>
