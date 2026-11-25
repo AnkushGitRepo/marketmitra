@@ -61,7 +61,11 @@ export function ResearchPageClient() {
   const [noKey, setNoKey] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const company = useCompanyReport();
-  const companyRunning = company.phase === 'running';
+  const sector = useCompanyReport('/api/research/sector-report', 'theme');
+  // The Company and Theme tabs both show a streamed chapter report; each keeps its own.
+  const stream = tab === 'theme' ? sector : company;
+  const streamed = tab === 'company' || tab === 'theme';
+  const companyRunning = company.phase === 'running' || sector.phase === 'running';
 
   const subjectFor = (themeText: string = theme): Record<string, unknown> | null => {
     if (tab === 'company') return symbol.trim() ? { type: 'company', symbol: symbol.trim().toUpperCase() } : null;
@@ -77,11 +81,12 @@ export function ResearchPageClient() {
       if (!subject) setError('Fill in the field(s) above first.');
       return;
     }
-    if (subject.type === 'company') {
-      // A company gets the multi-chapter report, streamed as it is written.
+    if (subject.type === 'company' || subject.type === 'theme') {
+      // A company or a theme gets the multi-chapter report, streamed as it is written.
       setError(null);
       setNoKey(false);
-      await company.start(String(subject.symbol));
+      if (subject.type === 'company') await company.start(String(subject.symbol));
+      else await sector.start(String(subject.text));
       return;
     }
     setBusy(true);
@@ -199,49 +204,49 @@ export function ResearchPageClient() {
             </div>
           )}
 
-          {(noKey || (tab === 'company' && company.failure?.noKey)) && (
+          {(noKey || (streamed && stream.failure?.noKey)) && (
             <p className={styles.hint}>
               Mitra needs your AI provider key. <Link href="/settings">Add it in Settings</Link> — it
               stays on this deployment and nothing is charged by MarketMitra.
             </p>
           )}
           {error && <p className={styles.error}>{error}</p>}
-          {tab === 'company' && company.failure && !company.failure.noKey && <p className={styles.error}>{company.failure.message}</p>}
+          {streamed && stream.failure && !stream.failure.noKey && <p className={styles.error}>{stream.failure.message}</p>}
 
           <div className={styles.formActions}>
             <button type="button" className={styles.btnPrimary} onClick={() => run()} disabled={busy || companyRunning}>
-              {busy || companyRunning ? 'Researching…' : tab === 'company' ? (company.state.name ? 'Regenerate report' : 'Generate report') : report ? 'Regenerate' : 'Generate brief'}
+              {busy || companyRunning ? 'Researching…' : streamed ? (stream.state.name ? 'Regenerate report' : 'Generate report') : report ? 'Regenerate' : 'Generate brief'}
             </button>
           </div>
         </div>
       </div>
 
-      {busy && tab !== 'company' && <p className={styles.loading}>Gathering data and writing the brief — this can take a minute.</p>}
-      {tab === 'company' && companyRunning && !company.state.name && <p className={styles.loading}>Gathering the data held for this company…</p>}
+      {busy && !streamed && <p className={styles.loading}>Gathering data and writing the brief — this can take a minute.</p>}
+      {streamed && stream.phase === 'running' && !stream.state.name && <p className={styles.loading}>{tab === 'theme' ? 'Gathering the listed companies in this theme…' : 'Gathering the data held for this company…'}</p>}
 
-      {tab === 'company' && company.state.name && (
+      {streamed && stream.state.name && (
         <div className={`${styles.card} ${styles.reportCard}`} ref={reportRef}>
           <ReportActions
-            report={company.state.done ? { content: company.state.done.content, model: company.state.done.model, generatedAt: company.state.done.generatedAt, note: company.state.done.note } : { content: '', model: '', generatedAt: '' }}
+            report={stream.state.done ? { content: stream.state.done.content, model: stream.state.done.model, generatedAt: stream.state.done.generatedAt, note: stream.state.done.note } : { content: '', model: '', generatedAt: '' }}
             printRef={reportRef}
             exportControl={
               <ExportMenu
-                chapters={Object.values(company.state.chapters)}
-                meta={company.state.done && company.state.symbol && company.state.name ? { symbol: company.state.symbol, name: company.state.name, generatedAt: company.state.done.generatedAt, model: company.state.done.model } : null}
+                chapters={Object.values(stream.state.chapters)}
+                meta={stream.state.done && stream.state.symbol && stream.state.name ? { kind: tab === 'theme' ? 'sector' : 'company', symbol: stream.state.symbol, name: stream.state.name, generatedAt: stream.state.done.generatedAt, model: stream.state.done.model } : null}
               />
             }
           />
-          <CompanyReportView state={company.state} running={companyRunning} />
-          {company.state.error && <p className={styles.error}>{company.state.error}</p>}
-          {company.state.done && (
+          <CompanyReportView state={stream.state} running={stream.phase === 'running'} />
+          {stream.state.error && <p className={styles.error}>{stream.state.error}</p>}
+          {stream.state.done && (
             <p className={styles.reportMeta}>
-              AI-generated ({company.state.done.model}) · {new Date(company.state.done.generatedAt).toLocaleString()} · This is a synthesis of public data, not investment advice
+              AI-generated ({stream.state.done.model}) · {new Date(stream.state.done.generatedAt).toLocaleString()} · This is a synthesis of public data, not investment advice
             </p>
           )}
         </div>
       )}
 
-      {tab !== 'company' && report && !busy && (
+      {!streamed && report && !busy && (
         <div className={`${styles.card} ${styles.reportCard}`} ref={reportRef}>
           <ReportActions report={report} printRef={reportRef} />
           <ReportBody report={report} />

@@ -4,7 +4,7 @@ import type { ResearchBlock } from '../blocks';
 import { companyBlocks, companyKpis, peerMedianPe, peerTable } from '../companyBlocks';
 import { buildCompanyData } from '../companyData';
 import { toNumber } from '../formatters';
-import type { ChapterId } from './chapters';
+import type { CompanyChapterId } from './chapters';
 import { announcementBlocks, ownershipBlocks } from './governanceBlocks';
 import type { ReportInputs } from './inputs';
 import { statementBlocks } from './statementBlocks';
@@ -13,7 +13,7 @@ import { valuationBlocks } from './valuationBlocks';
 import { workingCapitalBlocks } from './workingCapitalBlocks';
 
 export interface ComputedReport {
-  readonly blocks: Readonly<Record<ChapterId, readonly ResearchBlock[]>>;
+  readonly blocks: Readonly<Record<CompanyChapterId, readonly ResearchBlock[]>>;
   readonly years: readonly YearFigures[];
   /** Current ratios by name (market cap in ₹ crore). */
   readonly ratios: Readonly<Record<string, number | null>>;

@@ -5,7 +5,7 @@ import type { FactBlock } from '@/lib/ai/researchPrompts';
 import { recoverObject } from '@/lib/ai/jsonRecovery';
 import type { GroundingPassage } from '@/lib/rag/insightContext';
 import type { SearchBudget } from '@/lib/ai/research/webTools';
-import { chapterMeta, type ChapterId } from './chapters';
+import { chapterMeta, type ChapterId, type CompanyChapterId } from './chapters';
 import type { ComputedReport } from './computed';
 import { announcementFacts, chapterTables, profileFacts, riskFacts, searchName } from './facts';
 import type { ReportInputs } from './inputs';
@@ -24,7 +24,7 @@ export interface TaskSpec {
   readonly groundingQuery: string;
 }
 
-const GUIDANCE: Record<ChapterId, string> = {
+const GUIDANCE: Record<CompanyChapterId, string> = {
   overview:
     'What the business does and how it makes money: revenue drivers and, if the annual report or a source gives them, segments and unit economics (realisation, utilisation, customers). Its competitive position and how durable the moat looks. End with the 3 to 4 points the investment case turns on, stated neutrally.',
   management:
@@ -44,7 +44,7 @@ const GUIDANCE: Record<ChapterId, string> = {
   risks: 'The risk register.',
 };
 
-const chapterList = (ids: readonly ChapterId[]): string =>
+const chapterList = (ids: readonly CompanyChapterId[]): string =>
   ids.map((id) => `## CHAPTER: ${id}\n(${chapterMeta(id).title}) ${GUIDANCE[id]}`).join('\n\n');
 
 const factsText = (blocks: readonly FactBlock[]): string => blocks.map((b) => `### ${b.heading}\n${b.body.trim()}`).join('\n\n');
@@ -52,7 +52,7 @@ const factsText = (blocks: readonly FactBlock[]): string => blocks.map((b) => `#
 const groundingText = (passages: readonly GroundingPassage[]): string =>
   passages.length === 0 ? 'Retrieved context: none was found in the indexed news, filings or notes.' : `Retrieved context (indexed news, filings and notes):\n${passages.map((p) => `- (${p.source}) ${p.text}`).join('\n')}`;
 
-function prompt(inputs: ReportInputs, ids: readonly ChapterId[], facts: readonly FactBlock[], passages: readonly GroundingPassage[], extra = ''): string {
+function prompt(inputs: ReportInputs, ids: readonly CompanyChapterId[], facts: readonly FactBlock[], passages: readonly GroundingPassage[], extra = ''): string {
   return [
     `Subject: ${searchName(inputs)}.`,
     `Write these chapters, in this order, each under its "## CHAPTER: <id>" line:\n\n${chapterList(ids)}`,
@@ -62,8 +62,8 @@ function prompt(inputs: ReportInputs, ids: readonly ChapterId[], facts: readonly
   ].filter(Boolean).join('\n\n');
 }
 
-const SEARCH_LIGHT: SearchBudget = { maxSearches: 3, maxPages: 2 };
-const SEARCH_HEAVY: SearchBudget = { maxSearches: 6, maxPages: 4 };
+export const SEARCH_LIGHT: SearchBudget = { maxSearches: 3, maxPages: 2 };
+export const SEARCH_HEAVY: SearchBudget = { maxSearches: 6, maxPages: 4 };
 
 export function buildTasks(inputs: ReportInputs, computed: ComputedReport, grounding: Readonly<Record<Exclude<TaskId, 'risks'>, readonly GroundingPassage[]>>): TaskSpec[] {
   const name = inputs.company.name;

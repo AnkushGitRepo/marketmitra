@@ -26,7 +26,7 @@ import { formatCell } from '../../formatters';
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { chartAsTable, type PlainTable } from './chartTables';
 import { DISCLAIMER_TEXT } from './markdown';
-import { headlineFigures, reportDateLong, reportRef, type ExportMeta } from './meta';
+import { headlineFigures, reportDateLong, reportRef, subjectInline, subjectTag, type ExportMeta } from './meta';
 import { columnWidths } from './printBlocks';
 
 const FONT = 'Calibri';
@@ -148,7 +148,7 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
   const figures = headlineFigures(chapters);
   const front: FileChild[] = [
     new Paragraph({ heading: HeadingLevel.TITLE, spacing: { after: 60 }, children: [new TextRun({ text: meta.name, bold: true, size: 44, color: INK })] }),
-    para(`NSE: ${meta.symbol}   |   ${reportRef(meta)}   |   ${reportDateLong(meta.generatedAt)}   |   written by ${meta.model}`, { color: MUTED, size: 18, after: 160 }),
+    para(`${subjectTag(meta)}   |   ${reportRef(meta)}   |   ${reportDateLong(meta.generatedAt)}   |   written by ${meta.model}`, { color: MUTED, size: 18, after: 160 }),
     ...(figures.length > 0 ? [table(['Measure', 'Value'], figures.map((f) => [f.label, f.note ? `${f.value}  (${f.note})` : f.value]), [30, 70], 1), para('', { after: 120 })] : []),
     para('Contents', { bold: true, after: 60 }),
     ...shown.map((c, i) => para(`${String(i + 1).padStart(2, '0')}   ${c.title}`, { after: 30 })),
@@ -166,7 +166,7 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
 
   return new Document({
     creator: 'MarketMitra Research',
-    title: `${meta.name} (${meta.symbol}): company research report`,
+    title: `${subjectInline(meta)}: ${meta.kind === 'sector' ? 'sector' : 'company'} research report`,
     description: DISCLAIMER_TEXT,
     styles: {
       default: { document: { run: { font: FONT, size: BODY_SIZE, color: INK } } },
@@ -180,7 +180,7 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
     sections: [
       {
         properties: { page: { size: { width: PAGE.width, height: PAGE.height }, margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } } },
-        headers: { default: new Header({ children: [new Paragraph({ border: { bottom: thin }, children: [new TextRun({ text: `MarketMitra Research   |   ${meta.name} (${meta.symbol})`, size: 16, color: MUTED })] })] }) },
+        headers: { default: new Header({ children: [new Paragraph({ border: { bottom: thin }, children: [new TextRun({ text: `MarketMitra Research   |   ${subjectInline(meta)}`, size: 16, color: MUTED })] })] }) },
         footers: {
           default: new Footer({
             children: [

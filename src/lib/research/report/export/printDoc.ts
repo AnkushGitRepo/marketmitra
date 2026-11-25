@@ -4,7 +4,7 @@
 
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { escapeHtml, markdownToHtml } from './html';
-import { headlineFigures, reportDateLong, reportFileBase, reportRef, type ExportMeta } from './meta';
+import { headlineFigures, reportDateLong, reportFileBase, reportRef, kindLabel, kindTagline, subjectInline, subjectTag, type ExportMeta } from './meta';
 import { blockHtml } from './printBlocks';
 
 export const WATERMARK = 'MARKETMITRA RESEARCH · FOR PERSONAL USE';
@@ -101,11 +101,11 @@ export function buildReportPrintHtml(chapters: readonly ReportChapter[], meta: E
   const date = reportDateLong(meta.generatedAt);
   const kpis = headlineFigures(chapters);
   const kpiHtml = kpis.length > 0 ? `<div class="kpis">${kpis.map((k) => `<div class="kpi"><span class="kl">${escapeHtml(k.label)}</span><span class="kv">${escapeHtml(k.value)}</span>${k.note ? `<span class="kn">${escapeHtml(k.note)}</span>` : ''}</div>`).join('')}</div>` : '';
-  const footer = `MarketMitra Research · ${escapeHtml(meta.name)} (${escapeHtml(meta.symbol)}) · Generated ${date} · Public data synthesis`;
+  const footer = `MarketMitra Research · ${escapeHtml(subjectInline(meta))} · Generated ${date} · Public data synthesis`;
   const cover = `<section class="cover">
-<div class="letterhead"><div class="brand">${EMBLEM}<div><b>MARKETMITRA RESEARCH</b><small>Independent company research from public data</small></div></div>
-<div class="ref"><b>COMPANY RESEARCH REPORT</b>${escapeHtml(reportRef(meta))}<br>${date}</div></div>
-<h1>${escapeHtml(meta.name)}</h1><p class="sub">NSE: ${escapeHtml(meta.symbol)}</p>
+<div class="letterhead"><div class="brand">${EMBLEM}<div><b>MARKETMITRA RESEARCH</b><small>${kindTagline(meta)}</small></div></div>
+<div class="ref"><b>${kindLabel(meta)}</b>${escapeHtml(reportRef(meta))}<br>${date}</div></div>
+<h1>${escapeHtml(meta.name)}</h1><p class="sub">${escapeHtml(subjectTag(meta))}</p>
 ${kpiHtml}
 <h3>Contents</h3><ol class="contents">${shown.map((c, i) => `<li><span>${String(i + 1).padStart(2, '0')}</span>${escapeHtml(c.title)}</li>`).join('')}</ol>
 <div class="disclaimer"><b>About this report.</b> Written by ${escapeHtml(meta.model)} from figures MarketMitra holds (company financials, exchange filings, shareholding, peers) and, where a chapter says so, from web searches. The figures in the cards, charts and tables are computed from that stored data; the written analysis is an AI model’s synthesis and can contain errors, so check anything that matters against the source. This is neutral analysis for information. It is not investment advice, a recommendation or a price target. Scenarios are ranges drawn from the company’s own history, not forecasts.</div>

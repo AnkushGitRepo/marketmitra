@@ -5,7 +5,7 @@ import type { SourceRef } from '@/lib/ai/research/generateWithSearch';
 import type { ToolCallRecord } from '@/lib/ai/research/webTools';
 import type { GroundingPassage } from '@/lib/rag/insightContext';
 import { suggestNote } from '../saveNote';
-import { CHAPTERS, chaptersToMarkdown, pendingChapter, type ChapterId, type ReportChapter, type ReportEvent } from './chapters';
+import { COMPANY_CHAPTERS, chaptersToMarkdown, pendingChapter, type ChapterId, type ReportChapter, type ReportEvent } from './chapters';
 import { computeReport } from './computed';
 import type { ReportInputs } from './inputs';
 import { riskBlocks } from './riskBlocks';
@@ -30,12 +30,12 @@ const written = (id: ChapterId, base: ReportChapter, over: Partial<ReportChapter
 
 export async function* runReport(inputs: ReportInputs, deps: RunDeps, opts: { concurrency?: number } = {}): AsyncGenerator<ReportEvent> {
   const computed = computeReport(inputs);
-  const chapters = new Map<ChapterId, ReportChapter>(CHAPTERS.map((c) => [c.id, pendingChapter(c.id, computed.blocks[c.id])]));
+  const chapters = new Map<ChapterId, ReportChapter>(COMPANY_CHAPTERS.map((c) => [c.id, pendingChapter(c.id, computed.blocks[c.id])]));
   const set = (chapter: ReportChapter) => chapters.set(chapter.id, chapter);
 
-  yield { type: 'start', symbol: inputs.symbol, name: inputs.company.name, chapters: CHAPTERS.map(({ id, title }) => ({ id, title })) };
+  yield { type: 'start', symbol: inputs.symbol, name: inputs.company.name, chapters: COMPANY_CHAPTERS.map(({ id, title }) => ({ id, title })) };
   // The figures are known already: show them before any model call returns.
-  for (const { id } of CHAPTERS) if (chapters.get(id)!.blocks.length > 0) yield { type: 'chapter', chapter: chapters.get(id)! };
+  for (const { id } of COMPANY_CHAPTERS) if (chapters.get(id)!.blocks.length > 0) yield { type: 'chapter', chapter: chapters.get(id)! };
 
   const groundingTasks = ['business', 'numbers', 'sector', 'legal'] as const;
   const queries = buildTasks(inputs, computed, { business: [], numbers: [], sector: [], legal: [] });

@@ -1657,6 +1657,77 @@
         }
       }
     },
+    "/api/research/sector-report": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate a sector (theme) research report, chapter by chapter (streamed)",
+        "description": "The nine-chapter sector report: sector overview and value chain, financial scorecard and growth, top listed Indian companies, unlisted innovators and the IPO pipeline, global benchmarks, outlook and catalysts, policy and regulation, litigation and governance risks, and a ten-question investor checklist. `theme` is a theme, sector or industry as suggested by `/api/research/themes`. Cards, charts and tables are computed from the screener data (the largest listed companies in the theme); the model writes the prose, searching the web where a chapter needs current facts. The response is newline-delimited JSON (`application/x-ndjson`) with the same events as `/api/research/report`: `start`, `chapter` (first with its figures and `status: pending`, then when written), then `done` or `error`. Requires the user's own AI key. Rate limited (ai tier).",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "theme"
+                ],
+                "properties": {
+                  "theme": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80,
+                    "description": "A theme, sector or industry, e.g. `Defence & Aerospace`."
+                  }
+                }
+              },
+              "example": {
+                "symbol": "BHARTIARTL"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A stream of events, one JSON object per line.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No listed theme or sector matches."
+          },
+          "422": {
+            "description": "Invalid body."
+          },
+          "429": {
+            "description": "Rate limited."
+          },
+          "502": {
+            "description": "The company's data could not be loaded."
+          }
+        }
+      }
+    },
     "/api/research/themes": {
       "get": {
         "tags": [

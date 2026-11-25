@@ -13,8 +13,11 @@ export interface ReportFailure {
 
 const GENERIC = 'Could not generate the report. Try again shortly.';
 
-/** Runs the streamed company report and keeps its state as chapters arrive. */
-export function useCompanyReport() {
+/**
+ * Runs a streamed report and keeps its state as chapters arrive. The company report posts `{ symbol }` to its route; the
+ * sector report posts `{ theme }` to its own. Both stream the same events.
+ */
+export function useCompanyReport(endpoint = '/api/research/report', field = 'symbol') {
   const [state, setState] = useState<ReportState>(EMPTY_REPORT);
   const [phase, setPhase] = useState<ReportPhase>('idle');
   const [failure, setFailure] = useState<ReportFailure | null>(null);
@@ -22,7 +25,7 @@ export function useCompanyReport() {
 
   useEffect(() => () => abort.current?.abort(), []);
 
-  const start = useCallback(async (symbol: string) => {
+  const start = useCallback(async (subject: string) => {
     abort.current?.abort();
     const controller = new AbortController();
     abort.current = controller;
@@ -30,10 +33,10 @@ export function useCompanyReport() {
     setFailure(null);
     setPhase('running');
     try {
-      const res = await fetch('/api/research/report', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol }),
+        body: JSON.stringify({ [field]: subject }),
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
@@ -57,7 +60,7 @@ export function useCompanyReport() {
     } finally {
       if (abort.current === controller) setPhase('finished');
     }
-  }, []);
+  }, [endpoint, field]);
 
   return { state, phase, failure, start };
 }
