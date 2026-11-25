@@ -74,7 +74,14 @@ function VerticalBars({ block }: { readonly block: BarChartBlock }) {
           <g key={`${ci}-${cat}`}>
             {block.series.map((s, si) => {
               const v = s.values[ci] ?? null;
-              if (v === null) return null;
+              if (v === null) {
+                // A missing figure is said so, not left as a silent gap.
+                return (
+                  <text key={s.name} x={x0 + si * barW + (barW - 2) / 2} y={y(0) - 5} textAnchor="middle" className={styles.barValue} opacity={0.6}>
+                    N/A
+                  </text>
+                );
+              }
               const top = Math.min(y(v), y(0));
               return (
                 <g key={s.name}>

@@ -20,7 +20,8 @@ export function themeBlocks(sectors: readonly string[], leaders: readonly Screen
   if (leaders.length === 0) return [];
   const pe = median(present(leaders.map((r) => r.pe).filter((v) => v === null || v > 0)));
   const roce = median(present(leaders.map((r) => r.roce)));
-  const top = leaders.slice(0, CHART_COMPANIES);
+  // A company with no three-year figure would only leave an empty gap in the chart, so the chart takes the largest that have one.
+  const top = leaders.filter((r) => r.sales_growth_3y_cagr !== null || r.profit_growth_3y_cagr !== null).slice(0, CHART_COMPANIES);
   return [
     {
       type: 'kpi_grid',
@@ -44,16 +45,20 @@ export function themeBlocks(sectors: readonly string[], leaders: readonly Screen
         profit: r.profit_growth_3y_cagr,
       })),
     },
-    {
-      type: 'bar_chart',
-      title: 'Growth over three years (CAGR)',
-      unit: '%',
-      orientation: 'vertical',
-      categories: top.map((r) => r.symbol),
-      series: [
-        { name: 'Sales', values: top.map((r) => r.sales_growth_3y_cagr) },
-        { name: 'Profit', values: top.map((r) => r.profit_growth_3y_cagr) },
-      ],
-    },
+    ...(top.length === 0
+      ? []
+      : [
+          {
+            type: 'bar_chart' as const,
+            title: 'Growth over three years (CAGR)',
+            unit: '%',
+            orientation: 'vertical' as const,
+            categories: top.map((r) => r.symbol),
+            series: [
+              { name: 'Sales', values: top.map((r) => r.sales_growth_3y_cagr) },
+              { name: 'Profit', values: top.map((r) => r.profit_growth_3y_cagr) },
+            ],
+          },
+        ]),
   ];
 }

@@ -80,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The theme growth chart no longer leaves an empty gap for a company with no three-year figure: it shows the largest companies that have one, and marks a single missing figure as N/A. ([#379](https://github.com/AnkushGitRepo/marketmitra/issues/379))
 - The top bar of a vertical bar chart no longer has its value label clipped by the chart's edge. ([#361](https://github.com/AnkushGitRepo/marketmitra/issues/361))
 - Tables in a research report no longer log a React "two children with the same key" error when their first column repeats (the risk register's categories did), and long text in a table cell now wraps in a readable column instead of pushing the other columns out of view. Bars in vertical bar charts now carry their values. ([#360](https://github.com/AnkushGitRepo/marketmitra/issues/360))
 - Opening a Mitra chat with several replies no longer logs a duplicate-key error in the browser: saved replies had an empty id, so two of them shared one. New replies now get a unique id, and older chats get a stable one when opened. ([#349](https://github.com/AnkushGitRepo/marketmitra/issues/349))
