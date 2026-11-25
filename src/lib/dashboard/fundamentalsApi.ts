@@ -38,6 +38,37 @@ export interface PeerOut {
   source_tier: string;
 }
 
+/** What kind of event an exchange announcement is (the data service categorises each by rules over its title and summary). */
+export type AnnouncementCategory =
+  | 'credit_rating'
+  | 'litigation'
+  | 'auditor'
+  | 'pledge'
+  | 'management'
+  | 'clarification'
+  | 'results'
+  | 'investor_meet'
+  | 'fundraise'
+  | 'restructuring'
+  | 'related_party'
+  | 'corporate_action'
+  | 'other';
+
+export interface AnnouncementOut {
+  announced_on: string | null;
+  title: string;
+  summary: string | null;
+  category: AnnouncementCategory;
+  url: string;
+  source_tier: string;
+}
+
+export interface InsightOut {
+  kind: 'pro' | 'con';
+  text: string;
+  source_tier: string;
+}
+
 export interface DocumentOut {
   document_type: string;
   title: string;
@@ -88,7 +119,8 @@ export interface IndexQuoteOut {
   spark: number[];
 }
 
-export type StatementType = 'profit_and_loss' | 'balance_sheet' | 'cash_flow';
+/** `ratios` is Screener's Ratios section: debtor, inventory and payable days, cash conversion cycle, working-capital days, ROCE history. */
+export type StatementType = 'profit_and_loss' | 'balance_sheet' | 'cash_flow' | 'ratios';
 export type PricePeriod = '1mo' | '6mo' | '1y' | '5y';
 
 export async function getJson<T>(path: string, revalidateSeconds: number): Promise<T | null> {
@@ -117,6 +149,17 @@ export function getShareholding(symbol: string): Promise<ShareholdingOut[] | nul
 
 export function getPeers(symbol: string): Promise<PeerOut[] | null> {
   return getJson<PeerOut[]>(`/companies/${symbol}/peers`, 3600);
+}
+
+/** Recent exchange announcements and credit-rating links, newest first; `category` narrows them (#365). */
+export function getAnnouncements(symbol: string, category?: AnnouncementCategory): Promise<AnnouncementOut[] | null> {
+  const query = category ? `?category=${category}` : '';
+  return getJson<AnnouncementOut[]>(`/companies/${symbol}/announcements${query}`, 3600 * 6);
+}
+
+/** Screener's machine-generated pros and cons: flags to look into, not analysis (#365). */
+export function getInsights(symbol: string): Promise<InsightOut[] | null> {
+  return getJson<InsightOut[]>(`/companies/${symbol}/insights`, 3600 * 24);
 }
 
 export function getDocuments(symbol: string): Promise<DocumentOut[] | null> {

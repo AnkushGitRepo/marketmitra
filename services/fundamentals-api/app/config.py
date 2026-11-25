@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     financials_cache_ttl_hours: int = 24 * 7
     prices_cache_ttl_hours: int = 4
     ratios_cache_ttl_hours: int = 24
+    # Exchange announcements are time-sensitive (a litigation or rating notice), so they refresh sooner than ratios.
+    announcements_cache_ttl_hours: int = 6
 
     # Live-quote endpoint (GET /quote) — in-process TTL so the alert cron and
     # any dashboard caller share one upstream yfinance hit. Seconds, not hours.

@@ -32,13 +32,15 @@ from __future__ import annotations
 import logging
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.db.models import (
+    CompanyAnnouncementORM,
+    CompanyInsightORM,
     CompanyORM,
     DocumentReferenceORM,
     FinancialLineItemORM,
@@ -340,8 +342,13 @@ async def get_financial_statement(
     # mostly-empty "extra" column.
     _MIN_USEFUL_TIER1_ITEMS = 4
 
-    filing = await filing_discovery.discover_latest_financial_filing(
-        company.nse_symbol, company.bse_code
+    # The Ratios section (working-capital days and similar) is a Screener-only table with no filing behind it.
+    filing = (
+        None
+        if statement_type is StatementType.RATIOS
+        else await filing_discovery.discover_latest_financial_filing(
+            company.nse_symbol, company.bse_code
+        )
     )
     tier1_items = (
         await filing_discovery.extract_tier1_line_items(filing, statement_type) if filing else []
@@ -551,4 +558,87 @@ async def get_documents(session: AsyncSession, company: CompanyORM) -> list[Docu
         .where(DocumentReferenceORM.company_id == company.id)
         .order_by(DocumentReferenceORM.period_end.desc().nullslast())
     )
+    return list((await session.execute(stmt)).scalars())
+
+
+async def _announcements_for(
+    session: AsyncSession, company: CompanyORM, limit: int
+) -> list[CompanyAnnouncementORM]:
+    stmt = (
+        select(CompanyAnnouncementORM)
+        .where(CompanyAnnouncementORM.company_id == company.id)
+        .order_by(
+            CompanyAnnouncementORM.announced_on.desc().nullslast(),
+            CompanyAnnouncementORM.id.desc(),
+        )
+        .limit(limit)
+    )
+    return list((await session.execute(stmt)).scalars())
+
+
+async def get_announcements(
+    session: AsyncSession, company: CompanyORM, limit: int = 50
+) -> list[CompanyAnnouncementORM]:
+    """The company's recent exchange announcements (#365), newest first. Lazy refresh like the statements: when
+    nothing is stored, or the newest row is older than the TTL, Screener's list is read again and any new
+    announcements are added (existing ones are kept as history)."""
+    existing = await _announcements_for(session, company, limit)
+    newest_fetch = max((a.fetched_at for a in existing), default=None)
+    if existing and not _is_stale(newest_fetch, _settings.announcements_cache_ttl_hours):
+        return existing
+    if not company.nse_symbol:
+        return existing
+
+    scraped = await tier3.fetch_announcements(company.nse_symbol)
+    if not scraped:
+        return existing
+    for entry in scraped:
+        await session.execute(
+            insert(CompanyAnnouncementORM)
+            .values(
+                company_id=company.id,
+                announced_on=entry["announced_on"],
+                title=entry["title"],
+                summary=entry["summary"],
+                category=entry["category"],
+                url=entry["url"],
+                source_tier=SourceTier.TIER3_SCREENER.value,
+            )
+            .on_conflict_do_update(
+                index_elements=["company_id", "url", "title"],
+                set_={"fetched_at": func.now()},
+            )
+        )
+    await session.commit()
+    return await _announcements_for(session, company, limit)
+
+
+async def get_insights(session: AsyncSession, company: CompanyORM) -> list[CompanyInsightORM]:
+    """Screener's machine-generated pros and cons (#365). A current snapshot: when stale, the set is replaced."""
+    stmt = select(CompanyInsightORM).where(CompanyInsightORM.company_id == company.id).order_by(
+        CompanyInsightORM.kind.desc(), CompanyInsightORM.id
+    )
+    existing = list((await session.execute(stmt)).scalars())
+    newest_fetch = max((i.fetched_at for i in existing), default=None)
+    if existing and not _is_stale(newest_fetch, _settings.ratios_cache_ttl_hours):
+        return existing
+    if not company.nse_symbol:
+        return existing
+
+    scraped = await tier3.fetch_insights(company.nse_symbol)
+    if not scraped:
+        return existing
+    await session.execute(delete(CompanyInsightORM).where(CompanyInsightORM.company_id == company.id))
+    for entry in scraped:
+        await session.execute(
+            insert(CompanyInsightORM)
+            .values(
+                company_id=company.id,
+                kind=entry["kind"],
+                text=entry["text"],
+                source_tier=SourceTier.TIER3_SCREENER.value,
+            )
+            .on_conflict_do_nothing(index_elements=["company_id", "kind", "text"])
+        )
+    await session.commit()
     return list((await session.execute(stmt)).scalars())

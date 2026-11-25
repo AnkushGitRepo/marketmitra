@@ -31,6 +31,8 @@ class StatementType(StrEnum):
     PROFIT_AND_LOSS = "profit_and_loss"
     BALANCE_SHEET = "balance_sheet"
     CASH_FLOW = "cash_flow"
+    # Screener's Ratios section: debtor, inventory and payable days, cash conversion cycle, working-capital days, ROCE history.
+    RATIOS = "ratios"
 
 
 class PeriodType(StrEnum):

@@ -238,3 +238,65 @@ def test_clean_label_strips_nbsp_and_expander_plus():
 
 def test_clean_label_caps_length_to_the_column_width():
     assert len(_clean_label("x" * 500)) == 128
+
+
+# --- #365: ratios history, announcements, credit ratings and pros/cons from the same saved page ---
+
+
+def test_parse_ratios_section_gives_working_capital_days_history(newgen_page):
+    items = _parse_financial_statement(newgen_page, StatementType.RATIOS)
+    labels = {i["label"] for i in items}
+    assert {"Debtor Days", "Cash Conversion Cycle", "Working Capital Days", "ROCE %"} <= labels
+
+    debtor = {i["period_end"]: i["value"] for i in items if i["label"] == "Debtor Days"}
+    assert debtor[date(2026, 3, 31)] == Decimal(164)
+    assert debtor[date(2015, 3, 31)] == Decimal(208)
+    # A row Screener leaves blank (Inventory Days for a software company) produces no items, not zeros.
+    assert "Inventory Days" not in labels
+
+
+def test_parse_announcements_reads_title_date_summary_and_link(newgen_page):
+    from app.ingestion.tier3_screener_scrapling.scraper import _parse_announcements
+
+    entries = [e for e in _parse_announcements(newgen_page) if not e["title"].startswith("Credit rating:")]
+    assert len(entries) >= 5
+    first = entries[0]
+    assert first["title"] == "Announcement under Regulation 30 (LODR)-Credit Rating"
+    assert first["announced_on"] == date(2026, 9, 3)
+    assert first["summary"].startswith("CRISIL reaffirmed Newgen's short-term A1 rating")
+    assert first["url"].startswith("https://www.bseindia.com/")
+    assert first["category"] == "credit_rating"
+
+    clarification = next(e for e in entries if e["title"].startswith("Clarification Sought On Increase In Volume"))
+    assert clarification["announced_on"] == date(2026, 8, 31)
+    assert clarification["category"] == "clarification"
+
+
+def test_parse_announcements_includes_credit_rating_links(newgen_page):
+    from app.ingestion.tier3_screener_scrapling.scraper import _parse_announcements
+
+    ratings = [e for e in _parse_announcements(newgen_page) if e["title"].startswith("Credit rating:")]
+    assert len(ratings) >= 2
+    assert all(r["category"] == "credit_rating" for r in ratings)
+    dated = next(r for r in ratings if r["announced_on"] == date(2025, 6, 5))
+    assert dated["summary"] == "From crisil"
+    assert dated["url"].startswith("https://www.crisil.com/")
+
+
+def test_parse_insights_reads_pros_and_cons(newgen_page):
+    from app.ingestion.tier3_screener_scrapling.scraper import _parse_insights
+
+    insights = _parse_insights(newgen_page)
+    pros = [i["text"] for i in insights if i["kind"] == "pro"]
+    cons = [i["text"] for i in insights if i["kind"] == "con"]
+    assert "Company is almost debt free." in pros
+    assert cons == ["Company has high debtors of 164 days."]
+
+
+def test_parsers_return_nothing_for_a_page_without_those_sections():
+    from app.ingestion.tier3_screener_scrapling.scraper import _parse_announcements, _parse_insights
+
+    empty = Selector("<html><body><p>nothing here</p></body></html>")
+    assert _parse_announcements(empty) == []
+    assert _parse_insights(empty) == []
+    assert _parse_financial_statement(empty, StatementType.RATIOS) == []

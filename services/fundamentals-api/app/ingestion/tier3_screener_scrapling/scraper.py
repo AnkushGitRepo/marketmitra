@@ -11,6 +11,8 @@ should import from this module):
 - fetch_about(symbol)
 - fetch_peers(symbol)
 - fetch_annual_reports(symbol)
+- fetch_announcements(symbol) — recent exchange announcements and credit-rating links (#365)
+- fetch_insights(symbol) — Screener's machine-generated pros and cons (#365)
 - fetch_screener_snapshot(symbol) — the Screener feature's bulk-ingestion
   entry point (ADR 0025). One page fetch, reusing _parse_ratios and
   _parse_financial_statement on the same page object rather than the
@@ -66,6 +68,7 @@ _STATEMENT_SECTION_IDS = {
     StatementType.PROFIT_AND_LOSS: "profit-loss",
     StatementType.BALANCE_SHEET: "balance-sheet",
     StatementType.CASH_FLOW: "cash-flow",
+    StatementType.RATIOS: "ratios",
 }
 
 _MONTH_ABBR = {
@@ -574,3 +577,103 @@ async def fetch_annual_reports(symbol: str) -> list[dict]:
     if not reports:
         logger.warning("screener.in annual reports for %s parsed to zero entries — markup may have changed", symbol)
     return reports
+
+
+_ANNOUNCEMENT_TIME_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})")
+_RATING_DATE_RE = re.compile(r"(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})")
+_RATING_AGENCY_RE = re.compile(r"\bfrom\s+([A-Za-z][A-Za-z .&-]*)$")
+_MAX_TITLE_LENGTH = 512
+_MAX_SUMMARY_LENGTH = 1000
+
+
+def _first_line(raw: str) -> str:
+    return next((line.strip() for line in raw.replace("\xa0", " ").splitlines() if line.strip()), "")
+
+
+def _parse_announcements(page) -> list[dict]:
+    """Returns [{"announced_on", "title", "summary", "url", "category"}, ...] from Screener's Documents →
+    Announcements (the company's recent stock-exchange filings, newest first) and its Credit ratings list.
+
+    An announcement's date is the `datetime` attribute of its `<time>` tag (the visible text is relative, "1d" or
+    "31 Aug"); its summary is the text after the first " - " in the line under the title. A credit-rating link has
+    only a relative or short date, so it is dated only when it carries a full day-month-year."""
+    from app.ingestion.announcements import categorise_announcement
+
+    entries: list[dict] = []
+    for link in page.css("#company-announcements-tab ul.list-links li a"):
+        href = link.attrib.get("href")
+        title = _first_line(link.get_all_text())[:_MAX_TITLE_LENGTH]
+        if not href or not title:
+            continue
+        announced_on = None
+        times = link.css("time")
+        if times:
+            match = _ANNOUNCEMENT_TIME_RE.match(times[0].attrib.get("datetime", ""))
+            if match:
+                announced_on = date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+        summary = None
+        notes = link.css("div")
+        if notes:
+            text = " ".join(notes[0].get_all_text().split())
+            _, _, after = text.partition(" - ")
+            summary = (after or None) and after[:_MAX_SUMMARY_LENGTH]
+        entries.append(
+            {
+                "announced_on": announced_on,
+                "title": title,
+                "summary": summary,
+                "url": href,
+                "category": categorise_announcement(title, summary),
+            }
+        )
+
+    for link in page.css(".credit-ratings ul.list-links li a"):
+        href = link.attrib.get("href")
+        if not href:
+            continue
+        note = " ".join(link.css("div")[0].get_all_text().split()) if link.css("div") else ""
+        day = _RATING_DATE_RE.search(note)
+        announced_on = (
+            date(int(day.group(3)), _MONTH_ABBR[day.group(2)], int(day.group(1))) if day else None
+        )
+        agency = _RATING_AGENCY_RE.search(note)
+        title = _first_line(link.get_all_text())[:_MAX_TITLE_LENGTH] or "Rating update"
+        entries.append(
+            {
+                "announced_on": announced_on,
+                "title": f"Credit rating: {title}",
+                "summary": f"From {agency.group(1).strip()}" if agency else None,
+                "url": href,
+                "category": "credit_rating",
+            }
+        )
+    return entries
+
+
+def _parse_insights(page) -> list[dict]:
+    """Returns [{"kind": "pro" | "con", "text": str}, ...] from Screener's Pros / Cons box. Screener generates
+    these from a checklist (debt, growth, payout, debtor days and so on); they are flags to look into, not analysis."""
+    insights: list[dict] = []
+    for kind, selector in (("pro", "#analysis .pros ul li"), ("con", "#analysis .cons ul li")):
+        for item in page.css(selector):
+            text = " ".join(item.get_all_text().split())
+            if text:
+                insights.append({"kind": kind, "text": text[:_MAX_SUMMARY_LENGTH]})
+    return insights
+
+
+async def fetch_announcements(symbol: str) -> list[dict]:
+    page = await _fetch_with_retry(symbol)
+    if page is None:
+        return []
+    entries = _parse_announcements(page)
+    if not entries:
+        logger.warning("screener.in announcements for %s parsed to zero entries — markup may have changed", symbol)
+    return entries
+
+
+async def fetch_insights(symbol: str) -> list[dict]:
+    page = await _fetch_with_retry(symbol)
+    if page is None:
+        return []
+    return _parse_insights(page)

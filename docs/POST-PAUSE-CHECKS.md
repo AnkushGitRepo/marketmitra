@@ -94,6 +94,16 @@
 - [ ] Regenerate works and keeps the scorecard; an unrestricted brief (admin or local) shows its verdict items in a separate strip.
 - [ ] It reads well on a phone width and nothing animates with reduced motion.
 
+## 4h. Exchange announcements, pros/cons and working-capital days (#365, ADR 0081)
+
+Data service only so far: nothing in the app reads these yet. **Order matters (as with #285): migrate first, then deploy the data service.** Deploying first makes `/companies/{symbol}/announcements` and `/insights` answer 500 (the tables do not exist); `/financials/ratios` needs no migration.
+
+- [ ] 🔒 The maintainer runs `alembic upgrade head` on production Neon (`a8c3d1e5f740`: tables `company_announcements` and `company_insights`; check the host first, see the HANDOFF note on `DATABASE_URL`). It was applied, rolled back and re-applied on a throwaway local Postgres, and `alembic check` reported no drift.
+- [ ] 🔒 Deploy the data service (`services/fundamentals-api/deploy-cloud-run.sh`, `CLOUDSDK_PYTHON` set to Python 3.10+). Note the revision and the previous one for rollback.
+- [ ] `GET /companies/NEWGEN/announcements` returns announcements newest first with a `category` each (the first call scrapes Screener; a second within 6 hours does not); `?category=litigation` narrows them; `GET /companies/NEWGEN/insights` returns pros and cons; `GET /companies/NEWGEN/financials/ratios` returns Debtor Days, Working Capital Days and Cash Conversion Cycle by year.
+- [ ] Spot-check three real companies (one large, one with a known court case or rating action, one SME): the categories look right, and a company whose Screener page has no pros/cons or no announcements returns an empty list, not an error.
+- [ ] Screener is still being scraped at its existing cadence: the new sections come from the page the service already fetches, so the request count should not have risen.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

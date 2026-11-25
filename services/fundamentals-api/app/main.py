@@ -6,6 +6,7 @@ from fastapi.responses import ORJSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 
 from app.api.routes import (
+    announcements,
     companies,
     documents,
     embed,
@@ -49,6 +50,7 @@ app.include_router(companies.router)
 app.include_router(financials.router)
 app.include_router(prices.router)
 app.include_router(documents.router)
+app.include_router(announcements.router)
 app.include_router(indices.router)
 app.include_router(news.router)
 app.include_router(pdf_text.router)

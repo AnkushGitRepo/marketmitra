@@ -184,7 +184,7 @@ plain-language coverage table in [`services/fundamentals-api/README.md`](../serv
   XBRL/PDF parsing → Tier 2 `yfinance` → Tier 3 Scrapling against Screener.in (isolated
   module). Every record carries `source_tier`. **NSE blocks non-browser/non-Indian traffic
   at the Akamai edge** — confirmed in dev; this is *why* Tiers 2–3 are real fallbacks.
-- **Endpoints:** company / ratios / shareholding / financials / prices / documents / peers /
+- **Endpoints:** company / ratios / shareholding / financials (profit_and_loss, balance_sheet, cash_flow and Screener's `ratios` history) / prices / documents / announcements (exchange filings, categorised) / insights (Screener's pros and cons) / peers /
   `GET /indices` / `GET /search?q=` (~2,570 NSE equities) / `GET /quote?symbols=` (batched
   live quote) / `GET /news` / `GET /ipos` + `POST /ipos/ingest`. All in
   [`/docs/api-surface.md`](./api-surface.md).

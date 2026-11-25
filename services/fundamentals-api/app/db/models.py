@@ -80,6 +80,12 @@ class CompanyORM(Base):
     documents: Mapped[list[DocumentReferenceORM]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )
+    announcements: Mapped[list[CompanyAnnouncementORM]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    insights: Mapped[list[CompanyInsightORM]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
 
 
 class FinancialLineItemORM(Base):
@@ -312,6 +318,53 @@ class DocumentReferenceORM(Base):
     )
 
     company: Mapped[CompanyORM] = relationship(back_populates="documents")
+
+
+class CompanyAnnouncementORM(Base):
+    """A stock-exchange announcement or credit-rating link for a company (#365), read from Screener's Documents
+    section. Kept as history (a refresh adds new ones and never rewrites old ones); `category` comes from
+    `app.ingestion.announcements.categorise_announcement`."""
+
+    __tablename__ = "company_announcements"
+    __table_args__ = (
+        UniqueConstraint("company_id", "url", "title", name="uq_company_announcement"),
+        Index("ix_company_announcements_company_date", "company_id", "announced_on"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"))
+    announced_on: Mapped[date | None] = mapped_column(Date)
+    title: Mapped[str] = mapped_column(String(512))
+    summary: Mapped[str | None] = mapped_column(String(1000))
+    category: Mapped[str] = mapped_column(String(32))
+    url: Mapped[str] = mapped_column(String(1024))
+    source_tier: Mapped[str] = mapped_column(String(32))
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    company: Mapped[CompanyORM] = relationship(back_populates="announcements")
+
+
+class CompanyInsightORM(Base):
+    """One machine-generated pro or con from Screener's checklist (#365). A current snapshot: a refresh replaces
+    the company's whole set."""
+
+    __tablename__ = "company_insights"
+    __table_args__ = (
+        UniqueConstraint("company_id", "kind", "text", name="uq_company_insight"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(8))
+    text: Mapped[str] = mapped_column(String(1000))
+    source_tier: Mapped[str] = mapped_column(String(32))
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    company: Mapped[CompanyORM] = relationship(back_populates="insights")
 
 
 class ScreenerMetricsORM(Base):
