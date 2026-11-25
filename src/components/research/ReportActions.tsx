@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type RefObject } from 'react';
+import { useState, type ReactNode, type RefObject } from 'react';
 import type { SuggestedNote } from '@/lib/research/saveNote';
 import { noteBody } from '@/lib/research/saveNote';
 import { printElement } from '@/lib/print/printElement';
@@ -11,12 +11,14 @@ interface ReportActionsProps {
   readonly report: { content: string; model: string; generatedAt: string; note?: SuggestedNote };
   /** The element Export PDF prints: the report, without the page around it. */
   readonly printRef: RefObject<HTMLElement | null>;
+  /** Replaces the default Export PDF button (the company report has its own menu of formats). */
+  readonly exportControl?: ReactNode;
 }
 
 type SaveState = { status: 'idle' } | { status: 'saving' } | { status: 'saved' } | { status: 'error'; message: string };
 
 /** Save the report to Notes and print it as a PDF. */
-export function ReportActions({ report, printRef }: ReportActionsProps) {
+export function ReportActions({ report, printRef, exportControl }: ReportActionsProps) {
   const [save, setSave] = useState<SaveState>({ status: 'idle' });
   const note = report.note;
 
@@ -51,9 +53,11 @@ export function ReportActions({ report, printRef }: ReportActionsProps) {
       <button type="button" className={styles.button} onClick={saveToNotes} disabled={!note || save.status === 'saving' || save.status === 'saved'}>
         {save.status === 'saving' ? 'Saving…' : save.status === 'saved' ? 'Saved to Notes' : 'Save to Notes'}
       </button>
-      <button type="button" className={styles.button} onClick={exportPdf}>
-        Export PDF
-      </button>
+      {exportControl ?? (
+        <button type="button" className={styles.button} onClick={exportPdf}>
+          Export PDF
+        </button>
+      )}
       <span className={styles.status} role="status" aria-live="polite">
         {save.status === 'saved' && (
           <>
