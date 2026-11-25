@@ -2,9 +2,10 @@
 // faint watermark and a running footer on every page. It does not copy the web page, so none of the page's layout, buttons or
 // "writing…" status can leak into the PDF, and it has its own styles and fonts.
 
+import { topSources } from '../sources';
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { escapeHtml, markdownToHtml } from './html';
-import { headlineFigures, reportDateLong, reportFileBase, reportRef, kindLabel, kindTagline, subjectInline, subjectTag, type ExportMeta } from './meta';
+import { headlineFigures, reportDateLong, reportFileBase, reportRef, withoutHeadline, kindLabel, kindTagline, subjectInline, subjectTag, type ExportMeta } from './meta';
 import { blockHtml } from './printBlocks';
 
 export const WATERMARK = 'MARKETMITRA RESEARCH · FOR PERSONAL USE';
@@ -22,7 +23,7 @@ table.page { width: 100%; border-collapse: collapse; }
 table.page > thead > tr > td > div { height: 15mm; }
 table.page > tfoot > tr > td > div { height: 19mm; }
 table.page > tbody > tr > td { padding: 0 14mm; vertical-align: top; }
-.watermark { position: fixed; top: 44%; left: 6%; width: 88%; text-align: center; transform: rotate(-32deg); font-size: 44px; font-weight: 700; letter-spacing: 0.06em; color: #16191c; opacity: 0.035; pointer-events: none; z-index: 0; }
+.watermark { position: fixed; top: 46%; left: 16%; width: 68%; text-align: center; transform: rotate(-32deg); font-size: 30px; font-weight: 700; letter-spacing: 0.06em; color: #16191c; opacity: 0.035; pointer-events: none; z-index: 0; }
 .running { position: fixed; left: 14mm; right: 14mm; bottom: 8mm; padding-top: 5px; border-top: 0.5px solid #cfc9bb; font-size: 8px; color: #656d72; display: flex; justify-content: space-between; background: #fff; z-index: 2; }
 
 .cover { break-after: page; min-height: 255mm; display: flex; flex-direction: column; }
@@ -49,7 +50,9 @@ p { margin: 0 0 8px; orphans: 3; widows: 3; }
 ul, ol { margin: 0 0 8px; padding-left: 16px; }
 li { margin: 2px 0; }
 .failed { padding: 8px 10px; border: 0.5px solid #f3cfc5; background: #fbe9e4; color: #9a3f2b; border-radius: 5px; }
-.sources { margin-top: 8px; font-size: 8.5px; color: #656d72; }
+.sources { margin-top: 10px; font-size: 8px; color: #656d72; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.sources b { text-transform: uppercase; letter-spacing: 0.08em; font-size: 7.5px; margin-right: 2px; }
+.sources span { padding: 1px 7px; border: 0.5px solid #d9d3c4; border-radius: 99px; background: #faf7ef; }
 
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 12px; break-inside: avoid; }
 .kpi { padding: 8px 10px; border: 0.5px solid #e3dfd4; background: #faf8f2; border-radius: 6px; }
@@ -88,13 +91,14 @@ const EMBLEM = `<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="tru
 
 const chapterHtml = (chapter: ReportChapter, number: number): string => {
   const failed = chapter.status === 'failed' ? `<p class="failed">This chapter could not be written${chapter.note ? `: ${escapeHtml(chapter.note)}` : '.'}${chapter.blocks.length > 0 ? ' The figures above are the stored data.' : ''}</p>` : '';
-  const sources = chapter.sources.length > 0 ? `<p class="sources">Sources: ${chapter.sources.map((s) => escapeHtml(s.title)).join('; ')}</p>` : '';
+  const listed = topSources(chapter.sources);
+  const sources = listed.length > 0 ? `<p class="sources"><b>Sources</b>${listed.map((s) => `<span>${escapeHtml(s.title)}</span>`).join('')}</p>` : '';
   return `<section class="chapter"><h2><span>${String(number).padStart(2, '0')}</span>${escapeHtml(chapter.title)}</h2>${chapter.blocks.map(blockHtml).join('\n')}${chapter.prose ? markdownToHtml(chapter.prose) : ''}${failed}${sources}</section>`;
 };
 
 /** The chapters worth printing (anything with figures, text or a failure to report), in reading order. */
 const printable = (chapters: readonly ReportChapter[]): ReportChapter[] =>
-  CHAPTERS.flatMap(({ id }) => chapters.filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
+  CHAPTERS.flatMap(({ id }) => withoutHeadline(chapters).filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
 
 export function buildReportPrintHtml(chapters: readonly ReportChapter[], meta: ExportMeta): string {
   const shown = printable(chapters);

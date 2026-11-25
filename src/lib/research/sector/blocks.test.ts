@@ -26,7 +26,11 @@ describe('scorecardBlocks', () => {
 });
 
 describe('leadership', () => {
-  const rows = [r('A', 300, { roce: 10, debt_to_equity: 1 }), r('B', 200, { roce: 40, debt_to_equity: 0.1, pe: -3 }), r('C', 100, { roce: 20, debt_to_equity: null, pe: 12 })];
+  const rows = [
+    r('A', 3000, { roce: 10, debt_to_equity: 1 }),
+    r('B', 2000, { roce: 40, debt_to_equity: 0.1, pe: -3 }),
+    r('C', 1500, { roce: 20, debt_to_equity: null, pe: 12 }),
+  ];
   it('names the leader on each measure, higher or lower as it should be', () => {
     const by = Object.fromEntries(leadershipRows(rows).map((x) => [x.metric, x.company]));
     expect(by['Largest by market cap']).toBe('A (A)');
@@ -34,14 +38,27 @@ describe('leadership', () => {
     expect(by['Lowest debt / equity']).toBe('B (B)');
     expect(by['Lowest P/E (profitable)']).toBe('C (C)'); // B's negative P/E is not a lead
   });
-  it('leaves out a measure nobody reports', () => {
-    const none = leadershipRows([r('A', 1, { roe: null })].map((x) => ({ ...x, roe: null })));
-    expect(none.find((x) => x.metric === 'Highest ROE')).toBeUndefined();
+  it('does not let a micro-cap or a negative-net-worth company lead anything', () => {
+    const distorted = [...rows, r('TINY', 80, { roce: 144, pe: 0.1, debt_to_equity: 0.01 }), r('NEGNET', 5000, { roce: 90, pb: -3, debt_to_equity: -7.9, roe: -40 })];
+    const by = Object.fromEntries(leadershipRows(distorted).map((x) => [x.metric, x.company]));
+    expect(by['Highest ROCE']).toBe('B (B)');
+    expect(by['Largest by market cap']).toBe('A (A)');
+    expect(by['Lowest P/E (profitable)']).toBe('C (C)');
+    expect(by['Lowest debt / equity']).toBe('B (B)');
   });
-  it('shows ten companies at most, then the leadership table', () => {
-    const many = Array.from({ length: 14 }, (_, i) => r(`S${i}`, 100 - i));
+  it('leaves out a measure nobody reports', () => {
+    const none = leadershipRows([r('A', 5000, { roce: null })]);
+    expect(none.find((x) => x.metric === 'Highest ROCE')).toBeUndefined();
+  });
+  it('shows ten companies at most, then the leadership table with its qualifying rule', () => {
+    const many = Array.from({ length: 14 }, (_, i) => r(`S${i}`, 5000 - i));
     const [table, lead] = leadersBlocks(inputs(many)) as DataTableBlock[];
     expect(table.rows).toHaveLength(10);
-    expect(lead.title).toBe('Who leads on each measure');
+    expect(lead.title).toContain('Who leads on each measure');
+    expect(lead.title).toContain('1,000');
+  });
+  it('has no leadership table when no company is credible, but still lists the top companies', () => {
+    const blocks = leadersBlocks(inputs([r('TINY', 50), r('SMALL', 90)]));
+    expect(blocks).toHaveLength(1);
   });
 });

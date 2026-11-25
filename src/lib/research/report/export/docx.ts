@@ -23,10 +23,11 @@ import {
 import { parseMarkdownLite, type InlineToken } from '@/components/markdownLiteParse';
 import type { DataTableBlock, ResearchBlock } from '../../blocks';
 import { formatCell } from '../../formatters';
+import { topSources } from '../sources';
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { chartAsTable, type PlainTable } from './chartTables';
 import { DISCLAIMER_TEXT } from './markdown';
-import { headlineFigures, reportDateLong, reportRef, subjectInline, subjectTag, type ExportMeta } from './meta';
+import { headlineFigures, reportDateLong, reportRef, withoutHeadline, subjectInline, subjectTag, type ExportMeta } from './meta';
 import { columnWidths } from './printBlocks';
 
 const FONT = 'Calibri';
@@ -144,7 +145,7 @@ function proseChildren(markdown: string): FileChild[] {
 }
 
 export function buildReportDocx(chapters: readonly ReportChapter[], meta: ExportMeta): Document {
-  const shown = CHAPTERS.flatMap(({ id }) => chapters.filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
+  const shown = CHAPTERS.flatMap(({ id }) => withoutHeadline(chapters).filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
   const figures = headlineFigures(chapters);
   const front: FileChild[] = [
     new Paragraph({ heading: HeadingLevel.TITLE, spacing: { after: 60 }, children: [new TextRun({ text: meta.name, bold: true, size: 44, color: INK })] }),
@@ -161,7 +162,7 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
     ...c.blocks.flatMap(blockChildren),
     ...(c.prose ? proseChildren(c.prose) : []),
     ...(c.status === 'failed' ? [para(`This chapter could not be written${c.note ? `: ${c.note}` : '.'}`, { italics: true, color: 'B4413C' })] : []),
-    ...(c.sources.length > 0 ? [para(`Sources: ${c.sources.map((s) => s.title).join('; ')}`, { size: 17, color: MUTED })] : []),
+    ...(c.sources.length > 0 ? [para(`Sources: ${topSources(c.sources).map((s) => s.title).join('; ')}`, { size: 17, color: MUTED })] : []),
   ]);
 
   return new Document({

@@ -5,6 +5,7 @@ import type { ToolCallRecord } from '@/lib/ai/research/webTools';
 import type { ResearchBlock } from '../blocks';
 import { blocksToMarkdown } from '../blocksMarkdown';
 import type { SuggestedNote } from '../saveNote';
+import { topSources } from './sources';
 
 export type CompanyChapterId = 'overview' | 'financials' | 'peers' | 'sector' | 'regulatory' | 'legal' | 'management' | 'valuation' | 'risks';
 
@@ -111,7 +112,7 @@ export function chaptersToMarkdown(chapters: readonly ReportChapter[]): string {
     const body = [
       blocksToMarkdown(chapter.blocks),
       chapter.prose ?? (chapter.status === 'failed' ? `*This chapter could not be written${chapter.note ? `: ${chapter.note}` : '.'}*` : ''),
-      sourcesMarkdown(chapter.sources),
+      sourcesMarkdown(topSources(chapter.sources)),
     ].filter(Boolean);
     return body.length === 0 ? [] : [`## ${title}\n\n${body.join('\n\n')}`];
   }).join('\n\n');

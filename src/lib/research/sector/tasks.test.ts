@@ -6,7 +6,7 @@ import type { SectorInputs } from './inputs';
 import { buildChecklistTask, buildSectorTasks } from './tasks';
 
 const row = (symbol: string, cap: number): ScreenerResultRow => ({ symbol, name: symbol, market_cap: cap, pe: 20, pb: 3, roce: 15, roe: 12, debt_to_equity: 0.5, sales_growth_3y_cagr: 10, profit_growth_3y_cagr: 12 }) as ScreenerResultRow;
-const inputs: SectorInputs = { label: 'Defence & Aerospace', kind: 'theme', industries: ['Aerospace & Defense'], sectors: [], count: 27, rows: [row('HAL', 9), row('BEL', 5)] };
+const inputs: SectorInputs = { label: 'Defence & Aerospace', kind: 'theme', industries: ['Aerospace & Defense'], sectors: [], count: 27, rows: [row('HAL', 9000), row('BEL', 5000)] };
 const none = { economics: [], numbers: [], ecosystem: [], outlook: [], risks: [] };
 const tasks = buildSectorTasks(inputs, { scorecard: scorecardBlocks(inputs), leaders: leadersBlocks(inputs) }, none);
 

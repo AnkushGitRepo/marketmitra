@@ -3,6 +3,7 @@
 
 import type { GroundingPassage } from '@/lib/rag/insightContext';
 import { SECTOR_CHAPTERS, chaptersToMarkdown, pendingChapter, type ReportChapter, type ReportEvent, type SectorChapterId } from '../report/chapters';
+import { numberedItems } from '../report/plainText';
 import { parseChapterText } from '../report/tasks';
 import { DISCLAIMER, type TaskOutcome } from '../report/run';
 import { suggestNote } from '../saveNote';
@@ -49,7 +50,8 @@ export async function* runSectorReport(inputs: SectorInputs, deps: SectorRunDeps
     model ??= outcome.model;
     const texts = parseChapterText(outcome.text, task.chapters);
     return task.chapters.map((id) => {
-      const text = texts[id];
+      // The checklist is one numbered list: a model that wrote each item as its own block restarts every item at 1.
+      const text = id === 'sx_checklist' && texts[id] ? numberedItems(texts[id]!) : texts[id];
       if (text) prose[id] = text;
       return text
         ? written(chapters.get(id)!, { status: 'ready', prose: text, searched: outcome.searched, sources: outcome.sources })

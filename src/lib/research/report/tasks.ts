@@ -9,6 +9,7 @@ import { chapterMeta, type ChapterId, type CompanyChapterId } from './chapters';
 import type { ComputedReport } from './computed';
 import { announcementFacts, chapterTables, profileFacts, riskFacts, searchName } from './facts';
 import type { ReportInputs } from './inputs';
+import { stripMath } from './plainText';
 import { riskRegisterSchema, type RiskItem } from './riskBlocks';
 
 export type TaskId = 'business' | 'numbers' | 'sector' | 'legal' | 'risks';
@@ -141,10 +142,10 @@ export function parseChapterText(reply: string, ids: readonly ChapterId[]): Part
   }
   const out: Partial<Record<ChapterId, string>> = {};
   for (const id of ids) {
-    const body = found[id]?.join('\n').trim();
+    const body = stripMath(found[id]?.join('\n') ?? '').trim();
     if (body) out[id] = body;
   }
-  if (Object.keys(out).length === 0 && ids.length === 1 && text.length > 0 && !MARKER.test(text)) out[ids[0]] = text;
+  if (Object.keys(out).length === 0 && ids.length === 1 && text.length > 0 && !MARKER.test(text)) out[ids[0]] = stripMath(text);
   return out;
 }
 

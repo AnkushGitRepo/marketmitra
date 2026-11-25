@@ -36,6 +36,16 @@ export const reportFileBase = (meta: ExportMeta): string => `MarketMitra-${safe(
 /** A reference for the report: MM-20261125-POLICYBZR. It is a label for filing, not a registry number. */
 export const reportRef = (meta: ExportMeta): string => `MM-${reportDate(meta.generatedAt).replace(/-/g, '')}-${safe(meta.symbol)}`;
 
+/**
+ * The chapters without the summary cards the cover or front matter already shows (the first card grid of the overview or
+ * scorecard chapter, the one `headlineFigures` reads), so the same figures are not printed twice.
+ */
+export function withoutHeadline(chapters: readonly ReportChapter[]): ReportChapter[] {
+  const source = chapters.find((c) => c.id === 'overview' || c.id === 'sx_scorecard');
+  const grid = source?.blocks.find((b) => b.type === 'kpi_grid');
+  return chapters.map((c) => (c === source && grid ? { ...c, blocks: c.blocks.filter((b) => b !== grid) } : c));
+}
+
 export interface Headline {
   readonly label: string;
   readonly value: string;

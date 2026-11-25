@@ -44,3 +44,18 @@ describe('exporting a sector report', () => {
     expect(reportFileBase(meta)).toBe('MarketMitra-Defence-Aerospace-research-2026-11-25');
   });
 });
+
+describe('headline figures are printed once', () => {
+  const withGrid = [
+    { ...chapter('sx_scorecard', 'Scorecard text.'), blocks: [{ type: 'kpi_grid' as const, items: [{ label: 'Listed companies', value: '27' }] }, { type: 'data_table' as const, title: 'Other table', columns: [{ key: 'a', label: 'A', format: 'text' as const }], rows: [{ a: 'x' }] }] },
+  ];
+  it('shows the cards on the cover only, not again in the first chapter, and keeps the chapter’s other tables', () => {
+    const html = buildReportPrintHtml(withGrid, meta);
+    expect(html.match(/Listed companies/g)).toHaveLength(1);
+    expect(html).toContain('Other table');
+  });
+  it('does not drop the cards from the web page’s data or the Markdown', () => {
+    expect(reportMarkdown(withGrid, meta)).toContain('Listed companies');
+    expect(withGrid[0].blocks).toHaveLength(2);
+  });
+});

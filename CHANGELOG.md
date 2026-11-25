@@ -82,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The sector report no longer prints raw LaTeX such as `$P/E$` in its text, numbers its ten-question checklist 1 to 10 instead of 1 ten times, and only lets companies of at least ₹1,000 Cr with a positive net worth top the "who leads" table (so a micro-cap with a 144% ROCE no longer does). In the PDF and Word file the headline figures are printed once rather than on the cover and again under the first chapter, each chapter's sources are shown as at most five de-duplicated domains with regulators and exchanges first, and the watermark sits fully inside the page. ([#385](https://github.com/AnkushGitRepo/marketmitra/issues/385))
 - The theme growth chart no longer leaves an empty gap for a company with no three-year figure: it shows the largest companies that have one, and marks a single missing figure as N/A. ([#379](https://github.com/AnkushGitRepo/marketmitra/issues/379))
 - The top bar of a vertical bar chart no longer has its value label clipped by the chart's edge. ([#361](https://github.com/AnkushGitRepo/marketmitra/issues/361))
 - Tables in a research report no longer log a React "two children with the same key" error when their first column repeats (the risk register's categories did), and long text in a table cell now wraps in a readable column instead of pushing the other columns out of view. Bars in vertical bar charts now carry their values. ([#360](https://github.com/AnkushGitRepo/marketmitra/issues/360))

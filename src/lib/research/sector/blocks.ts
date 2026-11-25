@@ -8,6 +8,12 @@ import type { SectorInputs } from './inputs';
 import type { ScreenerResultRow } from '@/lib/dashboard/screenerSchema';
 
 export const LEADERS_SHOWN = 10;
+/** Below this, or with a negative net worth, a company's ratios say little (a 144% ROCE on a tiny base) and it should not top a leaderboard. */
+export const MIN_LEADER_CAP_CR = 1000;
+
+/** A company credible enough to be named a leader: a real size and a positive net worth (negative P/B or debt / equity means the reverse). */
+export const isCredibleLeader = (r: ScreenerResultRow): boolean =>
+  (r.market_cap ?? 0) >= MIN_LEADER_CAP_CR && (r.pb === null || r.pb > 0) && (r.debt_to_equity === null || r.debt_to_equity >= 0) && (r.roe === null || r.roe > 0);
 
 const present = (values: readonly (number | null)[]): number[] => values.filter((v): v is number => v !== null);
 const medianOf = (rows: readonly ScreenerResultRow[], pick: (r: ScreenerResultRow) => number | null): number | null => median(present(rows.map(pick)));
@@ -71,7 +77,8 @@ const LEADERSHIP: readonly Leadership[] = [
 ];
 
 /** Who leads on each measure among the companies fetched; a measure nobody reports is left out. */
-export function leadershipRows(rows: readonly ScreenerResultRow[]): { metric: string; company: string; value: string }[] {
+export function leadershipRows(all: readonly ScreenerResultRow[]): { metric: string; company: string; value: string }[] {
+  const rows = all.filter(isCredibleLeader);
   return LEADERSHIP.flatMap((m) => {
     const scored = rows.flatMap((r) => {
       const v = m.pick(r);
@@ -86,6 +93,7 @@ export function leadershipRows(rows: readonly ScreenerResultRow[]): { metric: st
 export function leadersBlocks(inputs: SectorInputs): ResearchBlock[] {
   const top = inputs.rows.slice(0, LEADERS_SHOWN);
   if (top.length === 0) return [];
+  const leaders = leadershipRows(inputs.rows);
   return [
     {
       type: 'data_table',
@@ -103,15 +111,19 @@ export function leadersBlocks(inputs: SectorInputs): ResearchBlock[] {
         profit: r.profit_growth_3y_cagr,
       })),
     },
-    {
-      type: 'data_table',
-      title: 'Who leads on each measure',
-      columns: [
-        { key: 'metric', label: 'Measure', format: 'text' },
-        { key: 'company', label: 'Company', format: 'text' },
-        { key: 'value', label: 'Value', format: 'text' },
-      ],
-      rows: leadershipRows(inputs.rows),
-    },
+    ...(leaders.length === 0
+      ? []
+      : [
+          {
+            type: 'data_table' as const,
+            title: `Who leads on each measure (market cap ₹${MIN_LEADER_CAP_CR.toLocaleString('en-IN')} Cr or more, positive net worth)`,
+            columns: [
+              { key: 'metric', label: 'Measure', format: 'text' as const },
+              { key: 'company', label: 'Company', format: 'text' as const },
+              { key: 'value', label: 'Value', format: 'text' as const },
+            ],
+            rows: leaders,
+          },
+        ]),
   ];
 }

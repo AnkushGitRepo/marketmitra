@@ -2,6 +2,7 @@
 
 import type { DataTableBlock, ResearchBlock } from '../../blocks';
 import { formatCell, formatNumber, formatPercent } from '../../formatters';
+import { topSources } from '../sources';
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { parseMarkdownLite, type InlineToken } from '@/components/markdownLiteParse';
 import { DISCLAIMER_TEXT } from './markdown';
@@ -116,7 +117,7 @@ export function reportText(chapters: readonly ReportChapter[], meta: ExportMeta)
       ...c.blocks.map(blockText),
       c.prose ? proseText(c.prose) : '',
       c.status === 'failed' ? wrap(`This chapter could not be written${c.note ? `: ${c.note}` : '.'}`) : '',
-      c.sources.length > 0 ? wrap(`Sources: ${c.sources.map((s) => s.title).join('; ')}`) : '',
+      c.sources.length > 0 ? wrap(`Sources: ${topSources(c.sources).map((s) => s.title).join('; ')}`) : '',
     ].filter(Boolean);
     return parts.join('\n\n').replace(`${THIN}\n\n`, `${THIN}\n\n`);
   });
