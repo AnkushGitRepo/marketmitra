@@ -8,6 +8,7 @@ import { SymbolCombobox } from '@/components/research/SymbolCombobox';
 import { ReportActions } from '@/components/research/ReportActions';
 import { ReportBlocks } from '@/components/research/blocks/ReportBlocks';
 import { CompanyReportView } from '@/components/research/report/CompanyReportView';
+import { ExportMenu } from '@/components/research/report/ExportMenu';
 import { useCompanyReport } from '@/components/research/report/useCompanyReport';
 import type { ResearchBlock } from '@/lib/research/blocks';
 import type { SuggestedNote } from '@/lib/research/saveNote';
@@ -240,7 +241,16 @@ export function ResearchPageClient() {
 
       {tab === 'company' && company.state.name && (
         <div className={`${styles.card} ${styles.reportCard}`} ref={reportRef}>
-          <ReportActions report={company.state.done ? { content: company.state.done.content, model: company.state.done.model, generatedAt: company.state.done.generatedAt, note: company.state.done.note } : { content: '', model: '', generatedAt: '' }} printRef={reportRef} />
+          <ReportActions
+            report={company.state.done ? { content: company.state.done.content, model: company.state.done.model, generatedAt: company.state.done.generatedAt, note: company.state.done.note } : { content: '', model: '', generatedAt: '' }}
+            printRef={reportRef}
+            exportControl={
+              <ExportMenu
+                chapters={Object.values(company.state.chapters)}
+                meta={company.state.done && company.state.symbol && company.state.name ? { symbol: company.state.symbol, name: company.state.name, generatedAt: company.state.done.generatedAt, model: company.state.done.model } : null}
+              />
+            }
+          />
           <CompanyReportView state={company.state} running={companyRunning} />
           {company.state.error && <p className={styles.error}>{company.state.error}</p>}
           {company.state.done && (
