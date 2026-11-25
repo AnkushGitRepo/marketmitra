@@ -1,6 +1,6 @@
 // Report blocks as HTML for the print document (#372). Pure; every piece of text is escaped.
 
-import type { DataTableBlock, KpiGridBlock, ResearchBlock, ThesisBentoBlock } from '../../blocks';
+import type { CardGridBlock, DataTableBlock, KpiGridBlock, ResearchBlock, ThesisBentoBlock } from '../../blocks';
 import { bestRows } from '../../chartMath';
 import { formatCell } from '../../formatters';
 import { escapeHtml } from './html';
@@ -57,6 +57,13 @@ function thesis(block: ThesisBentoBlock): string {
   return `<div class="bento">${block.columns.map((c) => `<section data-tone="${c.tone}"><h4>${escapeHtml(c.title)}</h4><ul>${c.items.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul></section>`).join('')}</div>`;
 }
 
+function cardGrid(block: CardGridBlock): string {
+  const cards = block.cards
+    .map((c, i) => `<li>${block.numbered ? `<span class="cn">${String(i + 1).padStart(2, '0')}</span>` : ''}<b>${escapeHtml(c.heading)}</b>${c.tag ? `<span class="ct">${escapeHtml(c.tag)}</span>` : ''}${c.text ? `<span class="cx">${escapeHtml(c.text)}</span>` : ''}</li>`)
+    .join('');
+  return `<figure class="cards"><figcaption>${escapeHtml(block.title)}</figcaption><ol data-cols="${block.columns}">${cards}</ol></figure>`;
+}
+
 export function blockHtml(block: ResearchBlock): string {
   switch (block.type) {
     case 'kpi_grid':
@@ -71,5 +78,7 @@ export function blockHtml(block: ResearchBlock): string {
       return `<figure class="chart"><figcaption>${escapeHtml(block.title)}</figcaption>${donutHtml(block)}</figure>`;
     case 'thesis_bento':
       return thesis(block);
+    case 'card_grid':
+      return cardGrid(block);
   }
 }

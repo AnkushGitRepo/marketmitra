@@ -1,5 +1,6 @@
 import type { ResearchBlock } from '@/lib/research/blocks';
 import { BarChart } from './BarChart';
+import { CardGrid } from './CardGrid';
 import { DataTable } from './DataTable';
 import { DonutChart } from './DonutChart';
 import { FinancialChart } from './FinancialChart';
@@ -21,6 +22,8 @@ function BlockView({ block }: { readonly block: ResearchBlock }) {
       return <DataTable block={block} />;
     case 'thesis_bento':
       return <ThesisBento block={block} />;
+    case 'card_grid':
+      return <CardGrid block={block} />;
   }
 }
 

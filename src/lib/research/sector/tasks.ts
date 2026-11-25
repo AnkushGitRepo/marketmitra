@@ -12,7 +12,7 @@ import { SEARCH_HEAVY, SEARCH_LIGHT } from '../report/tasks';
 import type { ResearchBlock } from '../blocks';
 import type { SectorInputs } from './inputs';
 
-export type SectorTaskId = 'economics' | 'numbers' | 'ecosystem' | 'outlook' | 'risks' | 'checklist';
+export type SectorTaskId = 'economics' | 'numbers' | 'ecosystem' | 'outlook' | 'risks' | 'checklist' | 'structure';
 
 export interface SectorTask {
   readonly id: SectorTaskId;
@@ -81,7 +81,7 @@ function build(inputs: SectorInputs, ids: readonly SectorChapterId[], facts: rea
   return [`Subject: the Indian "${untrusted(inputs.label, 80)}" sector.`, `Write these chapters, in this order, each under its "## CHAPTER: <id>" line:\n\n${chapterList(ids)}`, factsText(facts), groundingText(passages)].join('\n\n');
 }
 
-export function buildSectorTasks(inputs: SectorInputs, blocks: SectorBlocks, grounding: Readonly<Record<Exclude<SectorTaskId, 'checklist'>, readonly GroundingPassage[]>>): SectorTask[] {
+export function buildSectorTasks(inputs: SectorInputs, blocks: SectorBlocks, grounding: Readonly<Record<Exclude<SectorTaskId, 'checklist' | 'structure'>, readonly GroundingPassage[]>>): SectorTask[] {
   const label = inputs.label;
   const profile = sectorProfileFacts(inputs);
   const scorecard = tablesFor('Computed sector scorecard', blocks.scorecard);

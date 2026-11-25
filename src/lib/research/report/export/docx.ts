@@ -113,6 +113,21 @@ function blockChildren(block: ResearchBlock): FileChild[] {
       return dataTable(block);
     case 'thesis_bento':
       return block.columns.flatMap((c) => [para(c.title, { bold: true, after: 40 }), ...c.items.map((i) => new Paragraph({ numbering: { reference: BULLETS, level: 0 }, spacing: { after: 40 }, children: [new TextRun(i)] }))]);
+    case 'card_grid':
+      return [
+        para(block.title, { bold: true, after: 60 }),
+        ...block.cards.map(
+          (c, i) =>
+            new Paragraph({
+              spacing: { after: 70 },
+              children: [
+                new TextRun({ text: `${block.numbered ? `${String(i + 1).padStart(2, '0')}  ` : ''}${c.heading}`, bold: true }),
+                ...(c.tag ? [new TextRun({ text: `  (${c.tag})`, color: MUTED, size: 17 })] : []),
+                ...(c.text ? [new TextRun({ text: `  ${c.text}` })] : []),
+              ],
+            })
+        ),
+      ];
     default:
       return [];
   }

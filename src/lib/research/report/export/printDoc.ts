@@ -85,6 +85,18 @@ table.md th, table.md td { padding: 3px 5px; border-bottom: 0.5px solid #e3dfd4;
 .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
 .bento section { padding: 8px 10px; border: 0.5px solid #e3dfd4; border-radius: 6px; break-inside: avoid; }
 .bento h4 { margin: 0 0 4px; }
+.bento section:only-child { grid-column: 1 / -1; }
+.bento section[data-tone='positive'] { border-left: 3px solid #10b981; background: #f1fbf6; }
+.bento section[data-tone='watch'], .bento section[data-tone='question'] { border-left: 3px solid #f59e0b; background: #fffaf0; }
+.bento section[data-tone='risk'] { border-left: 3px solid #ef4444; background: #fff5f4; }
+.cards { margin: 0 0 12px; break-inside: avoid; }
+.cards figcaption { font-weight: 600; margin-bottom: 5px; }
+.cards ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.cards ol[data-cols='4'] { grid-template-columns: repeat(4, 1fr); }
+.cards li { display: grid; gap: 3px; align-content: start; padding: 8px 10px; border: 0.5px solid #e3dfd4; border-radius: 6px; break-inside: avoid; }
+.cards .cn { font-family: ui-monospace, monospace; font-size: 8.5px; color: #0b8266; }
+.cards .ct { justify-self: start; padding: 0 7px; border-radius: 99px; background: #e8f6f0; font-size: 8px; }
+.cards .cx { font-size: 9px; color: #4b5358; }
 `;
 
 const EMBLEM = `<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="6" fill="#0d0f12" stroke="#2a2e34"/><polyline points="5,18 10,12 14,15 21,7" fill="none" stroke="#7ee2a8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;

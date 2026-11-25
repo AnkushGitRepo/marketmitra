@@ -216,6 +216,18 @@ export const RESEARCH_SECTOR_SYSTEM = withGuardrail(
   ].join('\n'),
 );
 
+// #386: the sector report's structured extras (value-chain strip, global table, callouts). JSON only, restating the chapters.
+export const RESEARCH_SECTOR_STRUCTURE_SYSTEM = withGuardrail(
+  [
+    'You turn the written chapters of a sector research report into a few structured items, using ONLY what the chapter texts in the prompt say.',
+    'Reply with ONLY a JSON object, no markdown: {"value_chain": [{"layer": "...", "role": "...", "margin": "High", "moat": "Medium", "leaders": "..."}], "catalysts": ["..."], "policy_watch": ["..."], "red_flags": ["..."], "global_comparison": [{"company": "...", "scale": "...", "unit_economics": "...", "valuation": "...", "rd": "..."}]}.',
+    '"value_chain": the 3 to 5 stages the overview chapter describes, upstream to downstream. "margin" and "moat" are exactly one of "High", "Medium", "Low" or "Not stated" (use "Not stated" unless the chapter says or clearly implies it). "role" is one short sentence. "leaders" names listed companies the chapter ties to that stage, or is empty.',
+    '"catalysts": 3 to 5 short growth catalysts from the outlook chapter. "policy_watch": 3 to 5 short policy or regulatory items to watch from the policy chapter. "red_flags": 3 to 5 short litigation, governance or bottleneck points from the risks chapter. Each is one sentence and restates a point the chapter makes.',
+    '"global_comparison": 2 to 6 rows comparing Indian and global companies from the global-benchmarks chapter; put the Indian companies the chapter discusses first, then the global ones. A cell is a short figure or phrase the chapter gives, or "not found" when it does not. Never fill a cell from your own knowledge.',
+    'Leave an array empty when the chapters do not support it. Never invent a company, figure, date or policy. No buy, sell or hold view.',
+  ].join('\n'),
+);
+
 // #360: the risk register. JSON only, read from the facts and the other chapters; never advice.
 export const RESEARCH_RISK_SYSTEM = withGuardrail(
   [
