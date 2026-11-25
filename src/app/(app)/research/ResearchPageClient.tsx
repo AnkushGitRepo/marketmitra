@@ -7,6 +7,8 @@ import { InfoPopover } from '@/components/common/InfoPopover';
 import { SymbolCombobox } from '@/components/research/SymbolCombobox';
 import { ReportActions } from '@/components/research/ReportActions';
 import { ReportBlocks } from '@/components/research/blocks/ReportBlocks';
+import { CompanyReportView } from '@/components/research/report/CompanyReportView';
+import { useCompanyReport } from '@/components/research/report/useCompanyReport';
 import type { ResearchBlock } from '@/lib/research/blocks';
 import type { SuggestedNote } from '@/lib/research/saveNote';
 import { THEME_PRESETS } from '@/lib/research/themes';
@@ -57,6 +59,8 @@ export function ResearchPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [noKey, setNoKey] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const company = useCompanyReport();
+  const companyRunning = company.phase === 'running';
 
   const subjectFor = (): Record<string, unknown> | null => {
     if (tab === 'company') return symbol.trim() ? { type: 'company', symbol: symbol.trim().toUpperCase() } : null;
@@ -68,8 +72,15 @@ export function ResearchPageClient() {
 
   const run = async () => {
     const subject = subjectFor();
-    if (!subject || busy) {
+    if (!subject || busy || companyRunning) {
       if (!subject) setError('Fill in the field(s) above first.');
+      return;
+    }
+    if (subject.type === 'company') {
+      // A company gets the multi-chapter report, streamed as it is written.
+      setError(null);
+      setNoKey(false);
+      await company.start(String(subject.symbol));
       return;
     }
     setBusy(true);
@@ -207,25 +218,40 @@ export function ResearchPageClient() {
             </div>
           )}
 
-          {noKey && (
+          {(noKey || (tab === 'company' && company.failure?.noKey)) && (
             <p className={styles.hint}>
               Mitra needs your AI provider key. <Link href="/settings">Add it in Settings</Link> — it
               stays on this deployment and nothing is charged by MarketMitra.
             </p>
           )}
           {error && <p className={styles.error}>{error}</p>}
+          {tab === 'company' && company.failure && !company.failure.noKey && <p className={styles.error}>{company.failure.message}</p>}
 
           <div className={styles.formActions}>
-            <button type="button" className={styles.btnPrimary} onClick={run} disabled={busy}>
-              {busy ? 'Researching…' : report ? 'Regenerate' : 'Generate brief'}
+            <button type="button" className={styles.btnPrimary} onClick={run} disabled={busy || companyRunning}>
+              {busy || companyRunning ? 'Researching…' : tab === 'company' ? (company.state.name ? 'Regenerate report' : 'Generate report') : report ? 'Regenerate' : 'Generate brief'}
             </button>
           </div>
         </div>
       </div>
 
-      {busy && <p className={styles.loading}>Gathering data and writing the brief — this can take a minute.</p>}
+      {busy && tab !== 'company' && <p className={styles.loading}>Gathering data and writing the brief — this can take a minute.</p>}
+      {tab === 'company' && companyRunning && !company.state.name && <p className={styles.loading}>Gathering the data held for this company…</p>}
 
-      {report && !busy && (
+      {tab === 'company' && company.state.name && (
+        <div className={`${styles.card} ${styles.reportCard}`} ref={reportRef}>
+          <ReportActions report={company.state.done ? { content: company.state.done.content, model: company.state.done.model, generatedAt: company.state.done.generatedAt, note: company.state.done.note } : { content: '', model: '', generatedAt: '' }} printRef={reportRef} />
+          <CompanyReportView state={company.state} running={companyRunning} />
+          {company.state.error && <p className={styles.error}>{company.state.error}</p>}
+          {company.state.done && (
+            <p className={styles.reportMeta}>
+              AI-generated ({company.state.done.model}) · {new Date(company.state.done.generatedAt).toLocaleString()} · This is a synthesis of public data, not investment advice
+            </p>
+          )}
+        </div>
+      )}
+
+      {tab !== 'company' && report && !busy && (
         <div className={`${styles.card} ${styles.reportCard}`} ref={reportRef}>
           <ReportActions report={report} printRef={reportRef} />
           <ReportBody report={report} />

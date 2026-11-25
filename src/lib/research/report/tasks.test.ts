@@ -41,6 +41,8 @@ describe('buildTasks', () => {
     expect(RESEARCH_CHAPTER_SYSTEM).toMatch(/no buy, sell or hold view, no price target/);
     expect(RESEARCH_CHAPTER_SYSTEM).toMatch(/never forecasts/);
     expect(RESEARCH_CHAPTER_SYSTEM).toMatch(/Never invent a figure/);
+    expect(RESEARCH_CHAPTER_SYSTEM).toMatch(/not proof of zero/);
+    expect(RESEARCH_CHAPTER_SYSTEM).toMatch(/never nested bullets/);
     expect(RESEARCH_CHAPTER_SYSTEM).toContain('This is a synthesis of public data, not investment advice.');
     expect(RESEARCH_RISK_SYSTEM).toMatch(/Reply with ONLY a JSON object/);
   });
