@@ -91,6 +91,19 @@ and are not shown.
 - **Rate limits:** none published; one request per tracked/held symbol, at most every `news_symbol_cache_ttl_minutes` (~60 min) via lazy refresh
 - **Cost:** free
 - **ToS notes:** Google News RSS is a public feed Google serves; entries link back to the publishers (via `news.google.com` redirects) and MarketMitra keeps only headline + summary + link + timestamp, no article bodies. Reviewed 2026-09-06.
+- **Also used by the research agent (#364, 2026-11-25):** the keyless `web_search` tool queries the same feed for the freshest headlines about a company, a case or a regulation. The feed's own notice limits it to personal, non-commercial feed-reader use; the agent runs on the signed-in user's own request and keeps only headline, outlet and date. Its links are `news.google.com` redirect pages that need JavaScript, so the page reader refuses them and the agent searches for the headline words to find the publisher's page instead.
+
+### Web search for the research agent (#364, ADR 0081)
+- **Type:** provider-run search tools, plus a keyless fallback made of a public HTML search and a page reader
+- **Used for:** facts the stored data does not hold (litigation, regulation, management and sector developments), in the research report's chapters and later in Mitra chat
+- **Provider tools (no extra setup, billed by the provider to the user's own key):** Google Search grounding (Gemini), Anthropic web search (`web_search_20250305`, must be enabled for the account in the Anthropic console), OpenAI web search (`web_search`, Responses models). If a provider's tool fails, the call is repeated with the keyless tools.
+- **Keyless fallback, for every other provider** (OpenRouter, Groq, Mistral, DeepSeek, xAI, Together, Cerebras, Sarvam): `web_search` queries **DuckDuckGo's HTML results** (`https://html.duckduckgo.com/html/?q=...`, direct publisher links) and Google News RSS (above); `fetch_page` reads one public page or PDF (text only).
+- **Auth:** none. **Cost:** free.
+- **Rate limits:** none published. Per report section the agent gets at most 6 searches and 4 page reads, an 8 s search timeout and a 10 s page timeout, so the load is small and bounded.
+- **What leaves the app:** the search query only. The agent is told to use public names (companies, sectors, regulators, cases) and never the investor's holdings, amounts or notes.
+- **Safety:** pages are fetched through the SSRF-safe outbound client (https only, public addresses only, every redirect hop validated again), at most 6 MB, HTML and PDF only, no cookies or logins. Titles, snippets and page text are sanitised and fenced as `<untrusted>` data, and the model is told never to follow instructions found in it. A bot-check or challenge page is not bypassed: that source is skipped and the search reports it could not be reached.
+- **ToS notes:** DuckDuckGo's HTML endpoint is a public page, not a documented API, so this source is best-effort and may be rate-limited or changed; the tool degrades to Google News headlines, then to an error the model can act on. The request carries an honest `User-Agent` naming MarketMitra. Reviewed 2026-11-25 against live responses (parsers are tested on recorded real samples).
+- **Also checked, not yet used:** the RBI press-release feed (`https://www.rbi.org.in/pressreleases_rss.xml`) and the TRAI feed (`https://www.trai.gov.in/rss.xml`) answer with real items; SEBI's feed (`https://www.sebi.gov.in/sebirss.xml`) answered with an empty channel on 2026-11-25. They are the sources for the regulatory feed ingestion in #365.
 
 ### Chittorgarh (IPO calendar + subscription + grey-market premium)
 - **Type:** scraper (Tier 3, last resort — Phase 7, [ADR 0017](./decisions/0017-ipo-tracker-gmp-scope.md))
