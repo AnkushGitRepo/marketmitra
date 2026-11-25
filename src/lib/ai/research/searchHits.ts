@@ -23,7 +23,18 @@ export function decodeEntities(text: string): string {
   });
 }
 
-const stripTags = (html: string): string => decodeEntities(html.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+/** Applies a replacement until the text stops changing, so nested constructs such as `<scr<b>ipt>` cannot survive one pass. */
+export function replaceUntilStable(text: string, pattern: RegExp, replacement: string): string {
+  let current = text;
+  for (let i = 0; i < 10; i += 1) {
+    const next = current.replace(pattern, replacement);
+    if (next === current) return next;
+    current = next;
+  }
+  return current;
+}
+
+const stripTags = (html: string): string => decodeEntities(replaceUntilStable(html, /<[^>]*>/g, ' ')).replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim();
 
 export function hostOf(url: string): string {
   try {
@@ -33,12 +44,18 @@ export function hostOf(url: string): string {
   }
 }
 
+/** True for duckduckgo.com and its subdomains only, not for a look-alike such as evilduckduckgo.com. */
+export function isDuckDuckGoHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return host === 'duckduckgo.com' || host.endsWith('.duckduckgo.com');
+}
+
 /** The target of a DuckDuckGo result link (`//duckduckgo.com/l/?uddg=<encoded url>`), or null when it is not an http(s) address. */
 function ddgTarget(href: string): string | null {
   try {
     const raw = decodeEntities(href);
     const wrapped = new URL(raw.startsWith('//') ? `https:${raw}` : raw);
-    const target = wrapped.searchParams.get('uddg') ?? (wrapped.hostname.endsWith('duckduckgo.com') ? null : wrapped.href);
+    const target = wrapped.searchParams.get('uddg') ?? (isDuckDuckGoHost(wrapped.hostname) ? null : wrapped.href);
     if (!target) return null;
     const url = new URL(target);
     return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;

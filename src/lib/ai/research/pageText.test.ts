@@ -28,6 +28,11 @@ describe('htmlToText', () => {
   it('does not keep script text hidden in comments', () => {
     expect(htmlToText(page('<!-- <script>bad()</script> --><p>ok</p>'), 100).text).toBe('ok');
   });
+  it('leaves no tag characters even from nested or broken markup', () => {
+    const out = htmlToText(page('<p>a <scr<b>ipt>alert(1)</scr</b>ipt> b</p><p>1 < 2 > 0</p>'), 1000);
+    expect(out.text).not.toMatch(/[<>]/);
+    expect(out.text).toContain('a');
+  });
   it('copes with an empty or tagless document', () => {
     expect(htmlToText('', 100)).toEqual({ title: '', text: '', truncated: false });
     expect(htmlToText('just text', 100).text).toBe('just text');

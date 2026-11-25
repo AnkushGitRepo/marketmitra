@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { decodeEntities, dedupeHits, hostOf, parseDuckDuckGo, parseGoogleNews, type SearchHit } from './searchHits';
+import { decodeEntities, dedupeHits, hostOf, isDuckDuckGoHost, parseDuckDuckGo, parseGoogleNews, replaceUntilStable, type SearchHit } from './searchHits';
 
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', name), 'utf-8');
 
@@ -56,5 +56,33 @@ describe('helpers', () => {
   it('names the host without www', () => {
     expect(hostOf('https://www.sebi.gov.in/x')).toBe('sebi.gov.in');
     expect(hostOf('not a url')).toBe('');
+  });
+});
+
+describe('isDuckDuckGoHost', () => {
+  it('accepts the site and its subdomains, not a look-alike', () => {
+    expect(isDuckDuckGoHost('duckduckgo.com')).toBe(true);
+    expect(isDuckDuckGoHost('html.DuckDuckGo.com')).toBe(true);
+    expect(isDuckDuckGoHost('evilduckduckgo.com')).toBe(false);
+    expect(isDuckDuckGoHost('duckduckgo.com.evil.io')).toBe(false);
+  });
+});
+
+describe('replaceUntilStable', () => {
+  it('removes nested constructs a single pass would rebuild', () => {
+    // One pass over this leaves a new, complete comment behind; the second removes it.
+    expect(replaceUntilStable('<!<!-- -->--  c -->x', /<!--[\s\S]*?-->/g, '')).toBe('x');
+    expect('<!<!-- -->--  c -->x'.replace(/<!--[\s\S]*?-->/g, '')).toBe('<!--  c -->x');
+  });
+  it('stops on text that no longer changes', () => {
+    expect(replaceUntilStable('plain', /<[^>]*>/g, '')).toBe('plain');
+  });
+});
+
+describe('parsing hostile markup', () => {
+  it('leaves no tag characters in a snippet', () => {
+    const html = '<div class="result results_links"><a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fa.com%2Fx">Title</a><a class="result__snippet">Hi <scr<b>ipt>alert(1)</scr</b>ipt></a></div>';
+    const [hit] = parseDuckDuckGo(html);
+    expect(hit.snippet).not.toMatch(/[<>]/);
   });
 });
