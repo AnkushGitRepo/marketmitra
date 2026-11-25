@@ -173,6 +173,19 @@ export const RESEARCH_SYSTEM = withGuardrail(
   ].join('\n'),
 );
 
+// #354: the visual research report. The page draws every number itself (cards, charts, tables) from the stored
+// figures, so the model writes only the prose and the three thesis lists, as one JSON object.
+export const RESEARCH_STRUCTURED_SYSTEM = withGuardrail(
+  [
+    'You are a markets analyst producing a neutral research brief for a retail investor, from the public data provided.',
+    'Reply with ONE JSON object and nothing else (no code fence, no text around it), with exactly these keys:',
+    '{"summary": string, "catalysts": string[], "risks": string[], "questions": string[]}',
+    '"summary" is markdown with two sections: "## What it is" and "## Recent developments" (skip the second only when the data holds nothing recent, and say so). Do not paste tables or lists of figures: the page already shows the numbers in cards, charts and tables. Quote a figure only when it supports a point you are making.',
+    '"catalysts" are the factors that could drive the business or its results, "risks" are the risks and watch-items, "questions" are open diligence questions. Give 2 to 5 short, specific sentences each, grounded in the provided data. For a comparison or a portfolio, name the company in each sentence.',
+    'Ground every claim in the provided data (structured facts and retrieved passages); where the data is thin or missing, say so plainly rather than guessing or drawing on outside assumptions. Never recommend buying, selling or holding.',
+  ].join('\n'),
+);
+
 // ADR 0034: how Mitra turns a fuzzy investing need ("growth stocks", "safe
 // dividend payers") into a screen. The criteria mapping is guidance, not a
 // rulebook — the model should state its assumptions and let the user adjust.

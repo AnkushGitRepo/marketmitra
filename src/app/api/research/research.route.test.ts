@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   getFinancials: vi.fn(),
   getShareholding: vi.fn(),
   getPrices: vi.fn(),
+  getPeers: vi.fn(),
   getEnrichedHoldings: vi.fn(),
   searchSymbols: vi.fn(),
   themeFacts: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('@/lib/dashboard/fundamentalsApi', () => ({
   getFinancials: h.getFinancials,
   getShareholding: h.getShareholding,
   getPrices: h.getPrices,
+  getPeers: h.getPeers,
   searchSymbols: h.searchSymbols,
 }));
 vi.mock('@/lib/research/themeFacts', () => ({ themeFacts: h.themeFacts }));
@@ -35,11 +37,18 @@ import { POST } from './route';
 const call = (body: unknown) =>
   POST(new Request('http://localhost/api/research', { method: 'POST', body: JSON.stringify(body) }));
 
+const THESIS_JSON = JSON.stringify({
+  summary: '## What it is\nAn energy conglomerate.',
+  catalysts: ['New energy build-out'],
+  risks: ['Refining margins'],
+  questions: ['How is capex funded?'],
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   h.getCurrentUserId.mockResolvedValue('u1');
   h.getUserAiConfig.mockResolvedValue({ provider: 'gemini', apiKey: 'k' });
-  h.generateInsightText.mockResolvedValue({ ok: true, text: '## What it is\n…', model: 'gemini' });
+  h.generateInsightText.mockResolvedValue({ ok: true, text: THESIS_JSON, model: 'gemini' });
   h.retrieveInsightGrounding.mockResolvedValue({ passages: [], text: '' });
   h.getCompany.mockResolvedValue({ name: 'Reliance Industries', sector: 'Energy', industry: 'Refining', about: null });
   h.getRatios.mockResolvedValue([]);
@@ -47,7 +56,11 @@ beforeEach(() => {
   h.getShareholding.mockResolvedValue([]);
   h.getPrices.mockResolvedValue([]);
   h.searchSymbols.mockResolvedValue([]);
-  h.themeFacts.mockResolvedValue([{ heading: 'Telecommunications — largest listed companies', body: '- BHARTIARTL' }]);
+  h.getPeers.mockResolvedValue([]);
+  h.themeFacts.mockResolvedValue({
+    factBlocks: [{ heading: 'Telecommunications — largest listed companies', body: '- BHARTIARTL' }],
+    blocks: [{ type: 'kpi_grid', items: [{ label: 'Listed companies', value: '29' }] }],
+  });
   h.getEnrichedHoldings.mockResolvedValue([
     { symbol: 'TCS', name: 'TCS', sector: 'IT', quantity: 5, avgPrice: 3000, ltp: 3200 },
   ]);
@@ -102,11 +115,15 @@ describe('POST /api/research', () => {
     expect(h.generateInsightText.mock.calls[0][2]).toContain('BHARTIARTL');
   });
 
-  it('generates a company brief and passes RESEARCH_SYSTEM + a company subject line', async () => {
+  it('generates a company brief and passes the structured system prompt + a company subject line', async () => {
     const res = await call({ subject: { type: 'company', symbol: 'RELIANCE' } });
     expect(res.status).toBe(200);
     const body = await res.json();
+    expect(body.data.summary).toContain('## What it is');
     expect(body.data.content).toContain('## What it is');
+    expect(body.data.content).toContain('New energy build-out');
+    expect(body.meta.structured).toBe(true);
+    expect(body.data.blocks.map((b: { type: string }) => b.type)).toEqual(['kpi_grid', 'thesis_bento']);
 
     const [, system, prompt, opts] = h.generateInsightText.mock.calls[0];
     expect(system).toContain('research brief');
@@ -124,6 +141,25 @@ describe('POST /api/research', () => {
     const prompt = h.generateInsightText.mock.calls[0][2] as string;
     expect(prompt).toContain('[TCS]');
     expect(prompt).toContain('[INFY]');
+  });
+
+  it('falls back to the plain reply when the model does not return the JSON', async () => {
+    h.generateInsightText.mockResolvedValue({ ok: true, text: '## What it is\nPlain markdown.', model: 'gemini' });
+    const body = await (await call({ subject: { type: 'company', symbol: 'RELIANCE' } })).json();
+    expect(body.meta.structured).toBe(false);
+    expect(body.data.summary).toBe('## What it is\nPlain markdown.');
+    expect(body.data.blocks.map((b: { type: string }) => b.type)).toEqual(['kpi_grid']);
+  });
+
+  it('draws portfolio blocks from the holdings', async () => {
+    const body = await (await call({ subject: { type: 'portfolio' } })).json();
+    expect(body.data.blocks.map((b: { type: string }) => b.type)).toEqual([
+      'kpi_grid',
+      'donut_chart',
+      'bar_chart',
+      'data_table',
+      'thesis_bento',
+    ]);
   });
 
   it('502s when generation fails', async () => {

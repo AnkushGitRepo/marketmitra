@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { MarkdownLite } from '@/components/MarkdownLite';
 import { InfoPopover } from '@/components/common/InfoPopover';
 import { SymbolCombobox } from '@/components/research/SymbolCombobox';
+import { ReportBlocks } from '@/components/research/blocks/ReportBlocks';
+import type { ResearchBlock } from '@/lib/research/blocks';
 import { THEME_PRESETS } from '@/lib/research/themes';
 import styles from './page.module.css';
 
@@ -19,8 +21,26 @@ const TABS: { id: Tab; label: string }[] = [
 
 interface Report {
   content: string;
+  /** The model's prose (markdown); the figures are in `blocks`. */
+  summary?: string;
+  blocks?: ResearchBlock[];
   model: string;
   generatedAt: string;
+}
+
+/** Cards, charts and tables first, then the prose, then the thesis cards. A report without blocks is plain markdown. */
+function ReportBody({ report }: { readonly report: Report }) {
+  const blocks = report.blocks ?? [];
+  const figures = blocks.filter((b) => b.type !== 'thesis_bento');
+  const thesis = blocks.filter((b) => b.type === 'thesis_bento');
+  if (blocks.length === 0) return <MarkdownLite text={report.content} className={styles.brief} />;
+  return (
+    <div className={styles.reportStack}>
+      <ReportBlocks blocks={figures} />
+      {report.summary && <MarkdownLite text={report.summary} className={styles.brief} />}
+      <ReportBlocks blocks={thesis} />
+    </div>
+  );
 }
 
 export function ResearchPageClient() {
@@ -202,7 +222,7 @@ export function ResearchPageClient() {
 
       {report && !busy && (
         <div className={`${styles.card} ${styles.reportCard}`}>
-          <MarkdownLite text={report.content} className={styles.brief} />
+          <ReportBody report={report} />
           <p className={styles.reportMeta}>
             AI-generated ({report.model}) · {new Date(report.generatedAt).toLocaleString()} · not
             investment advice

@@ -235,3 +235,9 @@
   font-size: 13px;
   color: var(--app-text-muted);
 }
+
+.reportStack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}

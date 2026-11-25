@@ -1488,7 +1488,7 @@
           "AI"
         ],
         "summary": "Generate a research brief (Phase 10b)",
-        "description": "A longer structured brief (markdown sections: what it is / recent developments / the numbers / risks / open questions), retrieval + synthesis. Subject is one of company | theme | portfolio | comparison. A company symbol may also be a brand or company name (AIRTEL resolves to BHARTIARTL); a theme is matched to the screener's sectors and their largest companies are added as facts. Requires the user's own AI key. Not cached (ephemeral). Rate limited (ai tier).",
+        "description": "A longer structured research report: typed visual blocks built from the stored figures (summary cards, charts, tables), plus the model's prose summary and catalyst / risk / question lists (retrieval + synthesis). The model never writes the numbers in the blocks. Subject is one of company | theme | portfolio | comparison. A company symbol may also be a brand or company name (AIRTEL resolves to BHARTIARTL); a theme is matched to the screener's sectors and their largest companies are added as facts. Requires the user's own AI key. Not cached (ephemeral). Rate limited (ai tier).",
         "security": [
           {
             "cookieAuth": []
@@ -1548,7 +1548,7 @@
         },
         "responses": {
           "200": {
-            "description": "{ content (markdown), model, generatedAt }."
+            "description": "{ content (markdown, includes the tables), summary (markdown prose), blocks (kpi_grid | bar_chart | donut_chart | data_table | thesis_bento, figures computed from stored data), model, generatedAt }, meta: { grounded, facts, structured }."
           },
           "400": {
             "description": "no_ai_key or no holdings."
