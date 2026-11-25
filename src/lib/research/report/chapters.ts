@@ -66,8 +66,11 @@ export const pendingChapter = (id: ChapterId, blocks: readonly ResearchBlock[] =
   sources: [],
 });
 
+/** Gemini's grounding links are long redirect addresses that mean nothing outside the page; for those the name alone is kept. */
+const isRedirect = (url: string): boolean => url.includes('vertexaisearch.cloud.google.com');
+
 const sourcesMarkdown = (sources: readonly SourceRef[]): string =>
-  sources.length === 0 ? '' : `Sources:\n${sources.map((s) => `- ${s.title} (${s.url})`).join('\n')}`;
+  sources.length === 0 ? '' : `Sources:\n${sources.map((s) => (isRedirect(s.url) ? `- ${s.title}` : `- ${s.title} (${s.url})`)).join('\n')}`;
 
 /** The whole report as markdown (tables as pipe tables), for saving it into a note. A chapter that failed says so. */
 export function chaptersToMarkdown(chapters: readonly ReportChapter[]): string {

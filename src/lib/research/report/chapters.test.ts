@@ -29,6 +29,13 @@ describe('chaptersToMarkdown', () => {
     expect(md).toContain('- Economic Times (https://et.test/a)');
   });
 
+  it('keeps only the name of a Gemini grounding redirect, which is a long address that means nothing outside the page', () => {
+    const md = chaptersToMarkdown([ready('legal', { sources: [{ title: 'sci.gov.in', url: 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGNIC' }, { title: 'The Hindu', url: 'https://thehindu.test/a' }] })]);
+    expect(md).toContain('- sci.gov.in\n');
+    expect(md).not.toContain('vertexaisearch');
+    expect(md).toContain('- The Hindu (https://thehindu.test/a)');
+  });
+
   it('says plainly that a failed chapter could not be written, and keeps its figures', () => {
     const md = chaptersToMarkdown([
       ready('legal', { status: 'failed', prose: null, note: 'The provider is overloaded', blocks: [{ type: 'kpi_grid', items: [{ label: 'Events', value: '3' }] }] }),
