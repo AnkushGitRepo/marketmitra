@@ -1,7 +1,8 @@
 # 0081 — The company research report is built from chapters, not one prompt
 
-Status: accepted (2026-11-25, issue #360; the maintainer approved Gemini-only web grounding for the legal and regulatory chapters, with
-"not available" for every other provider).
+Status: accepted (2026-11-25, issue #360). Amended the same day: the maintainer rejected "not available" as an answer. A gap is
+sourced and stored where a free source exists (#365) and otherwise researched live by the agent with web search tools (#364), for every
+provider.
 
 ## Context
 
@@ -25,14 +26,19 @@ the model said "balance sheet and cash flows not provided".
 - **Historical P/E is price at the fiscal year end over that year's EPS**, using the last close in the week up to the year end. A year with no
   price, no positive EPS or a ratio above 300 has no P/E, and at least three years are needed for a median. Prices and EPS are both adjusted
   for bonus issues in the stored data (checked on RELIANCE and TCS), so the ratio is consistent.
-- **Chapters that need current outside facts are grounded or unavailable.** Regulation, litigation and governance have no stored source. They
-  are written only with Google Search grounding, which this app wires for Gemini keys (`groundingTools`). With another provider the chapter
-  says it is not available; it is never written from the model's memory. Stored facts (shareholding trend, ratios) are used where they exist.
-- **Calls:** about five on the user's own key (business and management; the numbers commentary; sector, grounded; regulatory and legal,
-  grounded; the risk register, which reads the others). The grounded ones are the slow and costly part, so a Gemini report is slower than one
-  from another provider. Chapters stream to the page as they finish; the computed chapters appear first, before any model call returns.
-- **Left out because the data does not exist:** EV/EBITDA (no cash line), segment revenue, subscriber or volume figures, promoter pledge.
-  Chapters say "not available in our data" rather than infer them.
+- **A fact is looked for in this order, and the report says "not found" only after the last step ran.**
+  1. **Stored data**: the statements and ratios above, shareholding, peers.
+  2. **Data we ingest from a free source** (issue #365, `docs/data-sources.md`): cash, debt and EV from Yahoo and the NSE/BSE XBRL, working-capital
+     days and Screener's pros/cons, exchange announcements (credit ratings, Regulation 30 disclosures, litigation and auditor notices),
+     SEBI/RBI/TRAI press-release feeds in the news corpus, promoter pledge from the shareholding XBRL, segment detail from the annual-report
+     PDFs the service already indexes.
+  3. **Retrieval** over the indexed news, filings and the user's notes (existing).
+  4. **Web search by the agent** (issue #364): the provider's own search tool where the user's key has one (Anthropic, OpenAI, Google), and a
+     keyless `web_search` + `fetch_page` pair (news search plus an SSRF-safe page reader, results fenced as untrusted) for every other provider.
+  The report states what it searched when it still finds nothing, and never fills a gap from the model's memory.
+- **Calls:** about five on the user's own key (business and management; the numbers commentary; sector; regulatory and legal; the risk register,
+  which reads the others). Chapters that search are the slow part. Chapters stream to the page as they finish; the computed chapters appear
+  first, before any model call returns.
 
 ## Consequences
 
@@ -40,9 +46,12 @@ the model said "balance sheet and cash flows not provided".
 - The other research modes (theme, portfolio, comparison) keep the single-call brief.
 - Report numbers are testable without a model, and a model that ignores its format degrades one chapter, not the report.
 - Valuation is only as good as the stored price history (about five years); a recently listed company gets no P/E history.
+- New storage (announcements, cash and debt, working-capital days) needs a migration; production migrations are run by the maintainer.
+- Web search costs the user's own tokens and time, so it has a per-report budget of searches and page reads.
 
 ## Alternatives considered
 
 - **One bigger prompt with a larger output budget:** still compresses, cannot be partially retried, and cannot stream.
 - **Let the model compute the tables:** rejected; a number on a card must be traceable to stored data (as in #354).
-- **Ground every chapter with web search:** slower and costlier for facts the data service already holds; used only where nothing is stored.
+- **Ground every chapter with web search:** slower and costlier for facts the data service already holds; used only after stored and ingested data.
+- **"Not available" for providers without search:** rejected by the maintainer; every provider gets a search path.
