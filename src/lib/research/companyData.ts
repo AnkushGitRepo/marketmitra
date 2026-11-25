@@ -19,7 +19,7 @@ export interface CompanyData {
 }
 
 const ANNUAL_PERIODS = 5;
-const FII_CATEGORY = /^fii|foreign/i;
+const FII_CATEGORY = /^(?:fii|foreign)/i;
 
 function annualSeries(pl: readonly LineItemOut[] | null): AnnualFigures[] {
   const byLabel = (label: string) =>

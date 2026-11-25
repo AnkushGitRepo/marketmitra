@@ -54,6 +54,16 @@ describe('buildCompanyData', () => {
     expect(data.fii.latest).toBe(25.4);
     expect(data.fii.change).toBeCloseTo(1.4);
   });
+  it('matches the FII category from its start only', () => {
+    const only = buildCompanyData({
+      symbol: 'X',
+      name: 'X',
+      ratios: null,
+      profitAndLoss: null,
+      shareholding: [sh('Non-foreign promoters', '2026-09-30', '60'), sh('Foreign Institutions', '2026-09-30', '11')],
+    });
+    expect(only.fii.latest).toBe(11);
+  });
   it('computes latest-year sales growth', () => {
     expect(latestSalesGrowth(data)).toBeCloseTo(9.66, 1);
   });
