@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.db.models import CompanyMasterORM, NewsItemORM, NewsItemSymbolORM
 from app.ingestion import news as ingest
+from app.ingestion import regulators
 from app.services.search_service import ensure_company_master_populated
 
 logger = logging.getLogger("fundamentals.news_service")
@@ -95,8 +96,12 @@ async def _store(session: AsyncSession, items: list[dict], symbols: list[str]) -
 
 
 async def _prune(session: AsyncSession) -> None:
-    cutoff = datetime.now(UTC) - timedelta(days=_settings.news_retention_days)
-    await session.execute(delete(NewsItemORM).where(NewsItemORM.published_at < cutoff))
+    now = datetime.now(UTC)
+    news_cutoff = now - timedelta(days=_settings.news_retention_days)
+    regulator_cutoff = now - timedelta(days=_settings.regulator_retention_days)
+    regulator = NewsItemORM.source.in_(regulators.REGULATOR_SOURCES)
+    await session.execute(delete(NewsItemORM).where(~regulator, NewsItemORM.published_at < news_cutoff))
+    await session.execute(delete(NewsItemORM).where(regulator, NewsItemORM.published_at < regulator_cutoff))
     await session.commit()
 
 
@@ -115,14 +120,18 @@ async def _build_name_index(session: AsyncSession) -> list[tuple[str, object]]:
 async def _refresh_broad(session: AsyncSession) -> None:
     await ensure_company_master_populated(session)
     items = await ingest.fetch_broad_items()
-    if not items:
-        return
-    name_index = await _build_name_index(session)
-    for item in items:
-        text = f"{item['title']} {item.get('summary') or ''}"
-        item["_symbols"] = ingest.tag_symbols(text, name_index)
-    await _store(session, items, symbols=[])
-    await _prune(session)
+    if items:
+        name_index = await _build_name_index(session)
+        for item in items:
+            text = f"{item['title']} {item.get('summary') or ''}"
+            item["_symbols"] = ingest.tag_symbols(text, name_index)
+        await _store(session, items, symbols=[])
+    # Regulator notices (#365) are sector-wide, so they are not tagged to companies.
+    notices = await regulators.fetch_regulator_items()
+    if notices:
+        await _store(session, notices, symbols=[])
+    if items or notices:
+        await _prune(session)
 
 
 async def _refresh_symbol(session: AsyncSession, symbol: str) -> None:
@@ -143,9 +152,12 @@ async def get_news(
     symbols: list[str] | None = None,
     limit: int = 20,
     cursor: str | None = None,
+    include_regulatory: bool = False,
 ) -> dict:
     """Newest-first news, optionally filtered to `symbols`. Refreshes stale
-    data first (lazy TTL). Returns {items: [...], next_cursor: str | None}."""
+    data first (lazy TTL). Returns {items: [...], next_cursor: str | None}.
+    Regulator notices (RBI, TRAI, SEBI; #365) are left out unless `include_regulatory`: they are retrieval
+    material for the research report, not headlines for the news page."""
     limit = max(1, min(limit, 50))
 
     if symbols:
@@ -163,6 +175,8 @@ async def get_news(
             await _refresh_broad(session)
 
     stmt = select(NewsItemORM)
+    if not include_regulatory:
+        stmt = stmt.where(NewsItemORM.source.not_in(regulators.REGULATOR_SOURCES))
     if wanted:
         stmt = stmt.join(NewsItemSymbolORM).where(NewsItemSymbolORM.symbol.in_(wanted)).distinct()
 

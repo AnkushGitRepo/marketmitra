@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import type { DocumentOut } from '@/lib/dashboard/fundamentalsApi';
 
-const getNews = vi.fn<() => Promise<{ items: NewsItem[]; next_cursor: string | null }>>();
-vi.mock('@/lib/dashboard/newsApi', () => ({ getNews: () => getNews() }));
+const getNews = vi.fn<(opts?: { includeRegulatory?: boolean }) => Promise<{ items: NewsItem[]; next_cursor: string | null }>>();
+vi.mock('@/lib/dashboard/newsApi', () => ({ getNews: (opts?: { includeRegulatory?: boolean }) => getNews(opts) }));
 
 const getDocuments = vi.fn<(s: string) => Promise<DocumentOut[] | null>>();
 vi.mock('@/lib/dashboard/fundamentalsApi', () => ({ getDocuments: (s: string) => getDocuments(s) }));
@@ -88,6 +88,12 @@ describe('indexTextDocument', () => {
 });
 
 describe('indexCorpus', () => {
+  it('asks the news service for regulator notices too, so the report can retrieve them (#365)', async () => {
+    getNews.mockResolvedValue({ items: [], next_cursor: null });
+    await indexCorpus({ now: new Date('2026-09-06T00:00:00Z') });
+    expect(getNews).toHaveBeenCalledWith(expect.objectContaining({ includeRegulatory: true }));
+  });
+
   it('ensures indexes, indexes each news item, and reports counts', async () => {
     getNews.mockResolvedValue({ items: [item(), item({ url: 'https://ex.com/b' })], next_cursor: null });
     const res = await indexCorpus({ now: new Date('2026-09-06T00:00:00Z') });

@@ -56,6 +56,8 @@ class Settings(BaseSettings):
     news_broad_cache_ttl_minutes: int = 30
     news_symbol_cache_ttl_minutes: int = 60
     news_retention_days: int = 30
+    # Regulator notices (RBI, TRAI, SEBI; #365) stay relevant for much longer than a headline.
+    regulator_retention_days: int = 180
 
     # IPO tracker (GET /ipos, ADR 0017). Lazy TTL: a read past this re-fetches
     # (best-effort — the aggregator is a SPA, so the reliable path is an

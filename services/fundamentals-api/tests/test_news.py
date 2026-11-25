@@ -166,7 +166,7 @@ def client():
 def test_news_route_shape(client, monkeypatch):
     from datetime import UTC, datetime
 
-    async def fake_get_news(session, symbols=None, limit=20, cursor=None):
+    async def fake_get_news(session, symbols=None, limit=20, cursor=None, include_regulatory=False):
         return {
             "items": [
                 {
@@ -194,3 +194,16 @@ def test_news_route_shape(client, monkeypatch):
 
 def test_news_route_rejects_bad_limit(client):
     assert client.get("/news?limit=999").status_code == 422
+
+
+def test_news_route_leaves_regulator_notices_out_unless_asked(client, monkeypatch):
+    seen = []
+
+    async def fake_get_news(session, symbols=None, limit=20, cursor=None, include_regulatory=False):
+        seen.append(include_regulatory)
+        return {"items": [], "next_cursor": None}
+
+    monkeypatch.setattr("app.api.routes.news.svc.get_news", fake_get_news)
+    assert client.get("/news").status_code == 200
+    assert client.get("/news?include_regulatory=true").status_code == 200
+    assert seen == [False, True]

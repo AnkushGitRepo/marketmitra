@@ -167,7 +167,26 @@ def _parse_ratios(page) -> list[dict]:
         elif "₹" in text_blob:
             unit = "INR"
         ratios.append({"name": name, "value": value, "unit": unit})
+    pledge = _parse_pledge(page)
+    if pledge is not None:
+        ratios.append({"name": "Promoter Pledge %", "value": pledge, "unit": "%"})
     return ratios
+
+
+_PLEDGE_RE = re.compile(r"pledged\s+(\d+(?:\.\d+)?)\s*%", re.IGNORECASE)
+
+
+def _parse_pledge(page) -> Decimal | None:
+    """The share of the promoters' holding that is pledged, as a percentage, or None.
+
+    Screener has no pledge table: it states a pledge only in its generated Cons ("Promoters have pledged 73.0% of their
+    holding."). So None means Screener flags no pledge, not that the pledge is a confirmed zero. Only the Cons are read: a
+    pledge is never a pro."""
+    for item in page.css("#analysis .cons ul li"):
+        match = _PLEDGE_RE.search(" ".join(item.get_all_text().split()))
+        if match:
+            return Decimal(match.group(1))
+    return None
 
 
 def _parse_financial_statement(page, statement_type: StatementType) -> list[dict]:
