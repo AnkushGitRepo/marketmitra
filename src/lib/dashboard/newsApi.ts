@@ -28,11 +28,14 @@ export async function getNews(opts: {
   symbols?: string[];
   limit?: number;
   cursor?: string | null;
+  /** Also return regulator notices (RBI, TRAI, SEBI). Off for the news page; on for the retrieval indexer (#365). */
+  includeRegulatory?: boolean;
 } = {}): Promise<NewsPage> {
   const params = new URLSearchParams();
   if (opts.symbols?.length) params.set('symbols', opts.symbols.join(','));
   if (opts.limit) params.set('limit', String(opts.limit));
   if (opts.cursor) params.set('cursor', opts.cursor);
+  if (opts.includeRegulatory) params.set('include_regulatory', 'true');
 
   try {
     const response = await fetch(`${BASE_URL}/news?${params.toString()}`, {

@@ -102,6 +102,16 @@ and are not shown.
 - **ToS notes:** Google News RSS is a public feed Google serves; entries link back to the publishers (via `news.google.com` redirects) and MarketMitra keeps only headline + summary + link + timestamp, no article bodies. Reviewed 2026-09-06.
 - **Also used by the research agent (#364, 2026-11-25):** the keyless `web_search` tool queries the same feed for the freshest headlines about a company, a case or a regulation. The feed's own notice limits it to personal, non-commercial feed-reader use; the agent runs on the signed-in user's own request and keeps only headline, outlet and date. Its links are `news.google.com` redirect pages that need JavaScript, so the page reader refuses them and the agent searches for the headline words to find the publisher's page instead.
 
+### Regulator press-release feeds: RBI, TRAI, SEBI (research report, #365, ADR 0081)
+- **Type:** public RSS
+- **Used for:** retrieval material for the report's regulatory chapter. Kept items are stored in `news_items` under their own source labels (`RBI press release`, `TRAI`, `SEBI`), deduplicated by URL, indexed into the retrieval corpus, and left out of the public news feed unless `include_regulatory=true`. Sentiment is neutral (a headline's tone says nothing about a notice). They are not tagged to companies (they are sector-wide), and are kept 180 days instead of 30.
+- **Endpoint(s):** `https://www.rbi.org.in/pressreleases_rss.xml`, `https://www.trai.gov.in/rss.xml`, `https://www.sebi.gov.in/sebirss.xml`
+- **Auth:** none. **Cost:** free. **Rate limits:** none published; fetched with the news broad-feed refresh (at most every 30 minutes, on read), one request per feed.
+- **Filter:** the feeds are mostly routine, so each source has a filter for its routine items. On 2026-11-25 RBI's 10 items were 8 auction results and money-market operations and 2 Governor meetings (2 kept); TRAI's 10 were 6 consumer-awareness workshops and administrative notices and 4 others (about 1 kept after tuning). Expect a low volume of items: the value is the occasional penalty, direction, order or consultation, not a stream.
+- **Downloaded with httpx, not feedparser:** feedparser's own downloader fails TLS verification on TRAI's server (missing intermediate certificate), httpx with the certifi bundle does not. The request carries an honest `User-Agent`.
+- **Checked and not used (2026-11-25):** PIB and DoT answer HTTP 403 to non-browser clients (not bypassed: see the safety rules), CCI and IRDAI publish no feed (404). SEBI's feed was an empty channel; it is kept in the list so it starts working if SEBI fills it. For anything these feeds do not carry, the research agent searches the web (see below).
+- **ToS notes:** public government RSS feeds meant for syndication; only headline, summary, link and date are kept.
+
 ### Web search for the research agent (#364, ADR 0081)
 - **Type:** provider-run search tools, plus a keyless fallback made of a public HTML search and a page reader
 - **Used for:** facts the stored data does not hold (litigation, regulation, management and sector developments), in the research report's chapters and later in Mitra chat

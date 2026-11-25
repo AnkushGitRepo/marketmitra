@@ -122,7 +122,7 @@ async function fetchRecentNews(total: number): Promise<NewsItem[]> {
   const items: NewsItem[] = [];
   let cursor: string | null | undefined;
   while (items.length < total) {
-    const page = await getNews({ limit: Math.min(PAGE, total - items.length), cursor });
+    const page = await getNews({ limit: Math.min(PAGE, total - items.length), cursor, includeRegulatory: true });
     items.push(...page.items);
     cursor = page.next_cursor;
     if (!cursor || page.items.length === 0) break;

@@ -33,10 +33,16 @@ async def get_news(
     ),
     limit: int = Query(default=20, ge=1, le=50),
     cursor: str | None = Query(default=None),
+    include_regulatory: bool = Query(
+        default=False,
+        description="Also return regulator notices (RBI, TRAI, SEBI); the news page leaves them out",
+    ),
     session: AsyncSession = Depends(get_db),
 ) -> NewsPageOut:
     symbol_list = [s for s in (symbols or "").split(",") if s.strip()] or None
-    page = await svc.get_news(session, symbols=symbol_list, limit=limit, cursor=cursor)
+    page = await svc.get_news(
+        session, symbols=symbol_list, limit=limit, cursor=cursor, include_regulatory=include_regulatory
+    )
     return NewsPageOut(
         items=[NewsItemOut(**item) for item in page["items"]],
         next_cursor=page["next_cursor"],
