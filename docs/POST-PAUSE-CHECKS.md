@@ -107,6 +107,22 @@ Data service only so far: nothing in the app reads these yet. **Order matters (a
 - [ ] Promoter pledge (no migration; part of the ratios refresh): `GET /companies/JPPOWER/ratios` includes `Promoter Pledge %` (about 73 at the time of writing); `GET /companies/ADANIENT/ratios` has none. A missing row means Screener flags no pledge, not zero.
 - [ ] Yahoo cash, debt and EV (no migration needed; deploy the data service): `GET /companies/RELIANCE/ratios` includes `Enterprise Value`, `Net Debt` and `EV/EBITDA` (about 12x); `GET /companies/RELIANCE/financials/balance_sheet` includes `Total Debt` and `Cash and Short-Term Investments` rows; `NEWGEN` shows negative `Net Debt` (net cash); a bank such as `HDFCBANK` has none of them. Watch Yahoo for rate limiting after the deploy (one `info` and one `balance_sheet` call per company per day).
 
+## 4i. Research studio (#353 to #361, #372, ADR 0081)
+
+Run **after** the 4h data checks (the report is richer once the data service has the new data). Signed in as a real hosted user with their own AI key, and once more with a non-Gemini key (Anthropic or OpenAI) to exercise the provider's own search, and once with a provider that has none (OpenRouter or Groq) to exercise the keyless tools.
+
+- [ ] `/research` Company tab: typing "airt" suggests BHARTIARTL; "AIRTEL" resolves; an unknown name is refused with a message naming it (no model call spent).
+- [ ] Generate a report for a large company (for example BHARTIARTL): the figures appear within seconds, each chapter's text fills in, all nine chapters finish (about two minutes), the console has no errors, and the Chrome dev overlay shows no "Issue" badge.
+- [ ] The chapters that searched list their queries and sources; the legal chapter names real matters with dates and does **not** say "zero pledge" as a fact; there is no buy, sell, target or "attractive" language anywhere; the disclaimer appears once, at the end.
+- [ ] With the data service deployed (4h): the valuation chapter shows EV/EBITDA and net debt, the legal chapter's table lists exchange announcements, and a bank (for example HDFCBANK) shows no EV/EBITDA and no Yahoo balance-sheet rows.
+- [ ] Hosted time limit: a full report finishes inside Vercel's 300 s function limit with a slow provider (it took 90 to 125 s on Gemini locally). If it does not, shorten the budget in `lib/research/report/tasks.ts` or lower the concurrency to 1.
+- [ ] A company with little data (a recent listing or an SME) still produces a report: empty figures are omitted, the text says what is missing, nothing crashes.
+- [ ] The jump bar: appears with the figures, highlights the chapter in view, "Regulatory & legal" covers both chapters, it works by keyboard and on a phone (scrolls sideways, sits under the header).
+- [ ] **Save to Notes** saves the whole report (about 50,000 characters) and `/notes` shows all nine chapters, then delete the test note (your own notes are not touched).
+- [ ] **Export report** (enabled only when the report is done): the PDF opens the print dialog and **Save as PDF** gives a cover page, no browser date or address on any page, every table fully visible (the peers table's last column, the risk register's Probability/Severity columns), no half-empty pages, rupee signs everywhere. Check it in Chrome **and Safari** (only Chrome was tried). Word opens in Microsoft Word with the navigation pane listing the nine chapters; Markdown and text open and read well.
+- [ ] `/notes`: two panes, filters and search work, Export PDF on a note, Ask Mitra opens Mitra on the note, Edit and Delete (with its confirmation) work.
+- [ ] The Theme, Portfolio and Compare tabs still produce the single-call brief with the visual blocks.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.
