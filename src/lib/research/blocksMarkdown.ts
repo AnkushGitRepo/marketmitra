@@ -13,6 +13,7 @@ function blockMarkdown(block: ResearchBlock): string | null {
     case 'data_table':
       return [
         `### ${block.title}`,
+        ...(block.note ? [`*${block.note}*`] : []),
         pipeTable(
           block.columns.map((c) => c.label),
           block.rows.map((r) => block.columns.map((c) => formatCell(r[c.key] ?? null, c.format)))

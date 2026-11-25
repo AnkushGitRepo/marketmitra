@@ -3,7 +3,7 @@
 
 import type { FinancialPeriod } from './financialSeries';
 
-export type CellFormat = 'text' | 'crore' | 'number' | 'percent' | 'rupee';
+export type CellFormat = 'text' | 'crore' | 'number' | 'multiple' | 'percent' | 'rupee';
 export type Tone = 'positive' | 'negative' | 'neutral';
 
 export interface KpiItem {
@@ -52,6 +52,8 @@ export interface TableColumn {
 export interface DataTableBlock {
   readonly type: 'data_table';
   readonly title: string;
+  /** A line under the title: what the table is and is not. */
+  readonly note?: string;
   readonly columns: readonly TableColumn[];
   readonly rows: readonly Readonly<Record<string, TableCell>>[];
 }

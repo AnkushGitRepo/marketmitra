@@ -26,6 +26,7 @@ export function DataTable({ block }: { readonly block: DataTableBlock }) {
   return (
     <div className={styles.tableBlock}>
       <p className={styles.chartTitle}>{block.title}</p>
+      {block.note && <p className={styles.tableNote}>{block.note}</p>}
       <div className={styles.tableScroll}>
         <table className={styles.table}>
           <thead>

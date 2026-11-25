@@ -9,11 +9,15 @@ const group = (n: number, digits = 0): string =>
 /** ₹ crore amounts: ₹1,234 Cr, then ₹12.35L Cr from a lakh crore up. */
 export function formatCrore(value: number | null): string {
   if (value === null) return DASH;
-  return Math.abs(value) >= LAKH ? `₹${group(value / LAKH, 2)}L Cr` : `₹${group(Math.round(value))} Cr`;
+  const sign = value < 0 ? '−' : '';
+  const abs = Math.abs(value);
+  return abs >= LAKH ? `${sign}₹${group(abs / LAKH, 2)}L Cr` : `${sign}₹${group(Math.round(abs))} Cr`;
 }
 
 export const formatNumber = (value: number | null, digits = 1): string => (value === null ? DASH : group(value, digits));
 export const formatPercent = (value: number | null, digits = 1): string => (value === null ? DASH : `${group(value, digits)}%`);
+/** A ratio such as debt to equity or interest cover: 0.25x. */
+export const formatMultiple = (value: number | null): string => (value === null ? DASH : `${group(value, 2)}x`);
 export const formatRupee = (value: number | null): string => (value === null ? DASH : `₹${group(Math.round(value))}`);
 
 const RUPEES_PER_LAKH = 100_000;
@@ -40,6 +44,8 @@ export function formatCell(value: TableCell, format: CellFormat): string {
       return formatRupee(value);
     case 'number':
       return formatNumber(value);
+    case 'multiple':
+      return formatMultiple(value);
     case 'text':
       return String(value);
   }
