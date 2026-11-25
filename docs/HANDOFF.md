@@ -5,7 +5,7 @@
 > fell into. Rules and workflow live in [`AGENTS.md`](../AGENTS.md); this file is the *state*.
 > **Keep "Where we are" current** — update it at the end of every session (see AGENTS.md).
 
-> **Where the project stands:** see "Where we are" below. The last Claude Code session ended 2026-11-12; the next sessions are in Antigravity.
+> **Where the project stands:** see "Where we are" below. The latest Claude Code session ended 2026-11-25 (the research studio, below).
 
 ## If you remember only eight things
 
@@ -17,6 +17,10 @@
 6. The **Mitra Advisor** is off by default and recommend-only (ADR 0035). Local install, or a hosted admin in `ADMIN_USER_IDS` with `ADVISOR_MODE=enabled` set on the host (ADR 0070; the Vercel variables are still to be set, see Open work).
 7. Verify before claiming: check production state yourself, report what was and wasn't tested.
 8. Keep this file and `docs/session-log.md` current.
+
+## Where we are (as of 2026-11-25)
+
+**Research studio, 2026-11-25 (issues #353 to #361, #364, #365, #372; PRs #356 to #375; [ADR 0081](./decisions/0081-multi-chapter-research-report.md)): on `main` except #375, and NOT in production.** The Vercel pause (until 12 December) means none of the app work is deployed, and the **data service on Cloud Run has none of the new code**, so this environment's report cannot show the new data until the maintainer migrates and deploys. **What exists:** `/research` has symbol and sector pickers (aliases such as AIRTEL resolve to BHARTIARTL), visual blocks (cards, charts, sortable tables, thesis cards) for the four modes, and for a company a **nine-chapter report** (`POST /api/research/report`, streamed: computed figures first, then each chapter as its model call finishes, five calls, the risk register last) with a sticky jump bar (#375), a chapter-by-chapter "what was searched" disclosure, Save to Notes and an **Export report** menu (PDF through the print dialog, Word, Markdown, text). `/notes` is a two-pane vault with filters and search. The agent searches the web: the provider's own tool for Anthropic, OpenAI and Google keys, keyless `web_search` and `fetch_page` (DuckDuckGo HTML and Google News RSS, SSRF-safe, fenced as untrusted) for every other provider (`lib/ai/research`). The data service now stores Screener's ratios history, exchange announcements and pros/cons, Yahoo cash, debt and EV/EBITDA, regulator notices (RBI, TRAI, SEBI; a low-volume feed) and a promoter-pledge flag. **Production steps (the maintainer's):** run `alembic upgrade head` on Neon (`a8c3d1e5f740`, two new tables) **before** deploying the data service (otherwise `/announcements` and `/insights` answer 500), then deploy it (`deploy-cloud-run.sh`), then deploy the app on 12 December. The checks are `docs/POST-PAUSE-CHECKS.md` 4h (data) and 4i (the app). **Known roughness:** the PDF contents list has no page numbers (print CSS cannot know them; a PDF library would, at the cost of redrawing every table and chart); Word and text show a chart as its table; Gemini's source links are long redirect addresses (shown by name); the two chapters of one call share one searches-and-sources list; "no pledge flagged" is not "zero" (the chapter prompt says so, but a model can still overstate it, so read the legal chapter); the report takes about two minutes and five calls on the user's own key. **Open:** #375 (jump bar) awaits merge; #360 and #364 can be closed once it lands. **Local-environment trap found again:** the dev server serves stale or half-compiled modules for a minute after a branch switch (a 500 that goes away), and merging a PR with `--delete-branch` closes any PR stacked on that branch.
 
 ## Where we are (as of 2026-11-23)
 
