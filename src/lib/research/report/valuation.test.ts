@@ -13,6 +13,8 @@ const year = (n: number, over: Partial<YearFigures> = {}): YearFigures => ({
   interest: null,
   eps: 10,
   borrowings: null,
+  totalDebt: null,
+  cash: null,
   equity: null,
   totalAssets: null,
   cfo: null,
@@ -98,6 +100,16 @@ describe('valuationBlocks', () => {
     const chart = blocks[1];
     if (chart.type !== 'bar_chart') throw new Error();
     expect(chart.categories.at(-1)).toBe('Now');
+  });
+  it('adds EV/EBITDA and net debt (or net cash) when the data service has them', () => {
+    const base = { years, prices, ratios: { 'Stock P/E': 36 }, peerMedianPe: null };
+    const debt = valuationBlocks({ ...base, ratios: { ...base.ratios, 'EV/EBITDA': 12.08, 'Net Debt': 241735.01 } })[0];
+    const cash = valuationBlocks({ ...base, ratios: { ...base.ratios, 'Net Debt': -1075.1 } })[0];
+    if (debt.type !== 'kpi_grid' || cash.type !== 'kpi_grid') throw new Error();
+    expect(debt.items.find((i) => i.label === 'EV / EBITDA')?.value).toBe('12.1x');
+    expect(debt.items.find((i) => i.label === 'Net debt')?.value).toBe('₹2.42L Cr');
+    expect(cash.items.find((i) => i.label === 'Net cash')?.value).toBe('₹1,075 Cr');
+    expect(cash.items.some((i) => i.label === 'EV / EBITDA')).toBe(false);
   });
   it('returns only what it has data for', () => {
     expect(valuationBlocks({ years: [], prices: null, ratios: {}, peerMedianPe: null })).toEqual([]);

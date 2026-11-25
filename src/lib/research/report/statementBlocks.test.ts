@@ -11,6 +11,8 @@ const year = (label: string, over: Partial<YearFigures> = {}): YearFigures => ({
   interest: 30,
   eps: 5,
   borrowings: 400,
+  totalDebt: 450,
+  cash: 150,
   equity: 800,
   totalAssets: 2000,
   cfo: 250,
@@ -34,7 +36,8 @@ describe('statementBlocks', () => {
     expect(kpi.items[0].note).toContain('2 years');
     expect(kpi.items[1].value).toBe('₹280 Cr');
     expect(kpi.items[2]).toMatchObject({ label: 'Borrowings, FY26', note: 'Debt to equity 0.50x' });
-    expect(kpi.items[3].value).toBe('10.0x');
+    expect(kpi.items[3]).toMatchObject({ label: 'Net debt, FY26', value: '₹300 Cr' });
+    expect(kpi.items[4].value).toBe('10.0x');
   });
   it('keeps the gap year on the chart axis and as dashes in the table', () => {
     const chart = blocks[1];
@@ -50,8 +53,25 @@ describe('statementBlocks', () => {
     expect(noCash.map((b) => b.type)).toEqual(['kpi_grid', 'data_table']);
     const kpi = noCash[0];
     if (kpi.type !== 'kpi_grid') throw new Error();
-    expect(kpi.items.map((i) => i.label)).toEqual(['Borrowings, FY26', 'Interest cover, FY26']);
+    expect(kpi.items.map((i) => i.label)).toEqual(['Borrowings, FY26', 'Net debt, FY26', 'Interest cover, FY26']);
     expect(statementBlocks([year('FY26', EMPTY)])).toEqual([]);
     expect(statementBlocks([])).toEqual([]);
+  });
+});
+
+describe('net debt and net cash', () => {
+  it('calls it net cash when cash and investments exceed debt', () => {
+    const [kpi] = statementBlocks([year('FY26', { totalDebt: 100, cash: 600 })]);
+    if (kpi.type !== 'kpi_grid') throw new Error();
+    expect(kpi.items.find((i) => i.label.startsWith('Net'))).toMatchObject({ label: 'Net cash, FY26', value: '₹500 Cr', note: 'Cash and investments exceed debt' });
+  });
+  it('leaves net debt out when either side is missing, and shows it per year in the table', () => {
+    const blocks = statementBlocks([year('FY25', { totalDebt: null }), year('FY26', { totalDebt: 450, cash: 150 })]);
+    const kpi = blocks[0];
+    if (kpi.type !== 'kpi_grid') throw new Error();
+    expect(kpi.items.some((i) => i.label.startsWith('Net'))).toBe(true);
+    const table = blocks.find((b) => b.type === 'data_table');
+    if (table?.type !== 'data_table') throw new Error();
+    expect(table.rows.map((r) => r.net)).toEqual([null, 300]);
   });
 });
