@@ -1,5 +1,6 @@
 import { CHAPTERS } from '@/lib/research/report/chapters';
 import { reportProgress, type ReportState } from '@/lib/research/report/stream';
+import { ChapterJumpBar } from './ChapterJumpBar';
 import { ChapterSection } from './ChapterSection';
 import styles from './report.module.css';
 
@@ -26,6 +27,7 @@ export function CompanyReportView({ state, running }: CompanyReportViewProps) {
           )}
         </header>
       )}
+      <ChapterJumpBar present={shown.map((c) => c.id)} />
       {shown.map((chapter) => (
         <ChapterSection key={chapter.id} chapter={chapter} />
       ))}
