@@ -67,7 +67,15 @@ export const pendingChapter = (id: ChapterId, blocks: readonly ResearchBlock[] =
 });
 
 /** Gemini's grounding links are long redirect addresses that mean nothing outside the page; for those the name alone is kept. */
-const isRedirect = (url: string): boolean => url.includes('vertexaisearch.cloud.google.com');
+const GROUNDING_HOST = 'vertexaisearch.cloud.google.com';
+
+const isRedirect = (url: string): boolean => {
+  try {
+    return new URL(url).hostname === GROUNDING_HOST;
+  } catch {
+    return false;
+  }
+};
 
 const sourcesMarkdown = (sources: readonly SourceRef[]): string =>
   sources.length === 0 ? '' : `Sources:\n${sources.map((s) => (isRedirect(s.url) ? `- ${s.title}` : `- ${s.title} (${s.url})`)).join('\n')}`;

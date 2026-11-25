@@ -36,6 +36,12 @@ describe('chaptersToMarkdown', () => {
     expect(md).toContain('- The Hindu (https://thehindu.test/a)');
   });
 
+  it('only treats the real grounding host as a redirect, not a look-alike that mentions it', () => {
+    const md = chaptersToMarkdown([ready('legal', { sources: [{ title: 'Odd', url: 'https://evil.test/?u=vertexaisearch.cloud.google.com' }, { title: 'Broken', url: 'not a url' }] })]);
+    expect(md).toContain('- Odd (https://evil.test/?u=vertexaisearch.cloud.google.com)');
+    expect(md).toContain('- Broken (not a url)');
+  });
+
   it('says plainly that a failed chapter could not be written, and keeps its figures', () => {
     const md = chaptersToMarkdown([
       ready('legal', { status: 'failed', prose: null, note: 'The provider is overloaded', blocks: [{ type: 'kpi_grid', items: [{ label: 'Events', value: '3' }] }] }),
