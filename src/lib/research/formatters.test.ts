@@ -11,6 +11,17 @@ describe('formatCrore', () => {
   });
 });
 
+describe('negative crore and multiples', () => {
+  it('puts the minus sign before the rupee sign', () => {
+    expect(formatCrore(-685)).toBe('−₹685 Cr');
+    expect(formatCrore(-250_000)).toBe('−₹2.50L Cr');
+  });
+  it('formats a multiple with two decimals', () => {
+    expect(formatCell(0.254, 'multiple')).toBe('0.25x');
+    expect(formatCell(null, 'multiple')).toBe('—');
+  });
+});
+
 describe('formatCell', () => {
   it('formats by column format and leaves text alone', () => {
     expect(formatCell(12.34, 'percent')).toBe('12.3%');

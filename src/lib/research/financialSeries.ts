@@ -36,7 +36,7 @@ function isNextYear(earlier: string, later: string): boolean {
 }
 
 /** The year-end dates strictly between two annual period ends of the same month, e.g. 2023-03-31 between 2022 and 2024. */
-function missingYearEnds(earlier: string, later: string): string[] {
+export function missingYearEnds(earlier: string, later: string): string[] {
   const [ey, em, ed] = earlier.split('-');
   const [ly, lm] = later.split('-');
   if (em !== lm || !ey || !ly) return [];

@@ -221,6 +221,12 @@
   min-width: 0;
 }
 
+.tableNote {
+  margin: -4px 0 10px;
+  font-size: 12px;
+  color: var(--app-text-faint);
+}
+
 .tableScroll {
   overflow-x: auto;
   border: 1px solid var(--app-border-soft);
