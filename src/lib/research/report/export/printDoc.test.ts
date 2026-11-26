@@ -88,10 +88,20 @@ describe('buildReportPrintHtml', () => {
   it('has the cover, the contents in reading order, a watermark and a running footer', () => {
     expect(html).toContain('MARKETMITRA RESEARCH');
     expect(html).toContain('PB Fintech Limited');
-    expect(html).toContain(WATERMARK);
+    expect(html).toContain('<div class="watermark">MARKETMITRA RESEARCH<br>FOR PERSONAL USE</div>');
+    expect(WATERMARK.replace(' · ', ' ')).toBe('MARKETMITRA RESEARCH FOR PERSONAL USE');
     expect(html).toContain('Public data synthesis');
     expect(html.indexOf('Business and thesis')).toBeLessThan(html.indexOf('Sector and industry'));
     expect(html.indexOf('Sector and industry')).toBeLessThan(html.indexOf('Risks and watch-items'));
+  });
+  it('keeps the watermark behind the content, on lines that cannot wrap or clip', () => {
+    const rule = /\.watermark \{[^}]*\}/.exec(PRINT_CSS)![0];
+    expect(rule).toContain('z-index: -1');
+    expect(rule).toContain('white-space: nowrap');
+    expect(rule).toContain('translate(-50%, -50%)');
+  });
+  it('keeps a chapter’s source pills together and clear of what follows', () => {
+    expect(/\.sources \{[^}]*\}/.exec(PRINT_CSS)![0]).toContain('break-inside: avoid');
   });
   it('says plainly that a chapter failed, keeps the rest, and lists sources by name', () => {
     expect(html).toContain('This chapter could not be written: The provider is overloaded');

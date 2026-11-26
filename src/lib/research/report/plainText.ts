@@ -16,14 +16,19 @@ const REPLACEMENTS: readonly (readonly [RegExp, string])[] = [
 
 const LATEX_COMMAND = /\\[a-zA-Z]+/;
 
-/** True when what sits between two dollar signs is a math term rather than a price ("P/E", "17.7\times P/E") and not "5 million versus ". */
-const isMath = (inner: string): boolean => LATEX_COMMAND.test(inner) || /^[A-Za-z\\]/.test(inner);
+const ESCAPED = '\u0000';
+
+/**
+ * True when what sits between two dollar signs is a math term rather than a price: it has a LaTeX command ("17.7\times P/E"),
+ * starts with a letter ("P/E") or an escaped dollar ("\$22/mmBtu"), or is a bracketed term with letters in it ("(EB/TDA/scm)").
+ * "5 million versus " and "(5) crore versus " are prices and stay.
+ */
+const isMath = (inner: string): boolean => LATEX_COMMAND.test(inner) || /^[A-Za-z\\\u0000]/.test(inner) || (/^\(/.test(inner) && /[A-Za-z]/.test(inner.split(')')[0] ?? ''));
 
 const plain = (inner: string): string => REPLACEMENTS.reduce((text, [pattern, to]) => text.replace(pattern, to), inner).replace(/[{}]/g, '');
 
 /** Removes LaTeX the model sometimes writes: `$P/E$` becomes P/E, `\times` becomes x and `\$` becomes a dollar sign. Prices are left alone. */
 export function stripMath(text: string): string {
-  const ESCAPED = '\u0000';
   return text
     .replace(/\\\$/g, ESCAPED)
     .replace(/\$([^$\n]{1,80})\$/g, (whole, inner: string) => (isMath(inner) ? plain(inner) : whole))

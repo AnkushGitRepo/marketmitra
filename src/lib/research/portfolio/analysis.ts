@@ -255,8 +255,12 @@ export function annualisedVolatility(closes: readonly number[]): number | null {
   return Math.sqrt(variance * 252) * 100;
 }
 
-/** The holdings worth a news search: those well below cost, and the large positions. */
-export function holdingsToSearch(positions: readonly Position[], limit = 6): Position[] {
-  const picked = positions.filter((p) => (p.plPct !== null && p.plPct <= MODERATE_LOSS_PCT) || p.weightPct > OVERWEIGHT_PCT);
+/** The holdings worth a news search: those well below cost, the large positions, and the biggest gainers (to check their valuation). Losers first. */
+export function holdingsToSearch(positions: readonly Position[], limit = 8): Position[] {
+  const gainers = attribution(positions).winners.slice(0, TOP_WINNERS);
+  const picked = positions.filter((p) => (p.plPct !== null && p.plPct <= MODERATE_LOSS_PCT) || p.weightPct > OVERWEIGHT_PCT || gainers.includes(p));
   return picked.sort((a, b) => (a.plPct ?? 0) - (b.plPct ?? 0)).slice(0, limit);
 }
+
+/** How many of the biggest gainers get a valuation check. */
+export const TOP_WINNERS = 3;

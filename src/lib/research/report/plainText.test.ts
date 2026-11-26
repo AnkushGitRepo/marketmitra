@@ -17,6 +17,14 @@ describe('stripMath', () => {
     expect(stripMath('costs $5 million versus $10 million')).toBe('costs $5 million versus $10 million');
     expect(stripMath('worth $114 billion (about ₹11 lakh crore)')).toBe('worth $114 billion (about ₹11 lakh crore)');
   });
+  it('cleans a price written inside math, and a bracketed abbreviation', () => {
+    expect(stripMath('LNG at $\\$22/mmBtu$ today')).toBe('LNG at $22/mmBtu today');
+    expect(stripMath('margin $(EB/TDA/scm)$ fell')).toBe('margin (EB/TDA/scm) fell');
+    expect(stripMath('a loss of US\\$6.5-7 million and $1.1\\times P/B$')).toBe('a loss of US$6.5-7 million and 1.1x P/B');
+  });
+  it('does not mistake two real prices for math when one is bracketed', () => {
+    expect(stripMath('costs $(5) crore versus $6 crore')).toBe('costs $(5) crore versus $6 crore');
+  });
   it('does not touch text with no dollars', () => {
     expect(stripMath('Plain text, 12% growth.')).toBe('Plain text, 12% growth.');
   });

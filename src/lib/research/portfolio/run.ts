@@ -10,7 +10,7 @@ import { suggestNote } from '../saveNote';
 import { checklistCards } from '../sector/structure';
 import { portfolioChapterBlocks } from './blocks';
 import type { PortfolioInputs } from './gather';
-import { buildChecklistTask, buildPortfolioTasks, type PortfolioTask } from './tasks';
+import { LATER_TASKS, buildChecklistTask, buildPortfolioTasks, withFindings, type PortfolioTask } from './tasks';
 
 export interface PortfolioRunDeps {
   /** One model call; never throws (a failure is `{ ok: false }`). */
@@ -38,7 +38,10 @@ export async function* runPortfolioReport(inputs: PortfolioInputs, deps: Portfol
   const queries = buildPortfolioTasks(positions, omitted, blocks, empty);
   const retrieved = await Promise.all(queries.map((t) => deps.retrieve(t.groundingQuery)));
   const grounding = Object.fromEntries(queries.map((t, i) => [t.id, retrieved[i] ?? []])) as Record<keyof typeof empty, readonly GroundingPassage[]>;
-  const tasks = buildPortfolioTasks(positions, omitted, blocks, grounding);
+  const all = buildPortfolioTasks(positions, omitted, blocks, grounding);
+  // The health chapter is written after the others, from what they found, so it cannot disagree with them.
+  const tasks = all.filter((t) => !LATER_TASKS.includes(t.id));
+  const later = all.filter((t) => LATER_TASKS.includes(t.id));
 
   const prose: Partial<Record<PortfolioChapterId, string>> = {};
   let model: string | null = null;
@@ -84,6 +87,13 @@ export async function* runPortfolioReport(inputs: PortfolioInputs, deps: Portfol
   if (model === null) {
     yield { type: 'error', message: firstError ?? 'The report could not be written.' };
     return;
+  }
+
+  for (const task of later) {
+    for (const chapter of settle(task, await deps.generate(withFindings(task, prose)))) {
+      chapters.set(chapter.id as PortfolioChapterId, chapter);
+      yield { type: 'chapter', chapter };
+    }
   }
 
   const checklist = buildChecklistTask(positions, omitted, prose);
