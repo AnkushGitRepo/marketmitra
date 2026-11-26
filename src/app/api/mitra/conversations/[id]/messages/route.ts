@@ -4,7 +4,7 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
-import { MITRA_WORKSPACE_SYSTEM, NOTES_PROMPT, RICH_REPLIES_PROMPT, WEB_SEARCH_PROMPT } from '@/lib/ai/prompts';
+import { MITRA_WORKSPACE_SYSTEM, NOTES_PROMPT, MEMORY_PROMPT, RICH_REPLIES_PROMPT, WEB_SEARCH_PROMPT } from '@/lib/ai/prompts';
 import { promptForMode, selectPromptMode } from '@/lib/ai/promptMode';
 import { canUsePrivilegedModes } from '@/lib/auth/privilegedModes';
 import { buildA2uiTools } from '@/lib/ai/a2uiTools';
@@ -26,6 +26,8 @@ import { prepareModelMessages } from '@/lib/mitra-chat/prepareMessages';
 import { summariseSlice } from '@/lib/mitra-chat/summarize';
 import { buildNotesContext } from '@/lib/mitra-chat/notesContext';
 import { buildChatWebTools } from '@/lib/mitra-chat/webTools';
+import { buildMemoryContext } from '@/lib/mitra-chat/memory/context';
+import { buildMemoryTools } from '@/lib/mitra-chat/memory/tools';
 import { listNoteSummaries } from '@/lib/mitra-chat/notesList';
 import { listNotes } from '@/lib/notes/userNotes';
 import { planWindow } from '@/lib/mitra-chat/window';
@@ -132,6 +134,12 @@ async function handleMessage(request: Request, ctx?: unknown) {
   // Web search (#401): off when the user switched it off, in advisor-only mode (fixed tool set), and while a file is attached (a file's text must
   // not be able to steer the model into searching or opening addresses).
   const canSearchWeb = prefs.chat.webSearch && !hasAttachments && !advisor?.advisorToolsOnly;
+  // Memory (#402): used unless switched off or in advisor-only mode; Mitra can only save or delete while no file is attached, and a memory must be
+  // supported by words the user typed (their own text messages, never a file's content).
+  const memoryOn = prefs.chat.memory && !advisor?.advisorToolsOnly;
+  const canWriteMemory = memoryOn && !hasAttachments;
+  const memoryContext = memoryOn ? await buildMemoryContext(userId) : '';
+  const userTexts = all.filter((m) => m.role === 'user').slice(-5).map(textOf);
   const context = await buildPortfolioContext(userId).catch(() => '');
   // The user's notes are read on every question, not only when the model decides to search (#400). The user's own recent messages are
   // searched for stock tickers, so a note about a stock they just named is surfaced.
@@ -145,6 +153,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
     `--- PORTFOLIO CONTEXT ---\n${context}`,
     notesContext ? `${NOTES_PROMPT}\n\n${notesContext}` : '',
     canSearchWeb ? WEB_SEARCH_PROMPT : '',
+    memoryOn ? `${MEMORY_PROMPT(canWriteMemory)}\n\n${memoryContext || '--- WHAT THE USER HAS TOLD YOU BEFORE ---\nNothing saved yet.'}` : '',
     summary ? `--- EARLIER IN THIS CONVERSATION (summary) ---\n${summary}` : '',
     advisor ? advisor.systemAddendum : '',
   ]
@@ -169,6 +178,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
     // Proposes a holding change for the user to confirm on a card; with files attached it is withheld, like the alert write tools.
     ...(canAsk && !hasAttachments ? buildHoldingProposalTools(userId) : {}),
     ...(canSearchWeb ? buildChatWebTools({ userText }) : {}),
+    ...(canWriteMemory ? buildMemoryTools({ userId, userTexts }) : {}),
     ...(canShowCards ? buildA2uiTools(() => getEnrichedHoldings(userId), async (filter) => listNoteSummaries(await listNotes(userId), filter)) : {}),
   };
   // With the tools, a card from an earlier turn reaches the model as its text summary, not as the full layout.

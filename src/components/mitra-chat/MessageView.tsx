@@ -9,6 +9,8 @@ import { splitFollowUps } from '@/lib/mitra-chat/followUps';
 import { AskUserCard } from './AskUserCard';
 import { FollowUpChips } from './FollowUpChips';
 import { HoldingProposalCard } from './HoldingProposalCard';
+import { MemoryChip } from './MemoryChip';
+import { FORGET_TOOL, REMEMBER_TOOL } from '@/lib/mitra-chat/memory/names';
 import { AttachmentView } from './AttachmentView';
 import { StageLine, ToolActivity } from './ToolActivity';
 import { isActivityPart, stageOf, stageText, toolName } from '@/lib/mitra-chat/toolActivity';
@@ -59,6 +61,12 @@ function PartView({ part, role, cursor, onAnswer, answeredQuestion, onCardAction
   if (part.type === `tool-${HOLDING_PROPOSAL_TOOL}`) {
     const parsed = parseProposalPart(part as { input?: unknown; output?: unknown });
     return parsed ? <HoldingProposalCard proposal={parsed.proposal} output={parsed.output} onDecision={onAnswer} /> : null;
+  }
+  if (part.type === `tool-${REMEMBER_TOOL}` || part.type === `tool-${FORGET_TOOL}`) {
+    // A memory saved or removed in this reply: shown as a chip (with Undo for a save). A refused save shows nothing; the reply says why.
+    const out = (part as { output?: { saved?: boolean; forgotten?: boolean; id?: unknown; text?: unknown } }).output;
+    const done = part.type === `tool-${REMEMBER_TOOL}` ? out?.saved === true : out?.forgotten === true;
+    return done && typeof out?.id === 'string' && typeof out.text === 'string' ? <MemoryChip action={part.type === `tool-${REMEMBER_TOOL}` ? 'remembered' : 'forgot'} id={out.id} text={out.text} /> : null;
   }
   if (isCardToolPart(part.type)) {
     const output = (part as { output?: Partial<CardToolOutput> }).output;

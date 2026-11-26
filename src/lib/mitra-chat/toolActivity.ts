@@ -3,6 +3,7 @@
 
 import { ASK_USER_TOOL } from './askUser';
 import { HOLDING_PROPOSAL_TOOL } from './holdingProposal';
+import { FORGET_TOOL, REMEMBER_TOOL } from './memory/names';
 
 export type ActivityStage = 'thinking' | 'researching' | 'tool' | 'writing';
 
@@ -87,11 +88,11 @@ export function toolLabel(name: string): string {
   return TOOL_LABELS[name] ?? name.replace(/_/g, ' ');
 }
 
-/** True for a tool part that belongs in the activity list (not a question, a card or a holding proposal). */
+/** True for a tool part that belongs in the activity list (not a question, a card, a holding proposal or a memory chip). */
 export function isActivityPart(type: string, isCard: (type: string) => boolean): boolean {
   if (!type.startsWith('tool-')) return false;
   const name = toolName(type);
-  return name !== ASK_USER_TOOL && name !== HOLDING_PROPOSAL_TOOL && !isCard(type);
+  return name !== ASK_USER_TOOL && name !== HOLDING_PROPOSAL_TOOL && name !== REMEMBER_TOOL && name !== FORGET_TOOL && !isCard(type);
 }
 
 const finished = (state: string | undefined) => state === 'output-available' || state === 'output-error';

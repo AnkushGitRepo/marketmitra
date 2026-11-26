@@ -11,7 +11,7 @@ import {
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
-import { CHAT_SYSTEM_AGENTIC, NOTES_PROMPT, WEB_SEARCH_PROMPT } from '@/lib/ai/prompts';
+import { CHAT_SYSTEM_AGENTIC, MEMORY_PROMPT, NOTES_PROMPT, WEB_SEARCH_PROMPT } from '@/lib/ai/prompts';
 import { promptForMode } from '@/lib/ai/promptMode';
 import { resolvePromptMode } from '@/lib/ai/promptModeStore';
 import { buildChatTools } from '@/lib/ai/chatTools';
@@ -19,6 +19,8 @@ import { formatPageContext } from '@/lib/ai/chatContext';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
 import { buildNotesContext } from '@/lib/mitra-chat/notesContext';
 import { buildChatWebTools } from '@/lib/mitra-chat/webTools';
+import { buildMemoryContext } from '@/lib/mitra-chat/memory/context';
+import { buildMemoryTools } from '@/lib/mitra-chat/memory/tools';
 import { getPreferences } from '@/lib/preferences/store';
 import { appendTurn, clearHistory, recentUserQuestions } from '@/lib/chat/chatHistory';
 import { syncRecentChat } from '@/lib/rag/userSync';
@@ -114,9 +116,14 @@ async function handlePOST(request: Request) {
   const recentUserText = [...uiMessages.filter((m) => m.role === 'user').slice(-3).map(textFromParts), parsed.data.pageContext?.ticker ?? ''].join('\n');
   const notesContext = await buildNotesContext({ userId, query: lastUserMessage, recentText: recentUserText });
   // Web search (#401), unless the user switched it off or the advisor-only mode (a fixed tool set) is on.
-  const canSearchWeb = (await getPreferences(userId).catch(() => null))?.chat.webSearch !== false && !advisor?.advisorToolsOnly;
-  const system = `${promptForMode(CHAT_SYSTEM_AGENTIC, promptMode)}\n\n--- PORTFOLIO CONTEXT ---\n${context}${notesContext ? `\n\n${NOTES_PROMPT}\n\n${notesContext}` : ''}${canSearchWeb ? `\n\n${WEB_SEARCH_PROMPT}` : ''}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
-  const webTools = canSearchWeb ? buildChatWebTools({ userText: lastUserMessage }) : {};
+  const chatPrefs = (await getPreferences(userId).catch(() => null))?.chat;
+  const canSearchWeb = chatPrefs?.webSearch !== false && !advisor?.advisorToolsOnly;
+  // Memory (#402): the chat drawer has no attachments, so Mitra can both use and save memories unless the user switched it off.
+  const memoryOn = chatPrefs?.memory !== false && !advisor?.advisorToolsOnly;
+  const memoryContext = memoryOn ? await buildMemoryContext(userId) : '';
+  const userTexts = uiMessages.filter((m) => m.role === 'user').slice(-5).map(textFromParts);
+  const system = `${promptForMode(CHAT_SYSTEM_AGENTIC, promptMode)}\n\n--- PORTFOLIO CONTEXT ---\n${context}${notesContext ? `\n\n${NOTES_PROMPT}\n\n${notesContext}` : ''}${canSearchWeb ? `\n\n${WEB_SEARCH_PROMPT}` : ''}${memoryOn ? `\n\n${MEMORY_PROMPT(true)}\n\n${memoryContext || '--- WHAT THE USER HAS TOLD YOU BEFORE ---\nNothing saved yet.'}` : ''}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
+  const webTools = { ...(canSearchWeb ? buildChatWebTools({ userText: lastUserMessage }) : {}), ...(memoryOn ? buildMemoryTools({ userId, userTexts }) : {}) };
   const tools = advisor
     ? advisor.advisorToolsOnly
       ? advisor.tools

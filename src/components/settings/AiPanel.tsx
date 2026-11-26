@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { AI_PROVIDER_IDS, PROVIDERS } from '@/lib/ai/providerCatalog';
 import { PROVIDER_LABELS } from '@/lib/ai/providers';
+import { MemoryPanel } from './MemoryPanel';
 import { ModelPicker } from './ModelPicker';
 import type { Preferences, PreferencesPatch } from '@/lib/preferences/schema';
 import type { AiProvider, AiSettingsView } from '@/lib/userSettings';
@@ -223,6 +224,14 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
             </div>
             <Switch label="Show tool activity" checked={prefs.chat.showToolActivity} onChange={(v) => onPrefs({ chat: { showToolActivity: v } })} />
           </div>
+          <div className={rowStyles.row}>
+            <div className={rowStyles.rowText}>
+              <p className={rowStyles.rowLabel}>Mitra memory</p>
+              <p className={rowStyles.rowHint}>Lets Mitra remember what you tell it and use it in later chats. You can see, add and delete every memory below.</p>
+            </div>
+            <Switch label="Mitra memory" checked={prefs.chat.memory} onChange={(v) => onPrefs({ chat: { memory: v } })} />
+          </div>
+          <MemoryPanel enabled={prefs.chat.memory} />
           <div className={rowStyles.row}>
             <div className={rowStyles.rowText}>
               <p className={rowStyles.rowLabel}>Web search</p>
