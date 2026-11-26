@@ -4,7 +4,7 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
-import { MITRA_WORKSPACE_SYSTEM, NOTES_PROMPT, RICH_REPLIES_PROMPT } from '@/lib/ai/prompts';
+import { MITRA_WORKSPACE_SYSTEM, NOTES_PROMPT, RICH_REPLIES_PROMPT, WEB_SEARCH_PROMPT } from '@/lib/ai/prompts';
 import { promptForMode, selectPromptMode } from '@/lib/ai/promptMode';
 import { canUsePrivilegedModes } from '@/lib/auth/privilegedModes';
 import { buildA2uiTools } from '@/lib/ai/a2uiTools';
@@ -25,6 +25,7 @@ import { isRetryOfLast, sanitizeUserMessage } from '@/lib/mitra-chat/messageInpu
 import { prepareModelMessages } from '@/lib/mitra-chat/prepareMessages';
 import { summariseSlice } from '@/lib/mitra-chat/summarize';
 import { buildNotesContext } from '@/lib/mitra-chat/notesContext';
+import { buildChatWebTools } from '@/lib/mitra-chat/webTools';
 import { listNoteSummaries } from '@/lib/mitra-chat/notesList';
 import { listNotes } from '@/lib/notes/userNotes';
 import { planWindow } from '@/lib/mitra-chat/window';
@@ -128,6 +129,9 @@ async function handleMessage(request: Request, ctx?: unknown) {
   const hasAttachments = all.slice(keepFrom).some((m) => m.parts.some((p) => p.type === 'file'));
 
   const prefs = await getPreferences(userId);
+  // Web search (#401): off when the user switched it off, in advisor-only mode (fixed tool set), and while a file is attached (a file's text must
+  // not be able to steer the model into searching or opening addresses).
+  const canSearchWeb = prefs.chat.webSearch && !hasAttachments && !advisor?.advisorToolsOnly;
   const context = await buildPortfolioContext(userId).catch(() => '');
   // The user's notes are read on every question, not only when the model decides to search (#400). The user's own recent messages are
   // searched for stock tickers, so a note about a stock they just named is surfaced.
@@ -140,6 +144,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
     prefs.chat.platformAccess ? `--- PLATFORM API (call_platform_api, read-only GET) ---\n${PLATFORM_CATALOG_TEXT}` : '',
     `--- PORTFOLIO CONTEXT ---\n${context}`,
     notesContext ? `${NOTES_PROMPT}\n\n${notesContext}` : '',
+    canSearchWeb ? WEB_SEARCH_PROMPT : '',
     summary ? `--- EARLIER IN THIS CONVERSATION (summary) ---\n${summary}` : '',
     advisor ? advisor.systemAddendum : '',
   ]
@@ -163,6 +168,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
     ...(canAsk ? buildAskUserTools() : {}),
     // Proposes a holding change for the user to confirm on a card; with files attached it is withheld, like the alert write tools.
     ...(canAsk && !hasAttachments ? buildHoldingProposalTools(userId) : {}),
+    ...(canSearchWeb ? buildChatWebTools({ userText }) : {}),
     ...(canShowCards ? buildA2uiTools(() => getEnrichedHoldings(userId), async (filter) => listNoteSummaries(await listNotes(userId), filter)) : {}),
   };
   // With the tools, a card from an earlier turn reaches the model as its text summary, not as the full layout.

@@ -362,7 +362,7 @@ All routes: auth required, envelope `{ success, data, error }` except the stream
 ### Settings: preferences, export, bulk chat delete  _(ADR 0038, #37)_
 All require auth. `/api/settings/*` is never reachable by Mitra's `call_platform_api` tool.
 
-- **`GET /api/settings/preferences`** — `{ chat: { platformAccess, sendOnEnter, showToolActivity, dictationLanguage, richReplies }, display: { hideValuesByDefault }, shortcuts: { enabled } }`, always complete (defaults fill anything unset).
+- **`GET /api/settings/preferences`** — `{ chat: { platformAccess, sendOnEnter, showToolActivity, dictationLanguage, webSearch, richReplies }, display: { hideValuesByDefault }, shortcuts: { enabled } }`, always complete (defaults fill anything unset).
 - **`PATCH /api/settings/preferences`** — send any subset; unknown groups/fields or wrong types → `422`. The `onboarding` group (`riskProfile`, `completed`, `dismissed`) is part of it.
 - **`POST /api/onboarding`** _(ADR 0075, #306)_ — body `{ riskProfile?: 'conservative'|'balanced'|'aggressive', status?: 'completed'|'dismissed' }` (at least one; extra keys → `422`). Saves it and answers `{ riskProfile, completed, dismissed, holdings, hasAiKey, analystsQueued }`; `analystsQueued` is 0 without a saved AI key or with automatic analysts off.
 - **`GET /api/settings/export`** — a JSON attachment of your holdings, notes, alerts, wishlists, Mitra conversations (attachments by reference) and preferences. Never includes API keys or notification secrets.

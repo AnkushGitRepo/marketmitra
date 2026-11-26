@@ -225,6 +225,13 @@ export function AiPanel({ initialView, encConfigured, prefs, onPrefs, canUnrestr
           </div>
           <div className={rowStyles.row}>
             <div className={rowStyles.rowText}>
+              <p className={rowStyles.rowLabel}>Web search</p>
+              <p className={rowStyles.rowHint}>Lets Mitra search the web and read a page when a question needs fresh facts, such as a recent result, ruling or news item, with a few searches per reply. Only public names go into a search, never your holdings or notes. Turn it off to keep every question inside MarketMitra.</p>
+            </div>
+            <Switch label="Web search" checked={prefs.chat.webSearch} onChange={(v) => onPrefs({ chat: { webSearch: v } })} />
+          </div>
+          <div className={rowStyles.row}>
+            <div className={rowStyles.rowText}>
               <p className={rowStyles.rowLabel}>Rich replies</p>
               <p className={rowStyles.rowHint}>Lets Mitra and the Analyst Desk chat show a visual card, such as a portfolio snapshot or an analyst&apos;s status, built from your own data. The model only chooses to show it; it never writes the numbers.</p>
             </div>
