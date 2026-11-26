@@ -182,7 +182,7 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
 
   return new Document({
     creator: 'MarketMitra Research',
-    title: `${subjectInline(meta)}: ${meta.kind === 'sector' ? 'sector' : 'company'} research report`,
+    title: `${subjectInline(meta)}: ${meta.kind === 'sector' ? 'sector' : meta.kind === 'portfolio' ? 'portfolio' : 'company'} research report`,
     description: DISCLAIMER_TEXT,
     styles: {
       default: { document: { run: { font: FONT, size: BODY_SIZE, color: INK } } },

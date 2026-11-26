@@ -123,6 +123,29 @@ Run **after** the 4h data checks (the report is richer once the data service has
 - [ ] `/notes`: two panes, filters and search work, Export PDF on a note, Ask Mitra opens Mitra on the note, Edit and Delete (with its confirmation) work.
 - [ ] The Theme, Portfolio and Compare tabs still produce the single-call brief with the visual blocks.
 
+## 4j. Sector report and Theme picker (#378 to #386)
+
+Run after 4i, signed in with your own AI key (and once with a non-Gemini key, and once with a provider that has no search).
+
+- [ ] `/research` Theme tab: "def" suggests Defence & Aerospace with a count and top tickers; "rail" and "sem" give sensible, non-silly matches ("sem" must not match "Amusement"); an empty field lists the biggest themes; Enter on text that matches nothing gives a clear message, no model call.
+- [ ] Generate a report for a big theme (Telecom, Pharma & CDMO) and a tiny one (Railways & Rolling Stock, 3 companies): all nine chapters finish inside Vercel's 300 s (it took 152 s on Gemini locally); the tiny one still reads sensibly and says what it could not find.
+- [ ] The page: jump bar with six links (Overview, Indian leaders, Unlisted & global, Future & policy, Legal & risks, Investor checklist); value-chain cards; the India-versus-global table has "not found" cells, not invented numbers; green, amber and red callouts; the checklist is ten numbered cards; no `$` or LaTeX in any text.
+- [ ] "Who leads on each measure" contains no micro-cap or negative-net-worth company.
+- [ ] Export report: the PDF cover says SECTOR RESEARCH REPORT, the headline cards appear once, sources are at most five pills, the watermark stays inside the page, no half-empty pages; Word opens in Microsoft Word with the nine chapters in its navigation pane and the cards as numbered lines; Markdown has `sector:` front matter and no ticker; text reads well. Chrome and Safari.
+- [ ] Save to Notes saves the whole report (title carries the theme); delete the test note.
+- [ ] Company reports (4i) still work unchanged (the chapter catalogue was refactored).
+
+## 4k. Portfolio report (#390)
+
+Run after 4j, signed in with your own AI key and a portfolio of at least five holdings.
+
+- [ ] `/research` Portfolio tab: Generate report finishes all seven chapters inside Vercel's 300 s (13 holdings took a few minutes on Gemini locally); an account with no holdings gets a clear "no holdings" message and no model call.
+- [ ] Health strip, winners-and-losers chart and the drawdown severity cards (CRITICAL red, MODERATE amber) show; the numbers agree with `/portfolio` (net P&L, per-holding loss).
+- [ ] Each loser has a "why it is down" with a source and date, or says plainly that nothing was found.
+- [ ] The scenario chapter shows Bear, Base (today's value) and Bull as a range with the "not a forecast" note; no buy/sell language anywhere.
+- [ ] Export report: PDF cover says PORTFOLIO RESEARCH REPORT, severity tags coloured, no page of only a heading; Word, Markdown (`portfolio:` front matter, no ticker) and text open and read well. Save to Notes saves the whole report.
+- [ ] Company (4i) and sector (4j) reports still work.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

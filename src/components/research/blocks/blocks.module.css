@@ -429,6 +429,18 @@
   color: var(--app-ink);
 }
 
+.cardTag[data-severity='CRITICAL'] {
+  background: var(--app-loss-bg);
+  border: 1px solid var(--app-loss-border);
+  font-weight: 600;
+}
+
+.cardTag[data-severity='MODERATE'] {
+  background: var(--app-warn-bg);
+  border: 1px solid var(--app-warn-border);
+  font-weight: 600;
+}
+
 .cardText {
   font-size: 12.5px;
   line-height: 1.5;

@@ -105,7 +105,7 @@ const ITEM = /^\s*\d+[.)]\s+(.*\S)\s*$/;
 const MIN_QUESTIONS = 5;
 
 /** The checklist text ("1. **Question?** - what to look for") as numbered cards; null unless it holds at least five items. */
-export function checklistCards(markdown: string): ResearchBlock | null {
+export function checklistCards(markdown: string, title = 'Questions to answer before investing'): ResearchBlock | null {
   const cards = markdown.split('\n').flatMap((line) => {
     const item = ITEM.exec(line);
     if (!item) return [];
@@ -115,5 +115,5 @@ export function checklistCards(markdown: string): ResearchBlock | null {
     const q = body.indexOf('?');
     return q > 0 && q < body.length - 1 ? [{ heading: body.slice(0, q + 1).trim(), text: body.slice(q + 1).replace(/^[\s:–—-]+/, '').trim() }] : [{ heading: body, text: '' }];
   });
-  return cards.length >= MIN_QUESTIONS ? { type: 'card_grid', title: 'Questions to answer before investing', columns: 2, numbered: true, cards } : null;
+  return cards.length >= MIN_QUESTIONS ? { type: 'card_grid', title, columns: 2, numbered: true, cards } : null;
 }

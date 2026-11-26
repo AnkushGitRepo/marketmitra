@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAPTERS, COMPANY_CHAPTERS, SECTOR_CHAPTERS, chapterMeta, chaptersToMarkdown, pendingChapter, type ReportChapter } from './chapters';
+import { CHAPTERS, COMPANY_CHAPTERS, PORTFOLIO_CHAPTERS, SECTOR_CHAPTERS, chapterMeta, chaptersToMarkdown, pendingChapter, type ReportChapter } from './chapters';
 
 const ready = (id: ReportChapter['id'], over: Partial<ReportChapter> = {}): ReportChapter => ({ ...pendingChapter(id), status: 'ready', prose: `Prose of ${id}.`, ...over });
 
@@ -11,7 +11,8 @@ describe('CHAPTERS', () => {
   it('has the nine chapters in reading order, with regulatory and legal sharing a jump label', () => {
     expect(COMPANY_CHAPTERS.map((c) => c.id)).toEqual(['overview', 'financials', 'peers', 'sector', 'regulatory', 'legal', 'management', 'valuation', 'risks']);
     expect(chapterMeta('regulatory').nav).toBe(chapterMeta('legal').nav);
-    expect(new Set(CHAPTERS.map((c) => c.id)).size).toBe(18); // no id is shared between the two reports
+    expect(PORTFOLIO_CHAPTERS.map((c) => c.id)).toEqual(['pf_health', 'pf_losers', 'pf_factors', 'pf_quality', 'pf_scenarios', 'pf_risks', 'pf_checklist']);
+    expect(new Set(CHAPTERS.map((c) => c.id)).size).toBe(25); // no id is shared between the two reports
   });
 });
 

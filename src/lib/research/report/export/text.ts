@@ -6,7 +6,7 @@ import { topSources } from '../sources';
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { parseMarkdownLite, type InlineToken } from '@/components/markdownLiteParse';
 import { DISCLAIMER_TEXT } from './markdown';
-import { reportDateLong, reportRef, type ExportMeta } from './meta';
+import { isGroupReport, reportDateLong, reportRef, type ExportMeta } from './meta';
 
 const WIDTH = 78;
 const RULE = '='.repeat(WIDTH);
@@ -111,7 +111,7 @@ export function blockText(block: ResearchBlock): string {
 
 export function reportText(chapters: readonly ReportChapter[], meta: ExportMeta): string {
   const shown = CHAPTERS.flatMap(({ id }) => chapters.filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
-  const head = [RULE, 'MARKETMITRA RESEARCH', meta.kind === 'sector' ? meta.name : `${meta.name} (NSE: ${meta.symbol})`, `${reportRef(meta)} | ${reportDateLong(meta.generatedAt)} | written by ${meta.model}`, RULE, '', 'CONTENTS', ...shown.map((c, i) => `  ${String(i + 1).padStart(2, '0')}  ${c.title}`), '', wrap(DISCLAIMER_TEXT)].join('\n');
+  const head = [RULE, 'MARKETMITRA RESEARCH', isGroupReport(meta) ? meta.name : `${meta.name} (NSE: ${meta.symbol})`, `${reportRef(meta)} | ${reportDateLong(meta.generatedAt)} | written by ${meta.model}`, RULE, '', 'CONTENTS', ...shown.map((c, i) => `  ${String(i + 1).padStart(2, '0')}  ${c.title}`), '', wrap(DISCLAIMER_TEXT)].join('\n');
   const body = shown.map((c, i) => {
     const parts = [
       `${String(i + 1).padStart(2, '0')}. ${c.title.toUpperCase()}`,
