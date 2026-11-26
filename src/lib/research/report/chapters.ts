@@ -15,7 +15,10 @@ export type SectorChapterId = 'sx_overview' | 'sx_scorecard' | 'sx_leaders' | 's
 /** The portfolio report's chapters (#390); the `pf_` prefix keeps them apart from the others. */
 export type PortfolioChapterId = 'pf_health' | 'pf_losers' | 'pf_factors' | 'pf_quality' | 'pf_scenarios' | 'pf_risks' | 'pf_checklist';
 
-export type ChapterId = CompanyChapterId | SectorChapterId | PortfolioChapterId;
+/** The head-to-head comparison's chapters (#394); the `cmp_` prefix keeps them apart from the others. */
+export type CompareChapterId = 'cmp_verdict' | 'cmp_trajectory' | 'cmp_matrix' | 'cmp_profiles' | 'cmp_issues' | 'cmp_valuation' | 'cmp_questions';
+
+export type ChapterId = CompanyChapterId | SectorChapterId | PortfolioChapterId | CompareChapterId;
 
 export interface ChapterMeta {
   readonly id: ChapterId;
@@ -58,11 +61,21 @@ export const PORTFOLIO_CHAPTERS: readonly (ChapterMeta & { readonly id: Portfoli
   { id: 'pf_checklist', title: 'Stock-by-stock diligence checklist', nav: 'Checklist' },
 ];
 
+export const COMPARE_CHAPTERS: readonly (ChapterMeta & { readonly id: CompareChapterId })[] = [
+  { id: 'cmp_verdict', title: 'Category leaders and verdict', nav: 'Verdict' },
+  { id: 'cmp_trajectory', title: 'Combined trajectory and projection', nav: 'Trajectory' },
+  { id: 'cmp_matrix', title: 'Head-to-head matrix and sector measures', nav: 'Matrix' },
+  { id: 'cmp_profiles', title: 'Company profiles and competitive edge', nav: 'Profiles' },
+  { id: 'cmp_issues', title: 'Company-specific issues and red flags', nav: 'Issues' },
+  { id: 'cmp_valuation', title: 'Valuation against growth', nav: 'Valuation' },
+  { id: 'cmp_questions', title: 'Questions that separate these companies', nav: 'Questions' },
+];
+
 /**
  * Every chapter any report can have, in reading order. A report only ever holds one kind, and everything that walks this
  * list (the jump bar, the exports, the page) keeps just the chapters that are present.
  */
-export const CHAPTERS: readonly ChapterMeta[] = [...COMPANY_CHAPTERS, ...SECTOR_CHAPTERS, ...PORTFOLIO_CHAPTERS];
+export const CHAPTERS: readonly ChapterMeta[] = [...COMPANY_CHAPTERS, ...SECTOR_CHAPTERS, ...PORTFOLIO_CHAPTERS, ...COMPARE_CHAPTERS];
 
 export const chapterMeta = (id: ChapterId): ChapterMeta => CHAPTERS.find((c) => c.id === id) as ChapterMeta;
 

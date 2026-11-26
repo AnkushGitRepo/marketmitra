@@ -257,7 +257,7 @@
 
 .table th,
 .table td {
-  padding: 9px 12px;
+  padding: 9px 10px;
   white-space: nowrap;
   border-bottom: 1px solid var(--app-border-softer);
   font-variant-numeric: tabular-nums;
@@ -281,7 +281,13 @@
 }
 
 .table td[data-align='left']:first-child {
-  white-space: nowrap;
+  white-space: normal;
+}
+
+/* A header may wrap ("Sales growth (latest year)"), so a long label never widens the table past its card. */
+.table th {
+  white-space: normal;
+  vertical-align: bottom;
 }
 
 .table td[data-align='right'] {
@@ -445,4 +451,117 @@
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--app-text-muted);
+}
+
+/* Combined trajectory chart (#394) */
+.trajectory {
+  margin: 0;
+  min-width: 0;
+}
+
+.trajectoryHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chartUnit {
+  font-weight: 400;
+  color: var(--app-text-faint);
+}
+
+.trajectoryTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trajectoryTab {
+  padding: 4px 11px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.trajectoryTab[data-active='true'] {
+  background: var(--app-ink);
+  border-color: var(--app-ink);
+  color: var(--app-cream);
+}
+
+.trajectoryPlot {
+  position: relative;
+}
+
+.trajectoryPlot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.gridLine {
+  stroke: var(--app-border-softer);
+  stroke-width: 1;
+}
+
+.axisText {
+  fill: var(--app-text-faint);
+  font-size: 11px;
+}
+
+.axisText[data-projected='true'] {
+  font-style: italic;
+}
+
+.dividerLine {
+  stroke: var(--app-text-faint);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.hoverLine {
+  stroke: var(--app-border);
+  stroke-width: 1;
+}
+
+.trajectoryTip {
+  position: absolute;
+  top: 6px;
+  transform: translateX(12px);
+  display: grid;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--app-surface, #fff);
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 8%);
+}
+
+.trajectoryTip[data-flip='true'] {
+  transform: translateX(calc(-100% - 12px));
+}
+
+.trajectoryTip i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+}
+
+.dashSwatch {
+  display: inline-block;
+  width: 16px;
+  height: 0;
+  margin-right: 6px;
+  border-top: 2px dashed var(--app-text-faint);
+  vertical-align: middle;
 }

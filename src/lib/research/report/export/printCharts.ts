@@ -1,10 +1,11 @@
 // The report's charts as self-contained SVG and HTML strings for the print document (#372): inline colours and sizes, so the
 // document does not depend on the app's stylesheets. Geometry comes from the same pure helpers the on-screen charts use.
 
-import type { BarChartBlock, DonutChartBlock, FinancialChartBlock } from '../../blocks';
+import type { BarChartBlock, DonutChartBlock, FinancialChartBlock, TrajectoryChartBlock } from '../../blocks';
 import { barRange, donutArcs, fraction, linePaths, type Point } from '../../chartMath';
 import { formatCroreCompact, niceTicks } from '../../financialSeries';
 import { formatNumber, formatPercent } from '../../formatters';
+import { trajectoryGeometry } from '../../trajectory';
 import { escapeHtml } from './html';
 
 const INK = '#16191c';
@@ -125,4 +126,33 @@ export function donutHtml(block: DonutChartBlock): string {
     .map((arc, i) => `<li><span class="sw" style="background:${PALETTE[i % PALETTE.length]}"></span>${escapeHtml(arc.label)}<b>${formatNumber(arc.share * 100)}%</b></li>`)
     .join('');
   return `<div class="donut"><svg viewBox="0 0 42 42" width="130" height="130" role="img" aria-label="${escapeHtml(block.title)}">${circles}</svg><ul>${legend}</ul></div>`;
+}
+
+const TRAJECTORY_BOX = { width: 900, height: 300, pad: { top: 26, right: 20, bottom: 30, left: 58 } } as const;
+
+/** The combined trajectory chart for print: one small chart per metric (a page cannot switch), actuals solid and projections dashed. */
+export function trajectoryHtml(block: TrajectoryChartBlock): string {
+  const { width: W, height: H, pad } = TRAJECTORY_BOX;
+  const charts = block.views.map((view) => {
+    const g = trajectoryGeometry(block, view, TRAJECTORY_BOX);
+    const parts: string[] = [];
+    for (const t of g.ticks) {
+      parts.push(`<line x1="${pad.left}" x2="${W - pad.right}" y1="${g.yFor(t).toFixed(1)}" y2="${g.yFor(t).toFixed(1)}" stroke="${GRID}" stroke-width="1"/>`);
+      parts.push(text(pad.left - 8, g.yFor(t) + 4, formatNumber(t, 0), { anchor: 'end', size: 10 }));
+    }
+    block.labels.forEach((l, i) => parts.push(text(g.xFor(i), H - 10, l, { size: 10, fill: INK })));
+    if (g.dividerX !== null) {
+      parts.push(`<line x1="${g.dividerX.toFixed(1)}" x2="${g.dividerX.toFixed(1)}" y1="${pad.top - 6}" y2="${H - pad.bottom}" stroke="${MUTED}" stroke-width="1" stroke-dasharray="3 4"/>`);
+      parts.push(text(g.dividerX + 6, pad.top - 10, 'Forecast →', { anchor: 'start', size: 10 }));
+    }
+    g.lines.forEach((line, i) => {
+      const colour = PALETTE[i === 0 ? 1 : i === 1 ? 0 : i];
+      for (const d of line.actual) parts.push(`<path d="${d}" fill="none" stroke="${colour}" stroke-width="2.4" stroke-linejoin="round"/>`);
+      for (const d of line.projected) parts.push(`<path d="${d}" fill="none" stroke="${colour}" stroke-width="2.4" stroke-dasharray="6 5" stroke-linejoin="round"/>`);
+      line.points.forEach((pt) => pt && parts.push(`<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="3" fill="#fff" stroke="${colour}" stroke-width="1.8"/>`));
+    });
+    const legend = view.series.map((s, i) => `<span class="sw" style="background:${PALETTE[i === 0 ? 1 : i === 1 ? 0 : i]}"></span>${escapeHtml(s.name)}`).join(' ');
+    return `<figure class="chart"><figcaption>${escapeHtml(block.title)}: ${escapeHtml(view.label)} <span>${escapeHtml(view.unit)}</span></figcaption><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${escapeHtml(block.title)}: ${escapeHtml(view.label)}">${parts.join('')}</svg><p class="legend">${legend}${block.projectedFrom !== null ? ' · dashed = projected (E)' : ''}</p></figure>`;
+  });
+  return `${block.note ? `<p class="note">${escapeHtml(block.note)}</p>` : ''}${charts.join('\n')}`;
 }

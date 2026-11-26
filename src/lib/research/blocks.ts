@@ -56,6 +56,8 @@ export interface DataTableBlock {
   readonly note?: string;
   readonly columns: readonly TableColumn[];
   readonly rows: readonly Readonly<Record<string, TableCell>>[];
+  /** Cells to mark as the best of their row, for a table laid out with a company per column (`best` on a column cannot do that). */
+  readonly highlights?: readonly { readonly row: number; readonly column: string }[];
 }
 
 export interface ThesisColumn {
@@ -84,6 +86,25 @@ export interface CardGridBlock {
   readonly cards: readonly CardGridCard[];
 }
 
+/** One metric of a trajectory chart: every company on the same axis, with the forward years drawn as a projection. */
+export interface TrajectoryView {
+  readonly key: string;
+  readonly label: string;
+  readonly unit: string;
+  readonly series: readonly ChartSeries[];
+}
+/** Several companies on one chart across fiscal years, with a switch between metrics; labels ending in "E" are projections. */
+export interface TrajectoryChartBlock {
+  readonly type: 'trajectory_chart';
+  readonly title: string;
+  readonly note?: string;
+  /** Fiscal-year labels shared by every view and series. */
+  readonly labels: readonly string[];
+  /** Index of the first projected label, or null when every year is an actual. */
+  readonly projectedFrom: number | null;
+  readonly views: readonly TrajectoryView[];
+}
+
 /** Sales, operating profit and margin by fiscal year, drawn as one combined chart with a table view. */
 export interface FinancialChartBlock {
   readonly type: 'financial_chart';
@@ -92,7 +113,7 @@ export interface FinancialChartBlock {
   readonly periods: readonly FinancialPeriod[];
 }
 
-export type ResearchBlock = KpiGridBlock | BarChartBlock | DonutChartBlock | DataTableBlock | ThesisBentoBlock | CardGridBlock | FinancialChartBlock;
+export type ResearchBlock = KpiGridBlock | BarChartBlock | DonutChartBlock | DataTableBlock | ThesisBentoBlock | CardGridBlock | FinancialChartBlock | TrajectoryChartBlock;
 
 /** The blocks that exist, in order: a builder returns null for a block it has no data for. */
 export function compactBlocks(blocks: readonly (ResearchBlock | null)[]): ResearchBlock[] {

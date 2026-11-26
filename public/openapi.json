@@ -1769,6 +1769,83 @@
         }
       }
     },
+    "/api/research/compare-report": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate a head-to-head comparison of two to four companies, chapter by chapter (streamed)",
+        "description": "A seven-chapter comparison: category leaders (scale, profitability and ROCE, balance-sheet safety, growth momentum), one combined chart of every company's revenue, operating profit and growth indexed to 100 across the fiscal years with a labelled, dashed projection (each company's own trend carried forward and fading; not an analyst forecast), a head-to-head matrix with the best figure of each row marked plus sector-specific operating measures found by web search (for example ARPU for telecom, NIM and GNPA for banks; `not found` where no source gives a figure), a profile and competitive edge per company, company-specific issues tagged CRITICAL / MODERATE / NORMAL, valuation against growth, and a list of questions that separate the companies. `symbols` are NSE symbols or names (two to four, each resolved like the company report; the same company twice counts once). Cards, charts and tables are computed from the data service; the model writes the prose, searching the web where a chapter needs current facts. The response is newline-delimited JSON (`application/x-ndjson`) with the same events as `/api/research/report`: `start`, `chapter` (first with its figures and `status: pending`, then when written), then `done` or `error`. Requires the user's own AI key. Rate limited (ai tier).",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbols"
+                ],
+                "properties": {
+                  "symbols": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "description": "NSE symbols or company names, e.g. `[\"JPL\", \"BHARTIARTL\", \"IDEA\"]`."
+                  }
+                }
+              },
+              "example": {
+                "symbols": [
+                  "JPL",
+                  "BHARTIARTL",
+                  "IDEA"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A stream of events, one JSON object per line.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "A company could not be found."
+          },
+          "422": {
+            "description": "Not two to four different companies."
+          },
+          "429": {
+            "description": "Rate limited."
+          }
+        }
+      }
+    },
     "/api/research/themes": {
       "get": {
         "tags": [

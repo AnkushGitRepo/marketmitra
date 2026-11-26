@@ -25,8 +25,8 @@ export function reportMarkdown(chapters: readonly ReportChapter[], meta: ExportM
   });
   const front = [
     '---',
-    `title: ${yaml(`${subjectInline(meta)}: ${meta.kind === 'sector' ? 'sector' : meta.kind === 'portfolio' ? 'portfolio' : 'company'} research report`)}`,
-    ...(meta.kind === 'portfolio' ? [`portfolio: ${yaml(meta.name)}`] : meta.kind === 'sector' ? [`sector: ${yaml(meta.name)}`] : [`company: ${yaml(meta.name)}`, `ticker: ${yaml(meta.symbol)}`, `exchange: "NSE"`]),
+    `title: ${yaml(`${subjectInline(meta)}: ${meta.kind === 'sector' ? 'sector' : meta.kind === 'portfolio' ? 'portfolio' : meta.kind === 'compare' ? 'head-to-head' : 'company'} research report`)}`,
+    ...(meta.kind === 'compare' ? [`comparison: ${yaml(meta.name)}`] : meta.kind === 'portfolio' ? [`portfolio: ${yaml(meta.name)}`] : meta.kind === 'sector' ? [`sector: ${yaml(meta.name)}`] : [`company: ${yaml(meta.name)}`, `ticker: ${yaml(meta.symbol)}`, `exchange: "NSE"`]),
     `date: ${reportDate(meta.generatedAt)}`,
     `generated_at: ${yaml(meta.generatedAt)}`,
     `model: ${yaml(meta.model)}`,

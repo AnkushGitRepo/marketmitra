@@ -6,6 +6,7 @@ import { DonutChart } from './DonutChart';
 import { FinancialChart } from './FinancialChart';
 import { KpiGrid } from './KpiGrid';
 import { ThesisBento } from './ThesisBento';
+import { TrajectoryChart } from './TrajectoryChart';
 import styles from './blocks.module.css';
 
 function BlockView({ block }: { readonly block: ResearchBlock }) {
@@ -24,6 +25,8 @@ function BlockView({ block }: { readonly block: ResearchBlock }) {
       return <ThesisBento block={block} />;
     case 'card_grid':
       return <CardGrid block={block} />;
+    case 'trajectory_chart':
+      return <TrajectoryChart block={block} />;
   }
 }
 

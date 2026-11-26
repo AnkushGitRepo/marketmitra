@@ -4,7 +4,7 @@ import type { CardGridBlock, DataTableBlock, KpiGridBlock, ResearchBlock, Thesis
 import { bestRows } from '../../chartMath';
 import { formatCell } from '../../formatters';
 import { escapeHtml } from './html';
-import { barChartHtml, donutHtml, financialChartSvg } from './printCharts';
+import { barChartHtml, donutHtml, financialChartSvg, trajectoryHtml } from './printCharts';
 
 const MIN_WEIGHT = 1;
 const MIN_TEXT_WEIGHT = 1.4;
@@ -50,7 +50,7 @@ function dataTable(block: DataTableBlock): string {
   const rows = block.rows
     .map(
       (row, ri) =>
-        `<tr>${block.columns.map((c) => `<td class="${c.format === 'text' ? 'l' : 'r'}"${best.get(c.key)?.has(ri) ? ' data-best="true"' : ''}>${escapeHtml(formatCell(row[c.key] ?? null, c.format))}</td>`).join('')}</tr>`
+        `<tr>${block.columns.map((c) => `<td class="${c.format === 'text' ? 'l' : 'r'}"${best.get(c.key)?.has(ri) || block.highlights?.some((h) => h.row === ri && h.column === c.key) ? ' data-best="true"' : ''}>${escapeHtml(formatCell(row[c.key] ?? null, c.format))}</td>`).join('')}</tr>`
     )
     .join('');
   return `<figure class="tbl"><figcaption>${escapeHtml(block.title)}</figcaption>${block.note ? `<p class="note">${escapeHtml(block.note)}</p>` : ''}<table><colgroup>${widths.map((w) => `<col style="width:${w}%">`).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></figure>`;
@@ -79,6 +79,8 @@ export function blockHtml(block: ResearchBlock): string {
       return `<figure class="chart"><figcaption>${escapeHtml(block.title)} <span>${escapeHtml(block.unit)}</span></figcaption>${barChartHtml(block)}</figure>`;
     case 'donut_chart':
       return `<figure class="chart"><figcaption>${escapeHtml(block.title)}</figcaption>${donutHtml(block)}</figure>`;
+    case 'trajectory_chart':
+      return trajectoryHtml(block);
     case 'thesis_bento':
       return thesis(block);
     case 'card_grid':

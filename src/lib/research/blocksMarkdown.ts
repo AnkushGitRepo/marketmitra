@@ -35,6 +35,13 @@ function blockMarkdown(block: ResearchBlock): string | null {
           block.periods.map((p) => [p.label, formatNumber(p.sales, 0), formatNumber(p.operatingProfit, 0), formatPercent(p.opm), formatPercent(p.salesGrowth)])
         ),
       ].join('\n\n');
+    case 'trajectory_chart':
+      return [
+        ...(block.note ? [`*${block.note}*`] : []),
+        ...block.views.map((v) =>
+          [`### ${block.title}: ${v.label} (${v.unit})`, pipeTable(['', ...block.labels], v.series.map((s) => [s.name, ...s.values.map((x) => (x === null ? '—' : formatNumber(x, Number.isInteger(x) ? 0 : 1)))]))].join('\n\n')
+        ),
+      ].join('\n\n');
     case 'donut_chart': {
       const total = block.slices.reduce((a, s) => a + s.value, 0);
       return [`### ${block.title}`, block.slices.map((s) => `- ${s.label}: ${formatNumber(total === 0 ? 0 : (s.value / total) * 100)}%`).join('\n')].join('\n\n');

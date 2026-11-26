@@ -15,7 +15,8 @@ const GENERIC = 'Could not generate the report. Try again shortly.';
 
 /**
  * Runs a streamed report and keeps its state as chapters arrive. The company report posts `{ symbol }` to its route; the
- * sector report posts `{ theme }` to its own. Both stream the same events.
+ * sector report posts `{ theme }`, the portfolio report `{}`, and the comparison `{ symbols: [...] }`, each to its own route. All stream the
+ * same events.
  */
 export function useCompanyReport(endpoint = '/api/research/report', field = 'symbol') {
   const [state, setState] = useState<ReportState>(EMPTY_REPORT);
@@ -25,7 +26,7 @@ export function useCompanyReport(endpoint = '/api/research/report', field = 'sym
 
   useEffect(() => () => abort.current?.abort(), []);
 
-  const start = useCallback(async (subject: string) => {
+  const start = useCallback(async (subject: string | readonly string[]) => {
     abort.current?.abort();
     const controller = new AbortController();
     abort.current = controller;

@@ -24,6 +24,14 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'comparison', label: 'Compare' },
 ];
 
+/** One-click rival baskets under the Compare fields. */
+const PRESETS: readonly { label: string; symbols: readonly string[] }[] = [
+  { label: 'Jio vs Airtel vs Vi', symbols: ['JPL', 'BHARTIARTL', 'IDEA'] },
+  { label: 'HDFC Bank vs ICICI vs SBI', symbols: ['HDFCBANK', 'ICICIBANK', 'SBIN'] },
+  { label: 'TCS vs Infosys vs HCLTech', symbols: ['TCS', 'INFY', 'HCLTECH'] },
+  { label: 'HAL vs BEL vs Mazagon Dock', symbols: ['HAL', 'BEL', 'MAZDOCK'] },
+];
+
 interface Report {
   content: string;
   /** The model's prose (markdown); the figures are in `blocks`. */
@@ -63,10 +71,11 @@ export function ResearchPageClient() {
   const company = useCompanyReport();
   const sector = useCompanyReport('/api/research/sector-report', 'theme');
   const portfolio = useCompanyReport('/api/research/portfolio-report', 'portfolio');
-  // The Company, Theme and Portfolio tabs each show a streamed chapter report and keep their own.
-  const stream = tab === 'theme' ? sector : tab === 'portfolio' ? portfolio : company;
-  const streamed = tab === 'company' || tab === 'theme' || tab === 'portfolio';
-  const companyRunning = company.phase === 'running' || sector.phase === 'running' || portfolio.phase === 'running';
+  const comparison = useCompanyReport('/api/research/compare-report', 'symbols');
+  // Every tab shows a streamed chapter report and keeps its own.
+  const stream = tab === 'theme' ? sector : tab === 'portfolio' ? portfolio : tab === 'comparison' ? comparison : company;
+  const streamed = true;
+  const companyRunning = company.phase === 'running' || sector.phase === 'running' || portfolio.phase === 'running' || comparison.phase === 'running';
 
   const subjectFor = (themeText: string = theme): Record<string, unknown> | null => {
     if (tab === 'company') return symbol.trim() ? { type: 'company', symbol: symbol.trim().toUpperCase() } : null;
@@ -80,6 +89,12 @@ export function ResearchPageClient() {
     const subject = subjectFor(themeText);
     if (!subject || busy || companyRunning) {
       if (!subject) setError('Fill in the field(s) above first.');
+      return;
+    }
+    if (subject.type === 'comparison') {
+      setError(null);
+      setNoKey(false);
+      await comparison.start(subject.symbols as string[]);
       return;
     }
     if (subject.type === 'company' || subject.type === 'theme' || subject.type === 'portfolio') {
@@ -203,6 +218,25 @@ export function ResearchPageClient() {
                   </button>
                 )}
               </div>
+              <div className={styles.presetRow} role="group" aria-label="Rival comparisons">
+                <span className={styles.presetLabel}>Try</span>
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    className={styles.preset}
+                    disabled={companyRunning}
+                    onClick={() => {
+                      setCompare([...p.symbols]);
+                      setError(null);
+                      setNoKey(false);
+                      void comparison.start([...p.symbols]);
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -224,7 +258,7 @@ export function ResearchPageClient() {
       </div>
 
       {busy && !streamed && <p className={styles.loading}>Gathering data and writing the brief — this can take a minute.</p>}
-      {streamed && stream.phase === 'running' && !stream.state.name && <p className={styles.loading}>{tab === 'theme' ? 'Gathering the listed companies in this theme…' : tab === 'portfolio' ? 'Gathering your holdings and their figures…' : 'Gathering the data held for this company…'}</p>}
+      {streamed && stream.phase === 'running' && !stream.state.name && <p className={styles.loading}>{tab === 'theme' ? 'Gathering the listed companies in this theme…' : tab === 'portfolio' ? 'Gathering your holdings and their figures…' : tab === 'comparison' ? 'Gathering the figures for each company…' : 'Gathering the data held for this company…'}</p>}
 
       {streamed && stream.state.name && (
         <div className={`${styles.card} ${styles.reportCard}`} ref={reportRef}>
@@ -234,7 +268,7 @@ export function ResearchPageClient() {
             exportControl={
               <ExportMenu
                 chapters={Object.values(stream.state.chapters)}
-                meta={stream.state.done && stream.state.symbol && stream.state.name ? { kind: tab === 'theme' ? 'sector' : tab === 'portfolio' ? 'portfolio' : 'company', symbol: stream.state.symbol, name: stream.state.name, generatedAt: stream.state.done.generatedAt, model: stream.state.done.model } : null}
+                meta={stream.state.done && stream.state.symbol && stream.state.name ? { kind: tab === 'theme' ? 'sector' : tab === 'portfolio' ? 'portfolio' : tab === 'comparison' ? 'compare' : 'company', symbol: stream.state.symbol, name: stream.state.name, generatedAt: stream.state.done.generatedAt, model: stream.state.done.model } : null}
               />
             }
           />

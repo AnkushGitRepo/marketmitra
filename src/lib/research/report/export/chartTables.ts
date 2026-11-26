@@ -31,6 +31,13 @@ export function chartAsTable(block: ResearchBlock): PlainTable | null {
         rows: block.categories.map((cat, i) => [cat, ...block.series.map((s) => whole(s.values[i] ?? null))]),
         numericFrom: 1,
       };
+    case 'trajectory_chart':
+      return {
+        title: block.title,
+        headers: ['', ...block.labels],
+        rows: block.views.flatMap((v) => v.series.map((s) => [`${v.label} (${v.unit}): ${s.name}`, ...s.values.map(whole)])),
+        numericFrom: 1,
+      };
     case 'donut_chart': {
       const total = block.slices.reduce((a, s) => a + s.value, 0);
       return { title: block.title, headers: ['', 'Share'], rows: block.slices.map((s) => [s.label, formatPercent(total === 0 ? 0 : (s.value / total) * 100)]), numericFrom: 1 };
