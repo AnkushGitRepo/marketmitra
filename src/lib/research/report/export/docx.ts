@@ -133,7 +133,7 @@ function blockChildren(block: ResearchBlock): FileChild[] {
   }
 }
 
-function proseChildren(markdown: string): FileChild[] {
+export function proseChildren(markdown: string): FileChild[] {
   return parseMarkdownLite(markdown).flatMap((b): FileChild[] => {
     switch (b.kind) {
       case 'h2':
@@ -158,6 +158,16 @@ function proseChildren(markdown: string): FileChild[] {
     }
   });
 }
+
+const DOC_STYLES = {
+  default: { document: { run: { font: FONT, size: BODY_SIZE, color: INK } } },
+  paragraphStyles: [
+    { id: 'Title', name: 'Title', basedOn: 'Normal', run: { font: FONT, size: 44, bold: true }, paragraph: { spacing: { after: 60 } } },
+    { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { font: FONT, size: 30, bold: true }, paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 0 } },
+    { id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { font: FONT, size: 23, bold: true }, paragraph: { spacing: { before: 160, after: 60 }, outlineLevel: 1 } },
+  ],
+};
+const DOC_NUMBERING = { config: [{ reference: BULLETS, levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 260 } } } }] }] };
 
 export function buildReportDocx(chapters: readonly ReportChapter[], meta: ExportMeta): Document {
   const shown = CHAPTERS.flatMap(({ id }) => withoutHeadline(chapters).filter((c) => c.id === id && (c.blocks.length > 0 || c.prose || c.status === 'failed')));
@@ -184,15 +194,8 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
     creator: 'MarketMitra Research',
     title: `${subjectInline(meta)}: ${meta.kind === 'sector' ? 'sector' : meta.kind === 'portfolio' ? 'portfolio' : meta.kind === 'compare' ? 'head-to-head' : 'company'} research report`,
     description: DISCLAIMER_TEXT,
-    styles: {
-      default: { document: { run: { font: FONT, size: BODY_SIZE, color: INK } } },
-      paragraphStyles: [
-        { id: 'Title', name: 'Title', basedOn: 'Normal', run: { font: FONT, size: 44, bold: true }, paragraph: { spacing: { after: 60 } } },
-        { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { font: FONT, size: 30, bold: true }, paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 0 } },
-        { id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { font: FONT, size: 23, bold: true }, paragraph: { spacing: { before: 160, after: 60 }, outlineLevel: 1 } },
-      ],
-    },
-    numbering: { config: [{ reference: BULLETS, levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 260 } } } }] }] },
+    styles: DOC_STYLES,
+    numbering: DOC_NUMBERING,
     sections: [
       {
         properties: { page: { size: { width: PAGE.width, height: PAGE.height }, margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } } },
@@ -215,3 +218,37 @@ export function buildReportDocx(chapters: readonly ReportChapter[], meta: Export
 
 export const reportDocxBlob = (chapters: readonly ReportChapter[], meta: ExportMeta): Promise<Blob> => Packer.toBlob(buildReportDocx(chapters, meta));
 export const reportDocxBytes = (chapters: readonly ReportChapter[], meta: ExportMeta): Promise<Uint8Array> => Packer.toBuffer(buildReportDocx(chapters, meta));
+
+export interface NoteDocxInput {
+  readonly title: string;
+  readonly body: string;
+  /** The tickers the note is about. */
+  readonly tickers: readonly string[];
+  /** A short line under the title, such as "Saved research, 25 Nov 2026". */
+  readonly byline: string;
+}
+
+/** A note (a markdown body) as a Word document: its title, a line about it, then the text with real headings, lists and tables. */
+export function buildNoteDocx(note: NoteDocxInput): Document {
+  const about = [note.byline, ...(note.tickers.length > 0 ? [note.tickers.join(', ')] : [])].join('   |   ');
+  return new Document({
+    creator: 'MarketMitra',
+    title: note.title,
+    styles: DOC_STYLES,
+    numbering: DOC_NUMBERING,
+    sections: [
+      {
+        properties: { page: { size: { width: PAGE.width, height: PAGE.height }, margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } } },
+        headers: { default: new Header({ children: [new Paragraph({ border: { bottom: thin }, children: [new TextRun({ text: 'MarketMitra notes', size: 16, color: MUTED })] })] }) },
+        footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Page ', size: 16, color: MUTED }), new TextRun({ children: [PageNumber.CURRENT], size: 16, color: MUTED })] })] }) },
+        children: [
+          new Paragraph({ heading: HeadingLevel.TITLE, spacing: { after: 60 }, children: [new TextRun({ text: note.title, bold: true, size: 44, color: INK })] }),
+          para(about, { color: MUTED, size: 18, after: 160 }),
+          ...proseChildren(note.body),
+        ],
+      },
+    ],
+  });
+}
+
+export const noteDocxBlob = (note: NoteDocxInput): Promise<Blob> => Packer.toBlob(buildNoteDocx(note));

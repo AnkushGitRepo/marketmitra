@@ -158,6 +158,14 @@ Run after 4k, signed in with your own AI key.
 - [ ] Export report: the PDF cover says HEAD-TO-HEAD COMPARISON, shows one small chart per metric, the matrix fits the page; Word has the chart figures as a table; Markdown has `comparison:` front matter and no ticker; text reads well. Save to Notes saves the whole report.
 - [ ] Company (4i), sector (4j) and portfolio (4k) reports still work.
 
+## 4m. Notes reader layout (#396)
+
+- [ ] `/notes` at desktop width: the list is a 300px column and the note takes the rest; "Hide list" gives the note the full width and "Show list" brings it back; on a phone the list and note are separate views with a back button and no Hide list.
+- [ ] A long saved report: the toolbar (Edit, Ask Mitra, Export, Delete) stays in view under the app header while scrolling; tables and charts read comfortably; Ask Mitra opens Mitra with the note's title in the prompt and Mitra finds the note.
+- [ ] Export: PDF (print) shows the title and text without the toolbar, tag buttons or list; Word opens in Microsoft Word with headings, lists and tables; Markdown has front matter and the body; text reads without markdown marks.
+- [ ] Tags: add a ticker (`#bhartiartl` becomes BHARTIARTL), a repeat or a non-symbol is refused with a message, remove one, reload (they persist), the chip links to the stock page, and the note shows on that stock's page or in Mitra when asked about it.
+- [ ] List: titles are one line, the delete button appears on hover and keyboard focus, asks for confirmation, and removes only that note.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

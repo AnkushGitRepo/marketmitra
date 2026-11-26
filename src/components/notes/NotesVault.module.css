@@ -1,8 +1,30 @@
+/* The list is a selector, not the workspace: a fixed column, and the reader takes the rest. */
 .layout {
   display: grid;
-  grid-template-columns: minmax(280px, 35%) minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+}
+
+@media (min-width: 861px) {
+  /* A long report keeps its actions in reach: the bar stays under the app header while the note scrolls. */
+  .readerBar {
+    position: sticky;
+    top: 70px;
+    z-index: 5;
+    margin-top: -12px;
+    padding-top: 12px;
+    background: var(--color-surface);
+  }
+
+  /* "Hide list": the note takes the full width. (On a phone the list and the note are already separate views.) */
+  .layout[data-list-hidden='true'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .layout[data-list-hidden='true'] .listPane {
+    display: none;
+  }
 }
 
 .pane {
@@ -14,14 +36,16 @@
 }
 
 .listPane {
-  padding: 10px;
-  max-height: calc(100vh - 260px);
-  min-height: 320px;
+  position: sticky;
+  top: 76px;
+  padding: 8px;
+  max-height: calc(100vh - 100px);
+  min-height: 240px;
   overflow-y: auto;
 }
 
 .readerPane {
-  padding: 26px 28px;
+  padding: 22px 32px 32px;
   min-height: 320px;
 }
 
@@ -34,15 +58,20 @@
   gap: 4px;
 }
 
+.itemRow {
+  position: relative;
+}
+
 .item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
   text-align: left;
-  padding: 12px 14px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  padding: 9px 36px 9px 12px;
+  border: none;
+  border-left: 2px solid transparent;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   background: none;
   font-family: var(--font-sans);
   cursor: pointer;
@@ -53,18 +82,51 @@
 }
 
 .item[data-selected='true'] {
-  background: var(--app-teal-tint);
-  border-color: var(--app-teal-bg-strong);
+  background: var(--app-cream);
+  border-left-color: var(--app-ink);
 }
 
 .itemTitle {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--app-ink);
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Quick delete: out of the way until the row is hovered or focused (always faintly there on a touch screen). */
+.itemDelete {
+  position: absolute;
+  top: 7px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--app-text-faint);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.itemRow:hover .itemDelete,
+.itemRow:focus-within .itemDelete {
+  opacity: 1;
+}
+
+.itemDelete:hover,
+.itemDelete:focus-visible {
+  background: var(--app-loss-bg);
+  color: var(--app-danger, #b4413c);
+}
+
+@media (hover: none) {
+  .itemDelete {
+    opacity: 0.6;
+  }
 }
 
 .itemPreview {
@@ -130,6 +192,140 @@
   cursor: pointer;
 }
 
+.readerBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--app-border-softer);
+}
+
+.listToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 9px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-pill);
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.listToggle:hover,
+.listToggle:focus-visible {
+  border-color: var(--app-ink);
+  color: var(--app-ink);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnDanger:hover:not(:disabled),
+.btnDanger:focus-visible {
+  border-color: var(--app-loss-border);
+  background: var(--app-loss-bg);
+  color: var(--app-danger, #b4413c);
+}
+
+/* The export menu is at the right edge of the card, so it opens to the left. */
+.exportWrap [role='menu'] {
+  left: auto;
+  right: 0;
+}
+
+.tags {
+  margin: 0 0 18px;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.tagLink {
+  padding: 2px 4px 2px 10px;
+  color: var(--app-ink);
+  text-decoration: none;
+}
+
+.tagRemove {
+  padding: 2px 8px 2px 2px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--app-text-faint);
+  cursor: pointer;
+}
+
+.tagRemove:hover:not(:disabled),
+.tagRemove:focus-visible {
+  color: var(--app-danger, #b4413c);
+}
+
+.tagAdd {
+  padding: 2px 10px;
+  border: 1px dashed var(--app-border);
+  border-radius: var(--radius-pill);
+  background: none;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.tagAdd:hover:not(:disabled),
+.tagAdd:focus-visible {
+  border-color: var(--app-ink);
+  color: var(--app-ink);
+}
+
+.tagAdd:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tagForm {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.tagInput {
+  width: 140px;
+  padding: 2px 10px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  background: var(--color-surface);
+  color: var(--app-ink);
+}
+
 .readerKind {
   margin: 0 0 6px;
   font-family: var(--font-mono);
@@ -178,11 +374,14 @@
 
 .body p {
   margin: 0 0 12px;
+  max-width: 80ch;
 }
 
-.body ul {
+.body ul,
+.body ol {
   margin: 0 0 12px;
   padding-left: 20px;
+  max-width: 80ch;
 }
 
 .body table {
@@ -313,6 +512,7 @@
   }
 
   .listPane {
+    position: static;
     max-height: none;
   }
 
@@ -322,5 +522,9 @@
 
   .back {
     display: inline-block;
+  }
+
+  .listToggle {
+    display: none;
   }
 }
