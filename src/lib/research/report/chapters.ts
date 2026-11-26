@@ -50,7 +50,7 @@ export const SECTOR_CHAPTERS: readonly (ChapterMeta & { readonly id: SectorChapt
 
 export const PORTFOLIO_CHAPTERS: readonly (ChapterMeta & { readonly id: PortfolioChapterId })[] = [
   { id: 'pf_health', title: 'Portfolio health and return attribution', nav: 'Health' },
-  { id: 'pf_losers', title: 'Losers and drawdown forensics', nav: 'Drawdowns' },
+  { id: 'pf_losers', title: 'Drawdown forensics and winners check', nav: 'Drawdowns' },
   { id: 'pf_factors', title: 'Sector and hidden factor exposure', nav: 'Exposure' },
   { id: 'pf_quality', title: 'Quality and valuation scorecard', nav: 'Quality' },
   { id: 'pf_scenarios', title: 'Twelve-month scenario ranges', nav: 'Scenarios' },

@@ -4,6 +4,7 @@
 import type { ResearchBlock, TableColumn, Tone } from '../blocks';
 import { formatNumber, formatPercent, formatRupeesShort } from '../formatters';
 import {
+  TOP_WINNERS,
   attribution,
   debtOf,
   factorShares,
@@ -80,6 +81,34 @@ const SEVERITY_ORDER: Record<Severity, number> = { CRITICAL: 0, MODERATE: 1, NOR
 
 /** Chapter 2: every holding below cost, tagged by how deep the loss is. Why it fell is the model's job (the chapter's text). */
 export function losersBlocks(positions: readonly Position[]): ResearchBlock[] {
+  return [...drawdownBlocks(positions), ...winnersBlocks(positions)];
+}
+
+/** The biggest gainers with what they trade at: the other half of the picture, so a winner is not taken on trust. */
+function winnersBlocks(positions: readonly Position[]): ResearchBlock[] {
+  const winners = attribution(positions).winners.slice(0, TOP_WINNERS);
+  if (winners.length === 0) return [];
+  return [
+    {
+      type: 'data_table',
+      title: 'Winners carrying the book',
+      note: 'The biggest gainers and what they trade at. A high multiple means the price already assumes strong growth.',
+      columns: [
+        { key: 'name', label: 'Holding', format: 'text' },
+        { key: 'plPct', label: 'vs cost', format: 'percent' },
+        { key: 'pl', label: 'P&L (₹)', format: 'rupee' },
+        { key: 'weight', label: 'Weight', format: 'percent' },
+        { key: 'pe', label: 'P/E', format: 'multiple' },
+        { key: 'pb', label: 'P/B', format: 'multiple' },
+        { key: 'roe', label: 'ROE', format: 'percent' },
+        { key: 'profit', label: 'Profit 3y CAGR', format: 'percent' },
+      ],
+      rows: winners.map((p) => ({ name: p.name, plPct: p.plPct, pl: p.pl, weight: p.weightPct, pe: p.fundamentals?.pe ?? null, pb: p.fundamentals?.pb ?? null, roe: roeOf(p), profit: p.fundamentals?.profit_growth_3y_cagr ?? null })),
+    },
+  ];
+}
+
+function drawdownBlocks(positions: readonly Position[]): ResearchBlock[] {
   const losing = positions.filter((p) => severityOf(p.plPct) !== null).sort((a, b) => SEVERITY_ORDER[severityOf(a.plPct)!] - SEVERITY_ORDER[severityOf(b.plPct)!] || (a.plPct as number) - (b.plPct as number));
   if (losing.length === 0) return [];
   const columns: readonly TableColumn[] = [
@@ -99,7 +128,8 @@ export function losersBlocks(positions: readonly Position[]): ResearchBlock[] {
       columns: 2,
       numbered: false,
       cards: losing.map((p) => ({
-        heading: `${p.symbol} · ${formatPercent(p.plPct as number)}`,
+        // A true minus sign, so the heading cannot be read as a doubled dash.
+        heading: `${p.symbol}: ${formatPercent(p.plPct as number).replace('-', '−')}`,
         text: `Bought at ₹${formatNumber(p.avgPrice)}, now ₹${formatNumber(p.ltp as number)}: ${formatRupeesShort(p.pl as number)} on ${formatRupeesShort(p.invested)} invested.`,
         tag: severityOf(p.plPct)!,
       })),

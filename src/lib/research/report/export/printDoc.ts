@@ -23,7 +23,8 @@ table.page { width: 100%; border-collapse: collapse; }
 table.page > thead > tr > td > div { height: 15mm; }
 table.page > tfoot > tr > td > div { height: 19mm; }
 table.page > tbody > tr > td { padding: 0 14mm; vertical-align: top; }
-.watermark { position: fixed; top: 46%; left: 16%; width: 68%; text-align: center; transform: rotate(-32deg); font-size: 30px; font-weight: 700; letter-spacing: 0.06em; color: #16191c; opacity: 0.035; pointer-events: none; z-index: 0; }
+/* Two fixed lines, centred on the page and behind the content (a positioned element at z-index 0 paints over the text), so no part of it wraps, clips or sits across a table. */
+.watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-32deg); white-space: nowrap; text-align: center; font-size: 30px; line-height: 1.35; font-weight: 700; letter-spacing: 0.06em; color: #16191c; opacity: 0.035; pointer-events: none; z-index: -1; }
 .running { position: fixed; left: 14mm; right: 14mm; bottom: 8mm; padding-top: 5px; border-top: 0.5px solid #cfc9bb; font-size: 8px; color: #656d72; display: flex; justify-content: space-between; background: #fff; z-index: 2; }
 
 .cover { break-after: page; min-height: 255mm; display: flex; flex-direction: column; }
@@ -50,7 +51,7 @@ p { margin: 0 0 8px; orphans: 3; widows: 3; }
 ul, ol { margin: 0 0 8px; padding-left: 16px; }
 li { margin: 2px 0; }
 .failed { padding: 8px 10px; border: 0.5px solid #f3cfc5; background: #fbe9e4; color: #9a3f2b; border-radius: 5px; }
-.sources { margin-top: 10px; font-size: 8px; color: #656d72; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.sources { margin: 10px 0 14px; break-inside: avoid; clear: both; font-size: 8px; color: #656d72; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .sources b { text-transform: uppercase; letter-spacing: 0.08em; font-size: 7.5px; margin-right: 2px; }
 .sources span { padding: 1px 7px; border: 0.5px solid #d9d3c4; border-radius: 99px; background: #faf7ef; }
 
@@ -129,7 +130,7 @@ ${kpiHtml}
 <div class="disclaimer"><b>About this report.</b> Written by ${escapeHtml(meta.model)} from figures MarketMitra holds (company financials, exchange filings, shareholding, peers) and, where a chapter says so, from web searches. The figures in the cards, charts and tables are computed from that stored data; the written analysis is an AI model’s synthesis and can contain errors, so check anything that matters against the source. This is neutral analysis for information. It is not investment advice, a recommendation or a price target. Scenarios are ranges drawn from the company’s own history, not forecasts.</div>
 </section>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${escapeHtml(reportFileBase(meta))}</title><style>${PRINT_CSS}</style></head><body>
-<div class="watermark">${WATERMARK}</div>
+<div class="watermark">${WATERMARK.split(' · ').map(escapeHtml).join('<br>')}</div>
 <div class="running"><span>${footer}</span><span>Not investment advice</span></div>
 <table class="page"><thead><tr><td><div></div></td></tr></thead><tbody><tr><td>
 ${cover}

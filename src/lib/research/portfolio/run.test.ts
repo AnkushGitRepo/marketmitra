@@ -45,6 +45,17 @@ describe('runPortfolioReport', () => {
     expect(calls.find((c) => c.id === 'forensics')?.prompt).toContain('LATENTVIEW');
   });
 
+  it('writes the health chapter after the losers chapter, from its findings', async () => {
+    const calls: PortfolioTask[] = [];
+    await collect(deps(async (t) => (calls.push(t), reply(t))));
+    const ids = calls.map((c) => c.id);
+    expect(ids.indexOf('attribution')).toBeGreaterThan(ids.indexOf('forensics'));
+    expect(ids.indexOf('attribution')).toBeLessThan(ids.indexOf('checklist'));
+    const attribution = calls.find((c) => c.id === 'attribution')!;
+    expect(attribution.search).toBeNull();
+    expect(attribution.prompt).toContain('Text for pf_losers.');
+  });
+
   it('turns the checklist text into numbered cards', async () => {
     const events = await collect(deps(async (t) => reply(t)));
     const last = events.flatMap((e) => (e.type === 'chapter' && e.chapter.id === 'pf_checklist' ? [e.chapter] : [])).at(-1)!;

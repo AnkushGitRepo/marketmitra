@@ -14,6 +14,9 @@ import { SEARCH_HEAVY, SEARCH_LIGHT } from '../report/tasks';
 import { holdingsToSearch, severityOf, totalValue, type Position } from './analysis';
 import type { portfolioChapterBlocks } from './blocks';
 
+/** The first batch of calls: the attribution chapter is written after them, from what they found. */
+export const LATER_TASKS: readonly PortfolioTaskId[] = ['attribution'];
+
 export type PortfolioTaskId = 'attribution' | 'forensics' | 'exposure' | 'risks' | 'checklist';
 
 export interface PortfolioTask {
@@ -30,7 +33,7 @@ const GUIDANCE: Record<PortfolioChapterId, string> = {
   pf_health:
     'Read the health strip and the attribution chart: how much of the result the biggest winners carry, how the losers drag it, and what the health score’s deductions are. Say what the result would be without the top two winners. Do not restate the cards.',
   pf_losers:
-    'For every holding below cost, in the order of the severity table (CRITICAL first), write a short entry headed by the symbol and its severity: **Why it is down** (the earnings, margin, asset-quality, regulatory, pricing or valuation driver, from your searches, with source and date), **Balance sheet and valuation** (what the P/E, ROE, debt to equity and growth figures say), and **Recovery watch-item** (the one measurable thing that would show it turning). Cover all of them; a short entry is fine for a mild loss.',
+    'For every holding below cost, in the order of the severity table (CRITICAL first), write a short entry headed by the symbol and its severity: **Why it is down** (the earnings, margin, asset-quality, regulatory, pricing or valuation driver, from your searches, with source and date), **Balance sheet and valuation** (what the P/E, ROE, debt to equity and growth figures say), and **Recovery watch-item** (the one measurable thing that would show it turning). Cover all of them; a short entry is fine for a mild loss. Then add a line "### Winners: valuation and concentration check" and up to three bullets, one for each of the biggest gainers in the winners table: what its P/E and P/B say next to its ROE and growth (is the price already assuming a lot?), how much of the book and of the gain it is, and the one thing that would test it. Neutral: no view on whether to hold, trim or sell.',
   pf_factors:
     'What the book is really exposed to beyond sector labels: the rate and credit cycle, global and export demand, regulated pricing and policy, domestic consumption. Tie each driver to the named holdings that carry it and say what would hurt or help them, with a dated source where you found one. Point out where several holdings share one hidden risk.',
   pf_quality:
@@ -107,6 +110,13 @@ export function buildPortfolioTasks(positions: readonly Position[], omitted: num
 }
 
 const SUMMARY_CHARS = 600;
+const FINDINGS_CHARS = 1800;
+
+/** A task with the chapters already written added to its prompt, so it reads their findings instead of guessing. */
+export function withFindings(task: PortfolioTask, prose: Readonly<Partial<Record<PortfolioChapterId, string>>>): PortfolioTask {
+  const found = (['pf_losers', 'pf_factors', 'pf_risks'] as const).flatMap((id) => (prose[id] ? [`### Findings already written: ${chapterMeta(id).title}\n${prose[id]!.replace(/\s+/g, ' ').slice(0, FINDINGS_CHARS)}`] : []));
+  return found.length === 0 ? task : { ...task, prompt: `${task.prompt}\n\n${found.join('\n\n')}` };
+}
 
 /** The checklist call: no search, only a short summary of each chapter already written. */
 export function buildChecklistTask(positions: readonly Position[], omitted: number, prose: Readonly<Partial<Record<PortfolioChapterId, string>>>): PortfolioTask {

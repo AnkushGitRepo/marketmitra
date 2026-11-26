@@ -20,8 +20,16 @@ describe('portfolio blocks', () => {
     const blocks = losersBlocks(book());
     const cards = (blocks[0] as Extract<(typeof blocks)[number], { type: 'card_grid' }>).cards;
     expect(cards.map((c) => c.tag)).toEqual(['CRITICAL', 'CRITICAL', 'CRITICAL', 'NORMAL']);
-    expect(cards[0].heading).toMatch(/^LATENTVIEW · -64/);
+    expect(cards[0].heading).toMatch(/^LATENTVIEW: −64/); // a true minus: no doubled dash
+    expect(cards.every((c) => !/--| - -/.test(c.heading))).toBe(true);
     expect(cards.some((c) => c.heading.startsWith('PNB'))).toBe(false);
+  });
+
+  it('adds the biggest winners with what they trade at', () => {
+    const blocks = losersBlocks(book());
+    const table = blocks.find((b) => b.type === 'data_table' && b.title === 'Winners carrying the book') as Extract<(typeof blocks)[number], { type: 'data_table' }>;
+    expect(table.rows.map((r) => r.name)).toEqual(['LAURUSLABS Ltd', 'PNB Ltd']);
+    expect(table.rows[0].pe).toBe(18);
   });
 
   it('groups the book by economic driver', () => {
