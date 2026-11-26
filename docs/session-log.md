@@ -139,3 +139,10 @@ Rolling log of work sessions. Append new entries at the **bottom** (oldest first
 **Verified:** unit tests (3,276), lint, typecheck; live runs in the browser on the maintainer's three notes (test chats deleted afterwards).
 **Not verified:** other providers, the drawer, production (section 4n of POST-PAUSE-CHECKS).
 
+## 2026-11-26 (night, 2) — Web search in the Mitra chat (#401)
+
+**What changed:** #403 (notes) was merged first. #401: `web_search` and `fetch_page` in both chat routes with a per-reply budget, an allow-list for page addresses, withheld with attachments, a Web search switch in Settings, a prompt that requires inline sources, tool-activity labels, ADR 0082.
+**Decisions:** our own function tools for every provider rather than provider-native search (Gemini cannot always combine it with function tools); an address is bound by code, a query only by the prompt. The first live answer cited nothing, so the prompt now requires the source and date beside each web fact and a Sources line; the second live run did.
+**Verified:** unit tests (3,287), lint, typecheck; live runs on two fresh-fact questions.
+**Not verified:** attachment gating live, other providers, the drawer, production (section 4o of POST-PAUSE-CHECKS).
+

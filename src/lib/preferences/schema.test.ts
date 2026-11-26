@@ -16,9 +16,14 @@ describe('resolvePreferences', () => {
 
   it('gives sensible defaults for nothing stored', () => {
     expect(resolvePreferences(undefined)).toEqual(DEFAULT_PREFERENCES);
-    expect(DEFAULT_PREFERENCES.chat).toEqual({ platformAccess: true, sendOnEnter: true, showToolActivity: true, dictationLanguage: 'auto', richReplies: false, unrestricted: false });
+    expect(DEFAULT_PREFERENCES.chat).toEqual({ platformAccess: true, sendOnEnter: true, showToolActivity: true, dictationLanguage: 'auto', webSearch: true, richReplies: false, unrestricted: false });
     expect(DEFAULT_PREFERENCES.display.hideValuesByDefault).toBe(false);
     expect(DEFAULT_PREFERENCES.shortcuts.enabled).toBe(true);
+  });
+
+  it('keeps a stored choice to turn web search off', () => {
+    expect(resolvePreferences({ chat: { webSearch: false } }).chat.webSearch).toBe(false);
+    expect(resolvePreferences({ chat: {} }).chat.webSearch).toBe(true);
   });
 
   it('fills missing fields and keeps stored ones', () => {

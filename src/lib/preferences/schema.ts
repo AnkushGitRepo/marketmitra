@@ -15,6 +15,8 @@ export const preferencesSchema = z.object({
     /** Show "Searched your knowledge base"-style chips under replies. */
     showToolActivity: z.boolean().default(true),
     dictationLanguage: z.enum(DICTATION_LANGUAGES).default('auto'),
+    /** Let Mitra search the web and read pages (#401). Queries leave the app, so it can be switched off. */
+    webSearch: z.boolean().default(true),
     /** Let Mitra answer with visual cards (A2UI, ADR 0077) built from the user's own data. Off by default. */
     richReplies: z.boolean().default(false),
     /** Local / self-host only (ADR 0054): lets Mitra give valuation verdicts. Ignored on the hosted site. */

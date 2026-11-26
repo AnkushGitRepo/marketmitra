@@ -29,6 +29,8 @@ export interface ToolGroup {
 
 const TOOL_LABELS: Record<string, string> = {
   search_context: 'Searched your knowledge base',
+  web_search: 'Searched the web',
+  fetch_page: 'Read a web page',
   list_notes: 'Listed your notes',
   get_note: 'Read one of your notes',
   run_screener: 'Ran the screener',
@@ -41,6 +43,8 @@ const RESEARCH_TOOLS: ReadonlySet<string> = new Set([
   'search_context',
   'list_notes',
   'get_note',
+  'web_search',
+  'fetch_page',
   'search_symbols',
   'get_quote',
   'get_company_fundamentals',
@@ -55,6 +59,8 @@ const RESEARCH_TOOLS: ReadonlySet<string> = new Set([
 /** What the live line says while this tool runs. */
 const RUNNING_PHRASES: Record<string, string> = {
   search_context: 'Searching filings, news and your notes…',
+  web_search: 'Searching the web…',
+  fetch_page: 'Reading the page…',
   list_notes: 'Listing your notes…',
   get_note: 'Reading your note…',
   search_symbols: 'Finding the stock…',

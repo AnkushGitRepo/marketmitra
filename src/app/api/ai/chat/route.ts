@@ -11,13 +11,15 @@ import {
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
-import { CHAT_SYSTEM_AGENTIC, NOTES_PROMPT } from '@/lib/ai/prompts';
+import { CHAT_SYSTEM_AGENTIC, NOTES_PROMPT, WEB_SEARCH_PROMPT } from '@/lib/ai/prompts';
 import { promptForMode } from '@/lib/ai/promptMode';
 import { resolvePromptMode } from '@/lib/ai/promptModeStore';
 import { buildChatTools } from '@/lib/ai/chatTools';
 import { formatPageContext } from '@/lib/ai/chatContext';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
 import { buildNotesContext } from '@/lib/mitra-chat/notesContext';
+import { buildChatWebTools } from '@/lib/mitra-chat/webTools';
+import { getPreferences } from '@/lib/preferences/store';
 import { appendTurn, clearHistory, recentUserQuestions } from '@/lib/chat/chatHistory';
 import { syncRecentChat } from '@/lib/rag/userSync';
 import { logEvent } from '@/lib/system/eventLog';
@@ -111,12 +113,15 @@ async function handlePOST(request: Request) {
   // The user's notes are read on every question, not only when the model decides to search (#400); the page's stock counts as named.
   const recentUserText = [...uiMessages.filter((m) => m.role === 'user').slice(-3).map(textFromParts), parsed.data.pageContext?.ticker ?? ''].join('\n');
   const notesContext = await buildNotesContext({ userId, query: lastUserMessage, recentText: recentUserText });
-  const system = `${promptForMode(CHAT_SYSTEM_AGENTIC, promptMode)}\n\n--- PORTFOLIO CONTEXT ---\n${context}${notesContext ? `\n\n${NOTES_PROMPT}\n\n${notesContext}` : ''}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
+  // Web search (#401), unless the user switched it off or the advisor-only mode (a fixed tool set) is on.
+  const canSearchWeb = (await getPreferences(userId).catch(() => null))?.chat.webSearch !== false && !advisor?.advisorToolsOnly;
+  const system = `${promptForMode(CHAT_SYSTEM_AGENTIC, promptMode)}\n\n--- PORTFOLIO CONTEXT ---\n${context}${notesContext ? `\n\n${NOTES_PROMPT}\n\n${notesContext}` : ''}${canSearchWeb ? `\n\n${WEB_SEARCH_PROMPT}` : ''}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
+  const webTools = canSearchWeb ? buildChatWebTools({ userText: lastUserMessage }) : {};
   const tools = advisor
     ? advisor.advisorToolsOnly
       ? advisor.tools
-      : { ...buildChatTools(userId), ...advisor.tools }
-    : buildChatTools(userId);
+      : { ...buildChatTools(userId), ...webTools, ...advisor.tools }
+    : { ...buildChatTools(userId), ...webTools };
   const modelMessages = await convertToModelMessages(uiMessages);
 
   try {

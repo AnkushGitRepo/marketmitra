@@ -5329,6 +5329,9 @@
                       "showToolActivity": {
                         "type": "boolean"
                       },
+                      "webSearch": {
+                        "type": "boolean"
+                      },
                       "richReplies": {
                         "type": "boolean"
                       },
