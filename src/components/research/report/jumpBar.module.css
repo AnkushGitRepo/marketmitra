@@ -1,7 +1,8 @@
 .bar {
   position: sticky;
   top: 76px;
-  z-index: 20;
+  /* Below the search card (z-index 30), so an open picker is never drawn under the bar, and below the app header (40). */
+  z-index: 10;
   margin: 0 -4px 4px;
   padding: 8px 4px;
   background: rgba(255, 255, 255, 0.92);

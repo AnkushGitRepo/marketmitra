@@ -73,6 +73,12 @@
   box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
 }
 
+.searchCard {
+  /* Its own stacking context above the report card below it, so the pickers' dropdowns paint over the sticky jump bar (10), under the app header (40). */
+  position: relative;
+  z-index: 30;
+}
+
 .tabs {
   display: flex;
   gap: 6px;
