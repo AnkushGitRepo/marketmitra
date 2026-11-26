@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
@@ -9,6 +10,7 @@ import { EmptyState } from './EmptyState';
 import type { ChatContextState } from './useChatContext';
 import type { StarterPrompt } from '@/lib/mitra-chat/starters';
 import { questionOfMessage } from '@/lib/mitra-chat/askUser';
+import { noteCardAction } from '@/lib/mitra-chat/a2ui/notesCard';
 import { MessageView, PendingReply } from './MessageView';
 import type { Preferences } from '@/lib/preferences/schema';
 import { chatErrorMessage, mitraApi, type ConversationDto, type UploadedFile } from './api';
@@ -68,6 +70,17 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
     onFinish: () => onActivity(session.id),
   });
   const busy = status === 'submitted' || status === 'streaming';
+  const router = useRouter();
+  // A button on the notes card: Open goes to the note; Ask sends the question, but not while Mitra is already answering.
+  const onCardAction = useCallback(
+    (name: string, context: Record<string, unknown>) => {
+      const action = noteCardAction(name, context);
+      if (!action) return;
+      if (action.type === 'open') router.push(action.href);
+      else if (!busy) void sendMessage({ text: action.text });
+    },
+    [busy, router, sendMessage]
+  );
 
   const composer = useRef<ComposerHandle>(null);
   useEffect(() => {
@@ -171,6 +184,7 @@ export function ChatThread({ initialConversationId, initialMessages, onConversat
                 streaming={busy && i === messages.length - 1 && m.role === 'assistant'}
                 answeredQuestion={m.role === 'user' && i > 0 ? questionOfMessage(messages[i - 1].parts as { type: string; input?: unknown }[]) : null}
                 onAnswer={!busy && i === messages.length - 1 ? (text) => void sendMessage({ text }) : undefined}
+                onCardAction={onCardAction}
               />
             ))}
             {status === 'submitted' && last?.role === 'user' && <PendingReply />}

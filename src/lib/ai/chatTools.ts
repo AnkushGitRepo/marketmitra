@@ -5,6 +5,7 @@
 //   - the read-only market-data tools from the MCP layer (`src/lib/mcp/
 //     tools.ts`), adapted to the AI SDK's `tool()` shape — live quotes,
 //     fundamentals, price history, news, IPOs, indices;
+//   - `list_notes` and `get_note` (#400), read-only, the signed-in user's own notes;
 //   - `search_context`, which vector-searches the retrieval corpus
 //     (indexed news + filings + the caller's private notes/holdings);
 //   - 5 navigation tools that let the client move the user to a page
@@ -43,6 +44,7 @@ import { checkMitraBounds } from '@/lib/alerts/mitraBounds';
 import { screenerFiltersSchema } from '@/lib/dashboard/screenerSchema';
 import { screenerUrl, screenForModel } from '@/lib/screener/mitra';
 import { logMitraAction } from '@/lib/mitra/activityLog';
+import { buildNotesTools } from '@/lib/mitra-chat/notesTools';
 import type { AlertParams } from '@/lib/alerts/types';
 
 export { buildAskUserTools } from './askUserTool';
@@ -99,6 +101,9 @@ export function buildChatTools(userId: string | null): ToolSet {
       };
     },
   });
+
+  // The user's own notes (#400): list them all, and read one. Read-only and scoped to this user.
+  Object.assign(set, buildNotesTools(userId));
 
   // Navigation (ADR 0022). Each `execute` only confirms the destination —
   // it cannot move the browser itself. The client (AiWidget) watches for

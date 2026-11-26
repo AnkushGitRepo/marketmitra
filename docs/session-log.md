@@ -132,3 +132,10 @@ Rolling log of work sessions. Append new entries at the **bottom** (oldest first
 **Verified:** unit tests (3,242), lint, typecheck; in the browser on a throwaway note that was deleted afterwards (your three saved notes were not touched).
 **Not verified:** PDF print after the layout change, Word in Microsoft Word, production (section 4m of POST-PAUSE-CHECKS).
 
+## 2026-11-26 (late) — Mitra reads and lists your notes (#400, first of #400 to #402)
+
+**What changed:** The maintainer asked Mitra to list their notes and it named one of three; they also asked for rich (A2UI) answers, notes and research read on every question, web search in Mitra, and a Mitra that improves with use. Investigated first (read-only): there was no tool that lists notes, only `search_context`. Agreed with the maintainer: notes first (this PR, #400), then web search (#401), then memory with an ADR (#402); memory auto-saves from the user's own messages with a Settings page to review it; reports are remembered only when saved to Notes. #400: `list_notes`, `get_note`, an always-on notes block in both chat prompts, the `show_notes` A2UI card with working buttons, and `/notes?note=<id>`.
+**Decisions:** a custom Button for the A2UI catalog (the library's breaks on Zod 4; ADR 0077 updated). The chat drawer and the Mitra page share one notes context. Notes text is data, never instructions.
+**Verified:** unit tests (3,276), lint, typecheck; live runs in the browser on the maintainer's three notes (test chats deleted afterwards).
+**Not verified:** other providers, the drawer, production (section 4n of POST-PAUSE-CHECKS).
+

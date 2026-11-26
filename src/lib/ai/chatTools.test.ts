@@ -17,6 +17,8 @@ vi.mock('@/lib/mcp/tools', () => ({
   ],
 }));
 
+vi.mock('@/lib/notes/userNotes', () => ({ listNotes: vi.fn(async () => []), getNote: vi.fn(async () => null) }));
+
 const retrieve = vi.fn<() => Promise<RetrievedChunk[] | null>>();
 vi.mock('@/lib/rag/retrieve', () => ({ retrieve: () => retrieve() }));
 
@@ -74,12 +76,14 @@ const fakeAlert = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('buildChatTools', () => {
-  it('adapts every MCP tool plus search_context plus the 5 navigation tools plus the 4 alert tools', () => {
+  it('adapts every MCP tool plus search_context, the 2 read-only note tools, the 5 navigation tools and the 4 alert tools', () => {
     const set = buildChatTools('u1');
     expect(Object.keys(set).sort()).toEqual([
       'create_alert',
+      'get_note',
       'get_quote',
       'list_alerts',
+      'list_notes',
       'navigate_to_dashboard',
       'navigate_to_markets',
       'navigate_to_portfolio',
@@ -90,6 +94,12 @@ describe('buildChatTools', () => {
       'update_alert_params',
     ]);
     expect(typeof (set.get_quote as unknown as ExecTool).execute).toBe('function');
+  });
+
+  // #400: the note tools only read, and only for the signed-in user.
+  it('offers the note tools without a write or delete path', () => {
+    const names = Object.keys(buildChatTools('u1')).filter((n) => /note/i.test(n));
+    expect(names.sort()).toEqual(['get_note', 'list_notes']);
   });
 
   // ADR 0022's hard boundary: settings/security/billing/destructive actions

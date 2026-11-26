@@ -29,6 +29,8 @@ export interface ToolGroup {
 
 const TOOL_LABELS: Record<string, string> = {
   search_context: 'Searched your knowledge base',
+  list_notes: 'Listed your notes',
+  get_note: 'Read one of your notes',
   run_screener: 'Ran the screener',
   get_screener_options: 'Checked screener options',
   call_platform_api: 'Read your platform data',
@@ -37,6 +39,8 @@ const TOOL_LABELS: Record<string, string> = {
 /** Tools that read outside data, so the user sees "looking things up" rather than a generic "working". */
 const RESEARCH_TOOLS: ReadonlySet<string> = new Set([
   'search_context',
+  'list_notes',
+  'get_note',
   'search_symbols',
   'get_quote',
   'get_company_fundamentals',
@@ -51,6 +55,8 @@ const RESEARCH_TOOLS: ReadonlySet<string> = new Set([
 /** What the live line says while this tool runs. */
 const RUNNING_PHRASES: Record<string, string> = {
   search_context: 'Searching filings, news and your notes…',
+  list_notes: 'Listing your notes…',
+  get_note: 'Reading your note…',
   search_symbols: 'Finding the stock…',
   get_quote: 'Fetching the live quote…',
   get_company_fundamentals: 'Fetching fundamentals…',
