@@ -146,6 +146,18 @@ Run after 4j, signed in with your own AI key and a portfolio of at least five ho
 - [ ] Export report: PDF cover says PORTFOLIO RESEARCH REPORT, severity tags coloured, no page of only a heading; Word, Markdown (`portfolio:` front matter, no ticker) and text open and read well. Save to Notes saves the whole report.
 - [ ] Company (4i) and sector (4j) reports still work.
 
+## 4l. Head-to-head Compare (#394)
+
+Run after 4k, signed in with your own AI key.
+
+- [ ] `/research` Compare tab: the four presets start a report; JPL vs BHARTIARTL vs IDEA finishes all seven chapters inside Vercel's 300 s (it took a few minutes on Gemini locally); a mistyped company gets a clear "no listed company matches" message and no model call; the same company twice asks for two different ones.
+- [ ] The combined chart shows every company on one axis, solid actuals then dashed projected years after a "Forecast →" divider, with Revenue, Operating profit and Growth tabs and a hover tooltip; the note says the projection is not an analyst forecast.
+- [ ] The head-to-head table fits the card at desktop and phone width (no clipped last column), best cells are shaded, P/E is not ranked; the sector measures table says "not found" rather than inventing a figure; the floating chat button does not cover the last chart.
+- [ ] Try a bank comparison (HDFC Bank vs ICICI vs SBI) and an IT one (TCS vs Infosys vs HCLTech): the sector measures are NIM, GNPA, CASA or constant-currency growth, EBIT margin, attrition, with sources.
+- [ ] Issue cards are tagged CRITICAL, MODERATE or NORMAL and name only the compared companies; the verdict does not say what a search found.
+- [ ] Export report: the PDF cover says HEAD-TO-HEAD COMPARISON, shows one small chart per metric, the matrix fits the page; Word has the chart figures as a table; Markdown has `comparison:` front matter and no ticker; text reads well. Save to Notes saves the whole report.
+- [ ] Company (4i), sector (4j) and portfolio (4k) reports still work.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.

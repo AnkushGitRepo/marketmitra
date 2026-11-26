@@ -6,6 +6,7 @@ import { topSources } from '../sources';
 import { CHAPTERS, type ReportChapter } from '../chapters';
 import { parseMarkdownLite, type InlineToken } from '@/components/markdownLiteParse';
 import { DISCLAIMER_TEXT } from './markdown';
+import { chartAsTable } from './chartTables';
 import { isGroupReport, reportDateLong, reportRef, type ExportMeta } from './meta';
 
 const WIDTH = 78;
@@ -98,6 +99,10 @@ export function blockText(block: ResearchBlock): string {
         block.categories.map((cat, i) => [cat, ...block.series.map((s) => (s.values[i] == null ? '—' : formatNumber(s.values[i], Number.isInteger(s.values[i]) ? 0 : 1)))]),
         1
       )}`;
+    case 'trajectory_chart': {
+      const t = chartAsTable(block)!;
+      return `${[t.title, block.note ? wrap(block.note) : ''].filter(Boolean).join('\n')}\n\n${alignedTable(t.headers, t.rows, t.numericFrom)}`;
+    }
     case 'donut_chart': {
       const total = block.slices.reduce((a, s) => a + s.value, 0);
       return `${block.title}\n\n${block.slices.map((s) => `  ${s.label}: ${formatNumber(total === 0 ? 0 : (s.value / total) * 100)}%`).join('\n')}`;

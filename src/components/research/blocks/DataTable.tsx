@@ -11,6 +11,9 @@ interface Sort {
   readonly direction: 'asc' | 'desc';
 }
 
+/** Whether the block marks this cell as the best of its row (a table with a company per column). */
+const highlighted = (block: DataTableBlock, row: number, column: string): boolean => block.highlights?.some((h) => h.row === row && h.column === column) ?? false;
+
 /** A table whose headers sort it; the best figure in each column that has a "best" is marked green. */
 export function DataTable({ block }: { readonly block: DataTableBlock }) {
   const [sort, setSort] = useState<Sort | null>(null);
@@ -45,7 +48,7 @@ export function DataTable({ block }: { readonly block: DataTableBlock }) {
             {rows.map((row, ri) => (
               <tr key={ri}>
                 {block.columns.map((c) => (
-                  <td key={c.key} data-align={c.format === 'text' ? 'left' : 'right'} data-best={best.get(c.key)?.has(ri) ?? false}>
+                  <td key={c.key} data-align={c.format === 'text' ? 'left' : 'right'} data-best={(best.get(c.key)?.has(ri) ?? false) || highlighted(block, block.rows.indexOf(row), c.key)}>
                     {formatCell(row[c.key] ?? null, c.format)}
                   </td>
                 ))}
