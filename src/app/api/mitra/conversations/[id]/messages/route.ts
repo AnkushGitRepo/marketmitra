@@ -4,7 +4,7 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { withRateLimit } from '@/lib/rateLimit';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
-import { MITRA_WORKSPACE_SYSTEM, RICH_REPLIES_PROMPT } from '@/lib/ai/prompts';
+import { MITRA_WORKSPACE_SYSTEM, NOTES_PROMPT, RICH_REPLIES_PROMPT } from '@/lib/ai/prompts';
 import { promptForMode, selectPromptMode } from '@/lib/ai/promptMode';
 import { canUsePrivilegedModes } from '@/lib/auth/privilegedModes';
 import { buildA2uiTools } from '@/lib/ai/a2uiTools';
@@ -24,6 +24,9 @@ import { getFileStore } from '@/lib/mitra-chat/gridFsFileStore';
 import { isRetryOfLast, sanitizeUserMessage } from '@/lib/mitra-chat/messageInput';
 import { prepareModelMessages } from '@/lib/mitra-chat/prepareMessages';
 import { summariseSlice } from '@/lib/mitra-chat/summarize';
+import { buildNotesContext } from '@/lib/mitra-chat/notesContext';
+import { listNoteSummaries } from '@/lib/mitra-chat/notesList';
+import { listNotes } from '@/lib/notes/userNotes';
 import { planWindow } from '@/lib/mitra-chat/window';
 
 export const dynamic = 'force-dynamic';
@@ -126,12 +129,17 @@ async function handleMessage(request: Request, ctx?: unknown) {
 
   const prefs = await getPreferences(userId);
   const context = await buildPortfolioContext(userId).catch(() => '');
+  // The user's notes are read on every question, not only when the model decides to search (#400). The user's own recent messages are
+  // searched for stock tickers, so a note about a stock they just named is surfaced.
+  const recentUserText = all.filter((m) => m.role === 'user').slice(-3).map(textOf).join('\n');
+  const notesContext = await buildNotesContext({ userId, query: userText, recentText: recentUserText });
   const system = [
     // Guarded unless a local user or a hosted admin opted in (ADR 0054, 0070).
     promptForMode(MITRA_WORKSPACE_SYSTEM, selectPromptMode({ hosted: !canUsePrivilegedModes(userId), unrestricted: prefs.chat.unrestricted })),
     prefs.chat.richReplies && !advisor?.advisorToolsOnly ? RICH_REPLIES_PROMPT : '',
     prefs.chat.platformAccess ? `--- PLATFORM API (call_platform_api, read-only GET) ---\n${PLATFORM_CATALOG_TEXT}` : '',
     `--- PORTFOLIO CONTEXT ---\n${context}`,
+    notesContext ? `${NOTES_PROMPT}\n\n${notesContext}` : '',
     summary ? `--- EARLIER IN THIS CONVERSATION (summary) ---\n${summary}` : '',
     advisor ? advisor.systemAddendum : '',
   ]
@@ -155,7 +163,7 @@ async function handleMessage(request: Request, ctx?: unknown) {
     ...(canAsk ? buildAskUserTools() : {}),
     // Proposes a holding change for the user to confirm on a card; with files attached it is withheld, like the alert write tools.
     ...(canAsk && !hasAttachments ? buildHoldingProposalTools(userId) : {}),
-    ...(canShowCards ? buildA2uiTools(() => getEnrichedHoldings(userId)) : {}),
+    ...(canShowCards ? buildA2uiTools(() => getEnrichedHoldings(userId), async (filter) => listNoteSummaries(await listNotes(userId), filter)) : {}),
   };
   // With the tools, a card from an earlier turn reaches the model as its text summary, not as the full layout.
   const modelMessages = await convertToModelMessages(prepared, { tools: allTools });

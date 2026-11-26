@@ -39,3 +39,14 @@ because the maintainer asked for it and because it gives a stable, documented, v
 - A2UI actions (buttons that talk back to the agent) are not used yet. The Phase 1 question card (ADR 0076) stays a plain component.
 - More cards (a stock snapshot, a screener result) would be new builders and tools on the same path; each gets its own review for what the model may and may not write.
 - Hosted behaviour is unverified while Vercel is paused (`docs/POST-PAUSE-CHECKS.md` 4e), including that the CSP allows the renderer.
+
+## Update, 2026-11-26 (issue #400): actions are now used
+
+The notes card (`show_notes`, built by `lib/mitra-chat/a2ui/notesCard.ts`) is the first card with buttons: Open and Ask Mitra, each an `event` action. Two things came
+out of it. (1) The library's own Button throws "props.action is not a function" on this repo's Zod 4: its binder recognises an action by inspecting a Zod 3 schema, so
+`props.action` stays a plain object. `components/mitra-chat/chatCatalog.ts` replaces only the Button with a subclass of the library's element that turns the object into a
+dispatch through the component's own context; everything else is the library's basic catalogue. A React-implemented Button does not work here (the library's web-component
+Column and Row only draw web-component children). (2) What a press means is decided by our own `noteCardAction`, which accepts only our two event names and a 24-character
+hex id or a short title, so a card can never send the page somewhere else. The reader's earlier note that actions are not used is superseded for this card; the question card
+(ADR 0076) is still a plain component. Re-check the buttons in a browser on every A2UI upgrade, and drop `chatCatalog.ts` if a release fixes the Zod 4 binding.
+

@@ -35,9 +35,11 @@ interface PartViewProps {
   readonly onAnswer?: (text: string) => void;
   /** The question on the card this user message answers, so the bubble can show just the answer. */
   readonly answeredQuestion?: string | null;
+  /** A button on a card was pressed (the notes card's Open and Ask). */
+  readonly onCardAction?: (name: string, context: Record<string, unknown>) => void;
 }
 
-function PartView({ part, role, cursor, onAnswer, answeredQuestion }: PartViewProps) {
+function PartView({ part, role, cursor, onAnswer, answeredQuestion, onCardAction }: PartViewProps) {
   if (part.type === 'text') {
     return role === 'user' ? (
       <p className={styles.userText}>{visibleAnswer(part.text, answeredQuestion ?? null)}</p>
@@ -60,12 +62,12 @@ function PartView({ part, role, cursor, onAnswer, answeredQuestion }: PartViewPr
   }
   if (isCardToolPart(part.type)) {
     const output = (part as { output?: Partial<CardToolOutput> }).output;
-    return output?.shown && Array.isArray(output.messages) ? <A2uiView messages={output.messages} /> : null;
+    return output?.shown && Array.isArray(output.messages) ? <A2uiView messages={output.messages} onAction={onCardAction} /> : null;
   }
   return null;
 }
 
-export function MessageView({ message, streaming, showToolActivity = true, onAnswer, answeredQuestion }: { message: UIMessage; streaming: boolean; showToolActivity?: boolean; onAnswer?: (text: string) => void; answeredQuestion?: string | null }) {
+export function MessageView({ message, streaming, showToolActivity = true, onAnswer, answeredQuestion, onCardAction }: { message: UIMessage; streaming: boolean; showToolActivity?: boolean; onAnswer?: (text: string) => void; answeredQuestion?: string | null; onCardAction?: (name: string, context: Record<string, unknown>) => void }) {
   const isUser = message.role === 'user';
   const files = message.parts.filter((p) => p.type === 'file');
   const rest = message.parts.filter((p) => p.type !== 'file' && !(!isUser && isActivityPart(p.type, isCardToolPart)));
@@ -96,7 +98,7 @@ export function MessageView({ message, streaming, showToolActivity = true, onAns
         )}
         {(hasActivity || showStage) && <ToolActivity parts={message.parts} streaming={streaming} showTools={showToolActivity} targets={targets} />}
         {rest.map((p, i) => (
-          <PartView key={i} part={p} role={message.role} cursor={streaming && i === lastTextIndex} onAnswer={onAnswer} answeredQuestion={answeredQuestion} />
+          <PartView key={i} part={p} role={message.role} cursor={streaming && i === lastTextIndex} onAnswer={onAnswer} answeredQuestion={answeredQuestion} onCardAction={onCardAction} />
         ))}
       </div>
     </article>

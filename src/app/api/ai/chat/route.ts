@@ -11,12 +11,13 @@ import {
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getUserAiConfig } from '@/lib/ai/userAiConfig';
 import { streamChat } from '@/lib/ai/generate';
-import { CHAT_SYSTEM_AGENTIC } from '@/lib/ai/prompts';
+import { CHAT_SYSTEM_AGENTIC, NOTES_PROMPT } from '@/lib/ai/prompts';
 import { promptForMode } from '@/lib/ai/promptMode';
 import { resolvePromptMode } from '@/lib/ai/promptModeStore';
 import { buildChatTools } from '@/lib/ai/chatTools';
 import { formatPageContext } from '@/lib/ai/chatContext';
 import { buildPortfolioContext } from '@/lib/ai/portfolioContext';
+import { buildNotesContext } from '@/lib/mitra-chat/notesContext';
 import { appendTurn, clearHistory, recentUserQuestions } from '@/lib/chat/chatHistory';
 import { syncRecentChat } from '@/lib/rag/userSync';
 import { logEvent } from '@/lib/system/eventLog';
@@ -107,7 +108,10 @@ async function handlePOST(request: Request) {
 
   // Guarded unless a local user or a hosted admin opted in (ADR 0054, 0070).
   const promptMode = await resolvePromptMode(userId);
-  const system = `${promptForMode(CHAT_SYSTEM_AGENTIC, promptMode)}\n\n--- PORTFOLIO CONTEXT ---\n${context}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
+  // The user's notes are read on every question, not only when the model decides to search (#400); the page's stock counts as named.
+  const recentUserText = [...uiMessages.filter((m) => m.role === 'user').slice(-3).map(textFromParts), parsed.data.pageContext?.ticker ?? ''].join('\n');
+  const notesContext = await buildNotesContext({ userId, query: lastUserMessage, recentText: recentUserText });
+  const system = `${promptForMode(CHAT_SYSTEM_AGENTIC, promptMode)}\n\n--- PORTFOLIO CONTEXT ---\n${context}${notesContext ? `\n\n${NOTES_PROMPT}\n\n${notesContext}` : ''}\n\n--- CURRENT PAGE ---\n${pageContextLine}${advisor ? `\n\n${advisor.systemAddendum}` : ''}`;
   const tools = advisor
     ? advisor.advisorToolsOnly
       ? advisor.tools

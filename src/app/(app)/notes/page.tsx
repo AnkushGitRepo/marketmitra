@@ -5,7 +5,11 @@ import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
 
-export default async function NotesPage() {
+interface NotesPageProps {
+  readonly searchParams: Promise<{ note?: string | string[] }>;
+}
+
+export default async function NotesPage({ searchParams }: NotesPageProps) {
   const userId = await getCurrentUserId();
   if (!userId) {
     return (
@@ -22,5 +26,9 @@ export default async function NotesPage() {
     // Mongo unreachable — render the shell with an empty list rather than 500.
   }
 
-  return <NotesPageClient notes={notes} />;
+  // A link such as /notes?note=<id> (from Mitra's notes card) opens that note.
+  const { note } = await searchParams;
+  const initialId = typeof note === 'string' && notes.some((n) => n.id === note) ? note : null;
+
+  return <NotesPageClient notes={notes} initialId={initialId} />;
 }

@@ -61,9 +61,12 @@ export function notePreview(body: string): string {
   return line.length <= PREVIEW_CHARS ? line : `${line.slice(0, PREVIEW_CHARS - 1).trimEnd()}…`;
 }
 
-/** The prompt that opens Mitra on a note; Mitra finds the note's text itself through retrieval. */
+/** The question that asks Mitra about a note; Mitra finds the note's text itself (the notes context and get_note). */
+export const askMitraPrompt = (title: string): string => `Using my note "${title}", summarise the key points and what I should check next.`;
+
+/** The prompt that opens Mitra on a note. */
 export function askMitraHref(title: string): string {
-  return `/mitra?q=${encodeURIComponent(`Using my note "${title}", summarise the key points and what I should check next.`)}`;
+  return `/mitra?q=${encodeURIComponent(askMitraPrompt(title))}`;
 }
 
 const MINUTE_MS = 60_000;

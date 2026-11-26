@@ -18,6 +18,8 @@ import styles from './page.module.css';
 
 interface Props {
   notes: UserNote[];
+  /** A note to open straight away (from a link), if it exists. */
+  initialId?: string | null;
 }
 
 type Mode = { kind: 'read' } | { kind: 'edit'; draft: NoteDraft };
@@ -31,12 +33,13 @@ const draftOf = (n: UserNote): NoteDraft => ({
   source: n.source,
 });
 
-export function NotesPageClient({ notes }: Props) {
+export function NotesPageClient({ notes, initialId = null }: Props) {
   const router = useRouter();
   const [filter, setFilter] = useState<NoteFilter>('all');
   const [query, setQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(notes[0]?.id ?? null);
-  const [showReader, setShowReader] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(initialId ?? notes[0]?.id ?? null);
+  // Arriving on a note from a link shows it, on a phone too.
+  const [showReader, setShowReader] = useState(initialId !== null);
   const [mode, setMode] = useState<Mode>({ kind: 'read' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

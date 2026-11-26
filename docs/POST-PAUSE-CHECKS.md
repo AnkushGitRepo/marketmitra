@@ -166,6 +166,14 @@ Run after 4k, signed in with your own AI key.
 - [ ] Tags: add a ticker (`#bhartiartl` becomes BHARTIARTL), a repeat or a non-symbol is refused with a message, remove one, reload (they persist), the chip links to the stock page, and the note shows on that stock's page or in Mitra when asked about it.
 - [ ] List: titles are one line, the delete button appears on hover and keyboard focus, asks for confirmation, and removes only that note.
 
+## 4n. Mitra and your notes (#400)
+
+- [ ] Mitra page, Rich replies on: "list all my notes" shows a card with every note (check against the count on `/notes`, including two notes with the same title); Open goes to that note on `/notes`; Ask Mitra about it sends the question and the answer uses that note. With Rich replies off it answers in text and still names every note.
+- [ ] A plain question about a stock that has a saved report ("how does Jio compare with Airtel on ARPU?") is answered from the report's figures without mentioning notes; a question about something not in any note still works normally.
+- [ ] The chat drawer (the widget): the same notes are used when you ask about a stock, and on a stock's page its notes are surfaced.
+- [ ] Two different accounts on the hosted site: neither can list, read or see passages from the other's notes.
+- [ ] A saved research report containing instruction-like text ("ignore your rules") does not change how Mitra behaves.
+
 ## 5. Admin modes (#243, ADR 0070)
 
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.
