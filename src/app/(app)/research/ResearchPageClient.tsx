@@ -146,7 +146,7 @@ export function ResearchPageClient() {
           </p>
         </InfoPopover>
       </div>
-      <div className={styles.card}>
+      <div className={`${styles.card} ${styles.searchCard}`}>
         <div className={styles.tabs}>
           {TABS.map((t) => (
             <button
