@@ -8,6 +8,9 @@ import { InfoPopover } from '@/components/common/InfoPopover';
 import { EMPTY_DRAFT, NoteEditor, type NoteDraft } from '@/components/notes/NoteEditor';
 import { NoteList } from '@/components/notes/NoteList';
 import { NoteReader } from '@/components/notes/NoteReader';
+import { download } from '@/components/research/report/exportReport';
+import { noteDocx, noteFileBase, noteMarkdown, noteText, type NoteFormat } from '@/lib/notes/exportNote';
+import type { TagChange } from '@/lib/notes/tags';
 import vault from '@/components/notes/NotesVault.module.css';
 import type { UserNote } from '@/lib/notes/userNotes';
 import { NOTE_FILTERS, filterCounts, filterNotes, type NoteFilter } from '@/lib/notes/vault';
@@ -37,7 +40,9 @@ export function NotesPageClient({ notes }: Props) {
   const [mode, setMode] = useState<Mode>({ kind: 'read' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  /** The note a delete is waiting on (from the toolbar or the list), until it is confirmed or cancelled. */
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [listHidden, setListHidden] = useState(false);
   const [now] = useState(() => new Date());
 
   const visible = useMemo(() => filterNotes(notes, filter, query), [notes, filter, query]);
@@ -92,14 +97,18 @@ export function NotesPageClient({ notes }: Props) {
     }
   };
 
+  const toDelete = notes.find((n) => n.id === deleteId) ?? null;
+
   const remove = async () => {
-    if (!selected) return;
+    if (!toDelete) return;
     setBusy(true);
     try {
-      const res = await fetch(`/api/notes/${selected.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/notes/${toDelete.id}`, { method: 'DELETE' });
       if (res.ok) {
-        setSelectedId(null);
-        setShowReader(false);
+        if (toDelete.id === selected?.id) {
+          setSelectedId(null);
+          setShowReader(false);
+        }
         router.refresh();
       } else {
         setError('Could not delete the note.');
@@ -108,8 +117,36 @@ export function NotesPageClient({ notes }: Props) {
       setError('Could not delete the note. Check your connection and try again.');
     } finally {
       setBusy(false);
-      setConfirmDelete(false);
+      setDeleteId(null);
     }
+  };
+
+  /** Saves a note's new symbol and tickers (the title and body stay as they are); an error message when it could not. */
+  const saveTags = async (change: Extract<TagChange, { ok: true }>): Promise<string | null> => {
+    if (!selected) return 'Select a note first.';
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/notes/${selected.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: selected.title, body: selected.body, symbol: change.symbol, tickers: change.tickers }),
+      });
+      if (!res.ok) return ((await res.json().catch(() => null)) as { error?: string } | null)?.error ?? 'Could not save the tags.';
+      router.refresh();
+      return null;
+    } catch {
+      return 'Could not save the tags. Check your connection and try again.';
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const exportFile = async (format: Exclude<NoteFormat, 'pdf'>): Promise<void> => {
+    if (!selected) return;
+    const base = noteFileBase(selected);
+    if (format === 'docx') download(await noteDocx(selected), `${base}.docx`);
+    else if (format === 'md') download(new Blob([noteMarkdown(selected)], { type: 'text/markdown;charset=utf-8' }), `${base}.md`);
+    else download(new Blob([noteText(selected)], { type: 'text/plain;charset=utf-8' }), `${base}.txt`);
   };
 
   return (
@@ -161,12 +198,12 @@ export function NotesPageClient({ notes }: Props) {
           </p>
         </div>
       ) : (
-        <div className={vault.layout} data-view={showReader || editing ? 'reader' : 'list'}>
+        <div className={vault.layout} data-view={showReader || editing ? 'reader' : 'list'} data-list-hidden={listHidden}>
           <div className={`${vault.pane} ${vault.listPane}`}>
             {visible.length === 0 ? (
               <p className={vault.empty}>No notes match.</p>
             ) : (
-              <NoteList notes={visible} selectedId={selected?.id ?? null} now={now} onSelect={select} />
+              <NoteList notes={visible} selectedId={selected?.id ?? null} now={now} onSelect={select} onDelete={setDeleteId} />
             )}
           </div>
           <div className={`${vault.pane} ${vault.readerPane}`}>
@@ -177,9 +214,13 @@ export function NotesPageClient({ notes }: Props) {
                 <NoteReader
                   note={selected}
                   busy={busy}
+                  listHidden={listHidden}
                   onEdit={() => setMode({ kind: 'edit', draft: draftOf(selected) })}
-                  onDelete={() => setConfirmDelete(true)}
+                  onDelete={() => setDeleteId(selected.id)}
                   onBack={() => setShowReader(false)}
+                  onToggleList={() => setListHidden((h) => !h)}
+                  onTagsChange={saveTags}
+                  onExport={exportFile}
                 />
                 {error && <p className={vault.error}>{error}</p>}
               </>
@@ -191,13 +232,13 @@ export function NotesPageClient({ notes }: Props) {
       )}
 
       <ConfirmDialog
-        open={confirmDelete}
+        open={toDelete !== null}
         title="Delete this note?"
-        message={selected ? `“${selected.title}” will be removed, and Mitra will stop using it.` : ''}
+        message={toDelete ? `“${toDelete.title}” will be removed, and Mitra will stop using it.` : ''}
         confirmLabel="Delete"
         busy={busy}
         onConfirm={remove}
-        onCancel={() => setConfirmDelete(false)}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   );

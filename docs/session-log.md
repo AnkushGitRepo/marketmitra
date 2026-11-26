@@ -125,3 +125,10 @@ Rolling log of work sessions. Append new entries at the **bottom** (oldest first
 **Verified:** unit tests (3,230 passing before the last tweaks), lint, typecheck, one live run on JPL, BHARTIARTL and IDEA, its PDF through Chrome and Ghostscript, the page replayed in the browser (chart tabs, hover, tables fit, phone width, 0 console errors).
 **Not verified:** Word and text export of a real run, bank and IT comparisons, other AI providers, production (Vercel paused until 12 December 2026; section 4l of POST-PAUSE-CHECKS).
 
+## 2026-11-26 (night) — Notes reader layout, toolbar, export and ticker tags (#396)
+
+**What changed:** `/notes` list is 300px and the reader takes the rest, with a Hide list toggle, compact list rows with hover delete, a sticky toolbar at the top of the note (Edit, Ask Mitra, Export, Delete), in-place ticker tags, and Word, Markdown and text export of a note (the PDF is still the browser print). The reader already had PDF, Ask Mitra, Edit and Delete at the bottom of the card; they moved up. New `lib/notes/tags.ts` and `lib/notes/exportNote.ts`, `NoteTags`, `NoteExportMenu`; `docx.ts` shares its styles and gained `buildNoteDocx`.
+**Decisions:** tags are NSE tickers only, because notes have a ticker list but no topic field (the old open question about a notes tag field is still open, now with a concrete cost: storage, search and retrieval). Ask Mitra keeps the existing prompt-based link.
+**Verified:** unit tests (3,242), lint, typecheck; in the browser on a throwaway note that was deleted afterwards (your three saved notes were not touched).
+**Not verified:** PDF print after the layout change, Word in Microsoft Word, production (section 4m of POST-PAUSE-CHECKS).
+
