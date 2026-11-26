@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { BRIEF_SPECS, IPO_VERDICT_KEYS, type BriefSurface } from '@/lib/ai/briefSpecs';
+import { briefAge } from '@/lib/ai/briefAge';
 import { UNRESTRICTED_DISCLAIMER } from '@/lib/ai/promptMode';
 import { readStoredBrief, splitTickers, toneLabel, type BriefItem, type StructuredBrief } from '@/lib/ai/structuredBrief';
 import { toneCounts } from '@/lib/dashboard/ipoBriefFacts';
@@ -17,6 +18,10 @@ interface StructuredBriefCardProps {
   readonly body?: Record<string, unknown>;
   /** The latest cached content, if any (older prose briefs are ignored and simply regenerated). */
   readonly initial: string | null;
+  /** When `initial` was written (ISO). Shown as the brief's age; without it no age or expiry is applied. */
+  readonly generatedAt?: string | null;
+  /** A brief older than this is retired and the card offers a fresh one. Omit for no limit. */
+  readonly maxAgeMs?: number;
   /** Whether an AI key is resolvable (server-checked). */
   readonly hasKey: boolean;
   readonly emptyText: string;
@@ -30,6 +35,7 @@ interface StructuredBriefCardProps {
 }
 
 const SKELETON_ROWS = 4;
+const TICK_MS = 60_000;
 const DISCLAIMER = 'AI-generated summary of public data, not investment advice.';
 
 /** Text with `[TICKER]` tags rendered as links to the stock page. The server only lets tags through for tickers present in the data. */
@@ -124,11 +130,19 @@ function Scorecard({ items, labels, spec }: ItemsProps) {
 }
 
 /** A few labelled, toned points instead of a paragraph: used by the dashboard, Markets, News and IPO widgets. */
-export function StructuredBriefCard({ surface, title, endpoint, body, initial, hasKey, emptyText, noKeyText, chatPrompt, visual, scorecard = false }: StructuredBriefCardProps) {
+export function StructuredBriefCard({ surface, title, endpoint, body, initial, generatedAt: initialGeneratedAt = null, maxAgeMs, hasKey, emptyText, noKeyText, chatPrompt, visual, scorecard = false }: StructuredBriefCardProps) {
   const spec = BRIEF_SPECS[surface];
   const [brief, setBrief] = useState<StructuredBrief | null>(() => readStoredBrief(initial, spec));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(initialGeneratedAt);
+  const [now, setNow] = useState(() => new Date());
+
+  // Keep the age label honest, and retire a brief that expires while the page is open.
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), TICK_MS);
+    return () => window.clearInterval(id);
+  }, []);
 
   const generate = async (force: boolean) => {
     setLoading(true);
@@ -139,7 +153,7 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...body, force }),
       });
-      const payload = (await res.json().catch(() => null)) as { data?: { content?: unknown }; error?: string } | null;
+      const payload = (await res.json().catch(() => null)) as { data?: { content?: unknown; generatedAt?: unknown }; error?: string } | null;
       const content = payload?.data?.content;
       const parsed = typeof content === 'string' ? readStoredBrief(content, spec) : null;
       if (!res.ok || !parsed) {
@@ -147,6 +161,8 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
         return;
       }
       setBrief(parsed);
+      setGeneratedAt(typeof payload?.data?.generatedAt === 'string' ? payload.data.generatedAt : new Date().toISOString());
+      setNow(new Date());
     } catch {
       setError('Could not reach Mitra. Check your connection and try again.');
     } finally {
@@ -154,16 +170,20 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
     }
   };
 
+  const age = briefAge(generatedAt, now, maxAgeMs ?? null);
+  // An expired brief is not shown as current: the card says so and offers a fresh one.
+  const stale = brief !== null && age.expired;
+  const current = stale ? null : brief;
   const labels = new Map(spec.items.map((i) => [i.key, i.label]));
   // Verdict items exist only in a brief the server wrote in unrestricted mode (ADR 0054, 0070).
-  const unrestricted = surface === 'ipo' && (brief?.items.some((i) => IPO_VERDICT_KEYS.includes(i.key)) ?? false);
+  const unrestricted = surface === 'ipo' && (current?.items.some((i) => IPO_VERDICT_KEYS.includes(i.key)) ?? false);
 
   return (
     <section className={styles.card} aria-label={title}>
       <div className={styles.head}>
         <h2 className={styles.title}>{title}</h2>
         <div className={styles.headRight}>
-          {brief && (
+          {current && (
             <button type="button" className={styles.regen} disabled={loading} onClick={() => void generate(true)}>
               {loading ? 'Writing…' : 'Regenerate'}
             </button>
@@ -172,7 +192,7 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
         </div>
       </div>
 
-      {loading && !brief ? (
+      {loading && !current ? (
         <div className={styles.skeleton} aria-label="Writing the brief">
           {spec.items.slice(0, SKELETON_ROWS).map((i) => (
             <div key={i.key} className={styles.skelRow}>
@@ -181,11 +201,18 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
             </div>
           ))}
         </div>
-      ) : brief ? (
+      ) : current ? (
         <>
           {visual}
-          {scorecard ? <Scorecard items={brief.items} labels={labels} spec={spec} /> : <ItemList items={brief.items} labels={labels} spec={spec} />}
-          <p className={styles.meta}>{unrestricted ? UNRESTRICTED_DISCLAIMER : DISCLAIMER}</p>
+          {scorecard ? <Scorecard items={current.items} labels={labels} spec={spec} /> : <ItemList items={current.items} labels={labels} spec={spec} />}
+          <p className={styles.meta}>
+            {age.label && (
+              <>
+                <span suppressHydrationWarning>Generated {age.label}</span> ·{' '}
+              </>
+            )}
+            {unrestricted ? UNRESTRICTED_DISCLAIMER : DISCLAIMER}
+          </p>
         </>
       ) : !hasKey ? (
         <p className={styles.body}>
@@ -196,9 +223,11 @@ export function StructuredBriefCard({ surface, title, endpoint, body, initial, h
         </p>
       ) : (
         <>
-          <p className={styles.body}>{emptyText}</p>
-          <button type="button" className={styles.button} onClick={() => void generate(false)} disabled={loading}>
-            {loading ? 'Thinking…' : 'Generate brief'}
+          <p className={styles.body}>
+            {stale ? `The last brief was written ${age.label}, so it may be out of date. Write a fresh one from today's data.` : emptyText}
+          </p>
+          <button type="button" className={styles.button} onClick={() => void generate(stale)} disabled={loading}>
+            {loading ? 'Thinking…' : stale ? 'Write a fresh brief' : 'Generate brief'}
           </button>
         </>
       )}

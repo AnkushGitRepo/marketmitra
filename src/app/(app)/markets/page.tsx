@@ -9,6 +9,7 @@ import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getIndices, getPrices } from '@/lib/dashboard/fundamentalsApi';
 import { getQuotes, type Quote } from '@/lib/dashboard/quotes';
+import { BRIEF_MAX_AGE_MS } from '@/lib/ai/briefAge';
 import { getCachedInsight } from '@/lib/insights';
 import { getMarketOverview } from '@/lib/markets/marketOverview';
 import { listHoldings } from '@/lib/holdings';
@@ -99,6 +100,8 @@ export default async function MarketsPage() {
             title="Mitra Market Pulse"
             endpoint="/api/insights/market"
             initial={cachedPulse?.content ?? null}
+            generatedAt={cachedPulse?.generatedAt.toISOString() ?? null}
+            maxAgeMs={BRIEF_MAX_AGE_MS.market}
             hasKey={hasKey}
             emptyText="No read yet. Ask Mitra for breadth, sector leaders and laggards, and the headline catalyst."
             noKeyText="to get a three-point read on how the market is trading. MarketMitra charges nothing for it."

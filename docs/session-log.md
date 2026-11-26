@@ -153,3 +153,9 @@ Rolling log of work sessions. Append new entries at the **bottom** (oldest first
 **Verified:** unit tests (3,318), lint, typecheck; live runs for saving, reuse in a new chat, refusal of a PAN and phone number, and the Settings list and Delete.
 **Not verified:** planted memories from a file or page (unit-level), other providers, the drawer, production (section 4p of POST-PAUSE-CHECKS).
 
+## 2026-11-26 (night, 4) — AI brief age and expiry (#406)
+
+**What changed:** the Dashboard AI Daily Brief, Mitra Market Pulse and Mitra news pulse now show when they were generated and are retired once too old (24 h daily brief, 6 h market and news); the expired card offers a fresh brief. Pure age logic in `lib/ai/briefAge.ts` with tests; `StructuredBriefCard` takes `generatedAt` and `maxAgeMs`.
+**Decisions:** hide an expired brief rather than dim it (a stale market read presented as current is the harm); no limit for the IPO brief, which is shared and tied to the offer; the limits are constants, not a setting.
+**Verified:** unit tests (3,324), lint, typecheck; live on all three pages against real stale and fresh briefs.
+**Not verified:** dark theme and phone width of the new line, the production build (left to CI), production.

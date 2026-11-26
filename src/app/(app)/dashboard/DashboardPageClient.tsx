@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { BRIEF_MAX_AGE_MS } from '@/lib/ai/briefAge';
 import { HeroPortfolioCard } from '@/components/dashboard-charts/HeroPortfolioCard';
 import { IndexStrip } from '@/components/dashboard-charts/IndexStrip';
 import { MoverPanel } from '@/components/dashboard-charts/MoverPanel';
@@ -27,6 +28,7 @@ interface DashboardPageClientProps {
   now: Date;
   hasAiKey: boolean;
   insight: string | null;
+  insightGeneratedAt: string | null;
 }
 
 export function DashboardPageClient({
@@ -40,6 +42,7 @@ export function DashboardPageClient({
   now,
   hasAiKey,
   insight,
+  insightGeneratedAt,
 }: DashboardPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
@@ -103,6 +106,8 @@ export function DashboardPageClient({
               title="AI Daily Brief"
               endpoint="/api/insights/portfolio"
               initial={insight}
+              generatedAt={insightGeneratedAt}
+              maxAgeMs={BRIEF_MAX_AGE_MS.portfolio}
               hasKey={hasAiKey}
               emptyText="No brief yet. Ask Mitra for today's return driver, exposure and risk trigger."
               noKeyText="to get a three-point brief of what moved your portfolio. MarketMitra charges nothing for it."
