@@ -146,3 +146,10 @@ Rolling log of work sessions. Append new entries at the **bottom** (oldest first
 **Verified:** unit tests (3,287), lint, typecheck; live runs on two fresh-fact questions.
 **Not verified:** attachment gating live, other providers, the drawer, production (section 4o of POST-PAUSE-CHECKS).
 
+## 2026-11-26 (night, 3) — Mitra memory (#402)
+
+**What changed:** #404 (web search) was merged first. #402: a per-user memory Mitra writes itself from the user's own typed words, with a verbatim-quote check in code, a private-data filter, dedupe, chips with Undo, a Settings panel and switch, REST endpoints, export, and ADR 0083. This completes the three pieces agreed for the maintainer's request (notes, web search, memory).
+**Decisions:** a tool (`remember`) rather than a separate extraction call, so the user sees the save in the reply; provenance enforced by requiring and checking a quote rather than trusting the prompt; narrow first version (no learning from feedback).
+**Verified:** unit tests (3,318), lint, typecheck; live runs for saving, reuse in a new chat, refusal of a PAN and phone number, and the Settings list and Delete.
+**Not verified:** planted memories from a file or page (unit-level), other providers, the drawer, production (section 4p of POST-PAUSE-CHECKS).
+

@@ -1,0 +1,61 @@
+.chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 6px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--app-border-soft);
+  border-left: 3px solid var(--app-teal);
+  border-radius: var(--radius-md);
+  background: var(--app-cream);
+  font-size: var(--text-sm);
+}
+
+.chip[data-state='undone'] {
+  border-left-color: var(--app-border);
+  color: var(--app-text-muted);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-teal-strong);
+}
+
+.chip[data-state='undone'] .label {
+  color: var(--app-text-muted);
+}
+
+.text {
+  flex: 1 1 14rem;
+  color: var(--app-ink);
+}
+
+.chip[data-state='undone'] .text {
+  text-decoration: line-through;
+}
+
+.undo,
+.manage {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--app-teal-strong);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.undo:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.error {
+  font-size: 12px;
+  color: var(--app-danger, #b4413c);
+}

@@ -5329,6 +5329,9 @@
                       "showToolActivity": {
                         "type": "boolean"
                       },
+                      "memory": {
+                        "type": "boolean"
+                      },
                       "webSearch": {
                         "type": "boolean"
                       },
@@ -5693,6 +5696,374 @@
           },
           "401": {
             "description": "Not authenticated."
+          }
+        }
+      }
+    },
+    "/api/mitra/memories": {
+      "get": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "List what Mitra remembers",
+        "description": "The user's Mitra memories (ADR 0083), newest-updated first: short durable facts Mitra saved from the user's own chat messages or the user wrote in Settings. Used by Mitra in every chat while the `chat.memory` preference is on.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The memories.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "profile",
+                          "goal",
+                          "preference",
+                          "holding",
+                          "other"
+                        ]
+                      },
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "chat",
+                          "manual"
+                        ],
+                        "description": "chat: Mitra saved it from the user's own message; manual: the user wrote it."
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "Add a memory",
+        "description": "Adds a memory the user writes themselves (source `manual`). At most 100 per user.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 300,
+                    "description": "A short fact. Identity, bank and login details (PAN, Aadhaar, card and account numbers, phone, email, passwords, OTPs) are refused."
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "profile",
+                      "goal",
+                      "preference",
+                      "holding",
+                      "other"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The memory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "profile",
+                        "goal",
+                        "preference",
+                        "holding",
+                        "other"
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "chat",
+                        "manual"
+                      ],
+                      "description": "chat: Mitra saved it from the user's own message; manual: the user wrote it."
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Memory is full (100)."
+          },
+          "422": {
+            "description": "Too short or long, or looks like identity, bank or login details."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "Forget everything",
+        "description": "Deletes every memory of the user. Cannot be undone.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many were removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "removed": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      }
+    },
+    "/api/mitra/memories/{id}": {
+      "patch": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "Edit a memory",
+        "description": "Replaces the text (and optionally the kind) of one memory.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 300,
+                    "description": "A short fact. Identity, bank and login details (PAN, Aadhaar, card and account numbers, phone, email, passwords, OTPs) are refused."
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "profile",
+                      "goal",
+                      "preference",
+                      "holding",
+                      "other"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The memory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "profile",
+                        "goal",
+                        "preference",
+                        "holding",
+                        "other"
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "chat",
+                        "manual"
+                      ],
+                      "description": "chat: Mitra saved it from the user's own message; manual: the user wrote it."
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Memory not found."
+          },
+          "422": {
+            "description": "Too short or long, or looks like identity, bank or login details."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "Forget one memory",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The id removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Memory not found."
           }
         }
       }

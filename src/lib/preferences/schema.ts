@@ -15,6 +15,8 @@ export const preferencesSchema = z.object({
     /** Show "Searched your knowledge base"-style chips under replies. */
     showToolActivity: z.boolean().default(true),
     dictationLanguage: z.enum(DICTATION_LANGUAGES).default('auto'),
+    /** Let Mitra remember what the user tells it and use it in later chats (#402, ADR 0083). The user can review and delete every memory. */
+    memory: z.boolean().default(true),
     /** Let Mitra search the web and read pages (#401). Queries leave the app, so it can be switched off. */
     webSearch: z.boolean().default(true),
     /** Let Mitra answer with visual cards (A2UI, ADR 0077) built from the user's own data. Off by default. */

@@ -131,7 +131,7 @@ security fixes; leave out docs, tests, chores, CI and invisible refactors. A pul
   make it pass. Use Playwright for end-to-end flows.
 - **No `console.log`** in committed code. No hardcoded secrets or magic values.
 - Docs move with code: update `docs/` (architecture, api-surface, data-sources, ADR) and add an
-  ADR (next number: 0083) for a real decision. ADRs are never pruned.
+  ADR (next number: 0084) for a real decision. ADRs are never pruned.
 
 ## Commands
 
@@ -156,7 +156,7 @@ More (deploying, production migrations, scheduled jobs, environment) in `docs/HA
 - [`docs/HANDOFF.md`](./docs/HANDOFF.md) — **current state**, open work, environment, deploy, gotchas
 - `docs/architecture.md` — current system architecture (routes, components, data flow)
 - `docs/design-system.md` — colors/type/spacing/component patterns
-- `docs/decisions/` — ADRs, one per decision, numbered, **never pruned** (latest: 0082 web search in the Mitra chat)
+- `docs/decisions/` — ADRs, one per decision, numbered, **never pruned** (latest: 0083 Mitra memory)
 - `docs/data-sources.md` — every external API/scraper: endpoint, auth, rate limits, cost, ToS
 - `docs/api-surface.md` and `public/openapi.json` — public API for agent consumers
 - `docs/session-log.md` — the newest ~12 session entries; older ones are in `docs/archive/session-log/` (verbatim, one file per month, search with grep)

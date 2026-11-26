@@ -362,7 +362,7 @@ All routes: auth required, envelope `{ success, data, error }` except the stream
 ### Settings: preferences, export, bulk chat delete  _(ADR 0038, #37)_
 All require auth. `/api/settings/*` is never reachable by Mitra's `call_platform_api` tool.
 
-- **`GET /api/settings/preferences`** — `{ chat: { platformAccess, sendOnEnter, showToolActivity, dictationLanguage, webSearch, richReplies }, display: { hideValuesByDefault }, shortcuts: { enabled } }`, always complete (defaults fill anything unset).
+- **`GET /api/settings/preferences`** — `{ chat: { platformAccess, sendOnEnter, showToolActivity, dictationLanguage, memory, webSearch, richReplies }, display: { hideValuesByDefault }, shortcuts: { enabled } }`, always complete (defaults fill anything unset).
 - **`PATCH /api/settings/preferences`** — send any subset; unknown groups/fields or wrong types → `422`. The `onboarding` group (`riskProfile`, `completed`, `dismissed`) is part of it.
 - **`POST /api/onboarding`** _(ADR 0075, #306)_ — body `{ riskProfile?: 'conservative'|'balanced'|'aggressive', status?: 'completed'|'dismissed' }` (at least one; extra keys → `422`). Saves it and answers `{ riskProfile, completed, dismissed, holdings, hasAiKey, analystsQueued }`; `analystsQueued` is 0 without a saved AI key or with automatic analysts off.
 - **`GET /api/settings/export`** — a JSON attachment of your holdings, notes, alerts, wishlists, Mitra conversations (attachments by reference) and preferences. Never includes API keys or notification secrets.
@@ -507,3 +507,11 @@ Using a token: `Authorization: Bearer <token>`. `read` allows GET/HEAD/OPTIONS, 
 ## Structured widget briefs (ADR 0057)
 
 `POST /api/insights/portfolio` (dashboard), `/api/insights/market`, `/api/insights/news` and `/api/insights/ipo` now return `data.content` as JSON, `{ "items": [{ "key", "tone", "text" }] }`, instead of a paragraph. Keys: dashboard `return` / `exposure` / `risk`; market `breadth` / `leaders` / `catalyst`; news `earnings` / `macro` / `sector`; IPO `listing` / `offer` / `business` / `risk` (plus `listingcall` / `longterm`, only in an unrestricted brief, [0073](./decisions/0073-ipo-brief-research-and-unrestricted-verdict.md)). `tone` is `positive`, `neutral` or `warning`. The figures are computed on the server and given to the model; a `[TICKER]` tag appears only for a ticker present in the data. Older cached prose briefs are ignored and regenerated on request.
+
+### Mitra memory (#402, ADR 0083)
+
+- **`GET /api/mitra/memories`** - what Mitra remembers about the caller, newest first.
+- **`POST /api/mitra/memories`** `{ text, kind? }` - add a memory the user writes (4 to 300 characters; identity, bank and login details are refused with 422; 409 when 100 are stored).
+- **`DELETE /api/mitra/memories`** - forget everything.
+- **`PATCH /api/mitra/memories/{id}`** `{ text, kind? }` and **`DELETE /api/mitra/memories/{id}`** - edit or forget one.
+

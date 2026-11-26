@@ -24,6 +24,8 @@ export function stripInternal(value: unknown): unknown {
 export interface ExportParts {
   readonly holdings: readonly unknown[];
   readonly notes: readonly unknown[];
+  /** What Mitra remembers about the user (ADR 0083). */
+  readonly memories: readonly unknown[];
   readonly alerts: readonly unknown[];
   readonly wishlists: readonly unknown[];
   readonly conversations: ReadonlyArray<{ readonly conversation: unknown; readonly messages: readonly unknown[] }>;
@@ -40,6 +42,7 @@ export function buildExportDocument(parts: ExportParts, now: Date) {
     note: 'Your data only. API keys and notification secrets are never exported, and chat attachments are listed by reference, not included.',
     holdings: stripInternal(parts.holdings),
     notes: stripInternal(parts.notes),
+    memories: stripInternal(parts.memories),
     alerts: stripInternal(parts.alerts),
     wishlists: stripInternal(parts.wishlists),
     conversations: stripInternal(parts.conversations),
