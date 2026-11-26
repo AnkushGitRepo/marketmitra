@@ -96,6 +96,8 @@ table.md th, table.md td { padding: 3px 5px; border-bottom: 0.5px solid #e3dfd4;
 .cards li { display: grid; gap: 3px; align-content: start; padding: 8px 10px; border: 0.5px solid #e3dfd4; border-radius: 6px; break-inside: avoid; }
 .cards .cn { font-family: ui-monospace, monospace; font-size: 8.5px; color: #0b8266; }
 .cards .ct { justify-self: start; padding: 0 7px; border-radius: 99px; background: #e8f6f0; font-size: 8px; }
+.cards .ct.sc { background: #fde8e8; color: #9b1c1c; font-weight: 700; }
+.cards .ct.sm { background: #fdf3d8; color: #8a5a00; font-weight: 700; }
 .cards .cx { font-size: 9px; color: #4b5358; }
 `;
 

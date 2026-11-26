@@ -1728,6 +1728,47 @@
         }
       }
     },
+    "/api/research/portfolio-report": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate a forensic portfolio research report, chapter by chapter (streamed)",
+        "description": "A seven-chapter review of the signed-in user's own holdings that adds to the Portfolio page instead of repeating it: health and return attribution (what carried the result and what dragged it), losers and drawdown forensics with CRITICAL / MODERATE / NORMAL severity tags, sector and hidden factor exposure, a quality and valuation scorecard, a one-standard-deviation twelve-month range (from the holdings' own one-year price volatility, not a forecast), a severity-ranked risk register, and a stock-by-stock diligence checklist. Cards, charts and tables are computed from the holdings, the screener data and price history; the model writes the prose, searching the web for the holdings well below cost and the largest positions. No request body. The response is newline-delimited JSON (`application/x-ndjson`) with the same events as `/api/research/report`: `start`, `chapter` (first with its figures and `status: pending`, then when written), then `done` or `error`. Requires the user's own AI key. Rate limited (ai tier).",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A stream of events, one JSON object per line.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "no_ai_key."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "The portfolio has no holdings."
+          },
+          "429": {
+            "description": "Rate limited."
+          }
+        }
+      }
+    },
     "/api/research/themes": {
       "get": {
         "tags": [

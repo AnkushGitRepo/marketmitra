@@ -12,7 +12,10 @@ export type CompanyChapterId = 'overview' | 'financials' | 'peers' | 'sector' | 
 /** The sector (theme) report's chapters; the `sx_` prefix keeps them apart from a company report's. */
 export type SectorChapterId = 'sx_overview' | 'sx_scorecard' | 'sx_leaders' | 'sx_unlisted' | 'sx_global' | 'sx_outlook' | 'sx_policy' | 'sx_risks' | 'sx_checklist';
 
-export type ChapterId = CompanyChapterId | SectorChapterId;
+/** The portfolio report's chapters (#390); the `pf_` prefix keeps them apart from the others. */
+export type PortfolioChapterId = 'pf_health' | 'pf_losers' | 'pf_factors' | 'pf_quality' | 'pf_scenarios' | 'pf_risks' | 'pf_checklist';
+
+export type ChapterId = CompanyChapterId | SectorChapterId | PortfolioChapterId;
 
 export interface ChapterMeta {
   readonly id: ChapterId;
@@ -45,11 +48,21 @@ export const SECTOR_CHAPTERS: readonly (ChapterMeta & { readonly id: SectorChapt
   { id: 'sx_checklist', title: 'Investor due-diligence checklist', nav: 'Investor checklist' },
 ];
 
+export const PORTFOLIO_CHAPTERS: readonly (ChapterMeta & { readonly id: PortfolioChapterId })[] = [
+  { id: 'pf_health', title: 'Portfolio health and return attribution', nav: 'Health' },
+  { id: 'pf_losers', title: 'Losers and drawdown forensics', nav: 'Drawdowns' },
+  { id: 'pf_factors', title: 'Sector and hidden factor exposure', nav: 'Exposure' },
+  { id: 'pf_quality', title: 'Quality and valuation scorecard', nav: 'Quality' },
+  { id: 'pf_scenarios', title: 'Twelve-month scenario ranges', nav: 'Scenarios' },
+  { id: 'pf_risks', title: 'Structural issues and risk register', nav: 'Risk register' },
+  { id: 'pf_checklist', title: 'Stock-by-stock diligence checklist', nav: 'Checklist' },
+];
+
 /**
- * Every chapter either report can have, in reading order. A report only ever holds one kind, and everything that walks this
+ * Every chapter any report can have, in reading order. A report only ever holds one kind, and everything that walks this
  * list (the jump bar, the exports, the page) keeps just the chapters that are present.
  */
-export const CHAPTERS: readonly ChapterMeta[] = [...COMPANY_CHAPTERS, ...SECTOR_CHAPTERS];
+export const CHAPTERS: readonly ChapterMeta[] = [...COMPANY_CHAPTERS, ...SECTOR_CHAPTERS, ...PORTFOLIO_CHAPTERS];
 
 export const chapterMeta = (id: ChapterId): ChapterMeta => CHAPTERS.find((c) => c.id === id) as ChapterMeta;
 

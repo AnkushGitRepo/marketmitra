@@ -13,6 +13,9 @@ const CHARS_PER_WEIGHT = 11;
 const HEADER_CHARS_PER_WEIGHT = 6;
 const LABEL_WEIGHT = 1.7;
 
+/** A tag that is exactly a severity gets its colour in the print document. */
+const severityClass = (tag: string): string => (tag === 'CRITICAL' ? ' sc' : tag === 'MODERATE' ? ' sm' : '');
+
 /**
  * Column widths for a fixed-layout table, as percentages that sum to 100, so every column fits the page. A number column gets one
  * share, long text gets more (up to a cap), and no column is narrower than its own header word needs, so "Probability" or "Medium"
@@ -59,7 +62,7 @@ function thesis(block: ThesisBentoBlock): string {
 
 function cardGrid(block: CardGridBlock): string {
   const cards = block.cards
-    .map((c, i) => `<li>${block.numbered ? `<span class="cn">${String(i + 1).padStart(2, '0')}</span>` : ''}<b>${escapeHtml(c.heading)}</b>${c.tag ? `<span class="ct">${escapeHtml(c.tag)}</span>` : ''}${c.text ? `<span class="cx">${escapeHtml(c.text)}</span>` : ''}</li>`)
+    .map((c, i) => `<li>${block.numbered ? `<span class="cn">${String(i + 1).padStart(2, '0')}</span>` : ''}<b>${escapeHtml(c.heading)}</b>${c.tag ? `<span class="ct${severityClass(c.tag)}">${escapeHtml(c.tag)}</span>` : ''}${c.text ? `<span class="cx">${escapeHtml(c.text)}</span>` : ''}</li>`)
     .join('');
   return `<figure class="cards"><figcaption>${escapeHtml(block.title)}</figcaption><ol data-cols="${block.columns}">${cards}</ol></figure>`;
 }

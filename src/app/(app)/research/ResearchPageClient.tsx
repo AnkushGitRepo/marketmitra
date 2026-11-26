@@ -62,10 +62,11 @@ export function ResearchPageClient() {
   const reportRef = useRef<HTMLDivElement>(null);
   const company = useCompanyReport();
   const sector = useCompanyReport('/api/research/sector-report', 'theme');
-  // The Company and Theme tabs both show a streamed chapter report; each keeps its own.
-  const stream = tab === 'theme' ? sector : company;
-  const streamed = tab === 'company' || tab === 'theme';
-  const companyRunning = company.phase === 'running' || sector.phase === 'running';
+  const portfolio = useCompanyReport('/api/research/portfolio-report', 'portfolio');
+  // The Company, Theme and Portfolio tabs each show a streamed chapter report and keep their own.
+  const stream = tab === 'theme' ? sector : tab === 'portfolio' ? portfolio : company;
+  const streamed = tab === 'company' || tab === 'theme' || tab === 'portfolio';
+  const companyRunning = company.phase === 'running' || sector.phase === 'running' || portfolio.phase === 'running';
 
   const subjectFor = (themeText: string = theme): Record<string, unknown> | null => {
     if (tab === 'company') return symbol.trim() ? { type: 'company', symbol: symbol.trim().toUpperCase() } : null;
@@ -81,12 +82,13 @@ export function ResearchPageClient() {
       if (!subject) setError('Fill in the field(s) above first.');
       return;
     }
-    if (subject.type === 'company' || subject.type === 'theme') {
-      // A company or a theme gets the multi-chapter report, streamed as it is written.
+    if (subject.type === 'company' || subject.type === 'theme' || subject.type === 'portfolio') {
+      // A company, a theme or the portfolio gets the multi-chapter report, streamed as it is written.
       setError(null);
       setNoKey(false);
       if (subject.type === 'company') await company.start(String(subject.symbol));
-      else await sector.start(String(subject.text));
+      else if (subject.type === 'theme') await sector.start(String(subject.text));
+      else await portfolio.start('');
       return;
     }
     setBusy(true);
@@ -174,7 +176,7 @@ export function ResearchPageClient() {
           )}
 
           {tab === 'portfolio' && (
-            <p className={styles.hint}>Researches every holding in your portfolio.</p>
+            <p className={styles.hint}>A forensic review of your holdings: what carried the result, why each loser is down, what the book is exposed to, and how far it has tended to swing. It adds to the Portfolio page and does not repeat it.</p>
           )}
 
           {tab === 'comparison' && (
@@ -222,7 +224,7 @@ export function ResearchPageClient() {
       </div>
 
       {busy && !streamed && <p className={styles.loading}>Gathering data and writing the brief — this can take a minute.</p>}
-      {streamed && stream.phase === 'running' && !stream.state.name && <p className={styles.loading}>{tab === 'theme' ? 'Gathering the listed companies in this theme…' : 'Gathering the data held for this company…'}</p>}
+      {streamed && stream.phase === 'running' && !stream.state.name && <p className={styles.loading}>{tab === 'theme' ? 'Gathering the listed companies in this theme…' : tab === 'portfolio' ? 'Gathering your holdings and their figures…' : 'Gathering the data held for this company…'}</p>}
 
       {streamed && stream.state.name && (
         <div className={`${styles.card} ${styles.reportCard}`} ref={reportRef}>
@@ -232,7 +234,7 @@ export function ResearchPageClient() {
             exportControl={
               <ExportMenu
                 chapters={Object.values(stream.state.chapters)}
-                meta={stream.state.done && stream.state.symbol && stream.state.name ? { kind: tab === 'theme' ? 'sector' : 'company', symbol: stream.state.symbol, name: stream.state.name, generatedAt: stream.state.done.generatedAt, model: stream.state.done.model } : null}
+                meta={stream.state.done && stream.state.symbol && stream.state.name ? { kind: tab === 'theme' ? 'sector' : tab === 'portfolio' ? 'portfolio' : 'company', symbol: stream.state.symbol, name: stream.state.name, generatedAt: stream.state.done.generatedAt, model: stream.state.done.model } : null}
               />
             }
           />
