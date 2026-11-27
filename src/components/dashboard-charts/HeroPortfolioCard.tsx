@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PillTabs } from './PillTabs';
 import { LineChart } from './LineChart';
 import { formatInr } from '@/lib/dashboard/format';
+import { compactInr } from '@/lib/dashboard/chartGeometry';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import { computeHero } from '@/lib/dashboard/heroMetrics';
@@ -29,11 +30,16 @@ export function HeroPortfolioCard({ totalValue, invested, todayChange, history, 
     <section className={styles.card} aria-label="Portfolio performance">
       <div className={styles.head}>
         <div className={styles.headMain}>
-          <p className={styles.label}>Portfolio value</p>
+          <div className={styles.topRow}>
+            <p className={styles.label}>Portfolio value</p>
+            <span className={styles.investedPill}>
+              Invested <strong>{formatInr(invested, 0, masked)}</strong>
+            </span>
+          </div>
           <p className={styles.value}>{formatInr(totalValue, 0, masked)}</p>
           <div className={styles.badges}>
             <ReturnBadge label="Today" figure={metrics.today} masked={masked} />
-            <ReturnBadge label="Total return" figure={metrics.total} masked={masked} />
+            <ReturnBadge label="Total return" shortLabel="Total" figure={metrics.total} masked={masked} />
           </div>
         </div>
         <div className={styles.tabs}>
@@ -42,7 +48,7 @@ export function HeroPortfolioCard({ totalValue, invested, todayChange, history, 
       </div>
 
       {series.v.length > 1 ? (
-        <LineChart series={series} height={240} formatValue={(v) => formatInr(v, 0, masked)} ariaLabel={`Portfolio value chart, ${HERO_RANGE_LABELS[range]}`} />
+        <LineChart series={series} height={240} formatValue={(v) => formatInr(v, 0, masked)} formatAxis={masked ? () => '•••' : compactInr} showStats ariaLabel={`Portfolio value chart, ${HERO_RANGE_LABELS[range]}`} />
       ) : (
         <p className={styles.empty}>Not enough price history yet for this range.</p>
       )}

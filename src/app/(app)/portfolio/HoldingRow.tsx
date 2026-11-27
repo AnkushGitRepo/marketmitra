@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatInr } from '@/lib/dashboard/format';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { RowActions } from '@/components/portfolio/RowActions';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
+import { BADGE_LABEL, yearRange } from '@/lib/portfolio/yearRange';
 import { stockHref } from '@/lib/stock/href';
 import styles from './page.module.css';
 
@@ -13,19 +16,23 @@ interface HoldingRowProps {
   holding: EnrichedHolding;
   totalValue: number;
   masked: boolean;
+  /** Opens the holding's detail drawer. */
+  onOpen: () => void;
 }
 
-export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
+export function HoldingRow({ holding, totalValue, masked, onOpen }: HoldingRowProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [quantity, setQuantity] = useState(String(holding.quantity));
   const [avgPrice, setAvgPrice] = useState(String(holding.avgPrice));
   const [busy, setBusy] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const value = holding.ltp !== null ? holding.quantity * holding.ltp : null;
   const cost = holding.quantity * holding.avgPrice;
   const pl = value !== null ? value - cost : null;
   const plPct = pl !== null && cost ? (pl / cost) * 100 : null;
+  const range = yearRange(holding.ltp, holding.week52Low, holding.week52High);
   const alloc = value !== null && totalValue ? (value / totalValue) * 100 : 0;
 
   const save = async () => {
@@ -50,11 +57,26 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
       router.refresh();
     } finally {
       setBusy(false);
+      setConfirmRemove(false);
     }
   };
 
   return (
-    <tr className={styles.row}>
+    <tr
+      className={`${styles.row} ${editing ? '' : styles.rowOpenable}`}
+      tabIndex={editing ? undefined : 0}
+      aria-label={editing ? undefined : `${holding.name}: open details`}
+      onClick={(e) => {
+        // Links, buttons and fields inside the row keep their own behaviour.
+        if (!editing && !(e.target as HTMLElement).closest('a, button, input, select, textarea')) onOpen();
+      }}
+      onKeyDown={(e) => {
+        if (!editing && e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+    >
       <td className={styles.td}>
         <div className={styles.companyCell}>
           <div className={styles.avatar}>
@@ -70,6 +92,7 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
               {holding.symbol}
               {holding.sector ? ` · ${holding.sector}` : ''}
             </p>
+            {range?.badge ? <span className={`${styles.rangeBadge} ${range.badge === 'near-low' ? styles.rangeLow : styles.rangeHigh}`}>{BADGE_LABEL[range.badge]}</span> : null}
           </div>
         </div>
       </td>
@@ -105,7 +128,19 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
         <>
           <td className={`${styles.td} ${styles.tdRight}`}>{holding.quantity}</td>
           <td className={`${styles.td} ${styles.tdRight} ${styles.tdMuted}`}>{formatInr(holding.avgPrice, 2, masked)}</td>
-          <td className={`${styles.td} ${styles.tdRight}`}>{holding.ltp !== null ? formatInr(holding.ltp, 2, masked) : '—'}</td>
+          <td className={`${styles.td} ${styles.tdRight}`}>
+            {holding.ltp !== null ? formatInr(holding.ltp, 2, masked) : '—'}
+            {range ? (
+              <div
+                className={styles.rangeTrack}
+                role="img"
+                aria-label={`52-week range: ${formatInr(holding.week52Low ?? 0, 0, masked)} to ${formatInr(holding.week52High ?? 0, 0, masked)}, price at ${Math.round(range.position * 100)}% of the range`}
+                title={`52W ${formatInr(holding.week52Low ?? 0, 0, masked)} – ${formatInr(holding.week52High ?? 0, 0, masked)}`}
+              >
+                <span className={styles.rangeDot} style={{ left: `${range.position * 100}%` }} />
+              </div>
+            ) : null}
+          </td>
           <td className={`${styles.td} ${styles.tdRight}`}>
             {value !== null ? (
               <>
@@ -132,15 +167,17 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
       )}
       <td className={styles.td}>
         {!editing && (
-          <>
-            <button type="button" onClick={() => setEditing(true)} className={styles.linkButton}>
-              Edit
-            </button>{' '}
-            <button type="button" onClick={remove} disabled={busy} className={styles.linkButtonDanger}>
-              Remove
-            </button>
-          </>
+          <RowActions label={holding.symbol} busy={busy} onEdit={() => setEditing(true)} onRemove={() => setConfirmRemove(true)} />
         )}
+        <ConfirmDialog
+          open={confirmRemove}
+          title={`Remove ${holding.symbol}?`}
+          message="The holding is removed from your portfolio. Your decision journal keeps its history."
+          confirmLabel="Remove holding"
+          busy={busy}
+          onConfirm={remove}
+          onCancel={() => setConfirmRemove(false)}
+        />
       </td>
     </tr>
   );

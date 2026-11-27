@@ -6,8 +6,8 @@ import { isHosted } from '@/lib/deployment-mode';
 import { SearchResultsDropdown } from '@/components/dashboard-charts/SearchResultsDropdown';
 import { useSymbolSearch } from '@/lib/dashboard/useSymbolSearch';
 import { Logo } from '@/components/landing/Logo';
+import { AccountMenu } from './AccountMenu';
 import { HostedUserBadge } from './HostedUserBadge';
-import { SettingsIcon } from './NavIcons';
 import { NotificationBell } from './NotificationBell';
 import { NotificationsProvider } from './NotificationsProvider';
 import { useFloatingTip } from './useFloatingTip';
@@ -30,10 +30,7 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
   const userBadge = isHosted() ? (
     <HostedUserBadge />
   ) : (
-    <div className={styles.userBadge}>
-      <div className={styles.userAvatar}>LU</div>
-      <span className={styles.userName}>Local user</span>
-    </div>
+    <AccountMenu />
   );
 
   return (
@@ -80,14 +77,6 @@ export function AppHeader({ onToggleMask }: AppHeaderProps) {
             <span className={styles.tipWrap} {...tipProps('Notifications', 'Alerts and the morning brief')}>
               <NotificationBell />
             </span>
-            <Link
-              href="/settings"
-              aria-label="Settings"
-              className={styles.iconButton}
-              {...tipProps('Settings', 'Your AI key, preferences and data')}
-            >
-              <SettingsIcon size={16} />
-            </Link>
             <button
               onClick={onToggleMask}
               aria-label="Hide values"

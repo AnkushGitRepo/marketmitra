@@ -3,7 +3,10 @@ import { StructuredBriefCard } from '@/components/dashboard-charts/StructuredBri
 import { IndexStrip } from '@/components/dashboard-charts/IndexStrip';
 import { BreadthCard } from '@/components/markets/BreadthCard';
 import { SectorPerformanceCard } from '@/components/markets/SectorPerformanceCard';
+import { ConvictionBoard } from '@/components/markets/ConvictionBoard';
 import { WatchlistPanel } from '@/components/markets/WatchlistPanel';
+import { listEntries } from '@/lib/conviction/store';
+import { listNotes } from '@/lib/notes/userNotes';
 import { DataUnavailable } from '@/components/common/DataUnavailable';
 import { getUserAiConfig, resolveHasAiKey } from '@/lib/ai/userAiConfig';
 import { getCurrentUserId } from '@/lib/currentUserId';
@@ -48,7 +51,18 @@ export default async function MarketsPage() {
   // Holdings form a managed list; if they cannot be read the other lists still render.
   const holdings = userId ? await listHoldings(userId).catch(() => []) : [];
 
-  const allSymbols = Array.from(new Set([...watchlists.flatMap((w) => w.symbols), ...holdings.map((h) => h.symbol)]));
+  // Conviction board: entries and the notes a thesis can link to. Either failing leaves the rest of the page intact.
+  const [convictionEntries, userNotes] = userId
+    ? await Promise.all([listEntries(userId).catch(() => []), listNotes(userId).catch(() => [])])
+    : [[], []];
+
+  const allSymbols = Array.from(
+    new Set([
+      ...watchlists.flatMap((w) => w.symbols),
+      ...holdings.map((h) => h.symbol),
+      ...convictionEntries.map((e) => e.symbol),
+    ])
+  );
   const [indices, overview, quoteList, sparkEntries, hasKey, cachedPulse] = await Promise.all([
     getIndices(),
     getMarketOverview(),
@@ -58,6 +72,7 @@ export default async function MarketsPage() {
     userId ? getCachedInsight('market', 'market', userId).catch(() => null) : Promise.resolve(null),
   ]);
   const quotes = Object.fromEntries(quoteList.map((q) => [q.symbol, q]));
+  const convictionPrices = Object.fromEntries(quoteList.map((q) => [q.symbol, q.price]));
   const sparks = Object.fromEntries(
     sparkEntries.flatMap(([symbol, closes]) => (closes ? [[symbol, closes] as const] : []))
   );
@@ -109,6 +124,17 @@ export default async function MarketsPage() {
           />
         </div>
       </div>
+
+      {userId ? (
+        <div className={styles.conviction}>
+          <ConvictionBoard
+            entries={convictionEntries}
+            prices={convictionPrices}
+            notes={userNotes.map((n) => ({ id: n.id, title: n.title }))}
+            suggestions={allSymbols}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

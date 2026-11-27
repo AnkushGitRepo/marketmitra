@@ -144,7 +144,6 @@
   border-radius: var(--radius-xl);
   padding: 22px 24px;
   box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-  margin-bottom: 34px;
 }
 
 .tableScroll {
@@ -344,8 +343,8 @@
 .macroGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 24px;
+  align-items: stretch;
 }
 
 @media (max-width: 1000px) {
@@ -371,3 +370,28 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* The four portfolio blocks: the gap is the only spacing between them. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.newsCard {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
+}
+
+.rowOpenable { cursor: pointer; }
+.rowOpenable:focus-visible { outline: 2px solid var(--app-teal-strong); outline-offset: -2px; }
+/* 52-week range: a thin track under the LTP with a dot where the price sits between the low and the high. */
+.rangeTrack { position: relative; width: 72px; height: 4px; margin: 7px 0 0 auto; border-radius: 2px; background: var(--app-border); }
+.rangeDot { position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%; background: var(--app-ink); border: 2px solid var(--color-surface); transform: translate(-50%, -50%); }
+.rangeBadge { display: inline-block; margin-top: 4px; padding: 1px 7px; border-radius: var(--radius-pill); font-size: 10.5px; font-weight: 600; }
+.rangeHigh { background: var(--app-teal-bg); color: var(--app-gain); }
+.rangeLow { background: var(--app-loss-bg); color: var(--app-loss-text); }

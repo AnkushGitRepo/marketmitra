@@ -77,3 +77,5 @@
     align-items: start;
   }
 }
+
+.conviction { margin-top: 20px; min-width: 0; }

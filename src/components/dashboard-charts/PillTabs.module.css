@@ -25,3 +25,18 @@
   box-shadow: 0 1px 4px rgba(22, 25, 28, 0.1);
   font-weight: 500;
 }
+
+/* A phone: the options share the full width in equal columns, with no dead space on the right. */
+@media (max-width: 640px) {
+  .group {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 4px;
+  }
+
+  .pill {
+    padding: 7px 0;
+    text-align: center;
+  }
+}
