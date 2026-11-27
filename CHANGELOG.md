@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A public `GET /api/commodities` endpoint with estimated Indian prices for gold 24K and 22K (per 10 g), silver (per kg) and platinum (per gram), the gold/silver ratio and the NSE gold and silver ETFs. The prices are the international price converted to rupees with India's 15% import duty, so they track the Indian rate closely for gold but are not the official IBJA or MCX rate. (#448)
+
 - The Portfolio value chart now has a "vs Nifty 50" view that plots your portfolio and the Nifty 50 as percent change over the same range, with the difference in percentage points, and a "Range" view that shades a statistical range ahead from the portfolio's own past volatility. The range is not a forecast and says so. (#433)
 
 - Click a holding on the Portfolio page to open a side panel with its entry date, your thesis, the decisions you recorded on it and its own news, with a link to the full stock page. (#432)
