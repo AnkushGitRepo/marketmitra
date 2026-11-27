@@ -4,8 +4,8 @@ import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { RISK_PROFILES } from '@/lib/onboarding/profiles';
-import { listCash } from '@/lib/cash/store';
 import { buildTaxReport } from '@/lib/tax/report';
+import { listCash } from '@/lib/cash/store';
 import { getPreferences } from '@/lib/preferences/store';
 import { listSnapshots } from '@/lib/tradeJournal/store';
 import { PortfolioPageClient } from './PortfolioPageClient';
@@ -42,21 +42,21 @@ export default async function PortfolioPage() {
   const holdingSymbols = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
   const news = holdingSymbols.length > 0 ? await getNews({ symbols: holdingSymbols, limit: 8 }) : null;
 
+  // Tax view: a failed read leaves the rest of the page intact.
+  const tax = await buildTaxReport(userId, new Date()).catch(() => null);
   // Journal: a failed read leaves the rest of the page intact.
   const journal = await listSnapshots(userId).catch(() => []);
   const journalPrices = Object.fromEntries(holdings.map((h) => [h.symbol.toUpperCase(), h.ltp]));
-  // Tax view: a failed read leaves the rest of the page intact.
-  const tax = await buildTaxReport(userId, new Date()).catch(() => null);
 
   return (
     <PortfolioPageClient
       holdings={holdings}
       history={historyByPeriod}
       news={news?.items ?? []}
+      tax={tax}
+      cash={cash}
       journal={journal}
       journalPrices={journalPrices}
-      cash={cash}
-      tax={tax}
       maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />
   );
