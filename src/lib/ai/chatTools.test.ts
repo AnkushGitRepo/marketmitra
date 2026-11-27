@@ -81,11 +81,12 @@ const fakeAlert = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('buildChatTools', () => {
-  it('adapts every MCP tool plus search_context, the 2 read-only note tools, the 4 read-only execution-layer tools, the 5 navigation tools and the 4 alert tools', () => {
+  it('adapts every MCP tool plus search_context, the 2 read-only note tools, the 4 read-only execution-layer tools, the read-only commodity price tool, the 5 navigation tools and the 4 alert tools', () => {
     const set = buildChatTools('u1');
     expect(Object.keys(set).sort()).toEqual([
       'create_alert',
       'get_cash',
+      'get_commodity_prices',
       'get_conviction_board',
       'get_decision_journal',
       'get_note',

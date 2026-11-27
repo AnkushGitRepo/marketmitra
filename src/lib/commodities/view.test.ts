@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EtfRow } from './rates';
-import { shownPrice, sortEtfs } from './view';
+import { shownPrice, sortEtfs, valueOfWeight } from './view';
 
 const etf = (symbol: string, price: number | null, changePct: number | null): EtfRow => ({ symbol, name: symbol, metal: 'gold', price, changePct, week52High: null, week52Low: null });
 
@@ -20,5 +20,16 @@ describe('sortEtfs', () => {
   it('sorts by symbol and does not mutate its input', () => {
     expect(sortEtfs(rows, 'symbol', 'asc').map((r) => r.symbol)).toEqual(['A', 'B', 'C']);
     expect(rows.map((r) => r.symbol)).toEqual(['B', 'A', 'C']);
+  });
+});
+
+describe('valueOfWeight', () => {
+  it('prices gold per gram from the per-10-g figure', () => expect(valueOfWeight({ id: 'gold-24k', priceInr: 126000 }, 50)).toBeCloseTo(630000));
+  it('prices silver from the per-kg figure', () => expect(valueOfWeight({ id: 'silver-999', priceInr: 150000 }, 500)).toBeCloseTo(75000));
+  it('prices platinum per gram', () => expect(valueOfWeight({ id: 'platinum-999', priceInr: 4500 }, 2)).toBeCloseTo(9000));
+  it('is null without a price, a positive weight or a known metal', () => {
+    expect(valueOfWeight({ id: 'gold-24k', priceInr: null }, 10)).toBeNull();
+    expect(valueOfWeight({ id: 'gold-24k', priceInr: 1 }, 0)).toBeNull();
+    expect(valueOfWeight({ id: 'copper', priceInr: 1 }, 5)).toBeNull();
   });
 });
