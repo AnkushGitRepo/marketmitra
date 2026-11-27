@@ -8,6 +8,7 @@ import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { RowActions } from '@/components/portfolio/RowActions';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
+import { BADGE_LABEL, yearRange } from '@/lib/portfolio/yearRange';
 import { stockHref } from '@/lib/stock/href';
 import styles from './page.module.css';
 
@@ -29,6 +30,7 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
   const cost = holding.quantity * holding.avgPrice;
   const pl = value !== null ? value - cost : null;
   const plPct = pl !== null && cost ? (pl / cost) * 100 : null;
+  const range = yearRange(holding.ltp, holding.week52Low, holding.week52High);
   const alloc = value !== null && totalValue ? (value / totalValue) * 100 : 0;
 
   const save = async () => {
@@ -74,6 +76,7 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
               {holding.symbol}
               {holding.sector ? ` · ${holding.sector}` : ''}
             </p>
+            {range?.badge ? <span className={`${styles.rangeBadge} ${range.badge === 'near-low' ? styles.rangeLow : styles.rangeHigh}`}>{BADGE_LABEL[range.badge]}</span> : null}
           </div>
         </div>
       </td>
@@ -109,7 +112,19 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
         <>
           <td className={`${styles.td} ${styles.tdRight}`}>{holding.quantity}</td>
           <td className={`${styles.td} ${styles.tdRight} ${styles.tdMuted}`}>{formatInr(holding.avgPrice, 2, masked)}</td>
-          <td className={`${styles.td} ${styles.tdRight}`}>{holding.ltp !== null ? formatInr(holding.ltp, 2, masked) : '—'}</td>
+          <td className={`${styles.td} ${styles.tdRight}`}>
+            {holding.ltp !== null ? formatInr(holding.ltp, 2, masked) : '—'}
+            {range ? (
+              <div
+                className={styles.rangeTrack}
+                role="img"
+                aria-label={`52-week range: ${formatInr(holding.week52Low ?? 0, 0, masked)} to ${formatInr(holding.week52High ?? 0, 0, masked)}, price at ${Math.round(range.position * 100)}% of the range`}
+                title={`52W ${formatInr(holding.week52Low ?? 0, 0, masked)} – ${formatInr(holding.week52High ?? 0, 0, masked)}`}
+              >
+                <span className={styles.rangeDot} style={{ left: `${range.position * 100}%` }} />
+              </div>
+            ) : null}
+          </td>
           <td className={`${styles.td} ${styles.tdRight}`}>
             {value !== null ? (
               <>
