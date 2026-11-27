@@ -9,6 +9,7 @@ import { CashManager } from '@/components/portfolio/CashManager';
 import { HoldingsSection } from '@/components/portfolio/HoldingsSection';
 import { DecisionJournal } from '@/components/portfolio/DecisionJournal';
 import { PortfolioHero } from '@/components/portfolio/PortfolioHero';
+import { TaxPanel } from '@/components/portfolio/TaxPanel';
 import { RebalanceSandbox } from '@/components/portfolio/RebalanceSandbox';
 import { RiskCopilotCard } from '@/components/portfolio/RiskCopilotCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
@@ -16,6 +17,7 @@ import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
+import type { TaxReport } from '@/lib/tax/report';
 import { totalCash, type CashEntry } from '@/lib/cash/schema';
 import type { JournalSnapshot } from '@/lib/tradeJournal/types';
 import { newsForHoldings, portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
@@ -26,6 +28,8 @@ interface PortfolioPageClientProps {
   holdings: EnrichedHolding[];
   history: Record<PricePeriod, RangeSeries>;
   news: NewsItem[];
+  /** Tax view of the holdings (#414); null when it could not be built. */
+  tax: TaxReport | null;
   /** Cash and liquid funds the user keeps outside these stocks (#413). */
   cash: CashEntry[];
   /** Decision journal entries, newest first, and the live price of each symbol still held. */
@@ -52,7 +56,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news, journal, journalPrices, cash, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, news, journal, journalPrices, cash, tax, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -115,6 +119,7 @@ export function PortfolioPageClient({ holdings, history, news, journal, journalP
         <CashManager entries={cash} includeCash={includeCash} onIncludeCash={setIncludeCash} />
         <RebalanceSandbox holdings={holdings} cash={cashTotal} />
       </div>
+      {tax ? <TaxPanel report={tax} /> : null}
 
       <div className={styles.sectionHeadRow}>
         <h2 className={styles.h2}>News for your holdings</h2>

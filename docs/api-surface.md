@@ -219,6 +219,17 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Response:** `data`: the updated wishlist.
 - **Errors:** `401` unauthenticated, `404` not found/not owned.
 
+### `GET /api/tax`
+- **Purpose:** Tax view of the holdings (#414): per holding short or long term (long = held more than 12 months), days until long term and unrealised gain; an estimate of tax on gains already booked and the extra tax if everything were sold today; and loss positions with what a realised loss would save against gains booked this financial year. **An estimate, not tax advice.** Rates and the exemption are constants in `lib/tax/india.ts` with an as-of date.
+- **Auth:** required; scoped to the owning user.
+- **Query:** `bookedShort`, `bookedLong` (numbers, default 0): gains already booked this financial year; a loss is negative.
+- **Response:** `data`: `{ today, financialYear, rules, lots, summary, harvest, note }`. A holding without a purchase date (or a price) has `term: null`; it is never guessed and is excluded from the totals (`summary.unknownLots`).
+- **Errors:** `401`, `422`.
+
+### `PUT /api/holdings/[id]/purchase-date`
+- **Purpose:** Set the date a holding was bought, or clear it with `null`. One date per holding, so a position bought in several tranches is treated as one lot.
+- **Request:** `{ purchaseDate: "YYYY-MM-DD" | null }`, a real date, not in the future.
+- **Errors:** `401`, `404` holding not found, `422`.
 ### `GET /api/cash`
 - **Purpose:** Cash and liquid funds kept outside the stock holdings (#413), oldest first. Shown as a slice in the Portfolio allocation and used by the what-if rebalance sandbox.
 - **Auth:** required; scoped to the owning user.
