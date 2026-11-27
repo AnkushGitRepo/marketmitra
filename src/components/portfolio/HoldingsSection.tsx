@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { HoldingDrawer } from '@/components/portfolio/HoldingDrawer';
+import type { NewsItem } from '@/lib/dashboard/newsApi';
 import { HoldingRow } from '@/app/(app)/portfolio/HoldingRow';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import { filterCounts, filterHoldings, type HoldingFilter } from '@/lib/portfolio/portfolioMetrics';
@@ -12,6 +14,8 @@ interface HoldingsSectionProps {
   readonly holdings: readonly EnrichedHolding[];
   readonly totalValue: number;
   readonly masked: boolean;
+  /** Stories shown in a holding's drawer. */
+  readonly news: readonly NewsItem[];
 }
 
 const CHIPS: readonly { readonly id: HoldingFilter; readonly label: string }[] = [
@@ -21,8 +25,10 @@ const CHIPS: readonly { readonly id: HoldingFilter; readonly label: string }[] =
 ];
 
 /** The holdings table with All / In Profit / In Loss filter chips and live counts. */
-export function HoldingsSection({ holdings, totalValue, masked }: HoldingsSectionProps) {
+export function HoldingsSection({ holdings, totalValue, masked, news }: HoldingsSectionProps) {
   const [filter, setFilter] = useState<HoldingFilter>('all');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const opened = holdings.find((h) => h.id === openId) ?? null;
   const counts = filterCounts(holdings);
   const rows = filterHoldings(holdings, filter);
 
@@ -65,12 +71,13 @@ export function HoldingsSection({ holdings, totalValue, masked }: HoldingsSectio
           </thead>
           <tbody>
             {rows.map((h) => (
-              <HoldingRow key={h.id} holding={h} totalValue={totalValue} masked={masked} />
+              <HoldingRow key={h.id} holding={h} totalValue={totalValue} masked={masked} onOpen={() => setOpenId(h.id)} />
             ))}
           </tbody>
         </table>
         {rows.length === 0 && <p className={styles.empty}>No holdings match this filter.</p>}
       </div>
+      {opened ? <HoldingDrawer holding={opened} news={news} onClose={() => setOpenId(null)} /> : null}
     </section>
   );
 }

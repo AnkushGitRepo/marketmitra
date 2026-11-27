@@ -386,3 +386,6 @@
   padding: 22px 24px;
   box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
 }
+
+.rowOpenable { cursor: pointer; }
+.rowOpenable:focus-visible { outline: 2px solid var(--app-teal-strong); outline-offset: -2px; }
