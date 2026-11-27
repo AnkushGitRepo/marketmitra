@@ -230,6 +230,41 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 ### `PATCH /api/cash/[id]` and `DELETE /api/cash/[id]`
 - **Request (PATCH):** `{ label?, amount? }`, at least one. **Errors:** `401`, `404` not found/not owned, `422`.
+### `GET /api/journal`
+- **Purpose:** The decision journal (#412): a snapshot saved whenever a holding is added, changed or removed from any path (Portfolio form, CSV import, Mitra confirm card, API). Newest first; `?symbol=` narrows it. The user can edit their own words on an entry and delete any entry or the whole journal.
+- **Auth:** required; scoped to the owning user.
+- **Response:** `data`: `[{ id, symbol, event: buy|add_more|trim|edit|exit, at, before, after, marketPrice, pe, roce, thesis: { noteId, title, body }|null, reason, guardrails: string[], postMortem }]`. A field the data did not have at that moment is `null`. For `exit`, `marketPrice` is the live quote at removal, not a recorded sale price.
+- **Errors:** `401` unauthenticated.
+
+### `PATCH /api/journal/[id]`
+- **Purpose:** Edit the user's own words on an entry: `reason` and/or `postMortem`. What the app recorded (price, P/E, ROCE, thesis copy, guardrails) is not editable, so an entry cannot say something the data did not.
+- **Request:** `{ reason?: string(≤280)|null, postMortem?: string(≤2000)|null }`, at least one.
+- **Errors:** `401`, `404` not found/not owned, `422` invalid input.
+
+### `DELETE /api/journal/[id]`
+- **Purpose:** Delete one entry. The holding is not affected.
+- **Errors:** `401`, `404`.
+
+### `DELETE /api/journal`
+- **Purpose:** Delete the user's whole journal (Settings → Data & Privacy → Danger zone, behind a typed `DELETE`).
+- **Response:** `data: { removed: number }`.
+### `GET /api/conviction`
+- **Purpose:** The conviction board: one entry per symbol (#411).
+- **Auth:** required; scoped to the owning user.
+- **Response:** `data`: `[{ id, symbol, tag: high|tracking|wait, waitFor, targetPrice, targetDirection: at_or_below|at_or_above, noteId }]`.
+- **Errors:** `401` unauthenticated.
+
+### `PUT /api/conviction`
+- **Purpose:** Create or update the entry for a symbol; only the fields sent change. A `targetPrice` keeps one ordinary price alert in step with it (visible on the Alerts page); `null` removes that alert.
+- **Auth:** required; scoped to the owning user.
+- **Request:** `{ symbol, tag?, waitFor?(tag=wait only, ≤60), targetPrice?(>0|null), targetDirection?, noteId?|null }`.
+- **Response:** `data`: the saved entry.
+- **Errors:** `401` unauthenticated, `409` board full (200 entries), `422` invalid input.
+
+### `DELETE /api/conviction/[symbol]`
+- **Purpose:** Remove the entry and its target price alert.
+- **Auth:** required; scoped to the owning user.
+- **Errors:** `401` unauthenticated, `404` no entry for that symbol.
 
 ### `GET /api/notifications`
 - **Purpose:** The in-app notification centre — the current user's notifications, newest first, plus an unread count. Alerts are the first producer; Phase 7/8 reuse this.

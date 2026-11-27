@@ -44,11 +44,12 @@ async function handlePOST(request: Request) {
         if (updated) succeeded++;
         else failedSymbols.push(change.matchedSymbol);
       } else {
-        await addHolding(userId, { symbol: change.matchedSymbol, ...change.after });
+        // New holding via bulk import — same default-guardrail treatment as adding one by hand
+        // (src/lib/alerts/guardrails.ts); the journal snapshot waits for those alerts.
+        await addHolding(userId, { symbol: change.matchedSymbol, ...change.after }, {
+          beforeSnapshot: (symbol) => createGuardrailAlertsForHolding(userId, symbol),
+        });
         succeeded++;
-        // New holding via bulk import — same default-guardrail treatment
-        // as adding one by hand (src/lib/alerts/guardrails.ts).
-        void createGuardrailAlertsForHolding(userId, change.matchedSymbol);
       }
     } catch {
       failedSymbols.push(change.matchedSymbol);

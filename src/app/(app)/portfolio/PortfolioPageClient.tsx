@@ -7,6 +7,7 @@ import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { AllocationCard } from '@/components/portfolio/AllocationCard';
 import { CashManager } from '@/components/portfolio/CashManager';
 import { HoldingsSection } from '@/components/portfolio/HoldingsSection';
+import { DecisionJournal } from '@/components/portfolio/DecisionJournal';
 import { PortfolioHero } from '@/components/portfolio/PortfolioHero';
 import { RebalanceSandbox } from '@/components/portfolio/RebalanceSandbox';
 import { RiskCopilotCard } from '@/components/portfolio/RiskCopilotCard';
@@ -16,6 +17,7 @@ import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import { totalCash, type CashEntry } from '@/lib/cash/schema';
+import type { JournalSnapshot } from '@/lib/tradeJournal/types';
 import { newsForHoldings, portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
 import { AddHoldingForm } from './AddHoldingForm';
 import styles from './page.module.css';
@@ -26,6 +28,9 @@ interface PortfolioPageClientProps {
   news: NewsItem[];
   /** Cash and liquid funds the user keeps outside these stocks (#413). */
   cash: CashEntry[];
+  /** Decision journal entries, newest first, and the live price of each symbol still held. */
+  journal: JournalSnapshot[];
+  journalPrices: Record<string, number | null>;
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
 }
@@ -47,7 +52,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news, cash, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, news, journal, journalPrices, cash, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -103,6 +108,8 @@ export function PortfolioPageClient({ holdings, history, news, cash, maxPosition
       </div>
 
       <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} />
+
+      <DecisionJournal entries={journal} prices={journalPrices} />
 
       <div className={styles.macroGrid}>
         <CashManager entries={cash} includeCash={includeCash} onIncludeCash={setIncludeCash} />
