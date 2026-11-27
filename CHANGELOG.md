@@ -104,6 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The "⋯" menu on each holding in the Portfolio table now actually appears; it was opening out of sight. (#438)
+
 - The portfolio value chart no longer depends on its draw-in animation to be visible, its low-value badge no longer sits on the date axis, and each holding row has one "⋯" menu (Edit position, Remove holding with a confirmation) instead of two text links. (#428)
 
 - On a phone the portfolio value card on the Dashboard and Portfolio pages is more compact: the label and an Invested pill share a row, the value sits above both return pills on one line, the range buttons share the full width, High, Low and Change fit one line in short units, and the chart has room above and below so its high and low labels no longer sit on the line. ([#426](https://github.com/AnkushGitRepo/marketmitra/issues/426))

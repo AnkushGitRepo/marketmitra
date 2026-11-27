@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './RowActions.module.css';
 
 interface RowActionsProps {
@@ -18,6 +19,7 @@ export function RowActions({ label, busy = false, onEdit, onRemove }: RowActions
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const open = pos !== null;
 
@@ -25,7 +27,8 @@ export function RowActions({ label, busy = false, onEdit, onRemove }: RowActions
     if (!open) return;
     const close = () => setPos(null);
     const onPointerDown = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) close();
+      const target = e.target as Node;
+      if (!rootRef.current?.contains(target) && !menuRef.current?.contains(target)) close();
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
@@ -76,12 +79,16 @@ export function RowActions({ label, busy = false, onEdit, onRemove }: RowActions
           <circle cx="13" cy="8" r="1.4" />
         </svg>
       </button>
-      {open ? (
-        <div id={menuId} role="menu" className={styles.menu} style={{ top: pos.top, left: pos.left, width: MENU_WIDTH }}>
-          <button type="button" role="menuitem" className={styles.item} onClick={() => pick(onEdit)}>Edit position</button>
-          <button type="button" role="menuitem" className={`${styles.item} ${styles.danger}`} onClick={() => pick(onRemove)}>Remove holding</button>
-        </div>
-      ) : null}
+      {open
+        ? // Portalled: the table's scroll box and cards would otherwise trap `position: fixed` and hide the menu.
+          createPortal(
+            <div ref={menuRef} id={menuId} role="menu" className={styles.menu} style={{ top: pos.top, left: pos.left, width: MENU_WIDTH }}>
+              <button type="button" role="menuitem" className={styles.item} onClick={() => pick(onEdit)}>Edit position</button>
+              <button type="button" role="menuitem" className={`${styles.item} ${styles.danger}`} onClick={() => pick(onRemove)}>Remove holding</button>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
