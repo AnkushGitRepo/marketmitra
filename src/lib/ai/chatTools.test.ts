@@ -18,6 +18,11 @@ vi.mock('@/lib/mcp/tools', () => ({
 }));
 
 vi.mock('@/lib/notes/userNotes', () => ({ listNotes: vi.fn(async () => []), getNote: vi.fn(async () => null) }));
+// The conviction board, journal, cash and tax tools (#419) read these stores; none is touched by these tests.
+vi.mock('@/lib/conviction/store', () => ({ listEntries: vi.fn(async () => []) }));
+vi.mock('@/lib/cash/store', () => ({ listCash: vi.fn(async () => []) }));
+vi.mock('@/lib/tradeJournal/store', () => ({ listSnapshots: vi.fn(async () => []) }));
+vi.mock('@/lib/tax/report', () => ({ buildTaxReport: vi.fn() }));
 
 const retrieve = vi.fn<() => Promise<RetrievedChunk[] | null>>();
 vi.mock('@/lib/rag/retrieve', () => ({ retrieve: () => retrieve() }));
@@ -76,12 +81,16 @@ const fakeAlert = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('buildChatTools', () => {
-  it('adapts every MCP tool plus search_context, the 2 read-only note tools, the 5 navigation tools and the 4 alert tools', () => {
+  it('adapts every MCP tool plus search_context, the 2 read-only note tools, the 4 read-only execution-layer tools, the 5 navigation tools and the 4 alert tools', () => {
     const set = buildChatTools('u1');
     expect(Object.keys(set).sort()).toEqual([
       'create_alert',
+      'get_cash',
+      'get_conviction_board',
+      'get_decision_journal',
       'get_note',
       'get_quote',
+      'get_tax_view',
       'list_alerts',
       'list_notes',
       'navigate_to_dashboard',
@@ -94,6 +103,14 @@ describe('buildChatTools', () => {
       'update_alert_params',
     ]);
     expect(typeof (set.get_quote as unknown as ExecTool).execute).toBe('function');
+  });
+
+  // #419: the conviction board, journal, cash and tax tools only read; none can write, create, update or delete.
+  it('offers the execution-layer tools without a write path', () => {
+    const names = ['get_conviction_board', 'get_decision_journal', 'get_cash', 'get_tax_view'];
+    const set = buildChatTools('u1');
+    for (const n of names) expect(set).toHaveProperty(n);
+    expect(Object.keys(set).filter((n) => /^(create|update|delete|set|add|remove)_.*(conviction|journal|cash|tax)/.test(n))).toEqual([]);
   });
 
   // #400: the note tools only read, and only for the signed-in user.
