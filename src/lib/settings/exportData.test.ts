@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { EXPORT_VERSION, buildExportDocument, exportFilename, stripInternal } from './exportData';
 
 const NOW = new Date('2026-11-10T10:00:00Z');
-<<<<<<< HEAD
-const empty = { holdings: [], notes: [], memories: [], alerts: [], wishlists: [], tradeJournal: [], cash: [], conversations: [], preferences: {} };
-=======
-const empty = { holdings: [], notes: [], memories: [], alerts: [], wishlists: [], purchaseDates: {}, conversations: [], preferences: {} };
->>>>>>> origin/feat/414-tax-awareness
+const empty = { holdings: [], notes: [], memories: [], alerts: [], wishlists: [], tradeJournal: [], cash: [], purchaseDates: {}, conversations: [], preferences: {} };
 
 describe('stripInternal', () => {
   it('removes userId at any depth and leaves the rest', () => {
@@ -32,11 +28,7 @@ describe('buildExportDocument', () => {
   it('is versioned, timestamped and carries every section', () => {
     const doc = buildExportDocument(empty, NOW);
     expect(doc).toMatchObject({ app: 'MarketMitra', version: EXPORT_VERSION, exportedAt: '2026-11-10T10:00:00.000Z' });
-<<<<<<< HEAD
-    for (const key of ['holdings', 'notes', 'memories', 'alerts', 'wishlists', 'tradeJournal', 'cash', 'conversations', 'preferences']) expect(doc).toHaveProperty(key);
-=======
-    for (const key of ['holdings', 'notes', 'memories', 'alerts', 'wishlists', 'purchaseDates', 'conversations', 'preferences']) expect(doc).toHaveProperty(key);
->>>>>>> origin/feat/414-tax-awareness
+    for (const key of ['holdings', 'notes', 'memories', 'alerts', 'wishlists', 'tradeJournal', 'cash', 'purchaseDates', 'conversations', 'preferences']) expect(doc).toHaveProperty(key);
   });
 
   it('never leaks a userId, and does not mutate its input', () => {
