@@ -28,6 +28,8 @@ export interface ExportParts {
   readonly memories: readonly unknown[];
   readonly alerts: readonly unknown[];
   readonly wishlists: readonly unknown[];
+  /** Decision and trade journal snapshots (#412). */
+  readonly tradeJournal: readonly unknown[];
   readonly conversations: ReadonlyArray<{ readonly conversation: unknown; readonly messages: readonly unknown[] }>;
   readonly preferences: unknown;
 }
@@ -45,6 +47,7 @@ export function buildExportDocument(parts: ExportParts, now: Date) {
     memories: stripInternal(parts.memories),
     alerts: stripInternal(parts.alerts),
     wishlists: stripInternal(parts.wishlists),
+    tradeJournal: stripInternal(parts.tradeJournal),
     conversations: stripInternal(parts.conversations),
     preferences: stripInternal(parts.preferences),
   };
