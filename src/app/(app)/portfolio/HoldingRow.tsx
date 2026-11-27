@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { RowActions } from '@/components/portfolio/RowActions';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
 import { BADGE_LABEL, yearRange } from '@/lib/portfolio/yearRange';
+import { MAX_REASON } from '@/lib/tradeJournal/snapshot';
 import { stockHref } from '@/lib/stock/href';
 import styles from './page.module.css';
 
@@ -27,6 +28,7 @@ export function HoldingRow({ holding, totalValue, masked, onOpen }: HoldingRowPr
   const [avgPrice, setAvgPrice] = useState(String(holding.avgPrice));
   const [busy, setBusy] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removeReason, setRemoveReason] = useState('');
 
   const value = holding.ltp !== null ? holding.quantity * holding.ltp : null;
   const cost = holding.quantity * holding.avgPrice;
@@ -53,11 +55,17 @@ export function HoldingRow({ holding, totalValue, masked, onOpen }: HoldingRowPr
   const remove = async () => {
     setBusy(true);
     try {
-      await fetch(`/api/holdings/${holding.id}`, { method: 'DELETE' });
+      // The reason is optional; it is saved on the decision journal entry for this sale.
+      const reason = removeReason.trim();
+      await fetch(`/api/holdings/${holding.id}`, {
+        method: 'DELETE',
+        ...(reason ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) } : {}),
+      });
       router.refresh();
     } finally {
       setBusy(false);
       setConfirmRemove(false);
+      setRemoveReason('');
     }
   };
 
@@ -176,8 +184,13 @@ export function HoldingRow({ holding, totalValue, masked, onOpen }: HoldingRowPr
           confirmLabel="Remove holding"
           busy={busy}
           onConfirm={remove}
-          onCancel={() => setConfirmRemove(false)}
-        />
+          onCancel={() => { setConfirmRemove(false); setRemoveReason(''); }}
+        >
+          <label className={styles.reasonField}>
+            <span>Why are you selling? (optional)</span>
+            <textarea value={removeReason} rows={2} maxLength={MAX_REASON} onChange={(e) => setRemoveReason(e.target.value)} />
+          </label>
+        </ConfirmDialog>
       </td>
     </tr>
   );

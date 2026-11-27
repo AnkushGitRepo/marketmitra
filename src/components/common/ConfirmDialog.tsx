@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import styles from './ConfirmDialog.module.css';
 
 interface ConfirmDialogProps {
@@ -9,12 +9,14 @@ interface ConfirmDialogProps {
   readonly message: string;
   readonly confirmLabel: string;
   readonly busy?: boolean;
+  /** Extra content under the message, e.g. an optional field. */
+  readonly children?: ReactNode;
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
 }
 
 /** A modal confirmation for destructive actions. Uses the native <dialog>, so focus is trapped and Esc cancels. */
-export function ConfirmDialog({ open, title, message, confirmLabel, busy = false, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, title, message, confirmLabel, busy = false, children, onConfirm, onCancel }: ConfirmDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -30,6 +32,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel, busy = false
         {title}
       </h2>
       <p className={styles.message}>{message}</p>
+      {children}
       <div className={styles.actions}>
         <button type="button" className={styles.cancel} onClick={onCancel} disabled={busy} autoFocus>
           Cancel

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Removing a holding now offers an optional "Why are you selling?" note, saved on that sale in your decision journal. (#421)
+
 - The Portfolio value chart now has a "vs Nifty 50" view that plots your portfolio and the Nifty 50 as percent change over the same range, with the difference in percentage points, and a "Range" view that shades a statistical range ahead from the portfolio's own past volatility. The range is not a forecast and says so. (#433)
 
 - Click a holding on the Portfolio page to open a side panel with its entry date, your thesis, the decisions you recorded on it and its own news, with a link to the full stock page. (#432)

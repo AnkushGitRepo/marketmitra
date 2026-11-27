@@ -395,3 +395,6 @@
 .rangeBadge { display: inline-block; margin-top: 4px; padding: 1px 7px; border-radius: var(--radius-pill); font-size: 10.5px; font-weight: 600; }
 .rangeHigh { background: var(--app-teal-bg); color: var(--app-gain); }
 .rangeLow { background: var(--app-loss-bg); color: var(--app-loss-text); }
+
+.reasonField { display: flex; flex-direction: column; gap: 4px; margin: 0 0 14px; font-size: 12px; color: var(--app-text-subtle); }
+.reasonField textarea { padding: 8px 10px; border: 1px solid var(--app-border); border-radius: 8px; background: var(--color-surface); font-family: var(--font-sans); font-size: 13.5px; color: var(--app-ink); resize: vertical; }
