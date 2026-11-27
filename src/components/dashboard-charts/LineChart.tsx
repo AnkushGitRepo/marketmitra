@@ -27,7 +27,7 @@ const DOMAIN_PAD = 0.1;
 const MIN_TICK_GAP = 64;
 const MARKER_CHAR_W = 6.6;
 const MARKER_H = 17;
-const BOTTOM_PAD = 28;
+const BOTTOM_PAD = 32;
 const RIGHT_PAD = 14;
 const AXIS_PAD = 54;
 const BARE_PAD = 10;
@@ -156,7 +156,10 @@ export function LineChart({ series, height, formatValue, deltaLabel, formatAxis,
               // High above its dot, low below it (there is room: the scale is padded). The badge is kept inside the plot, clear of the value axis.
               const isHigh = i === 0;
               const boxX = Math.min(Math.max(p.x - boxW / 2, pad.left), Math.max(width - boxW - 4, pad.left));
-              const boxY = isHigh ? p.y - MARKER_H - 8 : p.y + 8;
+              const below = p.y + 8;
+              // The low badge drops below its dot only if it then still clears the date axis; otherwise it sits above.
+              const fitsBelow = below + MARKER_H <= baseY - 2;
+              const boxY = isHigh || !fitsBelow ? p.y - MARKER_H - 8 : below;
               return (
                 <g key={i}>
                   <circle cx={p.x} cy={p.y} r={4} fill={color} stroke="var(--color-surface)" strokeWidth={2} />

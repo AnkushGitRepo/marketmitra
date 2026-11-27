@@ -19,12 +19,13 @@
 .markerBadge { fill: var(--color-surface); stroke: var(--app-border); stroke-width: 1; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .area { animation: chartFade 0.8s ease 0.25s both; }
-  .line { stroke-dasharray: 1; animation: chartDraw 1.15s cubic-bezier(0.3, 0.8, 0.4, 1) both; }
+  /* Backwards fill only: the resting style is the fully drawn line, so nothing depends on the animation finishing. */
+  .area { animation: chartFade 0.8s ease 0.25s backwards; }
+  .line { animation: chartDraw 1.15s cubic-bezier(0.3, 0.8, 0.4, 1) backwards; }
 }
 
 @keyframes chartFade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes chartDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes chartDraw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
 
 .tooltip {
   position: absolute;
