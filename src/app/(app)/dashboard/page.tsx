@@ -45,6 +45,7 @@ export default async function DashboardPage() {
       now={new Date()}
       hasAiKey={hasKey}
       insight={cachedInsight?.content ?? null}
+      insightGeneratedAt={cachedInsight?.generatedAt.toISOString() ?? null}
     />
   );
 }

@@ -85,6 +85,13 @@ Rolling log of work sessions. Append new entries at the **bottom** (oldest first
 **Verified:** unit tests (3,318), lint, typecheck; live runs for saving, reuse in a new chat, refusal of a PAN and phone number, and the Settings list and Delete.
 **Not verified:** planted memories from a file or page (unit-level), other providers, the drawer, production (section 4p of POST-PAUSE-CHECKS).
 
+## 2026-11-26 (night, 4) — AI brief age and expiry (#406)
+
+**What changed:** the Dashboard AI Daily Brief, Mitra Market Pulse and Mitra news pulse now show when they were generated and are retired once too old (24 h daily brief, 6 h market and news); the expired card offers a fresh brief. Pure age logic in `lib/ai/briefAge.ts` with tests; `StructuredBriefCard` takes `generatedAt` and `maxAgeMs`.
+**Decisions:** hide an expired brief rather than dim it (a stale market read presented as current is the harm); no limit for the IPO brief, which is shared and tied to the offer; the limits are constants, not a setting.
+**Verified:** unit tests (3,324), lint, typecheck; live on all three pages against real stale and fresh briefs.
+**Not verified:** dark theme and phone width of the new line, the production build (left to CI), production.
+
 ## 2026-11-27 — Execution and review layer: conviction board, decision journal, cash and what-if, tax view, Mitra tools (#410 to #414, #419)
 
 **What changed:** the maintainer pasted a four-point gap analysis; scope was confirmed (all four) and an epic (#410) plus one issue each were created. #411 a conviction board on the Markets page (tag, target entry price, linked note; a target keeps one price alert in step with it), stocks only. #412 a decision journal: a snapshot (price, P/E, ROCE, newest note naming the stock, active guardrails, optional reason) on every holding add, change or removal, shown on Portfolio. #413 cash entries, a Cash slice in the allocation and a what-if rebalance sandbox. #414 a tax view (short or long term, days to long term, tax on booked gains, loss positions) with a purchase date per holding. #419 four read-only Mitra tools over all of it. Five PRs (#415 to #418, #420); #420 is stacked on the other four. The session log was rolled: eight oldest entries moved to the November archive.

@@ -6,6 +6,7 @@ import { getCurrentUserId } from '@/lib/currentUserId';
 import { getQuotes } from '@/lib/dashboard/fundamentalsApi';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { listHoldings } from '@/lib/holdings';
+import { BRIEF_MAX_AGE_MS } from '@/lib/ai/briefAge';
 import { getCachedInsight } from '@/lib/insights';
 import { trendingTickers } from '@/lib/news/feed';
 import { NewsFeedClient } from './NewsFeedClient';
@@ -76,6 +77,8 @@ export default async function NewsPage() {
             title="Mitra news pulse"
             endpoint="/api/insights/news"
             initial={cachedPulse?.content ?? null}
+            generatedAt={cachedPulse?.generatedAt.toISOString() ?? null}
+            maxAgeMs={BRIEF_MAX_AGE_MS.news}
             hasKey={hasKey}
             emptyText="No read yet. Ask Mitra for the day's earnings, policy and sector themes."
             noKeyText="to get a three-theme read on today's headlines. MarketMitra charges nothing for it."
