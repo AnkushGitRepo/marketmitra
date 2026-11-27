@@ -59,7 +59,7 @@ async function fetchState(sym: string): Promise<State> {
   }
 }
 
-/** The pinned card at the top of a stock's Agent journal: what you hold, what you thought, and what you wrote down at the time. */
+/** The card on a stock's My journal tab (your own record, not the analyst's): what you hold, what you thought, and what you wrote down at the time. */
 export function ThesisCard({ symbol }: { readonly symbol: string }) {
   const { masked } = useMask();
   const sym = symbol.toUpperCase();
