@@ -16,6 +16,8 @@ const holding = (over: Partial<EnrichedHolding> = {}): EnrichedHolding => ({
   ltp: 2500,
   dayChange: 10,
   dayChangePct: 0.4,
+  week52Low: null,
+  week52High: null,
   ...over,
 });
 

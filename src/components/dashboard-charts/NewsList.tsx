@@ -8,7 +8,7 @@ const SENTIMENT_TITLE: Record<NewsSentiment, string> = {
   negative: 'Negative headline tone',
 };
 
-function relativeTime(iso: string): string {
+export function relativeTime(iso: string): string {
   const secs = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
   if (secs < 3600) return `${Math.max(1, Math.round(secs / 60))}m ago`;
   const hrs = Math.round(secs / 3600);

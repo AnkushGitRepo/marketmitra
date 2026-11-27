@@ -7,6 +7,8 @@ export interface EnrichedHolding extends Holding {
   ltp: number | null;
   dayChange: number | null;
   dayChangePct: number | null;
+  week52Low: number | null;
+  week52High: number | null;
 }
 
 /** Merges MongoDB-stored holdings with a real live quote (ADR 0024:
@@ -40,6 +42,8 @@ export async function getEnrichedHoldings(userId: string): Promise<EnrichedHoldi
       ltp: price,
       dayChange: price != null && prevClose != null ? price - prevClose : null,
       dayChangePct: quote?.change_pct != null ? Number(quote.change_pct) : null,
+      week52Low: quote?.week52_low != null ? Number(quote.week52_low) : null,
+      week52High: quote?.week52_high != null ? Number(quote.week52_high) : null,
     };
   });
 }
