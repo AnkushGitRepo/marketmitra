@@ -28,6 +28,8 @@ export interface ExportParts {
   readonly memories: readonly unknown[];
   readonly alerts: readonly unknown[];
   readonly wishlists: readonly unknown[];
+  /** Purchase dates the user gave their holdings: holding id to YYYY-MM-DD (#414). */
+  readonly purchaseDates: Readonly<Record<string, string>>;
   readonly conversations: ReadonlyArray<{ readonly conversation: unknown; readonly messages: readonly unknown[] }>;
   readonly preferences: unknown;
 }
@@ -45,6 +47,7 @@ export function buildExportDocument(parts: ExportParts, now: Date) {
     memories: stripInternal(parts.memories),
     alerts: stripInternal(parts.alerts),
     wishlists: stripInternal(parts.wishlists),
+    purchaseDates: stripInternal(parts.purchaseDates),
     conversations: stripInternal(parts.conversations),
     preferences: stripInternal(parts.preferences),
   };

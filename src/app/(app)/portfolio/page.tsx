@@ -4,6 +4,7 @@ import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { RISK_PROFILES } from '@/lib/onboarding/profiles';
+import { buildTaxReport } from '@/lib/tax/report';
 import { getPreferences } from '@/lib/preferences/store';
 import { PortfolioPageClient } from './PortfolioPageClient';
 import styles from './page.module.css';
@@ -38,11 +39,15 @@ export default async function PortfolioPage() {
   const holdingSymbols = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
   const news = holdingSymbols.length > 0 ? await getNews({ symbols: holdingSymbols, limit: 8 }) : null;
 
+  // Tax view: a failed read leaves the rest of the page intact.
+  const tax = await buildTaxReport(userId, new Date()).catch(() => null);
+
   return (
     <PortfolioPageClient
       holdings={holdings}
       history={historyByPeriod}
       news={news?.items ?? []}
+      tax={tax}
       maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />
   );

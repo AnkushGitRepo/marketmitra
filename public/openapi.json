@@ -8031,6 +8031,283 @@
           }
         }
       }
+    },
+    "/api/tax": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Tax view of the holdings",
+        "description": "Per holding: short or long term, days until long term and the unrealised gain, plus an estimate of tax and the loss positions that could offset gains booked this financial year. An estimate to plan with, not tax advice; each holding is treated as one lot bought on the date the user gave, and a holding without a date is reported with term null rather than guessed.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookedShort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0
+            },
+            "description": "Short-term gains already booked this financial year in rupees; a loss is negative."
+          },
+          {
+            "name": "bookedLong",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0
+            },
+            "description": "Long-term gains already booked this financial year."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "today": {
+                      "type": "string"
+                    },
+                    "financialYear": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "end": {
+                          "type": "string"
+                        },
+                        "daysLeft": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "rules": {
+                      "type": "object",
+                      "properties": {
+                        "asOf": {
+                          "type": "string"
+                        },
+                        "stcgRate": {
+                          "type": "number"
+                        },
+                        "ltcgRate": {
+                          "type": "number"
+                        },
+                        "ltcgExemption": {
+                          "type": "number"
+                        },
+                        "longTermMonths": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "lots": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "lot": {
+                            "type": "object",
+                            "properties": {
+                              "holdingId": {
+                                "type": "string"
+                              },
+                              "symbol": {
+                                "type": "string"
+                              },
+                              "quantity": {
+                                "type": "number"
+                              },
+                              "avgPrice": {
+                                "type": "number"
+                              },
+                              "ltp": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "purchaseDate": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "description": "YYYY-MM-DD, null when the user has not said."
+                              }
+                            }
+                          },
+                          "term": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "short",
+                              "long",
+                              null
+                            ]
+                          },
+                          "heldDays": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "daysToLongTerm": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "description": "0 once long term; null when the date is missing."
+                          },
+                          "gain": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "unrealisedShort": {
+                          "type": "number"
+                        },
+                        "unrealisedLong": {
+                          "type": "number"
+                        },
+                        "unknownLots": {
+                          "type": "integer"
+                        },
+                        "taxOnBooked": {
+                          "type": "number"
+                        },
+                        "extraIfSoldToday": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "harvest": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "symbol": {
+                            "type": "string"
+                          },
+                          "term": {
+                            "type": "string",
+                            "enum": [
+                              "short",
+                              "long"
+                            ]
+                          },
+                          "loss": {
+                            "type": "number"
+                          },
+                          "taxSaved": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "422": {
+            "description": "bookedShort or bookedLong is not a number."
+          }
+        }
+      }
+    },
+    "/api/holdings/{id}/purchase-date": {
+      "put": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Set or clear a holding's purchase date",
+        "description": "The date feeds the tax view. One date per holding.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "purchaseDate"
+                ],
+                "properties": {
+                  "purchaseDate": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "YYYY-MM-DD, not in the future; null clears it."
+                  }
+                }
+              },
+              "example": {
+                "purchaseDate": "2025-01-15"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Holding not found."
+          },
+          "422": {
+            "description": "Not a real, past date."
+          }
+        }
+      }
     }
   }
 }
