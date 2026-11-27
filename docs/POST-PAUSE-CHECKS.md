@@ -197,6 +197,15 @@ Run after 4k, signed in with your own AI key.
 - [ ] Signed in as the admin: Settings > AI & Models offers Unrestricted Mitra; `/advisor` opens after the disclaimer; the System page and event log are visible; AI Auto-Chart shows the trade setup.
 - [ ] A **second, non-admin account**: the unrestricted setting is refused (403), `/advisor` is a 404, the System page is not available, Auto-Chart shows market structure only.
 
+## 4q. Execution and review layer (#410 to #414, #419; ADR 0084)
+
+- [ ] Markets > Conviction board: add a stock, set a target price and a linked note; an alert named "Conviction target" appears on /alerts and fires (email too) when the price reaches it; removing the entry removes the alert.
+- [ ] Portfolio > Decision journal: add a position with a reason; an entry appears with price, P/E, ROCE and the guardrails; removing a position adds an exit entry; edit the reason, delete one entry; Settings > Data & Privacy > Danger zone deletes the whole journal.
+- [ ] Portfolio > Cash and what-if: add a cash entry, see the Cash slice (and the switch), run a trim plus an add and compare with a hand calculation.
+- [ ] Portfolio > Tax awareness: set a purchase date on two holdings, check the term, the days to long term (12 months and a day) and the estimate against the rates in `lib/tax/india.ts`, which the maintainer has confirmed.
+- [ ] Mitra answers questions about the board, the journal, cash and the tax view in the hosted chat, in the Mitra page and the drawer, with no buy or sell wording.
+- [ ] "Export my data" includes `tradeJournal`, `cash` and `purchaseDates`.
+
 ## 6. Data service and hosting follow-ups (#169, #180)
 
 - [ ] Vercel CPU re-measured: Team Usage > Fluid Active CPU > Projects. The old `marketmitra-fundamentals-api` should be about 0.
