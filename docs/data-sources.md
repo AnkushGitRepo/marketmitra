@@ -165,6 +165,23 @@ and are not shown.
 - **Cost:** free
 - **ToS notes:** official public API for a public repository. A failed or missing field stays null and the page shows an em dash.
 
+### Yahoo Finance: metal futures, USD/INR and NSE gold and silver ETFs (candidate, #446)
+- **Type:** public API through the `yahoo-finance2` library already in the app (ADR 0024)
+- **Used for:** *not wired yet.* Candidate source for gold, silver and platinum prices in INR, and for the NSE gold and silver ETFs.
+- **Endpoint(s):** `quote` and `chart` for `GC=F` (gold, USD per troy ounce), `SI=F` (silver, USD per ounce), `PL=F` (platinum, USD per ounce), `USDINR=X`, and the ETFs `GOLDBEES.NS`, `GOLDIETF.NS`, `HDFCGOLD.NS`, `SILVERIETF.NS`, `HDFCSILVER.NS`, `SBISILVER.NS`, `TATSILV.NS`, `SILVERBEES.NS`. Checked 2026-11-27: all returned a price, 52-week range and a time; `GC=F` returned 262 weekly bars over five years. `SETFGOLD.NS` returned nothing.
+- **Auth:** none
+- **Rate limits:** unofficial; the same per-request caching as the existing quotes applies
+- **Cost:** free
+- **ToS notes:** unofficial endpoint, the same standing as the existing quote use (ADR 0024). Prices are **international futures converted at the USD/INR rate**: they are not the Indian retail or IBJA price, which adds import duty, GST and local premium. Any use must say so. No Indian premium is guessed.
+
+### IBJA (India Bullion and Jewellers Association) benchmark rates (rejected, #446)
+- **Type:** web page and a subscription API
+- **Used for:** nothing. Considered for the Indian spot benchmark (gold 999/916 per 10 g, silver 999 per kg, platinum, AM and PM fixings).
+- **Endpoint(s):** `https://ibjarates.com` (page); the official API is advertised at `indiagoldratesapi.com`.
+- **Auth:** the API is subscription-only (contact addresses are on the IBJA site).
+- **Cost:** the API is a paid subscription, which the project rules out (ADR 0011, 0016).
+- **ToS notes:** reviewed 2026-11-27. The page says "© India Bullion and Jewellers Association Ltd. All Rights Reserved", that use beyond fair use needs the owner's permission, that rates are "for general information purposes only", and that anyone using them for valuation or financial products should use the official API. Reading the page would be copying a copyrighted benchmark without a licence, so it is not used. If the maintainer obtains written permission or a free licence, revisit.
+
 <!--
 Template for a new entry:
 
