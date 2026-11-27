@@ -20,11 +20,10 @@
   color: var(--app-ink);
 }
 
-.introNote {
-  margin: 8px 0 18px;
-  font-size: 13px;
-  color: var(--app-text-muted);
-  max-width: 68ch;
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .watchToggle {
@@ -216,7 +215,7 @@
   justify-content: space-between;
   gap: 12px 16px;
   flex-wrap: wrap;
-  margin-bottom: 4px;
+  margin-bottom: 18px;
 }
 
 .list {
