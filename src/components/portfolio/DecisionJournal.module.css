@@ -31,3 +31,10 @@
 .save { align-self: flex-start; font-family: var(--font-sans); font-size: 13px; font-weight: 600; padding: 6px 14px; border: none; border-radius: var(--radius-md, 8px); background: var(--app-teal-strong); color: #fff; cursor: pointer; }
 .save:disabled { opacity: 0.5; cursor: not-allowed; }
 .error { margin: 0; font-size: 12.5px; color: var(--app-loss-text); }
+.reasonEdit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0; }
+.reasonEdit input { flex: 1; min-width: 200px; font-family: var(--font-sans); font-size: 13.5px; padding: 6px 10px; border: 1px solid var(--app-border); border-radius: var(--radius-md, 8px); background: var(--color-surface); color: var(--app-ink); }
+.actions { display: flex; gap: 14px; margin: 8px 0 0; }
+.link, .danger { border: none; background: none; padding: 2px 0; font-family: var(--font-sans); font-size: 12.5px; cursor: pointer; }
+.link { color: var(--app-teal-strong); }
+.danger { color: var(--app-loss-text); }
+.danger:disabled { opacity: 0.5; cursor: not-allowed; }

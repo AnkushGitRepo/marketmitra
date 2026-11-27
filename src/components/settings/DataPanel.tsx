@@ -5,7 +5,7 @@ import { TypedConfirmDialog } from '@/components/common/TypedConfirmDialog';
 import rowStyles from '@/app/(app)/settings/Settings.module.css';
 import styles from './DataPanel.module.css';
 
-type Action = 'chats' | 'widget';
+type Action = 'chats' | 'widget' | 'journal';
 
 const ACTIONS: Record<Action, { label: string; button: string; title: string; hint: string; url: string; done: (data: unknown) => string }> = {
   chats: {
@@ -23,6 +23,14 @@ const ACTIONS: Record<Action, { label: string; button: string; title: string; hi
     hint: 'Clears the floating Mitra widget’s stored questions, which also feed your private search.',
     url: '/api/ai/chat',
     done: () => 'Widget history cleared.',
+  },
+  journal: {
+    label: 'Delete my decision journal',
+    button: 'Delete journal',
+    title: 'Delete your whole decision journal?',
+    hint: 'Removes every entry saved when you added, changed or removed a position. Your holdings are not touched.',
+    url: '/api/journal',
+    done: (d) => `Deleted ${(d as { removed?: number } | undefined)?.removed ?? 0} journal entr${(d as { removed?: number } | undefined)?.removed === 1 ? 'y' : 'ies'}.`,
   },
 };
 
@@ -60,7 +68,7 @@ export function DataPanel() {
           <div>
             <p className={rowStyles.rowLabel}>Export my data (JSON)</p>
             <p className={rowStyles.rowHint}>
-              One file with your holdings, notes, alerts, watchlists, Mitra conversations and preferences. API keys and notification secrets are never included, and chat
+              One file with your holdings, decision journal, notes, alerts, watchlists, Mitra conversations and preferences. API keys and notification secrets are never included, and chat
               attachments are listed by reference only.
             </p>
           </div>

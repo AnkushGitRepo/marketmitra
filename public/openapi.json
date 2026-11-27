@@ -8206,6 +8206,41 @@
             "description": "Not authenticated."
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Delete the whole journal",
+        "description": "Removes every journal entry of the user and returns how many. The Settings Danger zone asks for a typed confirmation first.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "removed": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
       }
     },
     "/api/journal/{id}": {
@@ -8213,8 +8248,8 @@
         "tags": [
           "Portfolio"
         ],
-        "summary": "Write the reflection on a journal entry",
-        "description": "Sets or clears the post-mortem. It is the only part of an entry that can change.",
+        "summary": "Edit your own words on a journal entry",
+        "description": "Sets or clears the reason and/or the reflection (post-mortem). What the app recorded (price, P/E, ROCE, thesis copy, guardrails) cannot be edited. Send at least one field.",
         "security": [
           {
             "cookieAuth": []
@@ -8239,10 +8274,14 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "postMortem"
-                ],
                 "properties": {
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 280
+                  },
                   "postMortem": {
                     "type": [
                       "string",
@@ -8378,6 +8417,42 @@
           },
           "422": {
             "description": "Invalid input."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Delete a journal entry",
+        "description": "Removes one entry for good. The holding is not affected.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such entry."
           }
         }
       }

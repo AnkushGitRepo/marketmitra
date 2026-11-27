@@ -1,26 +1,47 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUserId } from '@/lib/currentUserId';
-import { MAX_POST_MORTEM } from '@/lib/tradeJournal/snapshot';
-import { setPostMortem } from '@/lib/tradeJournal/store';
+import { MAX_POST_MORTEM, MAX_REASON } from '@/lib/tradeJournal/snapshot';
+import { deleteSnapshot, editEntryText } from '@/lib/tradeJournal/store';
 
-const bodySchema = z.object({ postMortem: z.string().trim().max(MAX_POST_MORTEM).nullable() });
+const editSchema = z
+  .object({
+    reason: z.string().trim().max(MAX_REASON).nullable().optional(),
+    postMortem: z.string().trim().max(MAX_POST_MORTEM).nullable().optional(),
+  })
+  .refine((v) => v.reason !== undefined || v.postMortem !== undefined, { message: 'Send reason or postMortem' });
 
-/** Writes the reflection on an entry. Nothing else about a snapshot can be changed. */
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> };
+
+const fail = (error: string, status: number) => NextResponse.json({ success: false, data: null, error }, { status });
+
+/** Edits the user's own words on an entry (reason, reflection). The recorded facts are not editable. */
+export async function PATCH(request: Request, { params }: Ctx) {
   const userId = await getCurrentUserId();
-  if (!userId) return NextResponse.json({ success: false, data: null, error: 'Not authenticated' }, { status: 401 });
-  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ success: false, data: null, error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 422 });
-  }
+  if (!userId) return fail('Not authenticated', 401);
+  const parsed = editSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Invalid input', 422);
   const { id } = await params;
   try {
-    const entry = await setPostMortem(userId, id, parsed.data.postMortem);
-    if (!entry) return NextResponse.json({ success: false, data: null, error: 'Journal entry not found' }, { status: 404 });
+    const entry = await editEntryText(userId, id, parsed.data);
+    if (!entry) return fail('Journal entry not found', 404);
     return NextResponse.json({ success: true, data: entry, error: null });
   } catch (err) {
-    console.error('[journal] post-mortem failed', err);
-    return NextResponse.json({ success: false, data: null, error: 'Could not save this reflection.' }, { status: 500 });
+    console.error('[journal] edit failed', err);
+    return fail('Could not save this change.', 500);
+  }
+}
+
+/** Deletes one entry. */
+export async function DELETE(_request: Request, { params }: Ctx) {
+  const userId = await getCurrentUserId();
+  if (!userId) return fail('Not authenticated', 401);
+  const { id } = await params;
+  try {
+    if (!(await deleteSnapshot(userId, id))) return fail('Journal entry not found', 404);
+    return NextResponse.json({ success: true, data: { removed: true }, error: null });
+  } catch (err) {
+    console.error('[journal] delete failed', err);
+    return fail('Could not delete this entry.', 500);
   }
 }

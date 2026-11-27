@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/currentUserId';
-import { listSnapshots } from '@/lib/tradeJournal/store';
+import { deleteAllSnapshots, listSnapshots } from '@/lib/tradeJournal/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,5 +14,17 @@ export async function GET(request: Request) {
   } catch (err) {
     console.error('[journal] list failed', err);
     return NextResponse.json({ success: false, data: null, error: 'Could not load your journal.' }, { status: 500 });
+  }
+}
+
+/** Deletes the user's whole journal. The Settings Danger zone asks for a typed confirmation first. */
+export async function DELETE() {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ success: false, data: null, error: 'Not authenticated' }, { status: 401 });
+  try {
+    return NextResponse.json({ success: true, data: { removed: await deleteAllSnapshots(userId) }, error: null });
+  } catch (err) {
+    console.error('[journal] delete all failed', err);
+    return NextResponse.json({ success: false, data: null, error: 'Could not delete your journal.' }, { status: 500 });
   }
 }
