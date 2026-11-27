@@ -8031,6 +8031,261 @@
           }
         }
       }
+    },
+    "/api/conviction": {
+      "get": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "List conviction entries",
+        "description": "The user's conviction board entries (one per symbol), oldest first.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "symbol": {
+                        "type": "string"
+                      },
+                      "tag": {
+                        "type": "string",
+                        "enum": [
+                          "high",
+                          "tracking",
+                          "wait"
+                        ]
+                      },
+                      "waitFor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 60
+                      },
+                      "targetPrice": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "targetDirection": {
+                        "type": "string",
+                        "enum": [
+                          "at_or_below",
+                          "at_or_above"
+                        ]
+                      },
+                      "noteId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Create or update a conviction entry",
+        "description": "Upserts the entry for a symbol; only the fields sent change. Setting targetPrice keeps one price alert in step with it (visible on the Alerts page); sending null removes that alert.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "tag": {
+                    "type": "string",
+                    "enum": [
+                      "high",
+                      "tracking",
+                      "wait"
+                    ]
+                  },
+                  "waitFor": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 60,
+                    "description": "Only with tag=wait."
+                  },
+                  "targetPrice": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0
+                  },
+                  "targetDirection": {
+                    "type": "string",
+                    "enum": [
+                      "at_or_below",
+                      "at_or_above"
+                    ],
+                    "default": "at_or_below"
+                  },
+                  "noteId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A note from /api/notes holding the thesis."
+                  }
+                }
+              },
+              "example": {
+                "symbol": "TCS",
+                "tag": "high",
+                "targetPrice": 3800
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    },
+                    "tag": {
+                      "type": "string",
+                      "enum": [
+                        "high",
+                        "tracking",
+                        "wait"
+                      ]
+                    },
+                    "waitFor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 60
+                    },
+                    "targetPrice": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "targetDirection": {
+                      "type": "string",
+                      "enum": [
+                        "at_or_below",
+                        "at_or_above"
+                      ]
+                    },
+                    "noteId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Per-user limit (200 entries) reached."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      }
+    },
+    "/api/conviction/{symbol}": {
+      "delete": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Remove a conviction entry",
+        "description": "Removes the entry and its target price alert.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No entry for that symbol."
+          }
+        }
+      }
     }
   }
 }

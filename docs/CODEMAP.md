@@ -70,6 +70,7 @@ A new page must be added to `src/lib/routes.ts` **and** `src/proxy.ts`.
 | `markets/overview`, `news`, `search`, `stock/[ticker]` (+ `prices`) | market data |
 | `mitra/*`, `mitra-activity` | Mitra chat: conversations, messages, files, context |
 | `mcp` | MCP server endpoint |
+| `conviction` | conviction board entries (`lib/conviction/`: pure board logic, store, target-price alert sync) |
 | `notes`, `notifications`, `watchlists`, `wishlists` | user data (each has `[id]` / `symbols` children) |
 | `portfolio-import/*` | extract + confirm file import (parsing in `lib/portfolio-import/extractStructured.ts` + `normalize.ts`) |
 | `research` | research page backend |
