@@ -66,5 +66,6 @@ function buildSeries(
   return {
     v: dates.map((d) => byDate.get(d)!),
     l: dates.map((d) => formatPriceLabel(d, period)),
+    d: dates,
   };
 }

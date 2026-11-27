@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { AllocationCard } from '@/components/portfolio/AllocationCard';
 import { HoldingsSection } from '@/components/portfolio/HoldingsSection';
+import { PortfolioNews } from '@/components/portfolio/PortfolioNews';
 import { PortfolioHero } from '@/components/portfolio/PortfolioHero';
 import { RiskCopilotCard } from '@/components/portfolio/RiskCopilotCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
@@ -13,13 +13,15 @@ import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
-import { newsForHoldings, portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
+import { portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
 import { AddHoldingForm } from './AddHoldingForm';
 import styles from './page.module.css';
 
 interface PortfolioPageClientProps {
   holdings: EnrichedHolding[];
   history: Record<PricePeriod, RangeSeries>;
+  /** Nifty 50 closes aligned to each range's dates; empty when unavailable. */
+  benchmark: Record<PricePeriod, (number | null)[]>;
   news: NewsItem[];
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
@@ -42,7 +44,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, benchmark, news, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -66,8 +68,6 @@ export function PortfolioPageClient({ holdings, history, news, maxPositionPct }:
   }
 
   const totals = portfolioTotals(holdings);
-  // Belt and braces: the page already asks for holdings' news only, but never show a story about a stock the user doesn't hold.
-  const holdingsNews = newsForHoldings(news, holdings);
 
   return (
     <div className={styles.pageRoot}>
@@ -88,23 +88,28 @@ export function PortfolioPageClient({ holdings, history, news, maxPositionPct }:
 
       {showAddForm && <AddHoldingForm onDone={() => setShowAddForm(false)} />}
 
-      <PortfolioHero totals={totals} history={history} masked={masked} />
+      {/* Four blocks, one rhythm: the stack's gap is the only spacing between them. */}
+      <div className={styles.stack}>
+        <PortfolioHero totals={totals} history={history} benchmark={benchmark} masked={masked} />
 
-      <div className={styles.macroGrid}>
-        <AllocationCard holdings={holdings} />
-        <RiskCopilotCard holdings={holdings} maxPositionPct={maxPositionPct} />
-      </div>
+        <div className={styles.macroGrid}>
+          <AllocationCard holdings={holdings} />
+          <RiskCopilotCard holdings={holdings} maxPositionPct={maxPositionPct} />
+        </div>
 
-      <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} />
+        <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} news={news} />
 
-      <div className={styles.sectionHeadRow}>
-        <h2 className={styles.h2}>News for your holdings</h2>
-        <Link href="/news" className={styles.btnSecondary}>
-          View all news
-        </Link>
-      </div>
-      <div className={styles.holdingsCard}>
-        <NewsList items={holdingsNews} showSymbols emptyText="No recent news for your current holdings." />
+        <section aria-label="News for your holdings">
+          <div className={styles.sectionHeadRow}>
+            <h2 className={styles.h2}>News for your holdings</h2>
+            <Link href="/news" className={styles.btnSecondary}>
+              View all news
+            </Link>
+          </div>
+          <div className={styles.newsCard}>
+            <PortfolioNews items={news} holdings={holdings} />
+          </div>
+        </section>
       </div>
     </div>
   );

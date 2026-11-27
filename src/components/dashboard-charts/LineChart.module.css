@@ -1,74 +1,35 @@
-.wrap {
-  position: relative;
-  margin-top: 14px;
-}
+.wrap { position: relative; margin-top: 14px; }
 
-.svg {
-  width: 100%;
-  display: block;
-  overflow: visible;
-}
+/* High, Low and Change for the range, above the plot. */
+.stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0 0 10px; }
+.stats dt { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--app-text-subtle); }
+.stats dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--app-ink); }
+.stats [data-tone='up'] dd { color: var(--app-gain); }
+.stats [data-tone='down'] dd { color: var(--app-loss-text); }
 
-.area {
-  opacity: 1;
-}
+.frame { position: relative; width: 100%; cursor: crosshair; touch-action: pan-y; border-radius: 12px; outline: none; }
+.frame:focus-visible { box-shadow: 0 0 0 2px var(--app-teal); }
+.svg { display: block; overflow: visible; }
+
+.grid { stroke: var(--app-border); stroke-width: 1; stroke-dasharray: 2 5; opacity: 0.8; }
+.start { stroke: var(--app-text-subtle); stroke-width: 1; stroke-dasharray: 5 5; opacity: 0.5; }
+.cursor { stroke: var(--app-ink); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.35; }
+.axisText, .markerText { font-family: var(--font-mono); font-size: 10.5px; fill: var(--app-text-subtle); }
+.markerText { fill: var(--app-ink); font-weight: 600; }
+.markerBadge { fill: var(--color-surface); stroke: var(--app-border); stroke-width: 1; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .area {
-    animation: chartFade 0.8s ease 0.25s both;
-  }
-
-  .line {
-    stroke-dasharray: 2600;
-    animation: chartDraw 1.15s cubic-bezier(0.3, 0.8, 0.4, 1) both;
-  }
+  /* Backwards fill only: the resting style is the fully drawn line, so nothing depends on the animation finishing. */
+  .area { animation: chartFade 0.8s ease 0.25s backwards; }
+  .line { animation: chartDraw 1.15s cubic-bezier(0.3, 0.8, 0.4, 1) backwards; }
 }
 
-@keyframes chartFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes chartDraw {
-  from {
-    stroke-dashoffset: 2600;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-.labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 4px;
-}
-
-.labelTick {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--app-text-subtle);
-}
-
-.hoverLayer {
-  position: absolute;
-  inset: 0 0 22px 0;
-  display: flex;
-}
-
-.hoverCell {
-  flex: 1;
-  cursor: crosshair;
-}
+@keyframes chartFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes chartDraw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
 
 .tooltip {
   position: absolute;
-  top: -6px;
-  transform: translate(-50%, -100%);
+  transform: none;
   background: var(--app-ink);
   color: var(--app-cream);
   border-radius: 14px;
@@ -76,26 +37,29 @@
   pointer-events: none;
   white-space: nowrap;
   box-shadow: 0 10px 26px rgba(22, 25, 28, 0.22);
+  z-index: 2;
+}
+.tooltipLeft { transform: translateX(-100%); }
+.tooltipLabel { margin: 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.6; }
+.tooltipValue { margin: 4px 0 0; font-size: 14.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tooltipDelta { margin: 3px 0 0; font-size: 11.5px; color: #7ee3c4; }
+.tooltip[data-tone='down'] .tooltipDelta { color: var(--app-loss-soft); }
+
+.srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.amountShort { display: none; }
+
+/* A phone: High, Low and Change on one line, label beside value, in short units so nothing collides. */
+@media (max-width: 640px) {
+  .stats { flex-wrap: nowrap; gap: 4px 14px; margin-bottom: 6px; }
+  .stats > div { display: flex; align-items: baseline; gap: 5px; min-width: 0; white-space: nowrap; }
+  .stats dd { margin: 0; font-size: 12.5px; }
+  .amountLong { display: none; }
+  .amountShort { display: inline; }
 }
 
-.tooltipLabel {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0.6;
-}
-
-.tooltipValue {
-  margin: 4px 0 0;
-  font-size: 14.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.tooltipDelta {
-  margin: 3px 0 0;
-  font-size: 11.5px;
-  color: #7ee3c4;
+/* Between a phone and a tablet there is room for the full figures again. */
+@media (min-width: 401px) and (max-width: 640px) {
+  .amountLong { display: inline; }
+  .amountShort { display: none; }
 }

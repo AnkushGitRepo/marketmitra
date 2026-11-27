@@ -1,6 +1,8 @@
 export interface RangeSeries {
   v: number[];
   l: string[];
+  /** ISO trade date of each point, when the series was built from dated prices. */
+  d?: string[];
 }
 
 /** One OHLC bar. `date` is the first trade date the bar covers (ISO),

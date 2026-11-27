@@ -1,4 +1,5 @@
 import { concentration, donutSegments, sectorWeights, type HoldingLike } from '@/lib/portfolio/portfolioMetrics';
+import { withCashSlice } from '@/lib/portfolio/rebalance';
 import styles from './AllocationCard.module.css';
 
 const SECTOR_COLORS = ['#0C8A6C', '#3FD0AB', '#C9AF7E', '#D9917F', '#7FDFC2', '#8fa3b8', '#E2DED2'] as const;
@@ -6,9 +7,16 @@ const RADIUS = 15.9155; // circumference 100, so arc lengths are plain percentag
 const color = (i: number): string => SECTOR_COLORS[i % SECTOR_COLORS.length];
 
 /** Sector donut with a legend, plus the two concentration stats. Static SVG: nothing to load, nothing to fail. */
-export function AllocationCard({ holdings }: { readonly holdings: readonly HoldingLike[] }) {
+interface AllocationCardProps {
+  readonly holdings: readonly HoldingLike[];
+  /** Cash and liquid funds (#413). Shown as its own slice while `includeCash` is on. */
+  readonly cash?: number;
+  readonly includeCash?: boolean;
+}
+
+export function AllocationCard({ holdings, cash = 0, includeCash = false }: AllocationCardProps) {
   const weights = sectorWeights(holdings);
-  const segments = donutSegments(weights);
+  const segments = donutSegments(includeCash && cash > 0 ? withCashSlice(weights, cash) : weights);
   const { top3Pct, largest } = concentration(holdings);
 
   return (

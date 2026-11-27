@@ -44,6 +44,7 @@ import { checkMitraBounds } from '@/lib/alerts/mitraBounds';
 import { screenerFiltersSchema } from '@/lib/dashboard/screenerSchema';
 import { screenerUrl, screenForModel } from '@/lib/screener/mitra';
 import { logMitraAction } from '@/lib/mitra/activityLog';
+import { buildExecutionTools } from '@/lib/mitra-chat/executionTools';
 import { buildNotesTools } from '@/lib/mitra-chat/notesTools';
 import type { AlertParams } from '@/lib/alerts/types';
 
@@ -104,6 +105,9 @@ export function buildChatTools(userId: string | null): ToolSet {
 
   // The user's own notes (#400): list them all, and read one. Read-only and scoped to this user.
   Object.assign(set, buildNotesTools(userId));
+
+  // Conviction board, decision journal, cash and tax view (#419): read-only and scoped to this user.
+  Object.assign(set, buildExecutionTools(userId));
 
   // Navigation (ADR 0022). Each `execute` only confirms the destination —
   // it cannot move the browser itself. The client (AiWidget) watches for
