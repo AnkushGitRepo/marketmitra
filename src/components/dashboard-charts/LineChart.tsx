@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import {
-  areaPath, nearestIndex, niceTicks, plotPoints, seriesStats, smoothPath, visibleTicks, yFor, type Padding,
+  areaPath, nearestIndex, niceTicks, plotPoints, seriesStats, smoothPath, valueDomain, visibleTicks, yFor, type Padding,
 } from '@/lib/dashboard/chartGeometry';
 import styles from './LineChart.module.css';
 
@@ -22,7 +22,11 @@ interface LineChartProps {
   ariaLabel: string;
 }
 
+/** Share of the value range left clear above the high and below the low, so the curve never rides the edge or the axis. */
+const DOMAIN_PAD = 0.1;
 const MIN_TICK_GAP = 64;
+const MARKER_CHAR_W = 6.6;
+const MARKER_H = 17;
 const BOTTOM_PAD = 28;
 const RIGHT_PAD = 14;
 const AXIS_PAD = 54;
@@ -55,12 +59,13 @@ export function LineChart({ series, height, formatValue, deltaLabel, formatAxis,
   const up = (stats?.change ?? 0) >= 0;
   const color = up ? 'var(--app-teal)' : 'var(--app-loss)';
   const pad: Padding = { top: 18, right: RIGHT_PAD, bottom: BOTTOM_PAD, left: formatAxis ? AXIS_PAD : BARE_PAD };
-  const pts = width > 0 ? plotPoints(series.v, series.l, width, height, pad) : [];
+  const pts = width > 0 ? plotPoints(series.v, series.l, width, height, pad, DOMAIN_PAD) : [];
   const line = smoothPath(pts);
   const baseY = height - pad.bottom;
-  const ticks = stats ? niceTicks(Math.min(...series.v), Math.max(...series.v), 4) : [];
+  const domain = valueDomain(series.v, DOMAIN_PAD);
+  const ticks = stats ? niceTicks(domain.min, domain.max, 4) : [];
   const point = active === null ? null : (pts[active] ?? null);
-  const startY = stats ? yFor(stats.first, series.v, height, pad) : 0;
+  const startY = stats ? yFor(stats.first, series.v, height, pad, DOMAIN_PAD) : 0;
 
   const move = (e: PointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -94,11 +99,14 @@ export function LineChart({ series, height, formatValue, deltaLabel, formatAxis,
     <div className={styles.wrap}>
       {showStats && stats ? (
         <dl className={styles.stats}>
-          <div><dt>High</dt><dd>{formatValue(stats.high.value)}</dd></div>
-          <div><dt>Low</dt><dd>{formatValue(stats.low.value)}</dd></div>
+          <div><dt>High</dt><dd><Amount value={stats.high.value} long={formatValue} short={formatAxis} /></dd></div>
+          <div><dt>Low</dt><dd><Amount value={stats.low.value} long={formatValue} short={formatAxis} /></dd></div>
           <div data-tone={up ? 'up' : 'down'}>
             <dt>Change</dt>
-            <dd>{sign(stats.change)}{formatValue(Math.abs(stats.change))}{stats.changePct === null ? '' : ` (${sign(stats.change)}${Math.abs(stats.changePct).toFixed(1)}%)`}</dd>
+            <dd>
+              {sign(stats.change)}<Amount value={Math.abs(stats.change)} long={formatValue} short={formatAxis} />
+              {stats.changePct === null ? '' : ` (${sign(stats.change)}${Math.abs(stats.changePct).toFixed(1)}%)`}
+            </dd>
           </div>
         </dl>
       ) : null}
@@ -126,7 +134,7 @@ export function LineChart({ series, height, formatValue, deltaLabel, formatAxis,
             </defs>
 
             {ticks.map((t) => {
-              const y = yFor(t, series.v, height, pad);
+              const y = yFor(t, series.v, height, pad, DOMAIN_PAD);
               return (
                 <g key={t}>
                   <line x1={pad.left} x2={width - pad.right} y1={y} y2={y} className={styles.grid} />
@@ -143,11 +151,17 @@ export function LineChart({ series, height, formatValue, deltaLabel, formatAxis,
             {markers.map((m, i) => {
               const p = pts[m.index];
               if (!p || !formatAxis) return null;
-              const anchor = p.x < 40 ? 'start' : p.x > width - 40 ? 'end' : 'middle';
+              const text = formatAxis(m.value);
+              const boxW = text.length * MARKER_CHAR_W + 14;
+              // High above its dot, low below it (there is room: the scale is padded). The badge is kept inside the plot, clear of the value axis.
+              const isHigh = i === 0;
+              const boxX = Math.min(Math.max(p.x - boxW / 2, pad.left), Math.max(width - boxW - 4, pad.left));
+              const boxY = isHigh ? p.y - MARKER_H - 8 : p.y + 8;
               return (
                 <g key={i}>
                   <circle cx={p.x} cy={p.y} r={4} fill={color} stroke="var(--color-surface)" strokeWidth={2} />
-                  <text x={p.x} y={p.y - 10} textAnchor={anchor} className={styles.markerText}>{formatAxis(m.value)}</text>
+                  <rect x={boxX} y={boxY} width={boxW} height={MARKER_H} rx={MARKER_H / 2} className={styles.markerBadge} />
+                  <text x={boxX + boxW / 2} y={boxY + MARKER_H / 2 + 3.5} textAnchor="middle" className={styles.markerText}>{text}</text>
                 </g>
               );
             })}
@@ -181,5 +195,16 @@ export function LineChart({ series, height, formatValue, deltaLabel, formatAxis,
 
       <p className={styles.srOnly} aria-live="polite">{point ? `${point.label}: ${formatValue(point.v)}. ${delta(point.v)}` : ''}</p>
     </div>
+  );
+}
+
+/** An amount in full, or in short units on a narrow screen (CSS shows one of the two). Without a short formatter it is just the full form. */
+function Amount({ value, long, short }: { readonly value: number; readonly long: (v: number) => string; readonly short?: (v: number) => string }) {
+  if (!short) return <>{long(value)}</>;
+  return (
+    <>
+      <span className={styles.amountLong}>{long(value)}</span>
+      <span className={styles.amountShort}>{short(value)}</span>
+    </>
   );
 }

@@ -30,11 +30,16 @@ export function HeroPortfolioCard({ totalValue, invested, todayChange, history, 
     <section className={styles.card} aria-label="Portfolio performance">
       <div className={styles.head}>
         <div className={styles.headMain}>
-          <p className={styles.label}>Portfolio value</p>
+          <div className={styles.topRow}>
+            <p className={styles.label}>Portfolio value</p>
+            <span className={styles.investedPill}>
+              Invested <strong>{formatInr(invested, 0, masked)}</strong>
+            </span>
+          </div>
           <p className={styles.value}>{formatInr(totalValue, 0, masked)}</p>
           <div className={styles.badges}>
             <ReturnBadge label="Today" figure={metrics.today} masked={masked} />
-            <ReturnBadge label="Total return" figure={metrics.total} masked={masked} />
+            <ReturnBadge label="Total return" shortLabel="Total" figure={metrics.total} masked={masked} />
           </div>
         </div>
         <div className={styles.tabs}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { areaPath, compactInr, nearestIndex, niceTicks, plotPoints, seriesStats, smoothPath, visibleTicks, yFor } from './chartGeometry';
+import { areaPath, compactInr, nearestIndex, niceTicks, plotPoints, seriesStats, smoothPath, valueDomain, visibleTicks, yFor } from './chartGeometry';
 
 const PAD = { top: 10, right: 10, bottom: 20, left: 40 };
 
@@ -26,6 +26,12 @@ describe('niceTicks', () => {
     const step = t[1] - t[0];
     expect(t.every((v, i) => i === 0 || Math.abs(v - t[i - 1] - step) < 1e-6)).toBe(true);
     expect([100, 200, 250, 500, 1000, 2000, 2500, 5000].some((s) => step % s === 0)).toBe(true);
+  });
+  it('keeps an already round step instead of rounding it up', () => {
+    expect(niceTicks(43_400, 58_400, 4)).toEqual([45_000, 50_000, 55_000]);
+    // A rough step just over 5,000 would round to 10,000 and leave one line; the finer step keeps three.
+    expect(niceTicks(43_356, 58_395, 4)).toEqual([45_000, 50_000, 55_000]);
+    expect(niceTicks(0, 100, 5)).toEqual([0, 50, 100]);
   });
   it('gives one tick for a flat range and none for bad input', () => {
     expect(niceTicks(5, 5)).toEqual([5]);
@@ -122,5 +128,26 @@ describe('visibleTicks', () => {
   it('drops a label that would crowd the previous one', () => {
     const pts = labelled(['A', 'B', 'C', 'D']); // 133px apart
     expect(visibleTicks(pts, 200).map((p) => p.label)).toEqual(['A', 'C']);
+  });
+});
+
+describe('value domain padding', () => {
+  it('widens the range by a share of its span at both ends, and by nothing by default', () => {
+    expect(valueDomain([100, 200])).toEqual({ min: 100, max: 200 });
+    expect(valueDomain([100, 200], 0.1)).toEqual({ min: 90, max: 210 });
+  });
+  it('leaves a flat series flat', () => expect(valueDomain([5, 5], 0.2)).toEqual({ min: 5, max: 5 }));
+  it('keeps the extremes off the edges of the plot', () => {
+    const pts = plotPoints([10, 30, 20], [], 300, 100, PAD, 0.1);
+    const top = Math.min(...pts.map((p) => p.y));
+    const bottom = Math.max(...pts.map((p) => p.y));
+    expect(top).toBeGreaterThan(PAD.top);
+    expect(bottom).toBeLessThan(100 - PAD.bottom);
+  });
+  it('puts yFor on the same padded scale as plotPoints', () => {
+    const vals = [10, 30, 20];
+    const pts = plotPoints(vals, [], 300, 100, PAD, 0.08);
+    expect(yFor(30, vals, 100, PAD, 0.08)).toBeCloseTo(pts[1].y);
+    expect(yFor(10, vals, 100, PAD, 0.08)).toBeCloseTo(pts[0].y);
   });
 });

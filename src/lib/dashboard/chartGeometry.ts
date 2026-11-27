@@ -54,17 +54,38 @@ export function niceTicks(min: number, max: number, target = 4): number[] {
   const rough = (max - min) / Math.max(target - 1, 1);
   const magnitude = 10 ** Math.floor(Math.log10(rough));
   const residual = rough / magnitude;
-  const step = (residual >= 5 ? 10 : residual >= 2 ? 5 : residual >= 1 ? 2 : 1) * magnitude;
-  const ticks: number[] = [];
-  for (let t = Math.ceil(min / step) * step; t <= max + step * 1e-9; t += step) ticks.push(Number(t.toFixed(10)));
+  const NICE = [1, 2, 5, 10];
+  // The first round step (1, 2, 5, 10 times a power of ten) that is not smaller than the ideal one.
+  let at = NICE.findIndex((n) => n >= residual - 1e-9);
+  const ticksAt = (step: number): number[] => {
+    const out: number[] = [];
+    for (let t = Math.ceil(min / step) * step; t <= max + step * 1e-9; t += step) out.push(Number(t.toFixed(10)));
+    return out;
+  };
+  let ticks = ticksAt(NICE[at] * magnitude);
+  // A chart with a single gridline says little: if rounding up left fewer than three, use the next finer round step.
+  while (ticks.length < 3 && at > 0) {
+    at -= 1;
+    ticks = ticksAt(NICE[at] * magnitude);
+  }
   return ticks;
 }
 
-/** Positions of each value inside a width x height box with padding. x is spread evenly; y is scaled to the series range. */
-export function plotPoints(values: readonly number[], labels: readonly string[], width: number, height: number, pad: Padding): PlotPoint[] {
-  if (values.length === 0) return [];
+/**
+ * The value range the chart is drawn against: the data's own range, widened by `frac` of its span at both ends so the
+ * curve never touches the top edge or the bottom axis (and a marker label has room beside the extreme it names).
+ */
+export function valueDomain(values: readonly number[], frac = 0): { readonly min: number; readonly max: number } {
   const min = Math.min(...values);
   const max = Math.max(...values);
+  const room = (max - min) * Math.max(frac, 0);
+  return { min: min - room, max: max + room };
+}
+
+/** Positions of each value inside a width x height box with padding. x is spread evenly; y is scaled to the series range, widened by `domainPad`. */
+export function plotPoints(values: readonly number[], labels: readonly string[], width: number, height: number, pad: Padding, domainPad = 0): PlotPoint[] {
+  if (values.length === 0) return [];
+  const { min, max } = valueDomain(values, domainPad);
   const span = max - min || 1;
   const innerW = Math.max(width - pad.left - pad.right, 1);
   const innerH = Math.max(height - pad.top - pad.bottom, 1);
@@ -79,9 +100,8 @@ export function plotPoints(values: readonly number[], labels: readonly string[],
 }
 
 /** The y position of an arbitrary value on the same scale as `plotPoints`. */
-export function yFor(value: number, values: readonly number[], height: number, pad: Padding): number {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+export function yFor(value: number, values: readonly number[], height: number, pad: Padding, domainPad = 0): number {
+  const { min, max } = valueDomain(values, domainPad);
   const innerH = Math.max(height - pad.top - pad.bottom, 1);
   return max === min ? pad.top + innerH / 2 : pad.top + (1 - (value - min) / (max - min)) * innerH;
 }
