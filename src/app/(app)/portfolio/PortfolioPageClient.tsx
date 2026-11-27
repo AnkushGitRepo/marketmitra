@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { AllocationCard } from '@/components/portfolio/AllocationCard';
+import { CashManager } from '@/components/portfolio/CashManager';
 import { HoldingsSection } from '@/components/portfolio/HoldingsSection';
+import { DecisionJournal } from '@/components/portfolio/DecisionJournal';
 import { PortfolioHero } from '@/components/portfolio/PortfolioHero';
 import { TaxPanel } from '@/components/portfolio/TaxPanel';
+import { RebalanceSandbox } from '@/components/portfolio/RebalanceSandbox';
 import { RiskCopilotCard } from '@/components/portfolio/RiskCopilotCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
@@ -15,6 +18,8 @@ import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import type { TaxReport } from '@/lib/tax/report';
+import { totalCash, type CashEntry } from '@/lib/cash/schema';
+import type { JournalSnapshot } from '@/lib/tradeJournal/types';
 import { newsForHoldings, portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
 import { AddHoldingForm } from './AddHoldingForm';
 import styles from './page.module.css';
@@ -25,6 +30,11 @@ interface PortfolioPageClientProps {
   news: NewsItem[];
   /** Tax view of the holdings (#414); null when it could not be built. */
   tax: TaxReport | null;
+  /** Cash and liquid funds the user keeps outside these stocks (#413). */
+  cash: CashEntry[];
+  /** Decision journal entries, newest first, and the live price of each symbol still held. */
+  journal: JournalSnapshot[];
+  journalPrices: Record<string, number | null>;
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
 }
@@ -46,10 +56,12 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news, tax, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, news, journal, journalPrices, cash, tax, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
+  const [includeCash, setIncludeCash] = useState(true);
+  const cashTotal = totalCash(cash);
 
   if (holdings.length === 0) {
     return (
@@ -95,12 +107,18 @@ export function PortfolioPageClient({ holdings, history, news, tax, maxPositionP
       <PortfolioHero totals={totals} history={history} masked={masked} />
 
       <div className={styles.macroGrid}>
-        <AllocationCard holdings={holdings} />
+        <AllocationCard holdings={holdings} cash={cashTotal} includeCash={includeCash} />
         <RiskCopilotCard holdings={holdings} maxPositionPct={maxPositionPct} />
       </div>
 
       <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} />
 
+      <DecisionJournal entries={journal} prices={journalPrices} />
+
+      <div className={styles.macroGrid}>
+        <CashManager entries={cash} includeCash={includeCash} onIncludeCash={setIncludeCash} />
+        <RebalanceSandbox holdings={holdings} cash={cashTotal} />
+      </div>
       {tax ? <TaxPanel report={tax} /> : null}
 
       <div className={styles.sectionHeadRow}>

@@ -591,6 +591,11 @@
                   "avgPrice": {
                     "type": "number",
                     "exclusiveMinimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 280,
+                    "description": "Optional one-line reason, saved to the decision journal."
                   }
                 }
               },
@@ -653,6 +658,11 @@
                   "avgPrice": {
                     "type": "number",
                     "exclusiveMinimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 280,
+                    "description": "Optional one-line reason, saved to the decision journal."
                   }
                 }
               },
@@ -707,6 +717,23 @@
           },
           "404": {
             "description": "Not found / not owned."
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 280,
+                    "description": "Optional reason for removing the position, saved to the decision journal."
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -8305,6 +8332,898 @@
           },
           "422": {
             "description": "Not a real, past date."
+          }
+        }
+      }
+    },
+    "/api/cash": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "List cash entries",
+        "description": "Cash and liquid funds the user keeps outside their stock holdings, oldest first.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "amount": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Add a cash entry",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "label",
+                  "amount"
+                ]
+              },
+              "example": {
+                "label": "Liquid fund",
+                "amount": 50000
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 60
+                    },
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Per-user limit (20 entries) reached."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      }
+    },
+    "/api/cash/{id}": {
+      "patch": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Change a cash entry",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 60
+                    },
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such entry."
+          },
+          "422": {
+            "description": "Invalid input, or neither label nor amount sent."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Remove a cash entry",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such entry."
+          }
+        }
+      }
+    },
+    "/api/journal": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "List decision journal entries",
+        "description": "Snapshots saved automatically whenever a holding is added, changed or removed (Portfolio, CSV import, Mitra, API), newest first. Fields the data did not have at that moment are null, never estimated.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "symbol": {
+                        "type": "string"
+                      },
+                      "event": {
+                        "type": "string",
+                        "enum": [
+                          "buy",
+                          "add_more",
+                          "trim",
+                          "edit",
+                          "exit"
+                        ]
+                      },
+                      "at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "before": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "quantity": {
+                            "type": "number"
+                          },
+                          "avgPrice": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "after": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "quantity": {
+                            "type": "number"
+                          },
+                          "avgPrice": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "marketPrice": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Live quote when the change was saved; for an exit this is not a recorded sale price."
+                      },
+                      "pe": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "roce": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "thesis": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "noteId": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "body": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "reason": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "guardrails": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "postMortem": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Delete the whole journal",
+        "description": "Removes every journal entry of the user and returns how many. The Settings Danger zone asks for a typed confirmation first.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "removed": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      }
+    },
+    "/api/journal/{id}": {
+      "patch": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Edit your own words on a journal entry",
+        "description": "Sets or clears the reason and/or the reflection (post-mortem). What the app recorded (price, P/E, ROCE, thesis copy, guardrails) cannot be edited. Send at least one field.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 280
+                  },
+                  "postMortem": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string",
+                      "enum": [
+                        "buy",
+                        "add_more",
+                        "trim",
+                        "edit",
+                        "exit"
+                      ]
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "before": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "quantity": {
+                          "type": "number"
+                        },
+                        "avgPrice": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "after": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "quantity": {
+                          "type": "number"
+                        },
+                        "avgPrice": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "marketPrice": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "description": "Live quote when the change was saved; for an exit this is not a recorded sale price."
+                    },
+                    "pe": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "roce": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "thesis": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "noteId": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "body": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "reason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "guardrails": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "postMortem": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such entry."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Delete a journal entry",
+        "description": "Removes one entry for good. The holding is not affected.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such entry."
+          }
+        }
+      }
+    },
+    "/api/conviction": {
+      "get": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "List conviction entries",
+        "description": "The user's conviction board entries (one per symbol), oldest first.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "symbol": {
+                        "type": "string"
+                      },
+                      "tag": {
+                        "type": "string",
+                        "enum": [
+                          "high",
+                          "tracking",
+                          "wait"
+                        ]
+                      },
+                      "waitFor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 60
+                      },
+                      "targetPrice": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "targetDirection": {
+                        "type": "string",
+                        "enum": [
+                          "at_or_below",
+                          "at_or_above"
+                        ]
+                      },
+                      "noteId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Create or update a conviction entry",
+        "description": "Upserts the entry for a symbol; only the fields sent change. Setting targetPrice keeps one price alert in step with it (visible on the Alerts page); sending null removes that alert.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "tag": {
+                    "type": "string",
+                    "enum": [
+                      "high",
+                      "tracking",
+                      "wait"
+                    ]
+                  },
+                  "waitFor": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 60,
+                    "description": "Only with tag=wait."
+                  },
+                  "targetPrice": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0
+                  },
+                  "targetDirection": {
+                    "type": "string",
+                    "enum": [
+                      "at_or_below",
+                      "at_or_above"
+                    ],
+                    "default": "at_or_below"
+                  },
+                  "noteId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A note from /api/notes holding the thesis."
+                  }
+                }
+              },
+              "example": {
+                "symbol": "TCS",
+                "tag": "high",
+                "targetPrice": 3800
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    },
+                    "tag": {
+                      "type": "string",
+                      "enum": [
+                        "high",
+                        "tracking",
+                        "wait"
+                      ]
+                    },
+                    "waitFor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 60
+                    },
+                    "targetPrice": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "targetDirection": {
+                      "type": "string",
+                      "enum": [
+                        "at_or_below",
+                        "at_or_above"
+                      ]
+                    },
+                    "noteId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Per-user limit (200 entries) reached."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      }
+    },
+    "/api/conviction/{symbol}": {
+      "delete": {
+        "tags": [
+          "Watchlists"
+        ],
+        "summary": "Remove a conviction entry",
+        "description": "Removes the entry and its target price alert.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No entry for that symbol."
           }
         }
       }

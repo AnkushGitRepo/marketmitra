@@ -4,6 +4,8 @@ import { listAlerts } from '@/lib/alerts/store';
 import { listHoldings } from '@/lib/holdings';
 import { listNotes } from '@/lib/notes/userNotes';
 import { listPurchaseDates } from '@/lib/tax/dates';
+import { listCash } from '@/lib/cash/store';
+import { listSnapshots } from '@/lib/tradeJournal/store';
 import { listWishlists } from '@/lib/wishlists/userWishlists';
 import { listConversations, loadMessages } from '@/lib/mitra-chat/conversations';
 import { MAX_CONVERSATIONS_PER_USER } from '@/lib/mitra-chat/limits';
@@ -19,12 +21,14 @@ export async function GET() {
   const userId = await getCurrentUserId({ allowPat: false });
   if (!userId) return NextResponse.json({ success: false, data: null, error: 'Not authenticated' }, { status: 401 });
   try {
-    const [holdings, notes, memories, alerts, wishlists, purchaseDates, preferences, convos] = await Promise.all([
+    const [holdings, notes, memories, alerts, wishlists, tradeJournal, cash, purchaseDates, preferences, convos] = await Promise.all([
       listHoldings(userId),
       listNotes(userId),
       liveMemoryStore.list(userId),
       listAlerts(userId),
       listWishlists(userId),
+      listSnapshots(userId),
+      listCash(userId),
       listPurchaseDates(userId),
       getPreferences(userId),
       listConversations(userId, undefined, MAX_CONVERSATIONS_PER_USER),
@@ -33,7 +37,7 @@ export async function GET() {
       convos.map(async (conversation) => ({ conversation, messages: await loadMessages(userId, conversation.id) }))
     );
     const now = new Date();
-    return new Response(JSON.stringify(buildExportDocument({ holdings, notes, memories, alerts, wishlists, purchaseDates, conversations, preferences }, now), null, 2), {
+    return new Response(JSON.stringify(buildExportDocument({ holdings, notes, memories, alerts, wishlists, tradeJournal, cash, purchaseDates, conversations, preferences }, now), null, 2), {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Disposition': `attachment; filename="${exportFilename(now)}"`,
