@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { HoldingLike } from './portfolioMetrics';
-import { simulateWhatIf, withCashSlice } from './rebalance';
+import { simulateWhatIf, withCashSlice, withSlice } from './rebalance';
 
 const h = (symbol: string, sector: string | null, quantity: number, ltp: number | null): HoldingLike => ({
   symbol, name: symbol, quantity, avgPrice: ltp ?? 1, ltp, sector, dayChange: null,
@@ -74,4 +74,16 @@ describe('withCashSlice', () => {
   it('leaves the sectors alone with no cash', () => {
     expect(withCashSlice([{ name: 'IT', value: 300, pct: 100 }], 0)).toEqual([{ name: 'IT', value: 300, pct: 100 }]);
   });
+});
+
+describe('withSlice', () => {
+  const weights = [{ name: 'IT', value: 600, pct: 60 }, { name: 'Banks', value: 400, pct: 40 }];
+  it('adds a named slice and rescales the others', () => {
+    const r = withSlice(weights, 'Precious metals', 1000);
+    expect(r.map((s) => s.name)).toEqual(['IT', 'Banks', 'Precious metals']);
+    expect(r[2].pct).toBeCloseTo(50);
+    expect(r[0].pct).toBeCloseTo(30);
+  });
+  it('leaves the slices alone for a zero value', () => expect(withSlice(weights, 'Precious metals', 0).map((s) => s.name)).toEqual(['IT', 'Banks']));
+  it('is empty with nothing at all', () => expect(withSlice([], 'Precious metals', 0)).toEqual([]));
 });

@@ -1,5 +1,5 @@
 import { concentration, donutSegments, sectorWeights, type HoldingLike } from '@/lib/portfolio/portfolioMetrics';
-import { withCashSlice } from '@/lib/portfolio/rebalance';
+import { withSlice } from '@/lib/portfolio/rebalance';
 import styles from './AllocationCard.module.css';
 
 const SECTOR_COLORS = ['#0C8A6C', '#3FD0AB', '#C9AF7E', '#D9917F', '#7FDFC2', '#8fa3b8', '#E2DED2'] as const;
@@ -12,11 +12,14 @@ interface AllocationCardProps {
   /** Cash and liquid funds (#413). Shown as its own slice while `includeCash` is on. */
   readonly cash?: number;
   readonly includeCash?: boolean;
+  /** Estimated value of physical gold, silver and platinum (#454). Shown as its own slice when above zero. */
+  readonly metals?: number;
 }
 
-export function AllocationCard({ holdings, cash = 0, includeCash = false }: AllocationCardProps) {
+export function AllocationCard({ holdings, cash = 0, includeCash = false, metals = 0 }: AllocationCardProps) {
   const weights = sectorWeights(holdings);
-  const segments = donutSegments(includeCash && cash > 0 ? withCashSlice(weights, cash) : weights);
+  const withMetals = metals > 0 ? withSlice(weights, 'Precious metals', metals) : weights;
+  const segments = donutSegments(includeCash && cash > 0 ? withSlice(withMetals, 'Cash', cash) : withMetals);
   const { top3Pct, largest } = concentration(holdings);
 
   return (
@@ -57,6 +60,7 @@ export function AllocationCard({ holdings, cash = 0, includeCash = false }: Allo
           </ul>
         </div>
       )}
+      {metals > 0 ? <p className={styles.empty}>Includes your physical metals at an estimated price. The value and return above cover stocks only.</p> : null}
       {largest && (
         <div className={styles.pills}>
           <span className={styles.pill}>

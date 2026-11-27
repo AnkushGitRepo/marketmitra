@@ -6,6 +6,9 @@ import { fetchIndexHistory } from '@/lib/dashboard/yahooQuote';
 import { slicePricesByPeriod } from '@/lib/dashboard/pricePeriods';
 import { alignToDates } from '@/lib/portfolio/compare';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
+import { listBullion } from '@/lib/bullion/store';
+import { valueBullion } from '@/lib/bullion/value';
+import { getCommodities } from '@/lib/commodities/getCommodities';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { RISK_PROFILES } from '@/lib/onboarding/profiles';
 import { getPreferences } from '@/lib/preferences/store';
@@ -44,6 +47,10 @@ export default async function PortfolioPage() {
     })
   ) as Record<PricePeriod, (number | null)[]>;
 
+  // Physical metals (#454): an estimated value for the allocation donut. Optional context, so a failure just means no slice.
+  const [bullionEntries, commodities] = await Promise.all([listBullion(userId).catch(() => []), getCommodities().catch(() => null)]);
+  const metalsValue = bullionEntries.length > 0 ? valueBullion(bullionEntries, commodities).totalValue : 0;
+
   // News scoped to the holdings actually in this portfolio — same
   // `/api/news`-backing `getNews()` the News page's "My holdings" filter
   // uses, just always on here since this whole page is holdings-scoped.
@@ -56,6 +63,7 @@ export default async function PortfolioPage() {
       history={historyByPeriod}
       benchmark={benchmark}
       news={news?.items ?? []}
+      metalsValue={metalsValue}
       maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />
   );

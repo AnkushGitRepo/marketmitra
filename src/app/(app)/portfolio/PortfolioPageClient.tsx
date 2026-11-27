@@ -23,6 +23,8 @@ interface PortfolioPageClientProps {
   /** Nifty 50 closes aligned to each range's dates; empty when unavailable. */
   benchmark: Record<PricePeriod, (number | null)[]>;
   news: NewsItem[];
+  /** Estimated value of physical metals, for the allocation donut. */
+  metalsValue: number;
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
 }
@@ -44,7 +46,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, benchmark, news, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, benchmark, news, metalsValue, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -93,7 +95,7 @@ export function PortfolioPageClient({ holdings, history, benchmark, news, maxPos
         <PortfolioHero totals={totals} history={history} benchmark={benchmark} masked={masked} />
 
         <div className={styles.macroGrid}>
-          <AllocationCard holdings={holdings} />
+          <AllocationCard holdings={holdings} metals={metalsValue} />
           <RiskCopilotCard holdings={holdings} maxPositionPct={maxPositionPct} />
         </div>
 

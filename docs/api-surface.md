@@ -241,6 +241,18 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 ### `PATCH /api/cash/[id]` and `DELETE /api/cash/[id]`
 - **Request (PATCH):** `{ label?, amount? }`, at least one. **Errors:** `401`, `404` not found/not owned, `422`.
+### `GET /api/bullion`
+- **Purpose:** The user's physical gold, silver and platinum (#454, ADR 0087), valued at the **estimated** Indian price (ADR 0086: international price in rupees plus the import duty; not IBJA or MCX).
+- **Auth:** required; scoped to the owning user.
+- **Response:** `data`: `{ rows: [{ entry: { id, metal, purity, grams, buyPricePerGram, note }, label, value, cost, gain, gainPct }], totalValue, unpriced, trackedCost, trackedGain, estimate: true, assumptions }`. `value` is `null` (never zero) when no price is available; `gain` only when a buy price was given.
+
+### `POST /api/bullion`
+- **Request:** `{ metal: "gold"|"silver"|"platinum", purity?: "24k"|"22k" (gold only, default 24k), grams: number(>0, ≤1,000,000), buyPricePerGram?: number|null, note?: string(≤60) }`.
+- **Response:** `201`, `data`: the entry. **Errors:** `401`, `409` at 30 entries, `422`.
+
+### `PATCH /api/bullion/[id]` and `DELETE /api/bullion/[id]`
+- **Request (PATCH):** `{ grams?, buyPricePerGram?, purity?, note? }`, at least one (`buyPricePerGram: null` clears it). **Errors:** `401`, `404` not found/not owned, `422`.
+
 ### `GET /api/journal`
 - **Purpose:** The decision journal (#412): a snapshot saved whenever a holding is added, changed or removed from any path (Portfolio form, CSV import, Mitra confirm card, API). Newest first; `?symbol=` narrows it. The user can edit their own words on an entry and delete any entry or the whole journal.
 - **Auth:** required; scoped to the owning user.

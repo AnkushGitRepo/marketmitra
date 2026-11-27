@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Log physical gold (24K or 22K), silver and platinum by weight on a new Metals page (Portfolio, then Metals). Each entry is valued at an estimated Indian price, shows a gain when you give a buy price, and can be edited or removed. Your metals also appear as a "Precious metals" slice in the Portfolio allocation chart; the headline value and return still cover stocks only. (#454)
+
 - Mitra can now answer questions about Indian gold, silver and platinum prices, including what a weight you give it is worth (for example 50 g of 24K gold). It always says the prices are estimates from international prices plus the import duty, not the official IBJA or MCX rate, and it does not tell you to buy or sell. (#452)
 
 - Markets now has a "Bullion & ETFs" view with estimated Indian prices for gold (24K and 22K), silver and platinum, a gold-to-silver ratio, an include-3%-GST toggle, and a sortable table of NSE gold and silver ETFs. It says plainly that the prices are estimates and shows the import duty used and when it was last confirmed. (#450)
