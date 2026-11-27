@@ -6,7 +6,7 @@ import { AlertRow, type RowKind } from '@/components/alerts/AlertRow';
 import { AlertSettingsDrawer } from '@/components/alerts/AlertSettingsDrawer';
 import { EmailAlertsCard } from '@/components/alerts/EmailAlertsCard';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import type { Alert } from '@/lib/alerts/types';
+import type { Alert, PortfolioRulesParams } from '@/lib/alerts/types';
 import type { EmailAlertStatus } from '@/lib/notifications/emailStatus';
 import type { NotificationChannelSettingsView } from '@/lib/userSettings';
 import { AlertForm } from './AlertForm';
@@ -26,11 +26,14 @@ import {
   type AlertTab,
 } from './alertView';
 import { GuardrailsToggle } from './GuardrailsToggle';
+import { PortfolioRulesCard } from './PortfolioRulesCard';
 import { NotificationChannelsCard } from './NotificationChannelsCard';
 import styles from './page.module.css';
 
 interface AlertsPageClientProps {
   alerts: Alert[];
+  /** The user's saved portfolio rules, edited in their own card. */
+  portfolioRules: PortfolioRulesParams | null;
   /** From `?new=1&symbol=…` on the stock page's "Set alert" button. */
   openNew: boolean;
   /** From `?settings=1`, the link in Settings -> Alerts & Channels. */
@@ -46,7 +49,7 @@ interface AlertsPageClientProps {
 
 const SECTION_TITLE = { attention: 'Needs attention', monitoring: 'Active monitoring', paused: 'Paused', resolved: 'Earlier triggers' } as const;
 
-export function AlertsPageClient({ alerts, openNew, openSettings = false, prefillSymbol, channelsView, encConfigured, autoGuardrailsEnabled, emailStatus, nowIso }: AlertsPageClientProps) {
+export function AlertsPageClient({ alerts, portfolioRules, openNew, openSettings = false, prefillSymbol, channelsView, encConfigured, autoGuardrailsEnabled, emailStatus, nowIso }: AlertsPageClientProps) {
   const router = useRouter();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const counts = useMemo(() => tabCounts(alerts), [alerts]);
@@ -151,6 +154,8 @@ export function AlertsPageClient({ alerts, openNew, openSettings = false, prefil
           <AlertForm initialSymbol={prefillSymbol} onClose={() => setCreating(false)} />
         </div>
       )}
+
+      <PortfolioRulesCard saved={portfolioRules} />
 
       {alerts.length === 0 && !creating ? (
         <div className={styles.emptyCard}>

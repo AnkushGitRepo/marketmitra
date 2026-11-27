@@ -8,7 +8,8 @@ export type AlertType =
   | 'trailing_stop'
   | 'cumulative_drawdown'
   | 'ipo_watch'
-  | 'ipo';
+  | 'ipo'
+  | 'portfolio_rules';
 
 /** Who/what created an alert — drives the "Mitra activity" audit trail and
  * lets the UI label auto-created guardrails differently from a user's own.
@@ -86,6 +87,19 @@ export interface IpoAlertParams {
   gmpThresholdAbs?: number;
 }
 
+/** One per user (#442, ADR 0085): the user's own rules across every holding, announced once per crossing (idempotent
+ * via the alert doc's `sentKeys`). An empty list or null switches that rule off. */
+export interface PortfolioRulesParams {
+  /** Unrealised gain on average cost, in percent (e.g. 100 = doubled). */
+  profitMilestonesPct: number[];
+  /** Loss below average cost, in percent, as a positive number (e.g. 10 = 10% below cost). */
+  costDrawdownPct: number[];
+  /** One holding's share of portfolio value, in percent. */
+  maxPositionWeightPct: number | null;
+  /** Also announce when a holding reaches its 52-week high. */
+  week52High: boolean;
+}
+
 export type AlertParams =
   | ({ type: 'price_threshold' } & PriceThresholdParams)
   | ({ type: 'percent_move' } & PercentMoveParams)
@@ -94,7 +108,8 @@ export type AlertParams =
   | ({ type: 'trailing_stop' } & TrailingStopParams)
   | ({ type: 'cumulative_drawdown' } & CumulativeDrawdownParams)
   | ({ type: 'ipo_watch' } & IpoWatchParams)
-  | ({ type: 'ipo' } & IpoAlertParams);
+  | ({ type: 'ipo' } & IpoAlertParams)
+  | ({ type: 'portfolio_rules' } & PortfolioRulesParams);
 
 export interface Alert {
   id: string;

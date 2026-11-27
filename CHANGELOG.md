@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Portfolio rules on the Alerts page: set your own thresholds for a holding gaining +100% / +200% / +300% on your cost, falling 10% / 25% below your cost, one stock passing a share of your portfolio, or reaching its 52-week high. When one is crossed you get a plain statement of the numbers, grouped into one notification, with no buy or sell wording. (#442)
+
 - The Portfolio value chart now has a "vs Nifty 50" view that plots your portfolio and the Nifty 50 as percent change over the same range, with the difference in percentage points, and a "Range" view that shades a statistical range ahead from the portfolio's own past volatility. The range is not a forecast and says so. (#433)
 
 - Click a holding on the Portfolio page to open a side panel with its entry date, your thesis, the decisions you recorded on it and its own news, with a link to the full stock page. (#432)
