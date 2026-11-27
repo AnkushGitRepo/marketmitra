@@ -1,0 +1,20 @@
+.panel { background: var(--color-surface); border: 1px solid var(--app-border-soft); border-radius: var(--radius-xl); padding: 20px 22px; box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04); min-width: 0; }
+.header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; margin-bottom: 12px; }
+.title { margin: 0; font-size: 17px; font-weight: 600; color: var(--app-ink); }
+.hint, .empty { margin: 0; font-size: 12.5px; color: var(--app-ink-muted, var(--app-ink)); max-width: 640px; }
+.legs { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.leg { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kind { font-size: 12.5px; font-weight: 600; min-width: 84px; color: var(--app-ink); }
+.input { min-width: 0; width: 140px; font-family: var(--font-sans); font-size: 14px; padding: 7px 10px; border: 1px solid var(--app-border); border-radius: var(--radius-md, 8px); background: var(--color-surface); color: var(--app-ink); }
+.check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--app-ink); }
+.buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+.secondary { font-family: var(--font-sans); font-size: 13px; padding: 7px 12px; border: 1px solid var(--app-border); border-radius: var(--radius-md, 8px); background: var(--color-surface); color: var(--app-ink); cursor: pointer; }
+.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+.link, .remove { border: none; background: none; padding: 4px 0; font-family: var(--font-sans); font-size: 12.5px; cursor: pointer; color: var(--app-teal-strong); }
+.remove { color: var(--app-loss-text); }
+.result { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.table th, .table td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--app-border-soft); font-variant-numeric: tabular-nums; color: var(--app-ink); }
+.table thead th { font-size: 12px; font-weight: 600; color: var(--app-ink-muted, var(--app-ink)); border-top: none; }
+.table tbody th { font-weight: 500; }
+.warnings { grid-column: 1 / -1; margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--app-loss-text); }

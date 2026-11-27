@@ -219,6 +219,17 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Response:** `data`: the updated wishlist.
 - **Errors:** `401` unauthenticated, `404` not found/not owned.
 
+### `GET /api/cash`
+- **Purpose:** Cash and liquid funds kept outside the stock holdings (#413), oldest first. Shown as a slice in the Portfolio allocation and used by the what-if rebalance sandbox.
+- **Auth:** required; scoped to the owning user.
+- **Response:** `data`: `[{ id, label, amount }]`.
+
+### `POST /api/cash`
+- **Request:** `{ label: string(1–60), amount: number(≥0) }`.
+- **Response:** `201`, `data`: the entry. **Errors:** `401`, `409` at 20 entries, `422`.
+
+### `PATCH /api/cash/[id]` and `DELETE /api/cash/[id]`
+- **Request (PATCH):** `{ label?, amount? }`, at least one. **Errors:** `401`, `404` not found/not owned, `422`.
 ### `GET /api/journal`
 - **Purpose:** The decision journal (#412): a snapshot saved whenever a holding is added, changed or removed from any path (Portfolio form, CSV import, Mitra confirm card, API). Newest first; `?symbol=` narrows it. The user can edit their own words on an entry and delete any entry or the whole journal.
 - **Auth:** required; scoped to the owning user.
