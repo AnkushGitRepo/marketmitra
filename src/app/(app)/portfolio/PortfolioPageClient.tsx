@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { AllocationCard } from '@/components/portfolio/AllocationCard';
 import { HoldingsSection } from '@/components/portfolio/HoldingsSection';
+import { PortfolioNews } from '@/components/portfolio/PortfolioNews';
 import { PortfolioHero } from '@/components/portfolio/PortfolioHero';
 import { RiskCopilotCard } from '@/components/portfolio/RiskCopilotCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
@@ -13,7 +13,7 @@ import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
-import { newsForHoldings, portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
+import { portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
 import { AddHoldingForm } from './AddHoldingForm';
 import styles from './page.module.css';
 
@@ -66,8 +66,6 @@ export function PortfolioPageClient({ holdings, history, news, maxPositionPct }:
   }
 
   const totals = portfolioTotals(holdings);
-  // Belt and braces: the page already asks for holdings' news only, but never show a story about a stock the user doesn't hold.
-  const holdingsNews = newsForHoldings(news, holdings);
 
   return (
     <div className={styles.pageRoot}>
@@ -107,7 +105,7 @@ export function PortfolioPageClient({ holdings, history, news, maxPositionPct }:
             </Link>
           </div>
           <div className={styles.newsCard}>
-            <NewsList items={holdingsNews} showSymbols emptyText="No recent news for your current holdings." />
+            <PortfolioNews items={news} holdings={holdings} />
           </div>
         </section>
       </div>
