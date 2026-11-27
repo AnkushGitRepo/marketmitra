@@ -16,6 +16,7 @@
 .cursor { stroke: var(--app-ink); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.35; }
 .axisText, .markerText { font-family: var(--font-mono); font-size: 10.5px; fill: var(--app-text-subtle); }
 .markerText { fill: var(--app-ink); font-weight: 600; }
+.markerBadge { fill: var(--color-surface); stroke: var(--app-border); stroke-width: 1; }
 
 @media (prefers-reduced-motion: no-preference) {
   .area { animation: chartFade 0.8s ease 0.25s both; }
@@ -44,3 +45,20 @@
 .tooltip[data-tone='down'] .tooltipDelta { color: var(--app-loss-soft); }
 
 .srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.amountShort { display: none; }
+
+/* A phone: High, Low and Change on one line, label beside value, in short units so nothing collides. */
+@media (max-width: 640px) {
+  .stats { flex-wrap: nowrap; gap: 4px 14px; margin-bottom: 6px; }
+  .stats > div { display: flex; align-items: baseline; gap: 5px; min-width: 0; white-space: nowrap; }
+  .stats dd { margin: 0; font-size: 12.5px; }
+  .amountLong { display: none; }
+  .amountShort { display: inline; }
+}
+
+/* Between a phone and a tablet there is room for the full figures again. */
+@media (min-width: 401px) and (max-width: 640px) {
+  .amountLong { display: inline; }
+  .amountShort { display: none; }
+}

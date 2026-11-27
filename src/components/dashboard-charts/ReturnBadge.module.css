@@ -48,3 +48,21 @@
     opacity: 0.35;
   }
 }
+
+.labelShort { display: none; }
+
+@media (max-width: 640px) {
+  .badge { padding: 4px 10px; gap: 5px; font-size: 12px; }
+  .labelLong { display: none; }
+  .labelShort { display: inline; }
+}
+
+.amountShort { display: none; }
+
+@media (max-width: 400px) {
+  .amountLong { display: none; }
+  .amountShort { display: inline; }
+  /* Two pills have to fit one row in about 300px: tighter, and the live dot (decoration) steps aside. */
+  .badge { padding: 3px 7px; gap: 3px; font-size: 11px; }
+  .liveDot { display: none; }
+}

@@ -31,16 +31,16 @@ export function PortfolioHero({ totals, history, masked }: PortfolioHeroProps) {
     <section className={styles.card} aria-label="Portfolio summary">
       <div className={styles.head}>
         <div className={styles.kpis}>
-          <div>
-            <p className={styles.label}>Current value</p>
+          <div className={styles.valueBlock}>
+            <p className={`${styles.label} ${styles.valueLabel}`}>Current value</p>
             <p className={styles.value}>{formatInr(totals.totalValue, 0, masked)}</p>
           </div>
-          <div>
+          <div className={styles.investedBlock}>
             <p className={styles.label}>Invested</p>
             <p className={styles.invested}>{formatInr(totals.invested, 0, masked)}</p>
           </div>
           <div className={styles.badges}>
-            <ReturnBadge label="Total return" figure={metrics.total} masked={masked} />
+            <ReturnBadge label="Total return" shortLabel="Total" figure={metrics.total} masked={masked} />
             <ReturnBadge label="Today" figure={metrics.today} masked={masked} live />
           </div>
         </div>
