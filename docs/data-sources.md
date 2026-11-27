@@ -172,7 +172,7 @@ and are not shown.
 - **Auth:** none
 - **Rate limits:** unofficial; the same per-request caching as the existing quotes applies
 - **Cost:** free
-- **ToS notes:** unofficial endpoint, the same standing as the existing quote use (ADR 0024). Prices are **international futures converted at the USD/INR rate**: they are not the Indian retail or IBJA price, which adds import duty, GST and local premium. Any use must say so. For India the converted price gets the statutory import duty (15% since 13 May 2026, a dated constant to confirm); no local premium or GST is added. Checked against IBJA on one day: gold within 0.1%, silver about 2.6% under, platinum about 5.5% under.
+- **ToS notes:** unofficial endpoint, the same standing as the existing quote use (ADR 0024). Prices are **international futures converted at the USD/INR rate**: they are not the Indian retail or IBJA price, which adds import duty, GST and local premium. Any use must say so. For India the converted price gets the statutory import duty (15% since 13 May 2026, a dated constant confirmed by the maintainer on 2026-11-28 and re-checked monthly by a reminder issue); no local premium or GST is added. Checked against IBJA on one day: gold within 0.1%, silver about 2.6% under, platinum about 5.5% under.
 
 ### IBJA (India Bullion and Jewellers Association) benchmark rates (rejected, #446)
 - **Type:** web page and a subscription API
