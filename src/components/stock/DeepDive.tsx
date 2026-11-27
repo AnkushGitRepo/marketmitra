@@ -12,6 +12,7 @@ import type { FinTable, ShareholdingSeries } from '@/lib/dashboard/transforms';
 import { safeHref } from '@/lib/security/safeHref';
 import { FinancialsPanel, type StatementKey } from './FinancialsPanel';
 import { PeersPanel } from './PeersPanel';
+import { ThesisCard } from './ThesisCard';
 import styles from './DeepDive.module.css';
 
 type TabId = 'financials' | 'peers' | 'shareholding' | 'news' | 'filings' | 'journal';
@@ -77,6 +78,7 @@ export function DeepDive({ symbol, financials, peers, shareholding, news, docume
           ))}
         {tab === 'journal' && (
           <>
+            <ThesisCard symbol={symbol} />
             <AnalystChatButton symbol={symbol} />
             <DossierReader symbol={symbol} />
           </>

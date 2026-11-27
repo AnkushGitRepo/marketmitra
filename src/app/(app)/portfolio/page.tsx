@@ -4,10 +4,7 @@ import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { RISK_PROFILES } from '@/lib/onboarding/profiles';
-import { listCash } from '@/lib/cash/store';
-import { buildTaxReport } from '@/lib/tax/report';
 import { getPreferences } from '@/lib/preferences/store';
-import { listSnapshots } from '@/lib/tradeJournal/store';
 import { PortfolioPageClient } from './PortfolioPageClient';
 import styles from './page.module.css';
 
@@ -29,8 +26,7 @@ export default async function PortfolioPage() {
     );
   }
 
-  // Cash is optional context: if it cannot be read, the rest of the page still renders.
-  const [holdings, prefs, cash] = await Promise.all([getEnrichedHoldings(userId), getPreferences(userId), listCash(userId).catch(() => [])]);
+  const [holdings, prefs] = await Promise.all([getEnrichedHoldings(userId), getPreferences(userId)]);
   const profile = prefs.onboarding.riskProfile;
   const positions = holdings.map((h) => ({ symbol: h.symbol, quantity: h.quantity }));
 
@@ -42,21 +38,11 @@ export default async function PortfolioPage() {
   const holdingSymbols = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
   const news = holdingSymbols.length > 0 ? await getNews({ symbols: holdingSymbols, limit: 8 }) : null;
 
-  // Journal: a failed read leaves the rest of the page intact.
-  const journal = await listSnapshots(userId).catch(() => []);
-  const journalPrices = Object.fromEntries(holdings.map((h) => [h.symbol.toUpperCase(), h.ltp]));
-  // Tax view: a failed read leaves the rest of the page intact.
-  const tax = await buildTaxReport(userId, new Date()).catch(() => null);
-
   return (
     <PortfolioPageClient
       holdings={holdings}
       history={historyByPeriod}
       news={news?.items ?? []}
-      journal={journal}
-      journalPrices={journalPrices}
-      cash={cash}
-      tax={tax}
       maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />
   );
