@@ -10,6 +10,18 @@ export const GRAMS_PER_TROY_OZ = 31.1035;
  * 16/2026), up from about 6%. From news reports, not the CBIC site: the maintainer should confirm it. */
 export const IMPORT_DUTY_PCT = 15;
 export const IMPORT_DUTY_EFFECTIVE_FROM = '2026-05-13';
+/** The day the maintainer last confirmed the rate. Update it with the rate: the monthly check issue asks for both. */
+export const IMPORT_DUTY_CHECKED_ON = '2026-11-28';
+/** Past this many days without a confirmation the figures carry a warning. The duty changes in the Budget (1 February) and by
+ * sudden notification (13 May 2026), so a month is the checking rhythm and a month and a half the limit. */
+export const IMPORT_DUTY_STALE_AFTER_DAYS = 45;
+
+/** True when the duty has not been confirmed for longer than the limit. Pure: `now` is passed in. */
+export function isDutyStale(checkedOn: string = IMPORT_DUTY_CHECKED_ON, now: Date = new Date(), limitDays: number = IMPORT_DUTY_STALE_AFTER_DAYS): boolean {
+  const checked = Date.parse(`${checkedOn}T00:00:00Z`);
+  if (!Number.isFinite(checked)) return true;
+  return (now.getTime() - checked) / 86_400_000 > limitDays;
+}
 
 /** GST on a retail purchase of gold, silver or platinum. Not part of the benchmark rate; offered as a toggle. */
 export const GST_PCT = 3;

@@ -35,6 +35,10 @@ describe('buildCommodities', () => {
     expect(d.metals.every((m) => m.priceInr === null)).toBe(true);
     expect(d.goldSilverRatio).toBeNull();
   });
+  it('flags the duty as stale once it has gone unconfirmed too long', () => {
+    expect(buildCommodities(full, new Date('2026-12-01T00:00:00Z')).assumptions.dutyStale).toBe(false);
+    expect(buildCommodities(full, new Date('2027-03-01T00:00:00Z')).assumptions.dutyStale).toBe(true);
+  });
   it('lists every ETF, with nulls for ones without a quote', () => {
     const d = buildCommodities(full);
     expect(d.etfs).toHaveLength(METAL_ETFS.length);

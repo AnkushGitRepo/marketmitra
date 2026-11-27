@@ -5612,7 +5612,7 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "{ success, data: { metals[{ id, label, unit, priceInr, changePct, week52HighInr, week52LowInr, estimate, note }], goldSilverRatio, etfs[{ symbol, name, metal, price, changePct, week52High, week52Low }], assumptions{ usdInr, importDutyPct, dutyEffectiveFrom, gstPct }, asOf } }. A figure is null when its source is down."
+            "description": "{ success, data: { metals[{ id, label, unit, priceInr, changePct, week52HighInr, week52LowInr, estimate, note }], goldSilverRatio, etfs[{ symbol, name, metal, price, changePct, week52High, week52Low }], assumptions{ usdInr, importDutyPct, dutyEffectiveFrom, dutyCheckedOn, dutyStale, gstPct }, asOf } }. A figure is null when its source is down."
           }
         }
       }

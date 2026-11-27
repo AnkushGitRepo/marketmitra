@@ -4,10 +4,12 @@
 import {
   GOLD_22K_RATIO,
   GST_PCT,
+  IMPORT_DUTY_CHECKED_ON,
   IMPORT_DUTY_EFFECTIVE_FROM,
   IMPORT_DUTY_PCT,
   UNITS,
   goldSilverRatio,
+  isDutyStale,
   parityPrice,
   type MetalId,
 } from './convert';
@@ -48,7 +50,7 @@ export interface CommoditiesData {
   readonly metals: readonly MetalRate[];
   readonly goldSilverRatio: number | null;
   readonly etfs: readonly EtfRow[];
-  readonly assumptions: { readonly usdInr: number | null; readonly importDutyPct: number; readonly dutyEffectiveFrom: string; readonly gstPct: number };
+  readonly assumptions: { readonly usdInr: number | null; readonly importDutyPct: number; readonly dutyEffectiveFrom: string; readonly dutyCheckedOn: string; readonly dutyStale: boolean; readonly gstPct: number };
   readonly asOf: string | null;
 }
 
@@ -73,10 +75,10 @@ export interface RawInputs {
   readonly etfs: Readonly<Record<string, RawQuote | null>>;
 }
 
-const GOLD_NOTE = 'An estimate that tracks the Indian benchmark rate: the international price converted to rupees with the 15% import duty. Excludes GST, making charges and local premium.';
+const GOLD_NOTE = `An estimate that tracks the Indian benchmark rate: the international price converted to rupees with the ${IMPORT_DUTY_PCT}% import duty. Excludes GST, making charges and local premium.`;
 const OTHER_NOTE = 'International price converted to rupees with the import duty. The Indian rate is usually higher because of local premium.';
 
-export function buildCommodities(raw: RawInputs): CommoditiesData {
+export function buildCommodities(raw: RawInputs, now: Date = new Date()): CommoditiesData {
   const fx = raw.usdInr?.price ?? null;
   const rate = (id: string, label: string, metal: MetalId, ratio: number, note: string): MetalRate => {
     const q = raw.futures[metal];
@@ -115,7 +117,7 @@ export function buildCommodities(raw: RawInputs): CommoditiesData {
       const q = raw.etfs[e.symbol] ?? null;
       return { ...e, price: q?.price ?? null, changePct: q?.changePct ?? null, week52High: q?.week52High ?? null, week52Low: q?.week52Low ?? null };
     }),
-    assumptions: { usdInr: fx, importDutyPct: IMPORT_DUTY_PCT, dutyEffectiveFrom: IMPORT_DUTY_EFFECTIVE_FROM, gstPct: GST_PCT },
+    assumptions: { usdInr: fx, importDutyPct: IMPORT_DUTY_PCT, dutyEffectiveFrom: IMPORT_DUTY_EFFECTIVE_FROM, dutyCheckedOn: IMPORT_DUTY_CHECKED_ON, dutyStale: isDutyStale(IMPORT_DUTY_CHECKED_ON, now), gstPct: GST_PCT },
     asOf: times.length ? times[0] : null,
   };
 }

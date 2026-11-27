@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GOLD_22K_RATIO, goldSilverRatio, parityPrice, withGst } from './convert';
+import { GOLD_22K_RATIO, goldSilverRatio, isDutyStale, parityPrice, withGst } from './convert';
 
 describe('parityPrice', () => {
   it('converts gold to rupees per 10 g with the duty', () => {
@@ -31,4 +31,11 @@ describe('derived figures', () => {
     expect(goldSilverRatio(126000, null)).toBeNull();
     expect(goldSilverRatio(126000, 0)).toBeNull();
   });
+});
+
+describe('isDutyStale', () => {
+  const now = new Date('2026-12-20T00:00:00Z');
+  it('is fresh within the limit', () => expect(isDutyStale('2026-11-28', now)).toBe(false));
+  it('is stale past it', () => expect(isDutyStale('2026-11-01', now)).toBe(true));
+  it('treats an unreadable date as stale', () => expect(isDutyStale('soon', now)).toBe(true));
 });
