@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { AllocationCard } from '@/components/portfolio/AllocationCard';
 import { HoldingsSection } from '@/components/portfolio/HoldingsSection';
+import { DecisionJournal } from '@/components/portfolio/DecisionJournal';
 import { PortfolioHero } from '@/components/portfolio/PortfolioHero';
 import { RiskCopilotCard } from '@/components/portfolio/RiskCopilotCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
@@ -13,6 +14,7 @@ import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
+import type { JournalSnapshot } from '@/lib/tradeJournal/types';
 import { newsForHoldings, portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
 import { AddHoldingForm } from './AddHoldingForm';
 import styles from './page.module.css';
@@ -21,6 +23,9 @@ interface PortfolioPageClientProps {
   holdings: EnrichedHolding[];
   history: Record<PricePeriod, RangeSeries>;
   news: NewsItem[];
+  /** Decision journal entries, newest first, and the live price of each symbol still held. */
+  journal: JournalSnapshot[];
+  journalPrices: Record<string, number | null>;
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
 }
@@ -42,7 +47,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, news, journal, journalPrices, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -96,6 +101,8 @@ export function PortfolioPageClient({ holdings, history, news, maxPositionPct }:
       </div>
 
       <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} />
+
+      <DecisionJournal entries={journal} prices={journalPrices} />
 
       <div className={styles.sectionHeadRow}>
         <h2 className={styles.h2}>News for your holdings</h2>

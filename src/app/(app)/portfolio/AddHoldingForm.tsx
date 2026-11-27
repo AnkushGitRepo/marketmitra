@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { MAX_REASON } from '@/lib/tradeJournal/snapshot';
 import styles from './page.module.css';
 
 export function AddHoldingForm({ onDone }: { onDone: () => void }) {
@@ -9,6 +10,7 @@ export function AddHoldingForm({ onDone }: { onDone: () => void }) {
   const [symbol, setSymbol] = useState('');
   const [quantity, setQuantity] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
+  const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,7 +30,7 @@ export function AddHoldingForm({ onDone }: { onDone: () => void }) {
       const response = await fetch('/api/holdings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol: symbol.trim().toUpperCase(), quantity: parsedQuantity, avgPrice: parsedAvgPrice }),
+        body: JSON.stringify({ symbol: symbol.trim().toUpperCase(), quantity: parsedQuantity, avgPrice: parsedAvgPrice, ...(reason.trim() ? { reason: reason.trim() } : {}) }),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
@@ -66,6 +68,13 @@ export function AddHoldingForm({ onDone }: { onDone: () => void }) {
         type="number"
         min="0"
         step="any"
+        className={styles.addInput}
+      />
+      <input
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Why? (optional, saved to your journal)"
+        maxLength={MAX_REASON}
         className={styles.addInput}
       />
       <button type="submit" disabled={submitting} className={styles.btnPrimary}>
