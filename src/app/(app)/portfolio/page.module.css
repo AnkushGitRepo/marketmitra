@@ -387,6 +387,8 @@
   box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
 }
 
+.rowOpenable { cursor: pointer; }
+.rowOpenable:focus-visible { outline: 2px solid var(--app-teal-strong); outline-offset: -2px; }
 /* 52-week range: a thin track under the LTP with a dot where the price sits between the low and the high. */
 .rangeTrack { position: relative; width: 72px; height: 4px; margin: 7px 0 0 auto; border-radius: 2px; background: var(--app-border); }
 .rangeDot { position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%; background: var(--app-ink); border: 2px solid var(--color-surface); transform: translate(-50%, -50%); }

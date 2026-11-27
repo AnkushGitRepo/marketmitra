@@ -95,7 +95,7 @@ export function PortfolioPageClient({ holdings, history, news, maxPositionPct }:
           <RiskCopilotCard holdings={holdings} maxPositionPct={maxPositionPct} />
         </div>
 
-        <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} />
+        <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} news={news} />
 
         <section aria-label="News for your holdings">
           <div className={styles.sectionHeadRow}>

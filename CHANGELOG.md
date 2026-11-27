@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Click a holding on the Portfolio page to open a side panel with its entry date, your thesis, the decisions you recorded on it and its own news, with a link to the full stock page. (#432)
+
 - Each holding on the Portfolio page now shows a small 52-week range bar under its price and a "Near 52W high" or "Near 52W low" badge when the price is within 5% of either end. (#431)
 - News for your holdings on the Portfolio page now shows which holding each story touches and its weight in your book, a Bullish / Bearish / Neutral tag with a High impact, Material or Routine level worked out from the story's own sentiment score and the position size, and filters for High impact, Bullish, Bearish and by stock. (#430)
 - Mitra can now read your conviction board, decision journal, cash and tax view, so you can ask what is on your board, what you thought when you bought a stock, how much cash you hold or which positions turn long term soon. These are read-only: Mitra describes the numbers and does not tell you to buy or sell, and the tax answers say they are estimates, not tax advice. ([#419](https://github.com/AnkushGitRepo/marketmitra/issues/419))

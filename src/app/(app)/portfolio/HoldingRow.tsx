@@ -16,9 +16,11 @@ interface HoldingRowProps {
   holding: EnrichedHolding;
   totalValue: number;
   masked: boolean;
+  /** Opens the holding's detail drawer. */
+  onOpen: () => void;
 }
 
-export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
+export function HoldingRow({ holding, totalValue, masked, onOpen }: HoldingRowProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [quantity, setQuantity] = useState(String(holding.quantity));
@@ -60,7 +62,21 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
   };
 
   return (
-    <tr className={styles.row}>
+    <tr
+      className={`${styles.row} ${editing ? '' : styles.rowOpenable}`}
+      tabIndex={editing ? undefined : 0}
+      aria-label={editing ? undefined : `${holding.name}: open details`}
+      onClick={(e) => {
+        // Links, buttons and fields inside the row keep their own behaviour.
+        if (!editing && !(e.target as HTMLElement).closest('a, button, input, select, textarea')) onOpen();
+      }}
+      onKeyDown={(e) => {
+        if (!editing && e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+    >
       <td className={styles.td}>
         <div className={styles.companyCell}>
           <div className={styles.avatar}>

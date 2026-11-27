@@ -1,0 +1,38 @@
+.overlay { position: fixed; inset: 0; z-index: 70; display: flex; justify-content: flex-end; background: rgba(22, 25, 28, 0.32); }
+
+.panel {
+  width: min(480px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--color-surface);
+  border-left: 1px solid var(--app-border);
+  box-shadow: -12px 0 32px rgba(22, 25, 28, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .panel { animation: drawerIn 0.22s ease backwards; }
+}
+@keyframes drawerIn { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.symbol { margin: 0; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; color: var(--app-text-subtle); }
+.name { margin: 2px 0 0; font-size: 20px; font-weight: 600; color: var(--app-ink); }
+.close { width: 36px; height: 36px; border: 1px solid var(--app-border); border-radius: 50%; background: var(--color-surface); font-size: 20px; line-height: 1; color: var(--app-ink); cursor: pointer; }
+.close:hover, .close:focus-visible { border-color: var(--app-teal-strong); outline: none; }
+
+.h3 { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--app-ink); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.story { font-size: 13.5px; color: var(--app-ink); text-decoration: none; line-height: 1.4; }
+.story:hover { text-decoration: underline; }
+.muted { font-size: 12px; color: var(--app-text-subtle); }
+p.muted { margin: 0; }
+.tone { margin-left: 6px; padding: 1px 7px; border-radius: var(--radius-pill); font-size: 10.5px; font-weight: 600; text-transform: capitalize; }
+.tone_positive { background: var(--app-teal-bg); color: var(--app-gain); }
+.tone_negative { background: var(--app-loss-bg); color: var(--app-loss-text); }
+.tone_neutral { background: var(--app-border-softer); color: var(--app-text-subtle); }
+.full { font-size: 13.5px; font-weight: 600; color: var(--app-teal-strong); text-decoration: none; }
+.full:hover { text-decoration: underline; }
