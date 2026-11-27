@@ -46,7 +46,7 @@
 .item { padding: 12px 0; border-top: 1px solid var(--app-border-soft); }
 .line { display: grid; grid-template-columns: minmax(80px, 1fr) auto auto auto; gap: 6px 14px; align-items: center; }
 .symbol { font-weight: 600; color: var(--app-ink); text-decoration: none; }
-.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--app-border-soft); color: var(--app-ink); }
+.tag { justify-self: start; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--app-border-soft); color: var(--app-ink); }
 .tag[data-tag='high'] { background: var(--app-teal-soft, var(--app-border-soft)); color: var(--app-teal-strong); }
 .price, .target { font-variant-numeric: tabular-nums; font-size: 13.5px; color: var(--app-ink); }
 .state { grid-column: 1 / -1; font-size: 12.5px; color: var(--app-ink-muted, var(--app-ink)); }
