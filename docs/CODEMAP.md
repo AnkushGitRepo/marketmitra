@@ -72,6 +72,7 @@ A new page must be added to `src/lib/routes.ts` **and** `src/proxy.ts`.
 | `mcp` | MCP server endpoint |
 | `conviction` | conviction board entries (`lib/conviction/`: pure board logic, store, target-price alert sync) |
 | `journal` | decision and trade journal (`lib/tradeJournal/`: snapshot on every holding change via `lib/holdings.ts`, pure view helpers) |
+| `cash` | cash and liquid funds (`lib/cash/`; the what-if maths is `lib/portfolio/rebalance.ts`) |
 | `notes`, `notifications`, `watchlists`, `wishlists` | user data (each has `[id]` / `symbols` children) |
 | `portfolio-import/*` | extract + confirm file import (parsing in `lib/portfolio-import/extractStructured.ts` + `normalize.ts`) |
 | `research` | research page backend |

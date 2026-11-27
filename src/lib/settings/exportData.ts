@@ -30,6 +30,8 @@ export interface ExportParts {
   readonly wishlists: readonly unknown[];
   /** Decision and trade journal snapshots (#412). */
   readonly tradeJournal: readonly unknown[];
+  /** Cash and liquid funds kept outside the holdings (#413). */
+  readonly cash: readonly unknown[];
   readonly conversations: ReadonlyArray<{ readonly conversation: unknown; readonly messages: readonly unknown[] }>;
   readonly preferences: unknown;
 }
@@ -48,6 +50,7 @@ export function buildExportDocument(parts: ExportParts, now: Date) {
     alerts: stripInternal(parts.alerts),
     wishlists: stripInternal(parts.wishlists),
     tradeJournal: stripInternal(parts.tradeJournal),
+    cash: stripInternal(parts.cash),
     conversations: stripInternal(parts.conversations),
     preferences: stripInternal(parts.preferences),
   };

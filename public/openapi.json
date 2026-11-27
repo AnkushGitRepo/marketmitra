@@ -8711,6 +8711,245 @@
           }
         }
       }
+    },
+    "/api/cash": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "List cash entries",
+        "description": "Cash and liquid funds the user keeps outside their stock holdings, oldest first.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "amount": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Add a cash entry",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "label",
+                  "amount"
+                ]
+              },
+              "example": {
+                "label": "Liquid fund",
+                "amount": 50000
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 60
+                    },
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "Per-user limit (20 entries) reached."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      }
+    },
+    "/api/cash/{id}": {
+      "patch": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Change a cash entry",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 60
+                    },
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such entry."
+          },
+          "422": {
+            "description": "Invalid input, or neither label nor amount sent."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Remove a cash entry",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such entry."
+          }
+        }
+      }
     }
   }
 }
