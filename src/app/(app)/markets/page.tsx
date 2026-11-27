@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { BullionView } from '@/components/markets/BullionView';
+import { getCommodities } from '@/lib/commodities/getCommodities';
 import { StructuredBriefCard } from '@/components/dashboard-charts/StructuredBriefCard';
 import { IndexStrip } from '@/components/dashboard-charts/IndexStrip';
 import { BreadthCard } from '@/components/markets/BreadthCard';
@@ -36,7 +39,31 @@ async function recentCloses(symbol: string): Promise<readonly number[] | null> {
   return closes.length >= 2 ? closes.reverse() : null; // the API returns newest first
 }
 
-export default async function MarketsPage() {
+function ViewTabs({ active }: { readonly active: 'equities' | 'bullion' }) {
+  return (
+    <nav className={styles.viewTabs} aria-label="Markets view">
+      <Link href="/markets" className={`${styles.viewTab} ${active === 'equities' ? styles.viewTabActive : ''}`} aria-current={active === 'equities' ? 'page' : undefined}>Equities</Link>
+      <Link href="/markets?view=bullion" className={`${styles.viewTab} ${active === 'bullion' ? styles.viewTabActive : ''}`} aria-current={active === 'bullion' ? 'page' : undefined}>Bullion &amp; ETFs</Link>
+    </nav>
+  );
+}
+
+export default async function MarketsPage({ searchParams }: { readonly searchParams: Promise<{ view?: string }> }) {
+  const { view } = await searchParams;
+  if (view === 'bullion') {
+    const commodities = await getCommodities().catch(() => null);
+    return (
+      <div className={styles.pageRoot}>
+        <div className={styles.head}>
+          <p className={styles.eyebrow}>Gold, silver and platinum</p>
+          <h1 className={styles.h1}>Markets</h1>
+        </div>
+        <ViewTabs active="bullion" />
+        <BullionView data={commodities} />
+      </div>
+    );
+  }
+
   const userId = await getCurrentUserId();
 
   let watchlists: UserWishlist[] = [];
@@ -83,6 +110,7 @@ export default async function MarketsPage() {
         <p className={styles.eyebrow}>Live market data</p>
         <h1 className={styles.h1}>Markets</h1>
       </div>
+      <ViewTabs active="equities" />
 
       <div className={styles.grid}>
         <div className={styles.indices}>

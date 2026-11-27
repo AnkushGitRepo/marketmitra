@@ -79,3 +79,8 @@
 }
 
 .conviction { margin-top: 20px; min-width: 0; }
+
+.viewTabs { display: inline-flex; gap: 4px; margin: 0 0 20px; padding: 4px; border-radius: var(--radius-pill); background: var(--app-border-softer); }
+.viewTab { padding: 7px 16px; border-radius: var(--radius-pill); font-size: 13.5px; font-weight: 500; color: var(--app-text-subtle); text-decoration: none; }
+.viewTab:hover { color: var(--app-ink); }
+.viewTabActive { background: var(--color-surface); color: var(--app-ink); box-shadow: 0 1px 3px rgba(22, 25, 28, 0.08); }
