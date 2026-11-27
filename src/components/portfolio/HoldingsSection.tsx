@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { HoldingRow } from '@/app/(app)/portfolio/HoldingRow';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
@@ -28,7 +29,13 @@ export function HoldingsSection({ holdings, totalValue, masked }: HoldingsSectio
   return (
     <section className={tableStyles.holdingsCard} aria-label="Holdings">
       <div className={styles.head}>
-        <h2 className={styles.title}>Holdings</h2>
+        <div className={styles.titleRow}>
+          <h2 className={styles.title}>Holdings</h2>
+          <nav className={styles.related} aria-label="Related pages">
+            <Link href="/portfolio/tax">Tax ↗</Link>
+            <Link href="/portfolio/cash">Cash ↗</Link>
+          </nav>
+        </div>
         <div className={styles.chips} role="group" aria-label="Filter holdings">
           {CHIPS.map((c) => (
             <button

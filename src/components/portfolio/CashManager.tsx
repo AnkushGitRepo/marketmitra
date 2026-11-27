@@ -7,10 +7,12 @@ import { useMask } from '@/lib/dashboard/MaskContext';
 import { MAX_AMOUNT, MAX_LABEL, totalCash, type CashEntry } from '@/lib/cash/schema';
 import styles from './CashManager.module.css';
 
+/** Props: `includeCash` and `onIncludeCash` together add a "Show in allocation" switch; the cash page omits them. */
 interface CashManagerProps {
   readonly entries: readonly CashEntry[];
-  readonly includeCash: boolean;
-  readonly onIncludeCash: (value: boolean) => void;
+  /** When both are given, a "Show in allocation" switch is shown. */
+  readonly includeCash?: boolean;
+  readonly onIncludeCash?: (value: boolean) => void;
 }
 
 async function send(url: string, method: string, body?: unknown): Promise<string | null> {
@@ -68,10 +70,12 @@ export function CashManager({ entries, includeCash, onIncludeCash }: CashManager
     <section className={styles.panel} aria-labelledby="cash-title">
       <div className={styles.header}>
         <h2 id="cash-title" className={styles.title}>Cash and liquid funds</h2>
-        <label className={styles.toggle}>
-          <input type="checkbox" checked={includeCash} onChange={(e) => onIncludeCash(e.target.checked)} />
-          Show in allocation
-        </label>
+        {onIncludeCash ? (
+          <label className={styles.toggle}>
+            <input type="checkbox" checked={includeCash ?? false} onChange={(e) => onIncludeCash(e.target.checked)} />
+            Show in allocation
+          </label>
+        ) : null}
       </div>
       <p className={styles.hint}>Money you hold outside these stocks. It makes the mix and the what-if below honest.</p>
 

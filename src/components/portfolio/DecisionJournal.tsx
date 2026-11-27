@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { formatInr } from '@/lib/dashboard/format';
+import { shortDate } from '@/lib/tax/format';
 import { MAX_POST_MORTEM, MAX_REASON } from '@/lib/tradeJournal/snapshot';
 import type { JournalSnapshot } from '@/lib/tradeJournal/types';
 import { EVENT_LABEL, groupBySymbol, outcomeFor } from '@/lib/tradeJournal/view';
@@ -19,7 +20,8 @@ interface DecisionJournalProps {
 const dash = '—';
 const money = (n: number | null) => (n === null ? dash : formatInr(n));
 const multiple = (n: number | null, suffix: string) => (n === null ? dash : `${n.toFixed(1)}${suffix}`);
-const dateOf = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+// Built from the stored UTC date, not a locale, so the server and the browser print the same text.
+const dateOf = (iso: string) => shortDate(iso.slice(0, 10));
 
 function quantityText(e: JournalSnapshot): string {
   const q = (s: JournalSnapshot['after']) => (s ? String(s.quantity) : '0');
@@ -57,7 +59,7 @@ export function DecisionJournal({ entries, prices }: DecisionJournalProps) {
   );
 }
 
-function EntryItem({ entry, nowPrice }: { readonly entry: JournalSnapshot; readonly nowPrice: number | null }) {
+export function EntryItem({ entry, nowPrice }: { readonly entry: JournalSnapshot; readonly nowPrice: number | null }) {
   const router = useRouter();
   const outcome = outcomeFor(entry, nowPrice);
   const [text, setText] = useState(entry.postMortem ?? '');

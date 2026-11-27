@@ -1,6 +1,7 @@
 'use client';
 
 import { UserButton } from '@clerk/nextjs';
+import { ACCOUNT_MENU_ITEMS } from './accountMenuItems';
 import styles from './AppHeader.module.css';
 
 // Split out so its Clerk hook/component is only ever mounted in hosted mode
@@ -39,7 +40,14 @@ export function HostedUserBadge() {
             avatarImage: { width: '100%', height: '100%', objectFit: 'cover' },
           },
         }}
-      />
+      >
+        {/* The same destinations as the self-host menu, added to Clerk's own account items. */}
+        <UserButton.MenuItems>
+          {ACCOUNT_MENU_ITEMS.map((i) => (
+            <UserButton.Link key={i.href} label={i.label} href={i.href} labelIcon={<span aria-hidden="true">›</span>} />
+          ))}
+        </UserButton.MenuItems>
+      </UserButton>
     </div>
   );
 }

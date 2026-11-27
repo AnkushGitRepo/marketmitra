@@ -144,7 +144,6 @@
   border-radius: var(--radius-xl);
   padding: 22px 24px;
   box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
-  margin-bottom: 34px;
 }
 
 .tableScroll {
@@ -344,8 +343,8 @@
 .macroGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 24px;
+  align-items: stretch;
 }
 
 @media (max-width: 1000px) {
@@ -370,4 +369,20 @@
   outline: 2px solid var(--app-teal);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* The four portfolio blocks: the gap is the only spacing between them. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.newsCard {
+  background: var(--color-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
+  box-shadow: 0 6px 20px rgba(22, 25, 28, 0.04);
 }

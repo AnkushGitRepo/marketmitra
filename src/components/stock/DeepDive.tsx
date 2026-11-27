@@ -12,9 +12,10 @@ import type { FinTable, ShareholdingSeries } from '@/lib/dashboard/transforms';
 import { safeHref } from '@/lib/security/safeHref';
 import { FinancialsPanel, type StatementKey } from './FinancialsPanel';
 import { PeersPanel } from './PeersPanel';
+import { ThesisCard } from './ThesisCard';
 import styles from './DeepDive.module.css';
 
-type TabId = 'financials' | 'peers' | 'shareholding' | 'news' | 'filings' | 'journal';
+type TabId = 'financials' | 'peers' | 'shareholding' | 'news' | 'filings' | 'journal' | 'mine';
 
 interface DeepDiveProps {
   readonly symbol: string;
@@ -41,6 +42,8 @@ export function DeepDive({ symbol, financials, peers, shareholding, news, docume
     { id: 'news', label: 'News', count: news.length },
     { id: 'filings', label: 'Filings', count: documents.length },
     { id: 'journal', label: 'Agent journal' },
+    // The user's own record (thesis and decisions), kept apart from the analyst's journal above.
+    { id: 'mine', label: 'My journal' },
   ];
 
   return (
@@ -81,6 +84,7 @@ export function DeepDive({ symbol, financials, peers, shareholding, news, docume
             <DossierReader symbol={symbol} />
           </>
         )}
+        {tab === 'mine' && <ThesisCard symbol={symbol} />}
         {tab === 'news' && <NewsList items={news} emptyText="No recent news for this stock." />}
         {tab === 'filings' &&
           (documents.length > 0 ? (
