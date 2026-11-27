@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { InfoPopover } from '@/components/common/InfoPopover';
 import type { Ipo } from '@/lib/dashboard/iposApi';
 import type { IpoWatchParams } from '@/lib/alerts/types';
 import {
@@ -87,7 +88,16 @@ export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable, brie
       <div className={styles.header}>
         <div>
           <p className={styles.eyebrow}>IPOs</p>
-          <h1 className={styles.h1}>IPO tracker</h1>
+          <div className={styles.titleRow}>
+            <h1 className={styles.h1}>IPO tracker</h1>
+            <InfoPopover label="About this data">
+              <p>
+                Calendar, subscription, and grey-market premium for mainboard &amp; SME IPOs. GMP is an{' '}
+                <em>unofficial grey-market estimate</em> compiled by a third-party tracker: not from any exchange, and
+                not a prediction.
+              </p>
+            </InfoPopover>
+          </div>
         </div>
         <button
           type="button"
@@ -98,11 +108,6 @@ export function IposPageClient({ ipos, today, initialWatch, aiKeyAvailable, brie
           {watchOn ? '🔔 IPO alerts on' : '🔔 Notify me'}
         </button>
       </div>
-      <p className={styles.introNote}>
-        Calendar, subscription, and grey-market premium for mainboard &amp; SME IPOs. GMP is an{' '}
-        <em>unofficial grey-market estimate</em> compiled by a third-party tracker: not from any exchange, and not a
-        prediction.
-      </p>
 
       {watchOpen && (
         <div className={styles.watchPanel}>

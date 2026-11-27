@@ -37,12 +37,11 @@
   color: var(--app-ink);
 }
 
-.intro {
-  margin: 8px 0 18px;
-  max-width: 72ch;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--app-text-muted);
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
 .resultsCount {

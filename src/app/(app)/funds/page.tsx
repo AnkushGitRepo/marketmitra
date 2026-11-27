@@ -4,6 +4,7 @@ import { formatDate } from '@/lib/funds/format';
 import { effectiveFilters, resolveFilters } from '@/lib/funds/defaultView';
 import { parseFundParams, type FundFilters } from '@/lib/funds/params';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from '@/app/(app)/screener/pageMath';
+import { InfoPopover } from '@/components/common/InfoPopover';
 import { FundsPageClient } from './FundsPageClient';
 import styles from './page.module.css';
 
@@ -39,13 +40,17 @@ export default async function FundsPage({ searchParams }: { searchParams: Promis
   return (
     <div className={styles.pageRoot}>
       <p className={styles.eyebrow}>Funds</p>
-      <h1 className={styles.h1}>Mutual fund screener</h1>
-      <p className={styles.intro}>
-        Browse Indian mutual funds by category, fund house, returns and risk. Returns and ratios are calculated from the
-        daily NAV that AMFI publishes; one year and longer are annualised.
-        {facets.nav_as_of ? ` NAVs as of ${formatDate(facets.nav_as_of)}.` : ''} A dash means the figure is not available
-        yet (a young fund, or a detail we have not been given), not zero.
-      </p>
+      <div className={styles.titleRow}>
+        <h1 className={styles.h1}>Mutual fund screener</h1>
+        <InfoPopover label="About this data">
+          <p>
+            Browse Indian mutual funds by category, fund house, returns and risk. Returns and ratios are calculated from
+            the daily NAV that AMFI publishes; one year and longer are annualised.
+            {facets.nav_as_of ? ` NAVs as of ${formatDate(facets.nav_as_of)}.` : ''} A dash means the figure is not
+            available yet (a young fund, or a detail we have not been given), not zero.
+          </p>
+        </InfoPopover>
+      </div>
 
       {page ? (
         <FundsPageClient
