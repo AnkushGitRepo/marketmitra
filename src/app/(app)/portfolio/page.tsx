@@ -5,6 +5,7 @@ import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { RISK_PROFILES } from '@/lib/onboarding/profiles';
 import { listCash } from '@/lib/cash/store';
+import { buildTaxReport } from '@/lib/tax/report';
 import { getPreferences } from '@/lib/preferences/store';
 import { listSnapshots } from '@/lib/tradeJournal/store';
 import { PortfolioPageClient } from './PortfolioPageClient';
@@ -44,6 +45,8 @@ export default async function PortfolioPage() {
   // Journal: a failed read leaves the rest of the page intact.
   const journal = await listSnapshots(userId).catch(() => []);
   const journalPrices = Object.fromEntries(holdings.map((h) => [h.symbol.toUpperCase(), h.ltp]));
+  // Tax view: a failed read leaves the rest of the page intact.
+  const tax = await buildTaxReport(userId, new Date()).catch(() => null);
 
   return (
     <PortfolioPageClient
@@ -53,6 +56,7 @@ export default async function PortfolioPage() {
       journal={journal}
       journalPrices={journalPrices}
       cash={cash}
+      tax={tax}
       maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />
   );

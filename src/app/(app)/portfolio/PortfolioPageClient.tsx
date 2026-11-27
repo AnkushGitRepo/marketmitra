@@ -10,6 +10,7 @@ import { HoldingsSection } from '@/components/portfolio/HoldingsSection';
 import { DecisionJournal } from '@/components/portfolio/DecisionJournal';
 import { PortfolioHero } from '@/components/portfolio/PortfolioHero';
 import { RebalanceSandbox } from '@/components/portfolio/RebalanceSandbox';
+import { TaxPanel } from '@/components/portfolio/TaxPanel';
 import { RiskCopilotCard } from '@/components/portfolio/RiskCopilotCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
@@ -18,6 +19,7 @@ import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import type { JournalSnapshot } from '@/lib/tradeJournal/types';
 import { totalCash, type CashEntry } from '@/lib/cash/schema';
+import type { TaxReport } from '@/lib/tax/report';
 import { newsForHoldings, portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
 import { AddHoldingForm } from './AddHoldingForm';
 import styles from './page.module.css';
@@ -31,6 +33,8 @@ interface PortfolioPageClientProps {
   journalPrices: Record<string, number | null>;
   /** Cash and liquid funds the user keeps outside these stocks (#413). */
   cash: CashEntry[];
+  /** Tax view of the holdings (#414); null when it could not be built. */
+  tax: TaxReport | null;
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
 }
@@ -52,7 +56,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news, journal, journalPrices, cash, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, news, journal, journalPrices, cash, tax, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -115,6 +119,7 @@ export function PortfolioPageClient({ holdings, history, news, journal, journalP
         <CashManager entries={cash} includeCash={includeCash} onIncludeCash={setIncludeCash} />
         <RebalanceSandbox holdings={holdings} cash={cashTotal} />
       </div>
+      {tax ? <TaxPanel report={tax} /> : null}
 
       <div className={styles.sectionHeadRow}>
         <h2 className={styles.h2}>News for your holdings</h2>

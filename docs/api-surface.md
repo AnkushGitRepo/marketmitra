@@ -265,6 +265,17 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 
 ### `PATCH /api/cash/[id]` and `DELETE /api/cash/[id]`
 - **Request (PATCH):** `{ label?, amount? }`, at least one. **Errors:** `401`, `404` not found/not owned, `422`.
+### `GET /api/tax`
+- **Purpose:** Tax view of the holdings (#414): per holding short or long term (long = held more than 12 months), days until long term and unrealised gain; an estimate of tax on gains already booked and the extra tax if everything were sold today; and loss positions with what a realised loss would save against gains booked this financial year. **An estimate, not tax advice.** Rates and the exemption are constants in `lib/tax/india.ts` with an as-of date.
+- **Auth:** required; scoped to the owning user.
+- **Query:** `bookedShort`, `bookedLong` (numbers, default 0): gains already booked this financial year; a loss is negative.
+- **Response:** `data`: `{ today, financialYear, rules, lots, summary, harvest, note }`. A holding without a purchase date (or a price) has `term: null`; it is never guessed and is excluded from the totals (`summary.unknownLots`).
+- **Errors:** `401`, `422`.
+
+### `PUT /api/holdings/[id]/purchase-date`
+- **Purpose:** Set the date a holding was bought, or clear it with `null`. One date per holding, so a position bought in several tranches is treated as one lot.
+- **Request:** `{ purchaseDate: "YYYY-MM-DD" | null }`, a real date, not in the future.
+- **Errors:** `401`, `404` holding not found, `422`.
 
 ### `GET /api/notifications`
 - **Purpose:** The in-app notification centre — the current user's notifications, newest first, plus an unread count. Alerts are the first producer; Phase 7/8 reuse this.
