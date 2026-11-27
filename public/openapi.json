@@ -591,6 +591,11 @@
                   "avgPrice": {
                     "type": "number",
                     "exclusiveMinimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 280,
+                    "description": "Optional one-line reason, saved to the decision journal."
                   }
                 }
               },
@@ -653,6 +658,11 @@
                   "avgPrice": {
                     "type": "number",
                     "exclusiveMinimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 280,
+                    "description": "Optional one-line reason, saved to the decision journal."
                   }
                 }
               },
@@ -707,6 +717,23 @@
           },
           "404": {
             "description": "Not found / not owned."
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 280,
+                    "description": "Optional reason for removing the position, saved to the decision journal."
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -8028,6 +8055,329 @@
           },
           "429": {
             "description": "Rate limited."
+          }
+        }
+      }
+    },
+    "/api/journal": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "List decision journal entries",
+        "description": "Snapshots saved automatically whenever a holding is added, changed or removed (Portfolio, CSV import, Mitra, API), newest first. Fields the data did not have at that moment are null, never estimated.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "symbol": {
+                        "type": "string"
+                      },
+                      "event": {
+                        "type": "string",
+                        "enum": [
+                          "buy",
+                          "add_more",
+                          "trim",
+                          "edit",
+                          "exit"
+                        ]
+                      },
+                      "at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "before": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "quantity": {
+                            "type": "number"
+                          },
+                          "avgPrice": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "after": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "quantity": {
+                            "type": "number"
+                          },
+                          "avgPrice": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "marketPrice": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Live quote when the change was saved; for an exit this is not a recorded sale price."
+                      },
+                      "pe": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "roce": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "thesis": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "noteId": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "body": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "reason": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "guardrails": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "postMortem": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      }
+    },
+    "/api/journal/{id}": {
+      "patch": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Write the reflection on a journal entry",
+        "description": "Sets or clears the post-mortem. It is the only part of an entry that can change.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "postMortem"
+                ],
+                "properties": {
+                  "postMortem": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string",
+                      "enum": [
+                        "buy",
+                        "add_more",
+                        "trim",
+                        "edit",
+                        "exit"
+                      ]
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "before": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "quantity": {
+                          "type": "number"
+                        },
+                        "avgPrice": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "after": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "quantity": {
+                          "type": "number"
+                        },
+                        "avgPrice": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "marketPrice": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "description": "Live quote when the change was saved; for an exit this is not a recorded sale price."
+                    },
+                    "pe": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "roce": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "thesis": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "noteId": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "body": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "reason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "guardrails": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "postMortem": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "No such entry."
+          },
+          "422": {
+            "description": "Invalid input."
           }
         }
       }

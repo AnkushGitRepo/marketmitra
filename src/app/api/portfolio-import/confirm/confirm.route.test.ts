@@ -56,9 +56,13 @@ describe('POST /api/portfolio-import/confirm', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data).toEqual({ succeeded: 1, failedSymbols: [] });
-    expect(holdings.addHolding).toHaveBeenCalledWith('u1', { symbol: 'TCS', quantity: 10, avgPrice: 3200 });
+    expect(holdings.addHolding).toHaveBeenCalledWith('u1', { symbol: 'TCS', quantity: 10, avgPrice: 3200 }, {
+      beforeSnapshot: expect.any(Function),
+    });
     expect(holdings.updateHolding).not.toHaveBeenCalled();
-    // A brand-new holding gets the default guardrail alerts (ADR 0030).
+    // A brand-new holding gets the default guardrail alerts (ADR 0030), created before its journal snapshot is taken.
+    const { beforeSnapshot } = holdings.addHolding.mock.calls[0][2] as { beforeSnapshot: (symbol: string) => Promise<unknown> };
+    await beforeSnapshot('TCS');
     expect(createGuardrailAlertsForHolding).toHaveBeenCalledWith('u1', 'TCS');
   });
 

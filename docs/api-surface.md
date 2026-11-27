@@ -219,6 +219,17 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Response:** `data`: the updated wishlist.
 - **Errors:** `401` unauthenticated, `404` not found/not owned.
 
+### `GET /api/journal`
+- **Purpose:** The decision journal (#412): a snapshot saved whenever a holding is added, changed or removed from any path (Portfolio form, CSV import, Mitra confirm card, API). Newest first; `?symbol=` narrows it.
+- **Auth:** required; scoped to the owning user.
+- **Response:** `data`: `[{ id, symbol, event: buy|add_more|trim|edit|exit, at, before, after, marketPrice, pe, roce, thesis: { noteId, title, body }|null, reason, guardrails: string[], postMortem }]`. A field the data did not have at that moment is `null`. For `exit`, `marketPrice` is the live quote at removal, not a recorded sale price.
+- **Errors:** `401` unauthenticated.
+
+### `PATCH /api/journal/[id]`
+- **Purpose:** Write or clear the reflection on an entry. The only editable field; snapshots are otherwise immutable.
+- **Request:** `{ postMortem: string(≤2000)|null }`.
+- **Errors:** `401`, `404` not found/not owned, `422` invalid input.
+
 ### `GET /api/notifications`
 - **Purpose:** The in-app notification centre — the current user's notifications, newest first, plus an unread count. Alerts are the first producer; Phase 7/8 reuse this.
 - **Auth:** required.

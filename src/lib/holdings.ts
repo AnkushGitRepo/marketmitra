@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
+import { recordHoldingEvent } from '@/lib/tradeJournal/record';
 
 export interface Holding {
   id: string;
@@ -46,7 +47,12 @@ export async function listHoldings(userId: string): Promise<Holding[]> {
 
 export async function addHolding(
   userId: string,
-  input: { symbol: string; quantity: number; avgPrice: number }
+  input: { symbol: string; quantity: number; avgPrice: number },
+  options: {
+    reason?: string | null;
+    /** Runs (and is awaited) before the journal snapshot, so the snapshot sees what it creates, e.g. the default guardrail alerts. Must not throw. */
+    beforeSnapshot?: (symbol: string) => Promise<unknown>;
+  } = {}
 ): Promise<Holding> {
   const col = await collection();
   const now = new Date();
@@ -60,27 +66,48 @@ export async function addHolding(
     updatedAt: now,
   };
   await col.insertOne(doc);
-  return toHolding(doc);
+  const holding = toHolding(doc);
+  // Trade journal (#412): fire-and-forget, the holding is already saved.
+  void (options.beforeSnapshot?.(holding.symbol) ?? Promise.resolve()).then(() =>
+    recordHoldingEvent(userId, holding.symbol, null, { quantity: holding.quantity, avgPrice: holding.avgPrice }, options.reason)
+  );
+  return holding;
 }
 
 export async function updateHolding(
   userId: string,
   id: string,
-  input: { quantity: number; avgPrice: number }
+  input: { quantity: number; avgPrice: number },
+  options: { reason?: string | null } = {}
 ): Promise<Holding | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await collection();
-  const result = await col.findOneAndUpdate(
+  const previous = await col.findOneAndUpdate(
     { _id: new ObjectId(id), userId },
     { $set: { quantity: input.quantity, avgPrice: input.avgPrice, updatedAt: new Date() } },
-    { returnDocument: 'after' }
+    { returnDocument: 'before' }
   );
-  return result ? toHolding(result) : null;
+  if (!previous) return null;
+  const holding = toHolding({ ...previous, quantity: input.quantity, avgPrice: input.avgPrice, updatedAt: new Date() });
+  void recordHoldingEvent(
+    userId,
+    holding.symbol,
+    { quantity: previous.quantity, avgPrice: previous.avgPrice },
+    { quantity: holding.quantity, avgPrice: holding.avgPrice },
+    options.reason
+  );
+  return holding;
 }
 
-export async function deleteHolding(userId: string, id: string): Promise<boolean> {
+export async function deleteHolding(
+  userId: string,
+  id: string,
+  options: { reason?: string | null } = {}
+): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const col = await collection();
-  const result = await col.deleteOne({ _id: new ObjectId(id), userId });
-  return result.deletedCount > 0;
+  const removed = await col.findOneAndDelete({ _id: new ObjectId(id), userId });
+  if (!removed) return false;
+  void recordHoldingEvent(userId, removed.symbol, { quantity: removed.quantity, avgPrice: removed.avgPrice }, null, options.reason);
+  return true;
 }
