@@ -98,6 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The portfolio value chart no longer depends on its draw-in animation to be visible, its low-value badge no longer sits on the date axis, and each holding row has one "⋯" menu (Edit position, Remove holding with a confirmation) instead of two text links. (#428)
+
 - On a phone the portfolio value card on the Dashboard and Portfolio pages is more compact: the label and an Invested pill share a row, the value sits above both return pills on one line, the range buttons share the full width, High, Low and Change fit one line in short units, and the chart has room above and below so its high and low labels no longer sit on the line. ([#426](https://github.com/AnkushGitRepo/marketmitra/issues/426))
 - On Research, an open suggestion list (company, theme or compare fields) is no longer drawn underneath the report's sticky chapter bar. ([#398](https://github.com/AnkushGitRepo/marketmitra/issues/398))
 - The portfolio report no longer contradicts itself (the health chapter is now written after the losers chapter and from its findings), checks the biggest winners' valuation next to the losers, strips the last LaTeX leaks such as `$\$22/mmBtu$`, reads `LATENTVIEW: −63.8%` instead of a dot and a hyphen that look like a doubled dash, and in the PDF the watermark sits behind the text on two whole lines instead of wrapping into stray words across tables. ([#392](https://github.com/AnkushGitRepo/marketmitra/issues/392))

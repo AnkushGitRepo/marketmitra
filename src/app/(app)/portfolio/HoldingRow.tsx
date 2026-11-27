@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatInr } from '@/lib/dashboard/format';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { RowActions } from '@/components/portfolio/RowActions';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
 import { stockHref } from '@/lib/stock/href';
 import styles from './page.module.css';
@@ -21,6 +23,7 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
   const [quantity, setQuantity] = useState(String(holding.quantity));
   const [avgPrice, setAvgPrice] = useState(String(holding.avgPrice));
   const [busy, setBusy] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const value = holding.ltp !== null ? holding.quantity * holding.ltp : null;
   const cost = holding.quantity * holding.avgPrice;
@@ -50,6 +53,7 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
       router.refresh();
     } finally {
       setBusy(false);
+      setConfirmRemove(false);
     }
   };
 
@@ -132,15 +136,17 @@ export function HoldingRow({ holding, totalValue, masked }: HoldingRowProps) {
       )}
       <td className={styles.td}>
         {!editing && (
-          <>
-            <button type="button" onClick={() => setEditing(true)} className={styles.linkButton}>
-              Edit
-            </button>{' '}
-            <button type="button" onClick={remove} disabled={busy} className={styles.linkButtonDanger}>
-              Remove
-            </button>
-          </>
+          <RowActions label={holding.symbol} busy={busy} onEdit={() => setEditing(true)} onRemove={() => setConfirmRemove(true)} />
         )}
+        <ConfirmDialog
+          open={confirmRemove}
+          title={`Remove ${holding.symbol}?`}
+          message="The holding is removed from your portfolio. Your decision journal keeps its history."
+          confirmLabel="Remove holding"
+          busy={busy}
+          onConfirm={remove}
+          onCancel={() => setConfirmRemove(false)}
+        />
       </td>
     </tr>
   );
