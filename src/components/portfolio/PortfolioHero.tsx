@@ -5,6 +5,7 @@ import { LineChart } from '@/components/dashboard-charts/LineChart';
 import { PillTabs } from '@/components/dashboard-charts/PillTabs';
 import { ReturnBadge } from '@/components/dashboard-charts/ReturnBadge';
 import { formatInr } from '@/lib/dashboard/format';
+import { compactInr } from '@/lib/dashboard/chartGeometry';
 import { computeHero } from '@/lib/dashboard/heroMetrics';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
@@ -53,6 +54,8 @@ export function PortfolioHero({ totals, history, masked }: PortfolioHeroProps) {
           series={series}
           height={220}
           formatValue={(v) => formatInr(v, 0, masked)}
+          formatAxis={masked ? () => '•••' : compactInr}
+          showStats
           ariaLabel={`Portfolio value chart, ${RANGE_LABELS[range]}`}
         />
       ) : (

@@ -72,6 +72,7 @@ A new page must be added to `src/lib/routes.ts` **and** `src/proxy.ts`.
 | `mcp` | MCP server endpoint |
 | `tax` | tax view of holdings (`lib/tax/`: pure rules in `india.ts`, purchase dates, report); `holdings/[id]/purchase-date` |
 | Portfolio sub-pages | `(app)/portfolio/tax`, `(app)/portfolio/cash` | `tax`, `cash`, `holdings/[id]/purchase-date` | `components/portfolio/TaxHub`, `CashHub`; `components/appshell/AccountMenu` (the profile menu); `components/stock/ThesisCard` (stock page, My journal tab); `lib/tax/ledger.ts` |
+| Value chart | `(app)/dashboard`, `(app)/portfolio` | none | `components/dashboard-charts/LineChart` (interactive SVG), `lib/dashboard/chartGeometry.ts` (pure geometry, stats, ticks) |
 | `cash` | cash and liquid funds (`lib/cash/`; the what-if maths is `lib/portfolio/rebalance.ts`) |
 | `journal` | decision and trade journal (`lib/tradeJournal/`: snapshot on every holding change via `lib/holdings.ts`, pure view helpers) |
 | `conviction` | conviction board entries (`lib/conviction/`: pure board logic, store, target-price alert sync) |
