@@ -237,6 +237,23 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 ### `DELETE /api/journal`
 - **Purpose:** Delete the user's whole journal (Settings → Data & Privacy → Danger zone, behind a typed `DELETE`).
 - **Response:** `data: { removed: number }`.
+### `GET /api/conviction`
+- **Purpose:** The conviction board: one entry per symbol (#411).
+- **Auth:** required; scoped to the owning user.
+- **Response:** `data`: `[{ id, symbol, tag: high|tracking|wait, waitFor, targetPrice, targetDirection: at_or_below|at_or_above, noteId }]`.
+- **Errors:** `401` unauthenticated.
+
+### `PUT /api/conviction`
+- **Purpose:** Create or update the entry for a symbol; only the fields sent change. A `targetPrice` keeps one ordinary price alert in step with it (visible on the Alerts page); `null` removes that alert.
+- **Auth:** required; scoped to the owning user.
+- **Request:** `{ symbol, tag?, waitFor?(tag=wait only, ≤60), targetPrice?(>0|null), targetDirection?, noteId?|null }`.
+- **Response:** `data`: the saved entry.
+- **Errors:** `401` unauthenticated, `409` board full (200 entries), `422` invalid input.
+
+### `DELETE /api/conviction/[symbol]`
+- **Purpose:** Remove the entry and its target price alert.
+- **Auth:** required; scoped to the owning user.
+- **Errors:** `401` unauthenticated, `404` no entry for that symbol.
 
 ### `GET /api/notifications`
 - **Purpose:** The in-app notification centre — the current user's notifications, newest first, plus an unread count. Alerts are the first producer; Phase 7/8 reuse this.
