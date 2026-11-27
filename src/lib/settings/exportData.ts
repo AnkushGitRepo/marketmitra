@@ -28,6 +28,8 @@ export interface ExportParts {
   readonly memories: readonly unknown[];
   readonly alerts: readonly unknown[];
   readonly wishlists: readonly unknown[];
+  /** Cash and liquid funds kept outside the holdings (#413). */
+  readonly cash: readonly unknown[];
   readonly conversations: ReadonlyArray<{ readonly conversation: unknown; readonly messages: readonly unknown[] }>;
   readonly preferences: unknown;
 }
@@ -45,6 +47,7 @@ export function buildExportDocument(parts: ExportParts, now: Date) {
     memories: stripInternal(parts.memories),
     alerts: stripInternal(parts.alerts),
     wishlists: stripInternal(parts.wishlists),
+    cash: stripInternal(parts.cash),
     conversations: stripInternal(parts.conversations),
     preferences: stripInternal(parts.preferences),
   };

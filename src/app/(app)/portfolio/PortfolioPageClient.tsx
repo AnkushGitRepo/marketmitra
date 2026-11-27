@@ -5,14 +5,17 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { NewsList } from '@/components/dashboard-charts/NewsList';
 import { AllocationCard } from '@/components/portfolio/AllocationCard';
+import { CashManager } from '@/components/portfolio/CashManager';
 import { HoldingsSection } from '@/components/portfolio/HoldingsSection';
 import { PortfolioHero } from '@/components/portfolio/PortfolioHero';
+import { RebalanceSandbox } from '@/components/portfolio/RebalanceSandbox';
 import { RiskCopilotCard } from '@/components/portfolio/RiskCopilotCard';
 import { useMask } from '@/lib/dashboard/MaskContext';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
+import { totalCash, type CashEntry } from '@/lib/cash/schema';
 import { newsForHoldings, portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
 import { AddHoldingForm } from './AddHoldingForm';
 import styles from './page.module.css';
@@ -21,6 +24,8 @@ interface PortfolioPageClientProps {
   holdings: EnrichedHolding[];
   history: Record<PricePeriod, RangeSeries>;
   news: NewsItem[];
+  /** Cash and liquid funds the user keeps outside these stocks (#413). */
+  cash: CashEntry[];
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
 }
@@ -42,10 +47,12 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, news, cash, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
+  const [includeCash, setIncludeCash] = useState(true);
+  const cashTotal = totalCash(cash);
 
   if (holdings.length === 0) {
     return (
@@ -91,11 +98,16 @@ export function PortfolioPageClient({ holdings, history, news, maxPositionPct }:
       <PortfolioHero totals={totals} history={history} masked={masked} />
 
       <div className={styles.macroGrid}>
-        <AllocationCard holdings={holdings} />
+        <AllocationCard holdings={holdings} cash={cashTotal} includeCash={includeCash} />
         <RiskCopilotCard holdings={holdings} maxPositionPct={maxPositionPct} />
       </div>
 
       <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} />
+
+      <div className={styles.macroGrid}>
+        <CashManager entries={cash} includeCash={includeCash} onIncludeCash={setIncludeCash} />
+        <RebalanceSandbox holdings={holdings} cash={cashTotal} />
+      </div>
 
       <div className={styles.sectionHeadRow}>
         <h2 className={styles.h2}>News for your holdings</h2>
