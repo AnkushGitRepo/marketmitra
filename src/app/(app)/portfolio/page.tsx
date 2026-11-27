@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { getEnrichedHoldings } from '@/lib/dashboard/enrichedHoldings';
 import { getPortfolioValueHistories } from '@/lib/dashboard/portfolioHistory';
+import { fetchIndexHistory } from '@/lib/dashboard/yahooQuote';
+import { slicePricesByPeriod } from '@/lib/dashboard/pricePeriods';
+import { alignToDates } from '@/lib/portfolio/compare';
+import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { RISK_PROFILES } from '@/lib/onboarding/profiles';
 import { getPreferences } from '@/lib/preferences/store';
@@ -30,7 +34,15 @@ export default async function PortfolioPage() {
   const profile = prefs.onboarding.riskProfile;
   const positions = holdings.map((h) => ({ symbol: h.symbol, quantity: h.quantity }));
 
-  const historyByPeriod = await getPortfolioValueHistories(positions);
+  const [historyByPeriod, niftyHistory] = await Promise.all([getPortfolioValueHistories(positions), fetchIndexHistory('NIFTY 50', '5y')]);
+  // Nifty 50 closes lined up with each range's dates, so the chart compares like with like (null = no data, the overlay hides).
+  const benchmark = Object.fromEntries(
+    (Object.keys(historyByPeriod) as PricePeriod[]).map((period) => {
+      const dates = historyByPeriod[period].d ?? [];
+      const closes = slicePricesByPeriod(niftyHistory, period).flatMap((p) => (p.close === null ? [] : [{ date: p.trade_date, close: Number(p.close) }]));
+      return [period, closes.length > 1 ? alignToDates(dates, closes) : []];
+    })
+  ) as Record<PricePeriod, (number | null)[]>;
 
   // News scoped to the holdings actually in this portfolio — same
   // `/api/news`-backing `getNews()` the News page's "My holdings" filter
@@ -42,6 +54,7 @@ export default async function PortfolioPage() {
     <PortfolioPageClient
       holdings={holdings}
       history={historyByPeriod}
+      benchmark={benchmark}
       news={news?.items ?? []}
       maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />

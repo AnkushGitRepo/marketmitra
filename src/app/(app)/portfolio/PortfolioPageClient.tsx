@@ -20,6 +20,8 @@ import styles from './page.module.css';
 interface PortfolioPageClientProps {
   holdings: EnrichedHolding[];
   history: Record<PricePeriod, RangeSeries>;
+  /** Nifty 50 closes aligned to each range's dates; empty when unavailable. */
+  benchmark: Record<PricePeriod, (number | null)[]>;
   news: NewsItem[];
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
@@ -42,7 +44,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, news, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, benchmark, news, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -88,7 +90,7 @@ export function PortfolioPageClient({ holdings, history, news, maxPositionPct }:
 
       {/* Four blocks, one rhythm: the stack's gap is the only spacing between them. */}
       <div className={styles.stack}>
-        <PortfolioHero totals={totals} history={history} masked={masked} />
+        <PortfolioHero totals={totals} history={history} benchmark={benchmark} masked={masked} />
 
         <div className={styles.macroGrid}>
           <AllocationCard holdings={holdings} />
