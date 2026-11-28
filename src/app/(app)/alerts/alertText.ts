@@ -6,6 +6,7 @@ import type {
   IpoWatchParams,
   PercentMoveParams,
   PortfolioPnlParams,
+  PortfolioRulesParams,
   PriceThresholdParams,
   TrailingStopParams,
   Week52BreachParams,
@@ -20,6 +21,7 @@ const ALERT_TYPE_LABELS: Record<Alert['type'], string> = {
   cumulative_drawdown: 'Drawdown watch',
   ipo_watch: 'IPO watch',
   ipo: 'IPO',
+  portfolio_rules: 'Portfolio rules',
 };
 
 const IPO_TRIGGER_TEXT: Record<IpoAlertParams['trigger'], string> = {
@@ -93,6 +95,16 @@ export function describeAlert(alert: Alert): string {
           ? ` (±${p.gmpThresholdPct}%)`
           : '';
       return `${p.ipoSlug.replace(/-ipo$/, '').replace(/-/g, ' ')} — ${IPO_TRIGGER_TEXT[p.trigger]}${extra}`;
+    }
+    case 'portfolio_rules': {
+      const p = alert.params as PortfolioRulesParams;
+      const on = [
+        p.profitMilestonesPct.length > 0 && `gain ${p.profitMilestonesPct.map((l) => `+${l}%`).join(' / ')}`,
+        p.costDrawdownPct.length > 0 && `below cost ${p.costDrawdownPct.map((l) => `-${l}%`).join(' / ')}`,
+        p.maxPositionWeightPct !== null && `one stock over ${p.maxPositionWeightPct}% of the book`,
+        p.week52High && '52-week high',
+      ].filter(Boolean);
+      return `Your rules — ${on.length ? on.join(', ') : 'none switched on'}`;
     }
   }
 }
