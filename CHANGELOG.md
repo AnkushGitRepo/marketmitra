@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mitra can now answer questions about Indian gold, silver and platinum prices, including what a weight you give it is worth (for example 50 g of 24K gold). It always says the prices are estimates from international prices plus the import duty, not the official IBJA or MCX rate, and it does not tell you to buy or sell. (#452)
+
 - Markets now has a "Bullion & ETFs" view with estimated Indian prices for gold (24K and 22K), silver and platinum, a gold-to-silver ratio, an include-3%-GST toggle, and a sortable table of NSE gold and silver ETFs. It says plainly that the prices are estimates and shows the import duty used and when it was last confirmed. (#450)
 
 - A public `GET /api/commodities` endpoint with estimated Indian prices for gold 24K and 22K (per 10 g), silver (per kg) and platinum (per gram), the gold/silver ratio and the NSE gold and silver ETFs. The prices are the international price converted to rupees with India's 15% import duty, so they track the Indian rate closely for gold but are not the official IBJA or MCX rate. (#448)
+
 
 - A public `GET /api/commodities` endpoint with estimated Indian prices for gold 24K and 22K (per 10 g), silver (per kg) and platinum (per gram), the gold/silver ratio and the NSE gold and silver ETFs. The prices are the international price converted to rupees with India's 15% import duty, so they track the Indian rate closely for gold but are not the official IBJA or MCX rate. (#448)
 

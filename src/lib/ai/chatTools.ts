@@ -44,6 +44,7 @@ import { checkMitraBounds } from '@/lib/alerts/mitraBounds';
 import { screenerFiltersSchema } from '@/lib/dashboard/screenerSchema';
 import { screenerUrl, screenForModel } from '@/lib/screener/mitra';
 import { logMitraAction } from '@/lib/mitra/activityLog';
+import { buildCommodityTools } from '@/lib/mitra-chat/commodityTools';
 import { buildExecutionTools } from '@/lib/mitra-chat/executionTools';
 import { buildNotesTools } from '@/lib/mitra-chat/notesTools';
 import type { AlertParams } from '@/lib/alerts/types';
@@ -108,6 +109,9 @@ export function buildChatTools(userId: string | null): ToolSet {
 
   // Conviction board, decision journal, cash and tax view (#419): read-only and scoped to this user.
   Object.assign(set, buildExecutionTools(userId));
+
+  // Indian gold, silver and platinum prices (#452, ADR 0086): public data, read-only, estimates labelled as such.
+  Object.assign(set, buildCommodityTools());
 
   // Navigation (ADR 0022). Each `execute` only confirms the destination —
   // it cannot move the browser itself. The client (AiWidget) watches for
