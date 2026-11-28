@@ -67,6 +67,13 @@ function toQuoteOut(originalSymbol: string, q: Record<string, unknown>): QuoteOu
   };
 }
 
+/** One quote for an exact Yahoo ticker ("GC=F", "USDINR=X"): unlike the symbol helpers it never adds `.NS`. Null when
+ * Yahoo has nothing (never a made-up price). */
+export async function fetchYahooTicker(ticker: string): Promise<QuoteOut | null> {
+  const q = await yahooFinance.quote(ticker).catch(() => undefined);
+  return q ? toQuoteOut(ticker, q as Record<string, unknown>) : null;
+}
+
 /** The live quote for one symbol, or null. A quote older than a week is a dead line, not a price: Yahoo keeps serving
  * stale plain `SYMBOL.NS` tickers for NSE SME stocks, which trade under `SYMBOL-SM.NS` / `SYMBOL-ST.NS`. So when the
  * plain ticker has no live quote, the series-suffixed ones are tried (a main-board stock never gets this far). */

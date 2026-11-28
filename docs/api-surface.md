@@ -305,6 +305,11 @@ Every endpoint here is a Next.js App Router route handler under `app/api/**/rout
 - **Auth:** public. **Purpose:** NIFTY 50 breadth and NSE sectoral index moves for the Markets page.
 - **Response:** `{ success, data: { breadth, sectors, asOf } }`. `breadth` is `{ advances, declines, unchanged, total, advancePct, ratio }` or `null` (fewer than 25 of the 50 constituents priced); `sectors` is `[{ label, changePct }]` best first, empty when the source is down. NIFTY 50 only, not the whole exchange. FII/DII is not offered (no free permitted source).
 
+### `GET /api/commodities`
+
+- **Auth:** public. **Purpose:** Indian gold, silver and platinum prices and the NSE gold and silver ETFs (ADR 0086).
+- **Response:** `{ success, data: { metals, goldSilverRatio, etfs, assumptions, asOf } }`. `metals` is `[{ id, label, unit, priceInr, changePct, week52HighInr, week52LowInr, estimate: true, note }]` for `gold-24k` (per 10 g), `gold-22k` (per 10 g), `silver-999` (per kg), `platinum-999` (per g). **Estimates, not the IBJA or MCX rate:** the international futures price (Yahoo `GC=F`, `SI=F`, `PL=F`) converted at USD/INR with the Indian import duty (`assumptions.importDutyPct`, 15% from 13 May 2026); no GST, making charges or local premium. On the day checked gold tracked IBJA within 0.1%, silver ran about 2.6% under and platinum about 5.5% under. `assumptions` carries `dutyCheckedOn` (the day a person last confirmed the duty) and `dutyStale` (true after 45 days without a confirmation; a monthly reminder issue asks for it). `changePct` is the futures contract's own day change. 22K is 916/999 of 24K. Any figure is `null` when its source is down; cached about five minutes.
+
 ### `POST /api/insights/market`
 
 - **Auth:** session. **Purpose:** two-sentence Mitra read on today's indices, breadth and sector moves, grounded only in those figures. Per-user cache 1h; body `{ force? }`; `400 no_ai_key`, `503` when market data is unavailable; `ai` rate tier.

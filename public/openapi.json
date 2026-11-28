@@ -5602,6 +5602,21 @@
         }
       }
     },
+    "/api/commodities": {
+      "get": {
+        "tags": [
+          "Market data"
+        ],
+        "summary": "Indian gold, silver and platinum prices and gold/silver ETFs",
+        "description": "Estimates of the Indian price for gold 24K (999) and 22K (916) per 10 g, silver 999 per kg and platinum 999 per gram: the international futures price (Yahoo Finance GC=F, SI=F, PL=F) converted at USD/INR with the Indian import duty (15% since 13 May 2026). Not the official IBJA or MCX rate; excludes GST, making charges and local premium. Includes the gold/silver ratio and the NSE gold and silver ETFs. Cached about five minutes. See ADR 0086.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "{ success, data: { metals[{ id, label, unit, priceInr, changePct, week52HighInr, week52LowInr, estimate, note }], goldSilverRatio, etfs[{ symbol, name, metal, price, changePct, week52High, week52Low }], assumptions{ usdInr, importDutyPct, dutyEffectiveFrom, dutyCheckedOn, dutyStale, gstPct }, asOf } }. A figure is null when its source is down."
+          }
+        }
+      }
+    },
     "/api/insights/market": {
       "post": {
         "tags": [

@@ -1,0 +1,43 @@
+name: Check gold import duty
+
+# Opens a reminder issue on the 1st of every month (09:00 IST). India changes the import duty on gold, silver and
+# platinum in the Budget (1 February) and by sudden notification (13 May 2026), and the Indian price shown in the app
+# (ADR 0086) depends on it. There is no free feed for the rate, so a person confirms it. Skips if one is already open.
+
+on:
+  schedule:
+    - cron: "30 3 1 * *"
+  workflow_dispatch:
+
+# Least privilege: this job only opens an issue.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open the reminder issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          month="$(date -u +%Y-%m)"
+          title="chore: confirm India's gold import duty (${month})"
+          open="$(gh issue list --state open --search "confirm gold import duty in:title" --json number --jq 'length')"
+          if [ "$open" != "0" ]; then
+            echo "A reminder is already open; nothing to do."
+            exit 0
+          fi
+          body_file="${RUNNER_TEMP:-/tmp}/duty-reminder.md"
+          cat > "$body_file" <<'BODY'
+          The Indian gold, silver and platinum prices (ADR 0086, `GET /api/commodities`) add India's import duty to the international price. If the duty changes and the constant does not, every figure is off by the difference.
+
+          - [ ] Check the current basic customs duty and AIDC on gold, silver and platinum (CBIC customs notifications, the Finance Ministry, or a Budget announcement).
+          - [ ] If it changed, edit `IMPORT_DUTY_PCT` and `IMPORT_DUTY_EFFECTIVE_FROM` in `src/lib/commodities/convert.ts`, and the percentage quoted in the notes and docs.
+          - [ ] Either way, set `IMPORT_DUTY_CHECKED_ON` to today. After 45 days without it the API reports `assumptions.dutyStale: true`.
+          - [ ] Optional: compare the gold figure with the IBJA page by eye; a gap well beyond about 1% means something changed (duty, or premium).
+          - [ ] Close this issue.
+          BODY
+          gh issue create --title "$title" --label documentation --label "area: api" --assignee AnkushGitRepo --milestone "Precious metals" --body-file "$body_file"
