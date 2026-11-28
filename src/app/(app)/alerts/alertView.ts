@@ -33,6 +33,7 @@ export function alertGroup(alert: Pick<Alert, 'type' | 'params'>): AlertGroupKey
     case 'week52_breach':
       return 'moves';
     case 'portfolio_pnl':
+    case 'portfolio_rules':
       return 'portfolio';
     case 'ipo':
     case 'ipo_watch':

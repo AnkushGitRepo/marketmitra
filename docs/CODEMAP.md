@@ -98,7 +98,7 @@ ADR 0010) · `currentUserId.ts` (`'local'` in self-host; Clerk or PAT when hoste
 | `agents/` | Multi-agent analysis: `orchestrator`, `runner`, `prompts`, `context`, `indicators`, `lessons`, `reflect`, `tradeActionCheck`, `store`, `types`. |
 | `ai/` | AI SDK layer (`ai/research/` = the research agent's web search and page-reading tools and the runner that uses them, #364, ADR 0081): `providerCatalog` (the eleven providers and their model lists), `modelList`/`pickerModels` (the live model list and picker grouping, #333), `providers`, `client`, `userAiConfig` (bring-your-own key), `prompts` (holds `GUARDRAIL`), `generate`/`structuredGenerate`, `stockBrief`/`structuredBrief`, `brief*`, `chatTools` (+ `askUserTool`, `a2uiTools`: tools that answer with an A2UI card, for Mitra chat and the Analyst Desk chat), `platformApi*`, `untrusted.ts` (prompt-injection fencing). |
 | `commodities/` | Precious metals (ADR 0086): `view` (GST toggle, ETF sort), `convert` (parity price, duty constant), `rates` (view builder, ETF list), `getCommodities` (server fetch + cache). |
-| `alerts/` | Alert evaluation: `evaluate`, `evaluators`, `guardrails`, `ipoAlerts`, `marketHours`, `mitraBounds`, `portfolioMetrics`. |
+| `alerts/` | Alert evaluation: `evaluate`, `evaluators`, `guardrails`, `ipoAlerts`, `marketHours`, `mitraBounds`, `portfolioMetrics`, `portfolioRules` (user rules, #442), `rulesForm`. |
 | `analysts/` | Per-stock analyst desk: `engine`, `dispatch*`, `sweep*`, `caps*`, `criteria`, `memo`, `retry`, `store`, `desk*`, chat prompts/context. |
 | `api-docs/` | Data behind the `/api-docs` page: categories, checks, MCP clients/tools. |
 | `auth/` | `accounts` (Clerk account helpers), `admin`, `clientSession`. |

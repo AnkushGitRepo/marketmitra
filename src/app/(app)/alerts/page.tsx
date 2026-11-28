@@ -3,6 +3,7 @@ import { listAlerts } from '@/lib/alerts/store';
 import { isEncKeyConfigured } from '@/lib/crypto';
 import { getAutoGuardrailsEnabled, getNotificationChannelSettingsView } from '@/lib/userSettings';
 import { getEmailAlertStatus, type EmailAlertStatus } from '@/lib/notifications/emailStatus';
+import type { PortfolioRulesParams } from '@/lib/alerts/types';
 import { AlertsPageClient } from './AlertsPageClient';
 import styles from './page.module.css';
 
@@ -49,9 +50,14 @@ export default async function AlertsPage({
     // The card shows an "unavailable" note rather than the page failing.
   }
 
+  // The portfolio rules are edited in their own card, not listed among the alerts.
+  const rules = alerts.find((a) => a.type === 'portfolio_rules') ?? null;
+  alerts = alerts.filter((a) => a.type !== 'portfolio_rules');
+
   return (
     <AlertsPageClient
       alerts={alerts}
+      portfolioRules={rules ? (rules.params as PortfolioRulesParams) : null}
       openNew={newParam === '1' || newParam === 'true'}
       openSettings={settings === '1' || settings === 'true'}
       prefillSymbol={symbol?.toUpperCase()}

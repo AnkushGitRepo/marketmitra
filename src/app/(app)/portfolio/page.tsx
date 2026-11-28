@@ -6,6 +6,9 @@ import { fetchIndexHistory } from '@/lib/dashboard/yahooQuote';
 import { slicePricesByPeriod } from '@/lib/dashboard/pricePeriods';
 import { alignToDates } from '@/lib/portfolio/compare';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
+import { getPrices } from '@/lib/dashboard/fundamentalsApi';
+import { listPurchaseDates } from '@/lib/tax/dates';
+import { peakSincePurchase, type PeakSincePurchase } from '@/lib/portfolio/peak';
 import { getNews } from '@/lib/dashboard/newsApi';
 import { RISK_PROFILES } from '@/lib/onboarding/profiles';
 import { getPreferences } from '@/lib/preferences/store';
@@ -44,6 +47,18 @@ export default async function PortfolioPage() {
     })
   ) as Record<PricePeriod, (number | null)[]>;
 
+  // Peak since purchase: only for holdings with a purchase date, from real daily closes (the same 5y fetch the value
+  // chart makes, so it is served from the fetch cache). A failed lookup just leaves that holding without a peak.
+  const purchaseDates = await listPurchaseDates(userId).catch(() => ({}) as Record<string, string>);
+  const peakEntries = await Promise.all(
+    holdings.map(async (h) => {
+      const date = purchaseDates[h.id];
+      if (!date) return null;
+      return [h.id, peakSincePurchase(await getPrices(h.symbol, '5y'), date, h.ltp)] as const;
+    })
+  );
+  const peaks = Object.fromEntries(peakEntries.filter((e): e is readonly [string, PeakSincePurchase] => e !== null && e[1] !== null));
+
   // News scoped to the holdings actually in this portfolio — same
   // `/api/news`-backing `getNews()` the News page's "My holdings" filter
   // uses, just always on here since this whole page is holdings-scoped.
@@ -55,6 +70,7 @@ export default async function PortfolioPage() {
       holdings={holdings}
       history={historyByPeriod}
       benchmark={benchmark}
+      peaks={peaks}
       news={news?.items ?? []}
       maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />
