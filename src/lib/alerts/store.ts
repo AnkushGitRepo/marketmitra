@@ -107,7 +107,7 @@ export async function createAlert(userId: string, input: CreateAlertInput): Prom
     lastEvaluatedAt: null,
     triggeredAt: null,
     lastObservedValue: null,
-    sentKeys: input.type === 'ipo_watch' ? [] : null,
+    sentKeys: input.type === 'ipo_watch' || input.type === 'portfolio_rules' ? [] : null,
     peakPrice: null,
     source: input.source ?? 'user',
     createdAt: now,
@@ -141,6 +141,48 @@ export async function upsertIpoWatch(
         _id: new ObjectId(),
         userId,
         type: 'ipo_watch',
+        symbol: null,
+        note: null,
+        rearm: false,
+        cooldownMinutes: 60,
+        armed: true,
+        cooldownUntil: null,
+        lastEvaluatedAt: null,
+        triggeredAt: null,
+        lastObservedValue: null,
+        peakPrice: null,
+        source: 'user',
+        createdAt: now,
+      },
+    },
+    { upsert: true, returnDocument: 'after' }
+  );
+  return toAlert(result!);
+}
+
+/** The user's single portfolio-rules alert, or null. */
+export async function getPortfolioRules(userId: string): Promise<Alert | null> {
+  const col = await collection();
+  const doc = await col.findOne({ userId, type: 'portfolio_rules' });
+  return doc ? toAlert(doc) : null;
+}
+
+/** Create-or-replace the user's portfolio rules (there is only ever one). Saving resets `sentKeys`, so a rule
+ * that is already true announces once on the next cycle instead of staying silent about a state the user just set. */
+export async function upsertPortfolioRules(
+  userId: string,
+  params: Omit<AlertParams & { type: 'portfolio_rules' }, 'type'>
+): Promise<Alert> {
+  const col = await collection();
+  const now = new Date();
+  const result = await col.findOneAndUpdate(
+    { userId, type: 'portfolio_rules' },
+    {
+      $set: { params, status: 'active', sentKeys: [], updatedAt: now },
+      $setOnInsert: {
+        _id: new ObjectId(),
+        userId,
+        type: 'portfolio_rules',
         symbol: null,
         note: null,
         rearm: false,

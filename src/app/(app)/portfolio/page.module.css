@@ -395,3 +395,5 @@
 .rangeBadge { display: inline-block; margin-top: 4px; padding: 1px 7px; border-radius: var(--radius-pill); font-size: 10.5px; font-weight: 600; }
 .rangeHigh { background: var(--app-teal-bg); color: var(--app-gain); }
 .rangeLow { background: var(--app-loss-bg); color: var(--app-loss-text); }
+
+.peakLine { margin: 2px 0 0; font-family: var(--font-mono); font-size: 10.5px; color: var(--app-text-subtle); }
