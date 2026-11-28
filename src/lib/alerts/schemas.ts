@@ -52,6 +52,16 @@ export const ipoAlertParamsSchema = z.object({
   gmpThresholdAbs: z.number().optional(),
 });
 
+const levelList = z.array(z.number().positive().max(10_000)).max(6);
+
+export const portfolioRulesParamsSchema = z.object({
+  profitMilestonesPct: levelList,
+  // A loss can be at most 100% below cost.
+  costDrawdownPct: z.array(z.number().positive().max(100)).max(6),
+  maxPositionWeightPct: z.number().positive().max(100).nullable(),
+  week52High: z.boolean(),
+});
+
 /** The params validator for a given alert type — used by POST (via the
  * discriminated union below) and by PATCH (which knows the type only after
  * loading the existing alert). */
@@ -73,6 +83,8 @@ export function paramsSchemaForType(type: AlertType) {
       return ipoWatchParamsSchema;
     case 'ipo':
       return ipoAlertParamsSchema;
+    case 'portfolio_rules':
+      return portfolioRulesParamsSchema;
   }
 }
 
@@ -131,6 +143,11 @@ export const createAlertSchema = z
       type: z.literal('ipo'),
       symbol: z.null().optional(),
       params: ipoAlertParamsSchema,
+    }),
+    z.object({
+      type: z.literal('portfolio_rules'),
+      symbol: z.null().optional(),
+      params: portfolioRulesParamsSchema,
     }),
   ])
   .and(commonCreateFields);
