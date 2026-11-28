@@ -1,0 +1,3 @@
+.sub { color: var(--app-text-subtle); font-size: 12.5px; }
+.up { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--app-gain); }
+.down { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--app-loss-text); }

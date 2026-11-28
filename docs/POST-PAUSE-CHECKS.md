@@ -208,6 +208,15 @@ Run after 4k, signed in with your own AI key.
 - [ ] Mitra answers questions about the board, the journal, cash and the tax view in the hosted chat, in the Mitra page and the drawer, with no buy or sell wording.
 - [ ] "Export my data" includes `tradeJournal`, `cash` and `purchaseDates`.
 
+## 4r. Precious metals (#446, #448, #450, #452, #454; ADR 0086, 0087)
+
+- [ ] `GET /api/commodities` in production returns four metals with prices and the ETF list; compare gold 24K per 10 g with the IBJA page by eye (within about 1% is expected; a larger gap means the duty or premium changed).
+- [ ] Markets, "Bullion & ETFs": cards, GST toggle, ratio, ETF table render; the banner shows the duty and the date last confirmed.
+- [ ] Portfolio, Metals: add, edit and remove a test entry (then delete it); the allocation chart gets a Precious metals slice and loses it again.
+- [ ] Mitra answers "what is 50 g of 24K gold worth" with an estimate and its basis (needs an AI key).
+- [ ] The monthly workflow `check-gold-duty.yml` appears under Actions and can be run once (workflow_dispatch); close the issue it opens.
+- [ ] Yahoo returns the futures and `USDINR=X` from the hosted region (the endpoint is unofficial).
+
 ## 6. Data service and hosting follow-ups (#169, #180)
 
 - [ ] Vercel CPU re-measured: Team Usage > Fluid Active CPU > Projects. The old `marketmitra-fundamentals-api` should be about 0.

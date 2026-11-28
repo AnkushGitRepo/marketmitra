@@ -8590,6 +8590,319 @@
         }
       }
     },
+    "/api/bullion": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "List physical metal holdings with estimated values",
+        "description": "The user's physical gold, silver and platinum, valued at the estimated Indian price from /api/commodities (international price in rupees plus India's import duty; not IBJA or MCX). `value` is null when no price is available. Gain appears only for entries with a buy price. See ADR 0086 and 0087.",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ rows[{ entry, label, value, cost, gain, gainPct }], totalValue, unpriced, trackedCost, trackedGain, estimate: true, assumptions }."
+          },
+          "401": {
+            "description": "Not authenticated."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Add a physical metal holding",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "metal": {
+                    "type": "string",
+                    "enum": [
+                      "gold",
+                      "silver",
+                      "platinum"
+                    ]
+                  },
+                  "purity": {
+                    "type": "string",
+                    "enum": [
+                      "24k",
+                      "22k"
+                    ],
+                    "description": "Gold only; defaults to 24k."
+                  },
+                  "grams": {
+                    "type": "number"
+                  },
+                  "buyPricePerGram": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 60
+                  }
+                },
+                "required": [
+                  "metal",
+                  "grams"
+                ]
+              },
+              "example": {
+                "metal": "gold",
+                "purity": "24k",
+                "grams": 50,
+                "buyPricePerGram": 9000
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "metal": {
+                      "type": "string",
+                      "enum": [
+                        "gold",
+                        "silver",
+                        "platinum"
+                      ]
+                    },
+                    "purity": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "24k",
+                        "22k",
+                        null
+                      ],
+                      "description": "Gold only."
+                    },
+                    "grams": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1000000
+                    },
+                    "buyPricePerGram": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "description": "What the user paid per gram; null when not given."
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 60
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "409": {
+            "description": "30 entries already."
+          },
+          "422": {
+            "description": "Invalid input (weight must be above zero; purity applies to gold only)."
+          }
+        }
+      }
+    },
+    "/api/bullion/{id}": {
+      "patch": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Change a physical metal holding",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grams": {
+                    "type": "number"
+                  },
+                  "buyPricePerGram": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "purity": {
+                    "type": "string",
+                    "enum": [
+                      "24k",
+                      "22k"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 60
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "metal": {
+                      "type": "string",
+                      "enum": [
+                        "gold",
+                        "silver",
+                        "platinum"
+                      ]
+                    },
+                    "purity": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "24k",
+                        "22k",
+                        null
+                      ],
+                      "description": "Gold only."
+                    },
+                    "grams": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1000000
+                    },
+                    "buyPricePerGram": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "description": "What the user paid per gram; null when not given."
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 60
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found or not yours."
+          },
+          "422": {
+            "description": "Invalid input."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Remove a physical metal holding",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed."
+          },
+          "401": {
+            "description": "Not authenticated."
+          },
+          "404": {
+            "description": "Not found or not yours."
+          }
+        }
+      }
+    },
     "/api/journal": {
       "get": {
         "tags": [

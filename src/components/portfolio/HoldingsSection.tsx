@@ -42,6 +42,7 @@ export function HoldingsSection({ holdings, totalValue, masked, news, peaks }: H
           <nav className={styles.related} aria-label="Related pages">
             <Link href="/portfolio/tax">Tax ↗</Link>
             <Link href="/portfolio/cash">Cash ↗</Link>
+            <Link href="/portfolio/metals">Metals ↗</Link>
           </nav>
         </div>
         <div className={styles.chips} role="group" aria-label="Filter holdings">

@@ -6,6 +6,10 @@ import { fetchIndexHistory } from '@/lib/dashboard/yahooQuote';
 import { slicePricesByPeriod } from '@/lib/dashboard/pricePeriods';
 import { alignToDates } from '@/lib/portfolio/compare';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
+import { listBullion } from '@/lib/bullion/store';
+import { valueBullion } from '@/lib/bullion/value';
+import { getCommodities } from '@/lib/commodities/getCommodities';
+
 import { getPrices } from '@/lib/dashboard/fundamentalsApi';
 import { listPurchaseDates } from '@/lib/tax/dates';
 import { peakSincePurchase, type PeakSincePurchase } from '@/lib/portfolio/peak';
@@ -47,6 +51,10 @@ export default async function PortfolioPage() {
     })
   ) as Record<PricePeriod, (number | null)[]>;
 
+  // Physical metals (#454): an estimated value for the allocation donut. Optional context, so a failure just means no slice.
+  const [bullionEntries, commodities] = await Promise.all([listBullion(userId).catch(() => []), getCommodities().catch(() => null)]);
+  const metalsValue = bullionEntries.length > 0 ? valueBullion(bullionEntries, commodities).totalValue : 0;
+
   // Peak since purchase: only for holdings with a purchase date, from real daily closes (the same 5y fetch the value
   // chart makes, so it is served from the fetch cache). A failed lookup just leaves that holding without a peak.
   const purchaseDates = await listPurchaseDates(userId).catch(() => ({}) as Record<string, string>);
@@ -72,6 +80,7 @@ export default async function PortfolioPage() {
       benchmark={benchmark}
       peaks={peaks}
       news={news?.items ?? []}
+      metalsValue={metalsValue}
       maxPositionPct={profile ? RISK_PROFILES[profile].maxPositionPct : null}
     />
   );

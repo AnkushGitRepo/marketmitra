@@ -118,14 +118,23 @@ export function simulateWhatIf(holdings: readonly HoldingLike[], cash: number, l
   return { before, after: snapshotOf(positions, cashLeft), warnings };
 }
 
+/** Sector slices with one more named slice added (the others scaled down to make room), for the allocation donut. */
+export function withSlice<T extends { readonly name: string; readonly value: number; readonly pct: number }>(
+  weights: readonly T[],
+  name: string,
+  value: number
+): Array<{ readonly name: string; readonly value: number; readonly pct: number }> {
+  const base = weights.reduce((s, w) => s + w.value, 0);
+  const total = base + Math.max(value, 0);
+  if (total <= 0) return [];
+  const slices = weights.map((w) => ({ name: w.name, value: w.value, pct: (w.value / total) * 100 }));
+  return value > 0 ? [...slices, { name, value, pct: (value / total) * 100 }] : slices;
+}
+
 /** Sector slices with a Cash slice added (and the others scaled down to make room), for the allocation donut. */
 export function withCashSlice<T extends { readonly name: string; readonly value: number; readonly pct: number }>(
   weights: readonly T[],
   cash: number
 ): Array<{ readonly name: string; readonly value: number; readonly pct: number }> {
-  const equity = weights.reduce((s, w) => s + w.value, 0);
-  const total = equity + Math.max(cash, 0);
-  if (total <= 0) return [];
-  const slices = weights.map((w) => ({ name: w.name, value: w.value, pct: (w.value / total) * 100 }));
-  return cash > 0 ? [...slices, { name: CASH_NAME, value: cash, pct: (cash / total) * 100 }] : slices;
+  return withSlice(weights, CASH_NAME, cash);
 }

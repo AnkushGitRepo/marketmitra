@@ -67,7 +67,7 @@ A new page must be added to `src/lib/routes.ts` **and** `src/proxy.ts`.
 | `funds`, `funds/export`, `funds/facets`, `funds/compare`, `funds/[code]` (+ `nav`, `peers`, `xray`) | mutual funds (ADR 0067) |
 | `holdings`, `holdings/[id]` | portfolio holdings |
 | `insights/*` | one-shot AI briefs: ipo, market, news, portfolio, stock, stock-brief, chart-overlay (Auto-Chart), fund-xray |
-| `markets/overview`, `commodities`, `news`, `search`, `stock/[ticker]` (+ `prices`) | market data |
+| `markets/overview`, `commodities`, `bullion` (+ `[id]`), `news`, `search`, `stock/[ticker]` (+ `prices`) | market data |
 | `mitra/*`, `mitra-activity` | Mitra chat: conversations, messages, files, context |
 | `mcp` | MCP server endpoint |
 | `tax` | tax view of holdings (`lib/tax/`: pure rules in `india.ts`, purchase dates, report); `holdings/[id]/purchase-date` |
@@ -98,6 +98,7 @@ ADR 0010) · `currentUserId.ts` (`'local'` in self-host; Clerk or PAT when hoste
 | `agents/` | Multi-agent analysis: `orchestrator`, `runner`, `prompts`, `context`, `indicators`, `lessons`, `reflect`, `tradeActionCheck`, `store`, `types`. |
 | `ai/` | AI SDK layer (`ai/research/` = the research agent's web search and page-reading tools and the runner that uses them, #364, ADR 0081): `providerCatalog` (the eleven providers and their model lists), `modelList`/`pickerModels` (the live model list and picker grouping, #333), `providers`, `client`, `userAiConfig` (bring-your-own key), `prompts` (holds `GUARDRAIL`), `generate`/`structuredGenerate`, `stockBrief`/`structuredBrief`, `brief*`, `chatTools` (+ `askUserTool`, `a2uiTools`: tools that answer with an A2UI card, for Mitra chat and the Analyst Desk chat), `platformApi*`, `untrusted.ts` (prompt-injection fencing). |
 | `commodities/` | Precious metals (ADR 0086): `view` (GST toggle, ETF sort), `convert` (parity price, duty constant), `rates` (view builder, ETF list), `getCommodities` (server fetch + cache). |
+| `bullion/` | Physical gold, silver and platinum (#454, ADR 0087): `schema`, `store` (`bullionEntries`), `value` (estimated valuation). |
 | `alerts/` | Alert evaluation: `evaluate`, `evaluators`, `guardrails`, `ipoAlerts`, `marketHours`, `mitraBounds`, `portfolioMetrics`, `portfolioRules` (user rules, #442), `rulesForm`. |
 | `analysts/` | Per-stock analyst desk: `engine`, `dispatch*`, `sweep*`, `caps*`, `criteria`, `memo`, `retry`, `store`, `desk*`, chat prompts/context. |
 | `api-docs/` | Data behind the `/api-docs` page: categories, checks, MCP clients/tools. |

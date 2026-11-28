@@ -32,6 +32,7 @@ export interface ExportParts {
   readonly tradeJournal: readonly unknown[];
   /** Cash and liquid funds kept outside the holdings (#413). */
   readonly cash: readonly unknown[];
+  readonly bullion: readonly unknown[];
   /** Purchase dates the user gave their holdings: holding id to YYYY-MM-DD (#414). */
   readonly purchaseDates: Readonly<Record<string, string>>;
   readonly conversations: ReadonlyArray<{ readonly conversation: unknown; readonly messages: readonly unknown[] }>;
@@ -53,6 +54,7 @@ export function buildExportDocument(parts: ExportParts, now: Date) {
     wishlists: stripInternal(parts.wishlists),
     tradeJournal: stripInternal(parts.tradeJournal),
     cash: stripInternal(parts.cash),
+    bullion: stripInternal(parts.bullion),
     purchaseDates: stripInternal(parts.purchaseDates),
     conversations: stripInternal(parts.conversations),
     preferences: stripInternal(parts.preferences),
