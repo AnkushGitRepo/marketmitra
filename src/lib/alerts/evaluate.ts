@@ -25,6 +25,7 @@ import {
   istToday,
   type IpoWatchHit,
 } from './ipoAlerts';
+import { evaluatePortfolioRules, type RuleHolding } from './portfolioRules';
 import { computeHoldingMetrics, computePortfolioMetrics, type PriceLookup } from './portfolioMetrics';
 import { applyAlertTransition, listActiveAlerts } from './store';
 import type {
@@ -35,6 +36,7 @@ import type {
   IpoWatchParams,
   PercentMoveParams,
   PortfolioPnlParams,
+  PortfolioRulesParams,
   PriceThresholdParams,
   TrailingStopParams,
   Week52BreachParams,
@@ -64,7 +66,7 @@ export async function evaluateAlerts(now: Date = new Date()): Promise<EvaluateSu
 
   // Holdings for every user with a portfolio alert (loaded once per user).
   const portfolioUserIds = [
-    ...new Set(alerts.filter((a) => a.type === 'portfolio_pnl').map((a) => a.userId)),
+    ...new Set(alerts.filter((a) => a.type === 'portfolio_pnl' || a.type === 'portfolio_rules').map((a) => a.userId)),
   ];
   const holdingsByUser = new Map<string, Holding[]>();
   await Promise.all(
@@ -124,6 +126,10 @@ export async function evaluateAlerts(now: Date = new Date()): Promise<EvaluateSu
     try {
       if (alert.type === 'ipo_watch') {
         summary.notified += await evaluateWatchAlert(alert, ipos, today);
+        continue;
+      }
+      if (alert.type === 'portfolio_rules') {
+        summary.notified += await evaluateRulesAlert(alert, holdingsByUser.get(alert.userId) ?? [], quoteBySymbol, now);
         continue;
       }
       if (alert.type === 'ipo') {
@@ -192,6 +198,39 @@ async function evaluateWatchAlert(alert: Alert, ipos: Ipo[], today: string): Pro
     updatedAt: new Date(),
   });
   return hits.length;
+}
+
+/** The user's portfolio rules (#442): one grouped, factual notification per cycle, so a rule that is already true on
+ * the first run is one message and not one per holding. */
+async function evaluateRulesAlert(
+  alert: Alert,
+  holdings: Holding[],
+  quoteBySymbol: QuoteBySymbol,
+  now: Date
+): Promise<number> {
+  const rows: RuleHolding[] = holdings.map((h) => {
+    const quote = quoteBySymbol.get(h.symbol.toUpperCase());
+    const snap = quote ? snapshotFromQuote(quote) : null;
+    return { symbol: h.symbol, quantity: h.quantity, avgPrice: h.avgPrice, price: snap?.price ?? null, week52High: snap?.week52High ?? null };
+  });
+  const { hits, keptKeys } = evaluatePortfolioRules(alert.params as PortfolioRulesParams, rows, alert.sentKeys ?? []);
+  await applyAlertTransition(alert.id, { sentKeys: [...keptKeys], lastEvaluatedAt: now, updatedAt: now });
+  if (hits.length === 0) return 0;
+
+  const channels = await resolveChannels(alert.userId);
+  const single = hits.length === 1 ? hits[0] : null;
+  await deliverNotification(
+    alert.userId,
+    {
+      kind: 'alert',
+      title: single ? single.line.replace(/\.$/, '') : `${hits.length} of your portfolio rules were crossed`,
+      body: hits.map((hit) => hit.line).join('\n'),
+      href: single ? `/stock/${single.symbol}` : '/portfolio',
+      meta: { alertId: alert.id, alertType: alert.type, symbols: hits.map((hit) => hit.symbol), source: alert.source },
+    },
+    channels
+  );
+  return 1;
 }
 
 function buildIpoWatchPayload(hit: IpoWatchHit): NotificationPayload {

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/currentUserId';
 import { createAlertSchema } from '@/lib/alerts/schemas';
-import { createAlert, listAlerts, upsertIpoWatch } from '@/lib/alerts/store';
-import type { AlertParams, IpoWatchParams } from '@/lib/alerts/types';
+import { createAlert, listAlerts, upsertIpoWatch, upsertPortfolioRules } from '@/lib/alerts/store';
+import type { AlertParams, IpoWatchParams, PortfolioRulesParams } from '@/lib/alerts/types';
 
 export async function GET() {
   const userId = await getCurrentUserId();
@@ -30,6 +30,12 @@ export async function POST(request: Request) {
   // The IPO-watch subscription is one-per-user — upsert, don't stack.
   if (d.type === 'ipo_watch') {
     const alert = await upsertIpoWatch(userId, d.params as IpoWatchParams);
+    return NextResponse.json({ success: true, data: alert }, { status: 200 });
+  }
+
+  // So are the portfolio rules.
+  if (d.type === 'portfolio_rules') {
+    const alert = await upsertPortfolioRules(userId, d.params as PortfolioRulesParams);
     return NextResponse.json({ success: true, data: alert }, { status: 200 });
   }
 
