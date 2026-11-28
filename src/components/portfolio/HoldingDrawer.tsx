@@ -6,6 +6,9 @@ import { createPortal } from 'react-dom';
 import { relativeTime } from '@/components/dashboard-charts/NewsList';
 import { ThesisCard } from '@/components/stock/ThesisCard';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
+import { peakLabel, type PeakSincePurchase } from '@/lib/portfolio/peak';
+import { formatInr } from '@/lib/dashboard/format';
+import { useMask } from '@/lib/dashboard/MaskContext';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import { safeHref } from '@/lib/security/safeHref';
 import { stockHref } from '@/lib/stock/href';
@@ -14,15 +17,17 @@ import styles from './HoldingDrawer.module.css';
 interface HoldingDrawerProps {
   readonly holding: EnrichedHolding;
   readonly news: readonly NewsItem[];
+  readonly peak: PeakSincePurchase | null;
   readonly onClose: () => void;
 }
 
 const MAX_NEWS = 5;
 
 /** A holding's detail without leaving /portfolio: entry date and thesis, the decisions recorded on it, and its own news. */
-export function HoldingDrawer({ holding, news, onClose }: HoldingDrawerProps) {
+export function HoldingDrawer({ holding, news, peak, onClose }: HoldingDrawerProps) {
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const { masked } = useMask();
   const symbol = holding.symbol.toUpperCase();
   const stories = news.filter((n) => n.symbols.some((s) => s.toUpperCase() === symbol)).slice(0, MAX_NEWS);
 
@@ -54,6 +59,7 @@ export function HoldingDrawer({ holding, news, onClose }: HoldingDrawerProps) {
           <div>
             <p className={styles.symbol}>{symbol}</p>
             <h2 className={styles.name}>{holding.name}</h2>
+            {peak ? <p className={styles.peak}>{peakLabel(peak, (v) => formatInr(v, 0, masked))} since you bought</p> : null}
           </div>
           <button ref={closeRef} type="button" className={styles.close} aria-label="Close details" onClick={onClose}>×</button>
         </header>

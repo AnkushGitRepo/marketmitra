@@ -12,6 +12,7 @@ import { useMask } from '@/lib/dashboard/MaskContext';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import type { PricePeriod } from '@/lib/dashboard/fundamentalsApi';
 import type { RangeSeries } from '@/lib/dashboard/chartMath';
+import type { PeakSincePurchase } from '@/lib/portfolio/peak';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import { portfolioTotals } from '@/lib/portfolio/portfolioMetrics';
 import { AddHoldingForm } from './AddHoldingForm';
@@ -23,6 +24,8 @@ interface PortfolioPageClientProps {
   /** Nifty 50 closes aligned to each range's dates; empty when unavailable. */
   benchmark: Record<PricePeriod, (number | null)[]>;
   news: NewsItem[];
+  /** Peak since purchase per holding id; only holdings with a purchase date have one. */
+  peaks: Record<string, PeakSincePurchase>;
   /** The single-stock limit from the chosen risk profile (ADR 0075); null when none was chosen. */
   maxPositionPct: number | null;
 }
@@ -44,7 +47,7 @@ function exportCsv(holdings: EnrichedHolding[]) {
   URL.revokeObjectURL(url);
 }
 
-export function PortfolioPageClient({ holdings, history, benchmark, news, maxPositionPct }: PortfolioPageClientProps) {
+export function PortfolioPageClient({ holdings, history, benchmark, news, peaks, maxPositionPct }: PortfolioPageClientProps) {
   const router = useRouter();
   const { masked } = useMask();
   const [showAddForm, setShowAddForm] = useState(holdings.length === 0);
@@ -97,7 +100,7 @@ export function PortfolioPageClient({ holdings, history, benchmark, news, maxPos
           <RiskCopilotCard holdings={holdings} maxPositionPct={maxPositionPct} />
         </div>
 
-        <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} news={news} />
+        <HoldingsSection holdings={holdings} totalValue={totals.totalValue} masked={masked} news={news} peaks={peaks} />
 
         <section aria-label="News for your holdings">
           <div className={styles.sectionHeadRow}>

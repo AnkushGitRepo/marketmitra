@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { HoldingDrawer } from '@/components/portfolio/HoldingDrawer';
+import type { PeakSincePurchase } from '@/lib/portfolio/peak';
 import type { NewsItem } from '@/lib/dashboard/newsApi';
 import { HoldingRow } from '@/app/(app)/portfolio/HoldingRow';
 import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
@@ -16,6 +17,7 @@ interface HoldingsSectionProps {
   readonly masked: boolean;
   /** Stories shown in a holding's drawer. */
   readonly news: readonly NewsItem[];
+  readonly peaks: Readonly<Record<string, PeakSincePurchase>>;
 }
 
 const CHIPS: readonly { readonly id: HoldingFilter; readonly label: string }[] = [
@@ -25,7 +27,7 @@ const CHIPS: readonly { readonly id: HoldingFilter; readonly label: string }[] =
 ];
 
 /** The holdings table with All / In Profit / In Loss filter chips and live counts. */
-export function HoldingsSection({ holdings, totalValue, masked, news }: HoldingsSectionProps) {
+export function HoldingsSection({ holdings, totalValue, masked, news, peaks }: HoldingsSectionProps) {
   const [filter, setFilter] = useState<HoldingFilter>('all');
   const [openId, setOpenId] = useState<string | null>(null);
   const opened = holdings.find((h) => h.id === openId) ?? null;
@@ -71,13 +73,13 @@ export function HoldingsSection({ holdings, totalValue, masked, news }: Holdings
           </thead>
           <tbody>
             {rows.map((h) => (
-              <HoldingRow key={h.id} holding={h} totalValue={totalValue} masked={masked} onOpen={() => setOpenId(h.id)} />
+              <HoldingRow key={h.id} holding={h} totalValue={totalValue} masked={masked} peak={peaks[h.id] ?? null} onOpen={() => setOpenId(h.id)} />
             ))}
           </tbody>
         </table>
         {rows.length === 0 && <p className={styles.empty}>No holdings match this filter.</p>}
       </div>
-      {opened ? <HoldingDrawer holding={opened} news={news} onClose={() => setOpenId(null)} /> : null}
+      {opened ? <HoldingDrawer holding={opened} news={news} peak={peaks[opened.id] ?? null} onClose={() => setOpenId(null)} /> : null}
     </section>
   );
 }

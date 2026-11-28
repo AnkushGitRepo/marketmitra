@@ -977,7 +977,7 @@
           "Alerts"
         ],
         "summary": "Create an alert (or upsert the IPO watch)",
-        "description": "Body is a discriminated union on `type`: price_threshold | percent_move | week52_breach | portfolio_pnl | ipo | ipo_watch. `ipo_watch` is upserted (one per user) and returns 200.",
+        "description": "Body is a discriminated union on `type`: price_threshold | percent_move | week52_breach | portfolio_pnl | ipo | ipo_watch | portfolio_rules. `ipo_watch` and `portfolio_rules` are upserted (one per user) and return 200.",
         "security": [
           {
             "cookieAuth": []
