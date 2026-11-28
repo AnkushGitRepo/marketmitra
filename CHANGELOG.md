@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Markets now has a "Bullion & ETFs" view with estimated Indian prices for gold (24K and 22K), silver and platinum, a gold-to-silver ratio, an include-3%-GST toggle, and a sortable table of NSE gold and silver ETFs. It says plainly that the prices are estimates and shows the import duty used and when it was last confirmed. (#450)
+
+- A public `GET /api/commodities` endpoint with estimated Indian prices for gold 24K and 22K (per 10 g), silver (per kg) and platinum (per gram), the gold/silver ratio and the NSE gold and silver ETFs. The prices are the international price converted to rupees with India's 15% import duty, so they track the Indian rate closely for gold but are not the official IBJA or MCX rate. (#448)
+
 - A public `GET /api/commodities` endpoint with estimated Indian prices for gold 24K and 22K (per 10 g), silver (per kg) and platinum (per gram), the gold/silver ratio and the NSE gold and silver ETFs. The prices are the international price converted to rupees with India's 15% import duty, so they track the Indian rate closely for gold but are not the official IBJA or MCX rate. (#448)
 
 - Holdings that have a purchase date now show their peak since you bought and how far the price is below it (for example "Peak ₹2,745 · 54.4% below"), in the table and in the holding panel. It is worked out from real daily closes after your purchase date; holdings without a date show nothing. (#443)
