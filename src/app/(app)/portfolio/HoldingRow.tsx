@@ -8,6 +8,8 @@ import type { EnrichedHolding } from '@/lib/dashboard/enrichedHoldings';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { RowActions } from '@/components/portfolio/RowActions';
 import { CompanyLogo } from '@/components/dashboard-charts/CompanyLogo';
+import { peakLabel } from '@/lib/portfolio/peak';
+import type { PeakSincePurchase } from '@/lib/portfolio/peak';
 import { BADGE_LABEL, yearRange } from '@/lib/portfolio/yearRange';
 import { stockHref } from '@/lib/stock/href';
 import styles from './page.module.css';
@@ -16,11 +18,13 @@ interface HoldingRowProps {
   holding: EnrichedHolding;
   totalValue: number;
   masked: boolean;
+  /** Highest close since the purchase date, when there is one. */
+  peak: PeakSincePurchase | null;
   /** Opens the holding's detail drawer. */
   onOpen: () => void;
 }
 
-export function HoldingRow({ holding, totalValue, masked, onOpen }: HoldingRowProps) {
+export function HoldingRow({ holding, totalValue, masked, peak, onOpen }: HoldingRowProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [quantity, setQuantity] = useState(String(holding.quantity));
@@ -92,6 +96,7 @@ export function HoldingRow({ holding, totalValue, masked, onOpen }: HoldingRowPr
               {holding.symbol}
               {holding.sector ? ` · ${holding.sector}` : ''}
             </p>
+            {peak ? <p className={styles.peakLine}>{peakLabel(peak, (v) => formatInr(v, 0, masked))}</p> : null}
             {range?.badge ? <span className={`${styles.rangeBadge} ${range.badge === 'near-low' ? styles.rangeLow : styles.rangeHigh}`}>{BADGE_LABEL[range.badge]}</span> : null}
           </div>
         </div>
